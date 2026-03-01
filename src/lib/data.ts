@@ -704,14 +704,11 @@ const getCurrentStaffBranchAccess = cache(async (businessId: string | null) => {
     .eq("business_id", businessId);
 
   if (error || !accessRows || accessRows.length === 0) {
-    const { data: profile } = await authClient
-      .from("profiles")
-      .select("role")
-      .eq("id", user.id)
-      .maybeSingle();
+    const { data: roleData } = await authClient.rpc("current_app_role");
+    const currentRole = (roleData as AppRole | null) ?? null;
 
     return {
-      accessScope: ((profile?.role as AppRole | undefined) ?? "owner") === "owner" ? ("business" as StaffAccessScope) : ("branch" as StaffAccessScope),
+      accessScope: currentRole === "owner" ? ("business" as StaffAccessScope) : ("branch" as StaffAccessScope),
       primaryBranchId: null as string | null,
       branchAccessIds: [] as string[],
     };
@@ -788,8 +785,8 @@ export const getAppShellSnapshot = cache(async () => {
     };
   }
 
-  const [{ data: profile }, accessResult] = await Promise.all([
-    authClient.from("profiles").select("role").eq("id", user.id).maybeSingle(),
+  const [{ data: roleData }, accessResult] = await Promise.all([
+    authClient.rpc("current_app_role"),
     activeBusiness?.id
       ? authClient
           .from("staff_branch_access")
@@ -805,7 +802,7 @@ export const getAppShellSnapshot = cache(async () => {
     is_primary: boolean;
   }>;
 
-  const role = (profile?.role as AppRole | undefined) ?? null;
+  const role = (roleData as AppRole | null) ?? null;
   const accessScope =
     accessRows.length > 0
       ? accessRows.some((row) => row.access_scope === "business")

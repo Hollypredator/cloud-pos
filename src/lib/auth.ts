@@ -5,7 +5,15 @@ import { getActiveBusinessSlug } from "@/lib/business-server";
 import type { AppRole, StaffAccessScope, StudioRole } from "@/lib/types";
 import { getStudioAccessByEmail } from "@/lib/data";
 import { getSupabaseAuthServerClient } from "@/lib/supabase/auth-server";
-import { getSupabaseServerClient } from "@/lib/supabase/server";
+
+async function getCurrentRoleFromClient(authClient: NonNullable<Awaited<ReturnType<typeof getSupabaseAuthServerClient>>>) {
+  const { data, error } = await authClient.rpc("current_app_role");
+  if (error) {
+    return null as AppRole | null;
+  }
+
+  return (data as AppRole | null) ?? null;
+}
 
 export function hasRoleAccess(role: AppRole | null, allowedRoles: AppRole[]) {
   return !!role && (allowedRoles.includes(role) || (role === "owner" && allowedRoles.includes("admin")));
@@ -29,15 +37,7 @@ export const getCurrentUserWithRole = cache(async () => {
   }
 
   const tenantClient = authClient;
-  if (!tenantClient) {
-    return { user, role: null as AppRole | null, usingDemoData: false };
-  }
-
-  const { data: profile } = await tenantClient
-    .from("profiles")
-    .select("role")
-    .eq("id", user.id)
-    .maybeSingle();
+  const role = await getCurrentRoleFromClient(tenantClient);
 
   const activeSlug = (await getActiveBusinessSlug()) || DEFAULT_BUSINESS_SLUG;
   const { data: accessibleBusinesses } = await tenantClient
@@ -53,8 +53,8 @@ export const getCurrentUserWithRole = cache(async () => {
   if (!business) {
     return {
       user,
-      role: (profile?.role as AppRole | undefined) ?? null,
-      accessScope: ((profile?.role as AppRole | undefined) ?? null) === "owner" ? "business" : "branch",
+      role,
+      accessScope: role === "owner" ? "business" : "branch",
       primaryBranchId: null,
       branchAccessIds: [],
       usingDemoData: false,
@@ -68,7 +68,7 @@ export const getCurrentUserWithRole = cache(async () => {
     .eq("business_id", business.id);
 
   let accessScope: StaffAccessScope =
-    (profile?.role as AppRole | undefined) === "owner" ? "business" : "branch";
+    role === "owner" ? "business" : "branch";
   let primaryBranchId: string | null = null;
   let branchAccessIds: string[] = [];
 
@@ -86,7 +86,7 @@ export const getCurrentUserWithRole = cache(async () => {
 
   return {
     user,
-    role: (profile?.role as AppRole | undefined) ?? null,
+    role,
     accessScope,
     primaryBranchId,
     branchAccessIds,
