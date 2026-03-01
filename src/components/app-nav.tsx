@@ -216,6 +216,27 @@ export function AppNav({
     });
   const mobilePrimaryLinks = visibleLinks.slice(0, 4);
 
+  useEffect(() => {
+    const prefetchTargets = Array.from(new Set(visibleLinks.slice(0, 6).map((link) => link.href)));
+    if (prefetchTargets.length === 0) {
+      return;
+    }
+
+    const runPrefetch = () => {
+      for (const href of prefetchTargets) {
+        router.prefetch(href);
+      }
+    };
+
+    if (typeof window !== "undefined" && "requestIdleCallback" in window) {
+      const idleId = window.requestIdleCallback(runPrefetch, { timeout: 1500 });
+      return () => window.cancelIdleCallback(idleId);
+    }
+
+    const timeoutId = setTimeout(runPrefetch, 250);
+    return () => clearTimeout(timeoutId);
+  }, [router, visibleLinks]);
+
   return (
     <>
       <nav className="sticky top-0 z-30 border-b border-slate-200 bg-white/95 px-4 py-3 backdrop-blur md:hidden">

@@ -1184,37 +1184,52 @@ export async function listCouriers() {
   if (!scope.useLegacySchema && !scope.businessId) {
     return { couriers: [] as Courier[], usingDemoData: false };
   }
+  const cacheKey = `couriers:${scope.businessId ?? "none"}:${scope.branchId ?? "all"}:${scope.useLegacySchema ? "legacy" : "scoped"}`;
+  const reader = unstable_cache(
+    async () => {
+      const innerSupabase = getSupabaseServerClient();
+      if (!innerSupabase) {
+        return null;
+      }
 
-  let query = supabase
-    .from("couriers")
-    .select("id, business_id, branch_id, full_name, phone, is_active, created_at, updated_at")
-    .eq("is_active", true)
-    .order("full_name", { ascending: true });
+      let query = innerSupabase
+        .from("couriers")
+        .select("id, business_id, branch_id, full_name, phone, is_active, created_at, updated_at")
+        .eq("is_active", true)
+        .order("full_name", { ascending: true });
 
-  if (!scope.useLegacySchema && scope.businessId) {
-    query = query.eq("business_id", scope.businessId);
-  }
-  if (scope.branchId) {
-    query = query.eq("branch_id", scope.branchId);
-  }
+      if (!scope.useLegacySchema && scope.businessId) {
+        query = query.eq("business_id", scope.businessId);
+      }
+      if (scope.branchId) {
+        query = query.eq("branch_id", scope.branchId);
+      }
 
-  let data: unknown[] | null = null;
-  let error: { message: string } | null = null;
+      const result = (await withQueryTimeout(query)) as { data: unknown[] | null; error: { message: string } | null };
+      return {
+        data: result.data as unknown[] | null,
+        error: result.error as { message: string } | null,
+      };
+    },
+    [cacheKey],
+    { revalidate: 12, tags: ["couriers"] },
+  );
+
   try {
-    const result = (await withQueryTimeout(query)) as { data: unknown[] | null; error: { message: string } | null };
-    data = result.data as unknown[] | null;
-    error = result.error as { message: string } | null;
+    const cached = await reader();
+    if (!cached) {
+      return { couriers: demoCouriers, usingDemoData: true };
+    }
+    if (cached.error) {
+      if (cached.error.message.toLowerCase().includes("couriers")) {
+        return { couriers: [] as Courier[], usingDemoData: false };
+      }
+      return { couriers: [] as Courier[], usingDemoData: false };
+    }
+    return { couriers: (cached.data ?? []) as Courier[], usingDemoData: false };
   } catch {
     return { couriers: demoCouriers, usingDemoData: true };
   }
-  if (error) {
-    if (error.message.toLowerCase().includes("couriers")) {
-      return { couriers: [] as Courier[], usingDemoData: false };
-    }
-    return { couriers: [] as Courier[], usingDemoData: false };
-  }
-
-  return { couriers: (data ?? []) as Courier[], usingDemoData: false };
 }
 
 export async function createCourier(input: { fullName: string; phone?: string; businessId?: string | null }) {
@@ -1252,6 +1267,7 @@ export async function createCourier(input: { fullName: string; phone?: string; b
     details: { fullName: input.fullName.trim(), phone: input.phone?.trim() || null },
   });
 
+  revalidateOperationsCaches();
   return { ok: true, id: String(data?.id ?? "") };
 }
 
@@ -1303,6 +1319,7 @@ export async function updateCourier(input: {
     },
   });
 
+  revalidateOperationsCaches();
   return { ok: true };
 }
 
@@ -1351,6 +1368,7 @@ export async function deleteCourier(courierId: string) {
     action: "delete",
   });
 
+  revalidateOperationsCaches();
   return { ok: true };
 }
 
@@ -1397,63 +1415,94 @@ export async function getMenu(businessSlug?: string) {
       usingDemoData: false,
     };
   }
+  const cacheKey = `menu:${business?.id ?? "none"}:${useLegacySchema ? "legacy" : "scoped"}`;
+  const reader = unstable_cache(
+    async () => {
+      const innerSupabase = getSupabaseServerClient();
+      if (!innerSupabase) {
+        return null;
+      }
 
-  let categories: unknown[] | null = null;
-  let products: unknown[] | null = null;
-  let modifierGroups: unknown[] | null = null;
-  let modifierOptions: unknown[] | null = null;
-  let categoryError: { message: string } | null = null;
-  let productError: { message: string } | null = null;
-  let modifierGroupError: { message: string } | null = null;
-  let modifierOptionError: { message: string } | null = null;
+      const [categoryResult, productResult] = await withQueryTimeout(
+        Promise.all([
+          useLegacySchema
+            ? innerSupabase.from("categories").select("id, name, sort_order").order("sort_order", { ascending: true })
+            : innerSupabase
+                .from("categories")
+                .select("id, business_id, name, sort_order")
+                .eq("business_id", business!.id)
+                .order("sort_order", { ascending: true }),
+          useLegacySchema
+            ? innerSupabase
+                .from("products")
+                .select("id, category_id, name, price, stock_count, image_url, description, is_available")
+                .eq("is_available", true)
+                .gt("stock_count", 0)
+            : innerSupabase
+                .from("products")
+                .select("id, business_id, category_id, name, price, stock_count, image_url, description, is_available")
+                .eq("business_id", business!.id)
+                .eq("is_available", true)
+                .gt("stock_count", 0),
+        ]),
+      );
+
+      const categories = categoryResult.data as unknown[] | null;
+      const categoryError = categoryResult.error as { message: string } | null;
+      const products = productResult.data as unknown[] | null;
+      const productError = productResult.error as { message: string } | null;
+
+      const productIds = ((products ?? []) as Array<{ id: string }>).map((row) => row.id);
+      const [groupResult, optionResult] = await withQueryTimeout(
+        Promise.all([
+          productIds.length === 0
+            ? Promise.resolve({ data: [], error: null })
+            : innerSupabase
+                .from("product_modifier_groups")
+                .select("id, product_id, name, min_select, max_select, is_required, sort_order")
+                .in("product_id", productIds),
+          innerSupabase
+            .from("product_modifier_options")
+            .select("id, group_id, name, price_delta, is_default, sort_order"),
+        ]),
+      );
+
+      const modifierGroups = groupResult.data as unknown[] | null;
+      const modifierGroupError = groupResult.error as { message: string } | null;
+      const modifierOptions = optionResult.data as unknown[] | null;
+      const modifierOptionError = optionResult.error as { message: string } | null;
+
+      return {
+        hasError: Boolean(categoryError || productError || modifierGroupError || modifierOptionError),
+        categories: (categories ?? []) as Category[],
+        products: (products ?? []) as Product[],
+        modifierGroups: (modifierGroups ?? []) as ProductModifierGroup[],
+        modifierOptions: (modifierOptions ?? []) as ProductModifierOption[],
+      };
+    },
+    [cacheKey],
+    { revalidate: 20, tags: ["menu", "product-management"] },
+  );
 
   try {
-    const [categoryResult, productResult] = await withQueryTimeout(
-      Promise.all([
-        useLegacySchema
-          ? supabase.from("categories").select("id, name, sort_order").order("sort_order", { ascending: true })
-          : supabase
-              .from("categories")
-              .select("id, business_id, name, sort_order")
-              .eq("business_id", business!.id)
-              .order("sort_order", { ascending: true }),
-        useLegacySchema
-          ? supabase
-              .from("products")
-              .select("id, category_id, name, price, stock_count, image_url, description, is_available")
-              .eq("is_available", true)
-              .gt("stock_count", 0)
-          : supabase
-              .from("products")
-              .select("id, business_id, category_id, name, price, stock_count, image_url, description, is_available")
-              .eq("business_id", business!.id)
-              .eq("is_available", true)
-              .gt("stock_count", 0),
-      ]),
-    );
-    categories = categoryResult.data as unknown[] | null;
-    categoryError = categoryResult.error as { message: string } | null;
-    products = productResult.data as unknown[] | null;
-    productError = productResult.error as { message: string } | null;
+    const cached = await reader();
+    if (!cached || cached.hasError) {
+      return {
+        categories: demoCategories,
+        products: demoProducts,
+        modifierGroups: demoModifierGroups,
+        modifierOptions: demoModifierOptions,
+        usingDemoData: true,
+      };
+    }
 
-    const productIds = ((products ?? []) as Array<{ id: string }>).map((row) => row.id);
-    const [groupResult, optionResult] = await withQueryTimeout(
-      Promise.all([
-        productIds.length === 0
-          ? Promise.resolve({ data: [], error: null })
-          : supabase
-              .from("product_modifier_groups")
-              .select("id, product_id, name, min_select, max_select, is_required, sort_order")
-              .in("product_id", productIds),
-        supabase
-          .from("product_modifier_options")
-          .select("id, group_id, name, price_delta, is_default, sort_order"),
-      ]),
-    );
-    modifierGroups = groupResult.data as unknown[] | null;
-    modifierGroupError = groupResult.error as { message: string } | null;
-    modifierOptions = optionResult.data as unknown[] | null;
-    modifierOptionError = optionResult.error as { message: string } | null;
+    return {
+      categories: cached.categories,
+      products: cached.products,
+      modifierGroups: cached.modifierGroups,
+      modifierOptions: cached.modifierOptions,
+      usingDemoData: false,
+    };
   } catch {
     return {
       categories: demoCategories,
@@ -1463,24 +1512,6 @@ export async function getMenu(businessSlug?: string) {
       usingDemoData: true,
     };
   }
-
-  if (categoryError || productError || modifierGroupError || modifierOptionError) {
-    return {
-      categories: demoCategories,
-      products: demoProducts,
-      modifierGroups: demoModifierGroups,
-      modifierOptions: demoModifierOptions,
-      usingDemoData: true,
-    };
-  }
-
-  return {
-    categories: (categories ?? []) as Category[],
-    products: (products ?? []) as Product[],
-    modifierGroups: (modifierGroups ?? []) as ProductModifierGroup[],
-    modifierOptions: (modifierOptions ?? []) as ProductModifierOption[],
-    usingDemoData: false,
-  };
 }
 
 export async function getTableByQr(
@@ -1585,6 +1616,7 @@ export async function createTableRequest(input: {
     details: { qr: input.qrCodeIdentifier, requestType: input.requestType, note: input.note ?? null },
   });
 
+  revalidateOperationsCaches();
   return { ok: true, id: String(data.id), usingDemoData: false };
 }
 
@@ -1609,27 +1641,43 @@ export async function listTableRequests(status: "open" | "resolved" = "open") {
   if (!scope.useLegacySchema && !scope.businessId) {
     return { requests: [] as TableRequest[], usingDemoData: false };
   }
+  const cacheKey = `table-requests:${scope.businessId ?? "none"}:${scope.branchId ?? "all"}:${status}:${scope.useLegacySchema ? "legacy" : "scoped"}`;
+  const reader = unstable_cache(
+    async () => {
+      const innerSupabase = getSupabaseServerClient();
+      if (!innerSupabase) {
+        return null;
+      }
 
-  let query = supabase
-    .from("table_requests")
-    .select("id, table_id, request_type, status, note, created_at, resolved_at, tables(table_number)")
-    .eq("status", status)
-    .order("created_at", { ascending: false });
+      let query = innerSupabase
+        .from("table_requests")
+        .select("id, table_id, request_type, status, note, created_at, resolved_at, tables(table_number)")
+        .eq("status", status)
+        .order("created_at", { ascending: false });
 
-  if (!scope.useLegacySchema && scope.businessId) {
-    query = query.eq("business_id", scope.businessId);
-  }
-  if (scope.branchId) {
-    query = query.eq("branch_id", scope.branchId);
-  }
+      if (!scope.useLegacySchema && scope.businessId) {
+        query = query.eq("business_id", scope.businessId);
+      }
+      if (scope.branchId) {
+        query = query.eq("branch_id", scope.branchId);
+      }
 
-  const { data, error } = await query;
+      const result = await query;
+      return {
+        data: result.data as TableRequestRow[] | null,
+        error: result.error as { message: string } | null,
+      };
+    },
+    [cacheKey],
+    { revalidate: 8, tags: ["table-requests"] },
+  );
 
-  if (error) {
+  const cached = await reader();
+  if (!cached || cached.error) {
     return { requests: [] as TableRequest[], usingDemoData: false };
   }
 
-  const requests = ((data ?? []) as TableRequestRow[]).map((row) => ({
+  const requests = ((cached.data ?? []) as TableRequestRow[]).map((row) => ({
     id: row.id,
     branch_id: (row as { branch_id?: string | null }).branch_id ?? scope.branchId ?? null,
     table_id: row.table_id,
@@ -1664,6 +1712,7 @@ export async function resolveTableRequest(requestId: string) {
     entityId: requestId,
     action: "resolve",
   });
+  revalidateOperationsCaches();
   return { ok: true };
 }
 
@@ -1881,6 +1930,336 @@ async function getOrderPaymentSummaryMap(supabase: ReturnType<typeof getSupabase
   return map;
 }
 
+function buildGroupedOrderItems(
+  itemRows: OrderItemRow[],
+  modifierRows: OrderItemModifierRow[],
+) {
+  const groupedItems = new Map<string, OrderItem[]>();
+  const groupedModifiers = new Map<string, OrderItemModifierSelection[]>();
+
+  for (const row of modifierRows) {
+    const key = `${row.order_id}:${row.product_id ?? row.product_name}`;
+    if (!groupedModifiers.has(key)) {
+      groupedModifiers.set(key, []);
+    }
+    groupedModifiers.get(key)?.push({
+      group_name: row.modifier_group_name,
+      option_name: row.modifier_option_name,
+      price_delta: Number(row.price_delta),
+      quantity: Number(row.quantity),
+    });
+  }
+
+  for (const row of itemRows) {
+    if (!groupedItems.has(row.order_id)) {
+      groupedItems.set(row.order_id, []);
+    }
+    const modifierKey = `${row.order_id}:${row.product_id ?? row.product_name}`;
+    groupedItems.get(row.order_id)?.push({
+      product_id: row.product_id ?? "unknown-product",
+      name: row.product_name,
+      quantity: row.quantity,
+      unit_price: Number(row.unit_price),
+      line_total: Number(row.line_total),
+      modifiers: groupedModifiers.get(modifierKey) ?? [],
+    });
+  }
+
+  return groupedItems;
+}
+
+function mapDetailedOrders(
+  orders: OrderRow[],
+  groupedItems: Map<string, OrderItem[]>,
+  paymentSummary: Map<string, { paid: number; refunds: number; net: number; count: number }>,
+) {
+  return orders.map((row) => ({
+    id: row.id,
+    branch_id: row.branch_id ?? null,
+    table_id: row.table_id,
+    table_number: getTableNumber(row.tables),
+    channel: row.channel ?? "dine_in",
+    customer_name: row.customer_name ?? null,
+    customer_phone: row.customer_phone ?? null,
+    delivery_address: row.delivery_address ?? null,
+    delivery_note: row.delivery_note ?? null,
+    courier_id: row.courier_id ?? null,
+    courier_name: row.courier_name ?? null,
+    courier_phone: row.courier_phone ?? null,
+    fulfillment_status: row.fulfillment_status ?? "not_applicable",
+    amount_paid: paymentSummary.get(row.id)?.net ?? 0,
+    remaining_balance: Math.max(0, Number(row.final_price ?? row.total_price) - (paymentSummary.get(row.id)?.net ?? 0)),
+    payment_count: paymentSummary.get(row.id)?.count ?? 0,
+    items: groupedItems.get(row.id) ?? [],
+    total_price: Number(row.total_price),
+    discount_amount: Number(row.discount_amount ?? 0),
+    service_fee: Number(row.service_fee ?? 0),
+    final_price: Number(row.final_price ?? row.total_price),
+    status: row.status,
+    created_at: row.created_at,
+  })) as Order[];
+}
+
+async function getCachedOrderSummaryRows(input: {
+  businessId: string | null;
+  branchId: string | null;
+  useLegacySchema: boolean;
+  statuses: OrderStatus[];
+  includePaymentSummary: boolean;
+  limit: number | null;
+  ascending: boolean;
+}) {
+  const statusKey = [...input.statuses].sort().join(",");
+  const cacheKey = `orders-summary:${input.businessId ?? "none"}:${input.branchId ?? "all"}:${statusKey}:${input.includePaymentSummary ? "payments" : "no-payments"}:${input.limit ?? "all"}:${input.ascending ? "asc" : "desc"}:${input.useLegacySchema ? "legacy" : "scoped"}`;
+  const reader = unstable_cache(
+    async () => {
+      const supabase = getSupabaseServerClient();
+      if (!supabase) {
+        return null;
+      }
+
+      let ordersQuery = supabase
+        .from("orders")
+        .select("id, branch_id, table_id, total_price, discount_amount, service_fee, final_price, channel, customer_name, customer_phone, delivery_address, delivery_note, courier_id, courier_name, courier_phone, fulfillment_status, status, created_at, tables(table_number)")
+        .in("status", input.statuses)
+        .order("created_at", { ascending: input.ascending });
+
+      if (!input.useLegacySchema && input.businessId) {
+        ordersQuery = ordersQuery.eq("business_id", input.businessId);
+      }
+      if (input.branchId) {
+        ordersQuery = ordersQuery.eq("branch_id", input.branchId);
+      }
+      if (typeof input.limit === "number") {
+        ordersQuery = ordersQuery.limit(input.limit);
+      }
+
+      const { data: ordersData, error: ordersError } = await ordersQuery;
+      if (ordersError) {
+        return { orders: [] as Order[], hasError: true };
+      }
+
+      const orders = (ordersData ?? []) as OrderRow[];
+      if (orders.length === 0) {
+        return { orders: [] as Order[], hasError: false };
+      }
+
+      const orderIds = orders.map((row) => row.id);
+      const paymentSummary = input.includePaymentSummary
+        ? await getOrderPaymentSummaryMap(supabase, orderIds)
+        : new Map<string, { paid: number; refunds: number; net: number; count: number }>();
+
+      return {
+        orders: orders.map((row) => ({
+          id: row.id,
+          branch_id: row.branch_id ?? null,
+          table_id: row.table_id,
+          table_number: getTableNumber(row.tables),
+          channel: row.channel ?? "dine_in",
+          customer_name: row.customer_name ?? null,
+          customer_phone: row.customer_phone ?? null,
+          delivery_address: row.delivery_address ?? null,
+          delivery_note: row.delivery_note ?? null,
+          courier_id: row.courier_id ?? null,
+          courier_name: row.courier_name ?? null,
+          courier_phone: row.courier_phone ?? null,
+          fulfillment_status: row.fulfillment_status ?? "not_applicable",
+          amount_paid: paymentSummary.get(row.id)?.net ?? 0,
+          remaining_balance: Math.max(0, Number(row.final_price ?? row.total_price) - (paymentSummary.get(row.id)?.net ?? 0)),
+          payment_count: paymentSummary.get(row.id)?.count ?? 0,
+          items: [],
+          total_price: Number(row.total_price),
+          discount_amount: Number(row.discount_amount ?? 0),
+          service_fee: Number(row.service_fee ?? 0),
+          final_price: Number(row.final_price ?? row.total_price),
+          status: row.status,
+          created_at: row.created_at,
+        })) as Order[],
+        hasError: false,
+      };
+    },
+    [cacheKey],
+    { revalidate: 10, tags: ["orders-summary"] },
+  );
+
+  return reader();
+}
+
+async function getCachedOrderReceiptRow(input: {
+  orderId: string;
+}) {
+  const cacheKey = `order-receipt:${input.orderId}`;
+  const reader = unstable_cache(
+    async () => {
+      const supabase = getSupabaseServerClient();
+      if (!supabase) {
+        return null;
+      }
+
+      const { data, error } = await supabase
+        .from("orders")
+        .select("id, table_id, total_price, discount_amount, service_fee, final_price, channel, customer_name, customer_phone, delivery_address, delivery_note, courier_id, courier_name, courier_phone, fulfillment_status, status, created_at, tables(table_number)")
+        .eq("id", input.orderId)
+        .maybeSingle();
+
+      if (error || !data) {
+        return { hasError: true as const, order: null as Order | null };
+      }
+
+      const paymentSummary = await getOrderPaymentSummaryMap(supabase, [input.orderId]);
+      const [{ data: itemRows }, { data: modifierRows }] = await Promise.all([
+        supabase
+          .from("order_items")
+          .select("product_id, product_name, quantity, unit_price, line_total")
+          .eq("order_id", input.orderId),
+        supabase
+          .from("order_item_modifiers")
+          .select("product_id, product_name, modifier_group_name, modifier_option_name, price_delta, quantity")
+          .eq("order_id", input.orderId),
+      ]);
+
+      const groupedModifiers = new Map<string, OrderItemModifierSelection[]>();
+      for (const row of (modifierRows ?? []) as Array<{
+        product_id: string | null;
+        product_name: string;
+        modifier_group_name: string;
+        modifier_option_name: string;
+        price_delta: number;
+        quantity: number;
+      }>) {
+        const key = `${row.product_id ?? row.product_name}`;
+        if (!groupedModifiers.has(key)) {
+          groupedModifiers.set(key, []);
+        }
+        groupedModifiers.get(key)?.push({
+          group_name: row.modifier_group_name,
+          option_name: row.modifier_option_name,
+          price_delta: Number(row.price_delta),
+          quantity: Number(row.quantity),
+        });
+      }
+
+      const tableInfo = data.tables as { table_number: number } | { table_number: number }[] | null;
+      const tableNumber = Array.isArray(tableInfo) ? tableInfo[0]?.table_number : tableInfo?.table_number;
+
+      return {
+        hasError: false as const,
+        order: {
+          id: data.id as string,
+          table_id: (data.table_id as string | null) ?? null,
+          table_number: tableNumber,
+          channel: (data.channel as OrderChannel | null) ?? "dine_in",
+          customer_name: (data.customer_name as string | null) ?? null,
+          customer_phone: (data.customer_phone as string | null) ?? null,
+          delivery_address: (data.delivery_address as string | null) ?? null,
+          delivery_note: (data.delivery_note as string | null) ?? null,
+          courier_id: (data.courier_id as string | null) ?? null,
+          courier_name: (data.courier_name as string | null) ?? null,
+          courier_phone: (data.courier_phone as string | null) ?? null,
+          fulfillment_status: (data.fulfillment_status as FulfillmentStatus | null) ?? "not_applicable",
+          amount_paid: paymentSummary.get(input.orderId)?.net ?? 0,
+          remaining_balance: Math.max(0, Number(data.final_price ?? data.total_price) - (paymentSummary.get(input.orderId)?.net ?? 0)),
+          payment_count: paymentSummary.get(input.orderId)?.count ?? 0,
+          items: ((itemRows ?? []) as Array<{
+            product_id: string | null;
+            product_name: string;
+            quantity: number;
+            unit_price: number;
+            line_total: number;
+          }>).map((row) => ({
+            product_id: row.product_id ?? "unknown-product",
+            name: row.product_name,
+            quantity: Number(row.quantity),
+            unit_price: Number(row.unit_price),
+            line_total: Number(row.line_total),
+            modifiers: groupedModifiers.get(`${row.product_id ?? row.product_name}`) ?? [],
+          })),
+          total_price: Number(data.total_price),
+          discount_amount: Number(data.discount_amount ?? 0),
+          service_fee: Number(data.service_fee ?? 0),
+          final_price: Number(data.final_price ?? data.total_price),
+          status: data.status as OrderStatus,
+          created_at: data.created_at as string,
+        } as Order,
+      };
+    },
+    [cacheKey],
+    { revalidate: 8, tags: ["order-receipt", "orders-summary"] },
+  );
+
+  return reader();
+}
+
+async function getCachedKitchenOrdersSnapshot(input: {
+  businessId: string | null;
+  branchId: string | null;
+  useLegacySchema: boolean;
+}) {
+  const statusKey = ["pending", "preparing", "served"].join(",");
+  const cacheKey = `kitchen-orders:${input.businessId ?? "none"}:${input.branchId ?? "all"}:${statusKey}:${input.useLegacySchema ? "legacy" : "scoped"}`;
+  const reader = unstable_cache(
+    async () => {
+      const supabase = getSupabaseServerClient();
+      if (!supabase) {
+        return null;
+      }
+
+      let ordersQuery = supabase
+        .from("orders")
+        .select("id, branch_id, table_id, total_price, discount_amount, service_fee, final_price, channel, customer_name, customer_phone, delivery_address, delivery_note, courier_id, courier_name, courier_phone, fulfillment_status, status, created_at, tables(table_number)")
+        .in("status", ["pending", "preparing", "served"])
+        .order("created_at", { ascending: true });
+
+      if (!input.useLegacySchema && input.businessId) {
+        ordersQuery = ordersQuery.eq("business_id", input.businessId);
+      }
+      if (input.branchId) {
+        ordersQuery = ordersQuery.eq("branch_id", input.branchId);
+      }
+
+      const { data: ordersData, error: ordersError } = await ordersQuery;
+      if (ordersError) {
+        return { orders: [] as Order[], hasError: true };
+      }
+
+      const orders = (ordersData ?? []) as OrderRow[];
+      if (orders.length === 0) {
+        return { orders: [] as Order[], hasError: false };
+      }
+
+      const orderIds = orders.map((row) => row.id);
+      const [{ data: itemRows, error: itemError }, { data: modifierRows }] = await Promise.all([
+        supabase
+          .from("order_items")
+          .select("order_id, product_id, product_name, quantity, unit_price, line_total")
+          .in("order_id", orderIds),
+        supabase
+          .from("order_item_modifiers")
+          .select("order_id, product_id, product_name, modifier_group_name, modifier_option_name, price_delta, quantity")
+          .in("order_id", orderIds),
+      ]);
+
+      if (itemError) {
+        return { orders: [] as Order[], hasError: true };
+      }
+
+      const groupedItems = buildGroupedOrderItems(
+        ((itemRows ?? []) as OrderItemRow[]),
+        ((modifierRows ?? []) as OrderItemModifierRow[]),
+      );
+
+      return {
+        orders: mapDetailedOrders(orders, groupedItems, new Map()),
+        hasError: false,
+      };
+    },
+    [cacheKey],
+    { revalidate: 8, tags: ["kitchen-orders", "orders-summary"] },
+  );
+
+  return reader();
+}
+
 export async function listOrders(
   statuses: OrderStatus[],
   options?: { includeItems?: boolean; includePaymentSummary?: boolean; limit?: number; ascending?: boolean },
@@ -1900,6 +2279,25 @@ export async function listOrders(
   const scope = await getDefaultBusinessScope();
   if (!scope.useLegacySchema && !scope.businessId) {
     return { orders: [] as Order[], usingDemoData: false };
+  }
+
+  if (!includeItems) {
+    const cached = await getCachedOrderSummaryRows({
+      businessId: scope.businessId,
+      branchId: scope.branchId,
+      useLegacySchema: scope.useLegacySchema,
+      statuses,
+      includePaymentSummary,
+      limit: typeof limit === "number" ? limit : null,
+      ascending,
+    });
+
+    if (cached && !cached.hasError) {
+      return {
+        orders: cached.orders,
+        usingDemoData: false,
+      };
+    }
   }
 
   let ordersQuery = supabase
@@ -2022,64 +2420,45 @@ export async function listOrders(
     };
   }
 
-  const groupedItems = new Map<string, OrderItem[]>();
-  const groupedModifiers = new Map<string, OrderItemModifierSelection[]>();
-
-  for (const row of (modifierRows ?? []) as OrderItemModifierRow[]) {
-    const key = `${row.order_id}:${row.product_id ?? row.product_name}`;
-    if (!groupedModifiers.has(key)) {
-      groupedModifiers.set(key, []);
-    }
-    groupedModifiers.get(key)?.push({
-      group_name: row.modifier_group_name,
-      option_name: row.modifier_option_name,
-      price_delta: Number(row.price_delta),
-      quantity: Number(row.quantity),
-    });
-  }
-
-  for (const row of (itemRows ?? []) as OrderItemRow[]) {
-    if (!groupedItems.has(row.order_id)) {
-      groupedItems.set(row.order_id, []);
-    }
-    const modifierKey = `${row.order_id}:${row.product_id ?? row.product_name}`;
-    groupedItems.get(row.order_id)?.push({
-      product_id: row.product_id ?? "unknown-product",
-      name: row.product_name,
-      quantity: row.quantity,
-      unit_price: Number(row.unit_price),
-      line_total: Number(row.line_total),
-      modifiers: groupedModifiers.get(modifierKey) ?? [],
-    });
-  }
+  const groupedItems = buildGroupedOrderItems(
+    ((itemRows ?? []) as OrderItemRow[]),
+    ((modifierRows ?? []) as OrderItemModifierRow[]),
+  );
 
   return {
-    orders: orders.map((row) => ({
-      id: row.id,
-      table_id: row.table_id,
-      table_number: getTableNumber(row.tables),
-      channel: row.channel ?? "dine_in",
-      customer_name: row.customer_name ?? null,
-      customer_phone: row.customer_phone ?? null,
-      delivery_address: row.delivery_address ?? null,
-      delivery_note: row.delivery_note ?? null,
-      courier_id: row.courier_id ?? null,
-      courier_name: row.courier_name ?? null,
-      courier_phone: row.courier_phone ?? null,
-      fulfillment_status: row.fulfillment_status ?? "not_applicable",
-      amount_paid: paymentSummary.get(row.id)?.net ?? 0,
-      remaining_balance: Math.max(0, Number(row.final_price ?? row.total_price) - (paymentSummary.get(row.id)?.net ?? 0)),
-      payment_count: paymentSummary.get(row.id)?.count ?? 0,
-      items: groupedItems.get(row.id) ?? [],
-      total_price: Number(row.total_price),
-      discount_amount: Number(row.discount_amount ?? 0),
-      service_fee: Number(row.service_fee ?? 0),
-      final_price: Number(row.final_price ?? row.total_price),
-      status: row.status,
-      created_at: row.created_at,
-    })),
+    orders: mapDetailedOrders(orders, groupedItems, paymentSummary),
     usingDemoData: false,
   };
+}
+
+export async function getKitchenOrdersSnapshot() {
+  const supabase = getSupabaseServerClient();
+  if (!supabase) {
+    return {
+      orders: demoOrders.filter((order) => ["pending", "preparing", "served"].includes(order.status)),
+      usingDemoData: true,
+    };
+  }
+
+  const scope = await getDefaultBusinessScope();
+  if (!scope.useLegacySchema && !scope.businessId) {
+    return { orders: [] as Order[], usingDemoData: false };
+  }
+
+  const cached = await getCachedKitchenOrdersSnapshot({
+    businessId: scope.businessId,
+    branchId: scope.branchId,
+    useLegacySchema: scope.useLegacySchema,
+  });
+
+  if (cached && !cached.hasError) {
+    return {
+      orders: cached.orders,
+      usingDemoData: false,
+    };
+  }
+
+  return listOrders(["pending", "preparing", "served"], { includePaymentSummary: false });
 }
 
 export async function listLatestOrdersByTableIds(tableIds: string[]) {
@@ -2202,6 +2581,11 @@ export async function getOrderReceipt(orderId: string) {
   if (!supabase) {
     const order = demoOrders.find((row) => row.id === orderId) ?? null;
     return { order, usingDemoData: true };
+  }
+
+  const cached = await getCachedOrderReceiptRow({ orderId });
+  if (cached && !cached.hasError) {
+    return { order: cached.order, usingDemoData: false };
   }
 
   const { data, error } = await supabase
@@ -2949,6 +3333,7 @@ type ProductIngredientRow = {
 
 function revalidateProductManagementCaches() {
   revalidateTag("product-management", "max");
+  revalidateTag("kitchen-catalog", "max");
 }
 
 function revalidateReportCaches() {
@@ -2960,6 +3345,11 @@ function revalidateOperationsCaches() {
   revalidateTag("table-map", "max");
   revalidateTag("dashboard-snapshot", "max");
   revalidateTag("ops-signals", "max");
+  revalidateTag("orders-summary", "max");
+  revalidateTag("kitchen-orders", "max");
+  revalidateTag("table-requests", "max");
+  revalidateTag("couriers", "max");
+  revalidateTag("order-receipt", "max");
 }
 
 async function getCachedProductManagementRow(input: {
@@ -3118,18 +3508,40 @@ export async function getKitchenCatalogSnapshot() {
       usingDemoData: false,
     };
   }
+  const cacheKey = `kitchen-catalog:${scope.businessId ?? "none"}:${scope.useLegacySchema ? "legacy" : "scoped"}`;
+  const reader = unstable_cache(
+    async () => {
+      const innerSupabase = getSupabaseServerClient();
+      if (!innerSupabase) {
+        return null;
+      }
 
-  let categoriesQuery = supabase.from("categories").select("id, name").order("sort_order", { ascending: true });
-  let productsQuery = supabase.from("products").select("id, category_id");
+      let categoriesQuery = innerSupabase.from("categories").select("id, name").order("sort_order", { ascending: true });
+      let productsQuery = innerSupabase.from("products").select("id, category_id");
 
-  if (!scope.useLegacySchema && scope.businessId) {
-    categoriesQuery = categoriesQuery.eq("business_id", scope.businessId);
-    productsQuery = productsQuery.eq("business_id", scope.businessId);
-  }
+      if (!scope.useLegacySchema && scope.businessId) {
+        categoriesQuery = categoriesQuery.eq("business_id", scope.businessId);
+        productsQuery = productsQuery.eq("business_id", scope.businessId);
+      }
+
+      const [categoryResult, productResult] = await withQueryTimeout(Promise.all([categoriesQuery, productsQuery]));
+      if (categoryResult.error || productResult.error) {
+        return { hasError: true as const, categories: [] as Array<Pick<Category, "id" | "name">>, products: [] as Array<Pick<Product, "id" | "category_id">> };
+      }
+
+      return {
+        hasError: false as const,
+        categories: (categoryResult.data ?? []) as Array<Pick<Category, "id" | "name">>,
+        products: (productResult.data ?? []) as Array<Pick<Product, "id" | "category_id">>,
+      };
+    },
+    [cacheKey],
+    { revalidate: 30, tags: ["kitchen-catalog", "product-management"] },
+  );
 
   try {
-    const [categoryResult, productResult] = await withQueryTimeout(Promise.all([categoriesQuery, productsQuery]));
-    if (categoryResult.error || productResult.error) {
+    const cached = await reader();
+    if (!cached || cached.hasError) {
       return {
         categories: demoCategories,
         products: demoProducts.map((product) => ({
@@ -3141,8 +3553,8 @@ export async function getKitchenCatalogSnapshot() {
     }
 
     return {
-      categories: ((categoryResult.data ?? []) as Array<Pick<Category, "id" | "name">>),
-      products: ((productResult.data ?? []) as Array<Pick<Product, "id" | "category_id">>),
+      categories: cached.categories,
+      products: cached.products,
       usingDemoData: false,
     };
   } catch {
@@ -4850,6 +5262,68 @@ export async function getOpsMetricsSnapshot() {
     openServiceRequests,
     delayedKitchenOrders,
     criticalKitchenOrders,
+  };
+}
+
+export async function getOpsPageSnapshot() {
+  const supabase = getSupabaseServerClient();
+  if (!supabase) {
+    const dashboard = await getDashboardData();
+    const setup = await getSetupChecklistSummary();
+    const pendingOrders = demoOrders.filter((order) => order.status === "pending" || order.status === "preparing");
+    const delayedKitchenOrders = pendingOrders.filter((order) => isKitchenOrderDelayed(order)).length;
+    const criticalKitchenOrders = pendingOrders.filter((order) => isKitchenOrderCritical(order)).length;
+
+    return {
+      dashboard,
+      ops: {
+        openOrders: dashboard.metrics.openOrders,
+        pendingOrders: dashboard.metrics.pending,
+        preparingOrders: dashboard.metrics.preparing,
+        servedOrders: dashboard.metrics.served,
+        occupiedTables: dashboard.metrics.occupiedTables,
+        emptyTables: dashboard.metrics.emptyTables,
+        todayRevenue: Number(dashboard.metrics.todayRevenue.toFixed(2)),
+        openServiceRequests: 0,
+        delayedKitchenOrders,
+        criticalKitchenOrders,
+      },
+      setup,
+    };
+  }
+
+  const [dashboard, scope, setup] = await Promise.all([
+    getDashboardData(),
+    getDefaultBusinessScope(),
+    getSetupChecklistSummary(),
+  ]);
+
+  const cached = await getCachedOpsSignalsRow({
+    businessId: scope.businessId,
+    branchId: scope.branchId,
+    useLegacySchema: scope.useLegacySchema,
+  });
+
+  const orders = cached?.orders ?? [];
+  const openServiceRequests = cached?.openServiceRequests ?? 0;
+  const delayedKitchenOrders = orders.filter((order) => isKitchenOrderDelayed(order)).length;
+  const criticalKitchenOrders = orders.filter((order) => isKitchenOrderCritical(order)).length;
+
+  return {
+    dashboard,
+    ops: {
+      openOrders: dashboard.metrics.openOrders,
+      pendingOrders: dashboard.metrics.pending,
+      preparingOrders: dashboard.metrics.preparing,
+      servedOrders: dashboard.metrics.served,
+      occupiedTables: dashboard.metrics.occupiedTables,
+      emptyTables: dashboard.metrics.emptyTables,
+      todayRevenue: Number(dashboard.metrics.todayRevenue.toFixed(2)),
+      openServiceRequests,
+      delayedKitchenOrders,
+      criticalKitchenOrders,
+    },
+    setup,
   };
 }
 

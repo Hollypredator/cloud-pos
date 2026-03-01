@@ -8,6 +8,7 @@ import {
   assignOrderCourier,
   createCourier,
   deleteCourier,
+  getOrderReceipt,
   listCouriers,
   listOrders,
   markDeliveryCompleted,
@@ -245,16 +246,17 @@ export default async function DeliveryPage({
     );
   }
   const { feedback, tone, order: selectedOrderId, courier: selectedCourierId } = await searchParams;
-  const [{ orders, usingDemoData: usingOrdersDemo }, { couriers, usingDemoData: usingCouriersDemo }] = await Promise.all([
-    listOrders(["pending", "preparing", "served"]),
+  const [{ orders, usingDemoData: usingOrdersDemo }, { couriers, usingDemoData: usingCouriersDemo }, selectedOrderResult] = await Promise.all([
+    listOrders(["pending", "preparing", "served"], { includeItems: false }),
     listCouriers(),
+    typeof selectedOrderId === "string" ? getOrderReceipt(selectedOrderId) : Promise.resolve({ order: null, usingDemoData: false }),
   ]);
 
   const deliveryOrders = orders.filter((order) => order.channel === "delivery");
   const awaitingDispatch = deliveryOrders.filter((order) => order.fulfillment_status === "awaiting_dispatch");
   const outForDelivery = deliveryOrders.filter((order) => order.fulfillment_status === "out_for_delivery");
   const completed = deliveryOrders.filter((order) => order.fulfillment_status === "completed");
-  const selectedOrder = selectedOrderId ? deliveryOrders.find((order) => order.id === selectedOrderId) ?? null : null;
+  const selectedOrder = selectedOrderResult.order;
   const selectedCourier = selectedCourierId ? couriers.find((courier) => courier.id === selectedCourierId) ?? null : null;
 
   return (

@@ -3,7 +3,7 @@ import Link from "next/link";
 import { BackofficePage, ContentCard, EmptyPanel, FeatureLockedState, SummaryCard, WorkflowGuide } from "@/components/backoffice-ui";
 import { LiveOpsBridge } from "@/components/live-ops-bridge";
 import { requireRole } from "@/lib/auth";
-import { getKitchenCatalogSnapshot, listOrders, updateOrderStatus } from "@/lib/data";
+import { getKitchenCatalogSnapshot, getKitchenOrdersSnapshot, updateOrderStatus } from "@/lib/data";
 import { getFeatureAccess } from "@/lib/plan-access";
 import type { Order, OrderItem } from "@/lib/types";
 
@@ -119,7 +119,7 @@ export default async function KitchenPage() {
     );
   }
   const [{ orders, usingDemoData }, { products, categories }] = await Promise.all([
-    listOrders(["pending", "preparing", "served"], { includePaymentSummary: false }),
+    getKitchenOrdersSnapshot(),
     getKitchenCatalogSnapshot(),
   ]);
 

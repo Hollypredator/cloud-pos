@@ -1,5 +1,6 @@
 import Link from "next/link";
 import { redirect } from "next/navigation";
+import { PublicTopNav } from "@/components/public-top-nav";
 import { getCurrentUserWithRole } from "@/lib/auth";
 
 export default async function LoginPage({
@@ -46,26 +47,7 @@ export default async function LoginPage({
       <div className="absolute bottom-[-4rem] right-[-4rem] h-80 w-80 rounded-full bg-cyan-300/25 blur-3xl" />
 
       <div className="relative mx-auto flex w-full max-w-6xl justify-end">
-        <div className="flex flex-wrap gap-3">
-          <Link
-            href="/"
-            className="rounded-2xl border border-slate-300/80 bg-white/70 px-4 py-2 text-sm font-semibold text-slate-800 shadow-sm backdrop-blur transition hover:bg-white"
-          >
-            Ana Sayfa
-          </Link>
-          <Link
-            href="/blog"
-            className="rounded-2xl border border-slate-300/80 bg-white/70 px-4 py-2 text-sm font-semibold text-slate-800 shadow-sm backdrop-blur transition hover:bg-white"
-          >
-            Blog
-          </Link>
-          <Link
-            href="/demo"
-            className="rounded-2xl border border-slate-300/80 bg-white/70 px-4 py-2 text-sm font-semibold text-slate-800 shadow-sm backdrop-blur transition hover:bg-white"
-          >
-            Demo
-          </Link>
-        </div>
+        <PublicTopNav items={[{ href: "/", label: "Ana Sayfa" }, { href: "/blog", label: "Blog" }, { href: "/demo", label: "Demo" }]} />
       </div>
 
       <div className="relative mx-auto flex min-h-[calc(100vh-5rem)] w-full max-w-6xl items-center">

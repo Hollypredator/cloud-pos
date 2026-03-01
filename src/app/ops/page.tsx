@@ -4,7 +4,7 @@ import { LiveOpsBridge } from "@/components/live-ops-bridge";
 import { BackofficePage, ContentCard, EmptyPanel, SidebarPanel, SummaryCard, WorkflowGuide } from "@/components/backoffice-ui";
 import { getCurrentUserWithRole } from "@/lib/auth";
 import { getActiveBusinessSlug } from "@/lib/business-server";
-import { getDashboardData, getOpsMetricsSnapshot, getSetupChecklistSummary } from "@/lib/data";
+import { getOpsPageSnapshot } from "@/lib/data";
 
 function statusTone(status: string) {
   if (status === "pending") return "bg-amber-100 text-amber-800";
@@ -50,12 +50,15 @@ function checklistTone(done: boolean) {
 
 export default async function OpsPage() {
   const activeBusinessSlug = await getActiveBusinessSlug();
-  const [{ metrics, recentOrders, lowStockProducts, usingDemoData }, auth, ops, setup] = await Promise.all([
-    getDashboardData(),
+  const [opsSnapshot, auth] = await Promise.all([
+    getOpsPageSnapshot(),
     getCurrentUserWithRole(),
-    getOpsMetricsSnapshot(),
-    getSetupChecklistSummary(),
   ]);
+  const {
+    dashboard: { metrics, recentOrders, lowStockProducts, usingDemoData },
+    ops,
+    setup,
+  } = opsSnapshot;
 
   if (!auth.usingDemoData && !auth.user) {
     redirect("/login");

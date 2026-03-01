@@ -1,6 +1,7 @@
 "use client";
 
 import Link from "next/link";
+import { PublicTopNav } from "@/components/public-top-nav";
 import type { DemoPageContent, DemoSectionStyle } from "@/lib/demo";
 
 type DemoRendererEditorOptions = {
@@ -134,18 +135,15 @@ function renderHeaderActions(content: DemoPageContent, previewMode?: boolean) {
 
   return (
     <>
-      <Link href="/" className="rounded-2xl border border-white/20 px-4 py-2 text-sm font-semibold text-white">
-        Ana Sayfa
-      </Link>
-      <Link href="/blog" className="rounded-2xl border border-white/20 px-4 py-2 text-sm font-semibold text-white">
-        Blog
-      </Link>
-      <Link href="/ops" className="rounded-2xl border border-white/20 px-4 py-2 text-sm font-semibold text-white">
-        {content.opsCtaLabel}
-      </Link>
-      <Link href="/login" className="rounded-2xl bg-white px-4 py-2 text-sm font-semibold text-slate-950">
-        {content.loginCtaLabel}
-      </Link>
+      <PublicTopNav
+        items={[
+          { href: "/", label: "Ana Sayfa" },
+          { href: "/blog", label: "Blog" },
+          { href: "/ops", label: content.opsCtaLabel },
+          { href: "/login", label: content.loginCtaLabel },
+        ]}
+        tone="dark"
+      />
     </>
   );
 }

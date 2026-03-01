@@ -1,4 +1,5 @@
 import Link from "next/link";
+import { PublicTopNav } from "@/components/public-top-nav";
 import { listBlogPosts } from "@/lib/data";
 
 function formatDate(value: string | null, fallback: string) {
@@ -28,9 +29,7 @@ export default async function BlogIndexPage() {
               Restoran operasyonu, QR siparis, kasa akislar ve sahada ogrendigimiz karar kaliplariyla ilgili yayinlar.
             </p>
           </div>
-          <Link href="/" className="rounded-2xl border border-slate-300 bg-white px-4 py-2 text-sm font-semibold text-slate-700">
-            Ana Sayfa
-          </Link>
+          <PublicTopNav />
         </header>
 
         {featured ? (
