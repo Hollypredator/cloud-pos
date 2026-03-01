@@ -2920,6 +2920,80 @@ type ProductIngredientRow = {
   ingredients: { id: string; name: string; unit: string } | { id: string; name: string; unit: string }[] | null;
 };
 
+function revalidateProductManagementCaches() {
+  revalidateTag("product-management", "max");
+}
+
+function revalidateReportCaches() {
+  revalidateTag("sales-report-summary", "max");
+  revalidateTag("financial-insights", "max");
+}
+
+async function getCachedProductManagementRow(input: {
+  businessId: string | null;
+  useLegacySchema: boolean;
+}) {
+  const cacheKey = `product-management:${input.businessId ?? "none"}:${input.useLegacySchema ? "legacy" : "scoped"}`;
+  const reader = unstable_cache(
+    async () => {
+      const supabase = getSupabaseServerClient();
+      if (!supabase) {
+        return null;
+      }
+
+      const [
+        { data: categories },
+        { data: products },
+        { data: ingredients },
+        { data: productIngredients, error: productIngredientsError },
+        { data: modifierGroups, error: modifierGroupError },
+        { data: modifierOptions, error: modifierOptionError },
+      ] = await Promise.all([
+        (input.useLegacySchema
+          ? supabase.from("categories").select("id, name, sort_order")
+          : supabase.from("categories").select("id, business_id, name, sort_order").eq("business_id", input.businessId!))
+          .order("sort_order", { ascending: true }),
+        (input.useLegacySchema
+          ? supabase.from("products").select("id, category_id, name, price, stock_count, image_url, description, is_available")
+          : supabase
+              .from("products")
+              .select("id, business_id, category_id, name, price, stock_count, image_url, description, is_available")
+              .eq("business_id", input.businessId!))
+          .order("created_at", { ascending: false }),
+        supabase.from("ingredients").select("id, name, unit").order("name", { ascending: true }),
+        supabase.from("product_ingredients").select("product_id, ingredient_id, quantity, ingredients(id, name, unit)"),
+        supabase
+          .from("product_modifier_groups")
+          .select("id, product_id, name, min_select, max_select, is_required, sort_order")
+          .order("sort_order", { ascending: true }),
+        supabase
+          .from("product_modifier_options")
+          .select("id, group_id, name, price_delta, is_default, sort_order")
+          .order("sort_order", { ascending: true }),
+      ]);
+
+      return {
+        categories: (categories ?? []) as Category[],
+        products: (products ?? []) as Product[],
+        ingredients: (ingredients ?? []) as Ingredient[],
+        modifierGroups: (modifierGroups ?? []) as ProductModifierGroup[],
+        modifierOptions: (modifierOptions ?? []) as ProductModifierOption[],
+        productIngredients: ((productIngredients ?? []) as ProductIngredientRow[]).map((row) => ({
+          product_id: row.product_id,
+          ingredient_id: row.ingredient_id,
+          quantity: Number(row.quantity),
+          ingredient: Array.isArray(row.ingredients) ? row.ingredients[0] ?? null : row.ingredients,
+        })),
+        hasError: Boolean(productIngredientsError || modifierGroupError || modifierOptionError),
+      };
+    },
+    [cacheKey],
+    { revalidate: 15, tags: ["product-management"] },
+  );
+
+  return reader();
+}
+
 export async function getProductManagementData() {
   const supabase = getSupabaseServerClient();
   if (!supabase) {
@@ -2957,41 +3031,12 @@ export async function getProductManagementData() {
     };
   }
 
-  const [
-    { data: categories },
-    { data: products },
-    { data: ingredients },
-    { data: productIngredients, error },
-    { data: modifierGroups, error: modifierGroupError },
-    { data: modifierOptions, error: modifierOptionError },
-  ] =
-    await Promise.all([
-      (scope.useLegacySchema
-        ? supabase.from("categories").select("id, name, sort_order")
-        : supabase.from("categories").select("id, business_id, name, sort_order").eq("business_id", scope.businessId!))
-        .order("sort_order", { ascending: true }),
-      (scope.useLegacySchema
-        ? supabase.from("products").select("id, category_id, name, price, stock_count, image_url, description, is_available")
-        : supabase
-            .from("products")
-            .select("id, business_id, category_id, name, price, stock_count, image_url, description, is_available")
-            .eq("business_id", scope.businessId!))
-        .order("created_at", { ascending: false }),
-      supabase.from("ingredients").select("id, name, unit").order("name", { ascending: true }),
-      supabase
-        .from("product_ingredients")
-        .select("product_id, ingredient_id, quantity, ingredients(id, name, unit)"),
-      supabase
-        .from("product_modifier_groups")
-        .select("id, product_id, name, min_select, max_select, is_required, sort_order")
-        .order("sort_order", { ascending: true }),
-      supabase
-        .from("product_modifier_options")
-        .select("id, group_id, name, price_delta, is_default, sort_order")
-        .order("sort_order", { ascending: true }),
-    ]);
+  const cached = await getCachedProductManagementRow({
+    businessId: scope.businessId,
+    useLegacySchema: scope.useLegacySchema,
+  });
 
-  if (error || modifierGroupError || modifierOptionError) {
+  if (!cached || cached.hasError) {
     return {
       categories: demoCategories,
       products: demoProducts,
@@ -3009,17 +3054,12 @@ export async function getProductManagementData() {
   }
 
   return {
-    categories: (categories ?? []) as Category[],
-    products: (products ?? []) as Product[],
-    ingredients: (ingredients ?? []) as Ingredient[],
-    modifierGroups: (modifierGroups ?? []) as ProductModifierGroup[],
-    modifierOptions: (modifierOptions ?? []) as ProductModifierOption[],
-    productIngredients: ((productIngredients ?? []) as ProductIngredientRow[]).map((row) => ({
-      product_id: row.product_id,
-      ingredient_id: row.ingredient_id,
-      quantity: Number(row.quantity),
-      ingredient: Array.isArray(row.ingredients) ? row.ingredients[0] ?? null : row.ingredients,
-    })),
+    categories: cached.categories,
+    products: cached.products,
+    ingredients: cached.ingredients,
+    modifierGroups: cached.modifierGroups,
+    modifierOptions: cached.modifierOptions,
+    productIngredients: cached.productIngredients,
     usingDemoData: false,
   };
 }
@@ -3119,6 +3159,7 @@ export async function createProductModifierGroup(input: {
     details: { productId: input.productId, name: input.name.trim() },
   });
 
+  revalidateProductManagementCaches();
   return { ok: true };
 }
 
@@ -3155,6 +3196,7 @@ export async function createProductModifierOption(input: {
     details: { groupId: input.groupId, name: input.name.trim(), priceDelta: Number(input.priceDelta ?? 0) },
   });
 
+  revalidateProductManagementCaches();
   return { ok: true };
 }
 
@@ -3169,6 +3211,7 @@ export async function deleteProductModifierGroup(groupId: string) {
     return { ok: false, error: error.message };
   }
 
+  revalidateProductManagementCaches();
   return { ok: true };
 }
 
@@ -3183,6 +3226,7 @@ export async function deleteProductModifierOption(optionId: string) {
     return { ok: false, error: error.message };
   }
 
+  revalidateProductManagementCaches();
   return { ok: true };
 }
 
@@ -3246,6 +3290,7 @@ export async function createProduct(input: {
     details: { name: input.name, categoryId: input.categoryId, price: input.price, stockCount: input.stockCount },
   });
 
+  revalidateProductManagementCaches();
   return { ok: true, id: data.id as string };
 }
 
@@ -3299,6 +3344,7 @@ export async function updateProduct(input: {
     },
   });
 
+  revalidateProductManagementCaches();
   return { ok: true };
 }
 
@@ -3322,6 +3368,7 @@ export async function deleteProduct(productId: string) {
     entityId: productId,
     action: "delete",
   });
+  revalidateProductManagementCaches();
   return { ok: true };
 }
 
@@ -3341,6 +3388,7 @@ export async function createIngredient(name: string, unit: string) {
     return { ok: false, error: error.message };
   }
 
+  revalidateProductManagementCaches();
   return { ok: true, id: data.id as string };
 }
 
@@ -3354,6 +3402,7 @@ export async function deleteIngredient(ingredientId: string) {
   if (error) {
     return { ok: false, error: error.message };
   }
+  revalidateProductManagementCaches();
   return { ok: true };
 }
 
@@ -3376,6 +3425,7 @@ export async function attachIngredientToProduct(input: {
   if (error) {
     return { ok: false, error: error.message };
   }
+  revalidateProductManagementCaches();
   return { ok: true };
 }
 
@@ -3393,6 +3443,7 @@ export async function detachIngredientFromProduct(productId: string, ingredientI
   if (error) {
     return { ok: false, error: error.message };
   }
+  revalidateProductManagementCaches();
   return { ok: true };
 }
 
@@ -3872,6 +3923,7 @@ export async function createCategory(name: string, sortOrder: number) {
     action: "create",
     details: { name, sortOrder },
   });
+  revalidateProductManagementCaches();
   return { ok: true, id: data.id as string };
 }
 
@@ -3896,6 +3948,7 @@ export async function updateCategorySortOrder(categoryId: string, sortOrder: num
     action: "sort_order_update",
     details: { sortOrder },
   });
+  revalidateProductManagementCaches();
   return { ok: true };
 }
 
@@ -3929,6 +3982,7 @@ export async function reorderCategories(categoryIds: string[]) {
     details: { categoryIds },
   });
 
+  revalidateProductManagementCaches();
   return { ok: true };
 }
 
@@ -3965,6 +4019,7 @@ export async function deleteCategory(categoryId: string) {
     entityId: categoryId,
     action: "delete",
   });
+  revalidateProductManagementCaches();
   return { ok: true };
 }
 
@@ -4001,6 +4056,7 @@ export async function bulkUpdateCategoryPrices(categoryId: string, percent: numb
     }
   }
 
+  revalidateProductManagementCaches();
   return { ok: true, updatedCount: updates.length };
 }
 
@@ -4061,63 +4117,314 @@ export async function listAuditLogs(limit = 200) {
   };
 }
 
+async function getCachedSalesReportSummaryRow(input: {
+  businessId: string | null;
+  branchId: string | null;
+  useLegacySchema: boolean;
+  days: number;
+}) {
+  const cacheKey = `sales-report-summary:${input.businessId ?? "none"}:${input.branchId ?? "all"}:${input.days}:${input.useLegacySchema ? "legacy" : "scoped"}`;
+  const reader = unstable_cache(
+    async () => {
+      const supabase = getSupabaseServerClient();
+      if (!supabase) {
+        return null;
+      }
+
+      const start = new Date();
+      start.setHours(0, 0, 0, 0);
+      start.setDate(start.getDate() - (input.days - 1));
+
+      let query = supabase
+        .from("payments")
+        .select("amount, payment_type, created_at")
+        .gte("created_at", start.toISOString())
+        .order("created_at", { ascending: true });
+
+      if (!input.useLegacySchema && input.businessId) {
+        query = query.eq("business_id", input.businessId);
+      }
+      if (input.branchId) {
+        query = query.eq("branch_id", input.branchId);
+      }
+
+      const { data, error } = await query;
+      if (error) {
+        return { rows: [] as Array<{ day: string; sales: number; refunds: number; net: number }>, hasError: true };
+      }
+
+      const map = new Map<string, { sales: number; refunds: number }>();
+      for (let i = 0; i < input.days; i += 1) {
+        const day = new Date(start);
+        day.setDate(start.getDate() + i);
+        map.set(day.toISOString().slice(0, 10), { sales: 0, refunds: 0 });
+      }
+
+      for (const row of data ?? []) {
+        const day = String(row.created_at).slice(0, 10);
+        if (!map.has(day)) {
+          map.set(day, { sales: 0, refunds: 0 });
+        }
+        const bucket = map.get(day)!;
+        const amount = Number(row.amount);
+        if (row.payment_type === "refund") {
+          bucket.refunds += amount;
+        } else {
+          bucket.sales += amount;
+        }
+      }
+
+      return {
+        rows: Array.from(map.entries()).map(([day, values]) => ({
+          day,
+          sales: values.sales,
+          refunds: values.refunds,
+          net: values.sales - values.refunds,
+        })),
+        hasError: false,
+      };
+    },
+    [cacheKey],
+    { revalidate: 15, tags: ["sales-report-summary"] },
+  );
+
+  return reader();
+}
+
 export async function getSalesReportSummary(days = 7) {
   const supabase = getSupabaseServerClient();
   if (!supabase) {
     return { rows: [] as Array<{ day: string; sales: number; refunds: number; net: number }>, usingDemoData: true };
   }
 
-  const start = new Date();
-  start.setHours(0, 0, 0, 0);
-  start.setDate(start.getDate() - (days - 1));
-
   const scope = await getDefaultBusinessScope();
-  let query = supabase
-    .from("payments")
-    .select("amount, payment_type, created_at")
-    .gte("created_at", start.toISOString())
-    .order("created_at", { ascending: true });
-  if (!scope.useLegacySchema && scope.businessId) {
-    query = query.eq("business_id", scope.businessId);
-  }
-  if (scope.branchId) {
-    query = query.eq("branch_id", scope.branchId);
-  }
-  const { data, error } = await query;
+  const safeDays = Math.max(1, Math.min(90, Math.floor(days)));
+  const cached = await getCachedSalesReportSummaryRow({
+    businessId: scope.businessId,
+    branchId: scope.branchId,
+    useLegacySchema: scope.useLegacySchema,
+    days: safeDays,
+  });
 
-  if (error) {
+  if (!cached || cached.hasError) {
     return { rows: [] as Array<{ day: string; sales: number; refunds: number; net: number }>, usingDemoData: false };
   }
 
-  const map = new Map<string, { sales: number; refunds: number }>();
-  for (let i = 0; i < days; i += 1) {
-    const day = new Date(start);
-    day.setDate(start.getDate() + i);
-    map.set(day.toISOString().slice(0, 10), { sales: 0, refunds: 0 });
-  }
+  return { rows: cached.rows, usingDemoData: false };
+}
 
-  for (const row of data ?? []) {
-    const day = String(row.created_at).slice(0, 10);
-    if (!map.has(day)) {
-      map.set(day, { sales: 0, refunds: 0 });
-    }
-    const bucket = map.get(day)!;
-    const amount = Number(row.amount);
-    if (row.payment_type === "refund") {
-      bucket.refunds += amount;
-    } else {
-      bucket.sales += amount;
-    }
-  }
+async function getCachedFinancialInsightsRow(input: {
+  businessId: string | null;
+  branchId: string | null;
+  useLegacySchema: boolean;
+  days: number;
+}) {
+  const cacheKey = `financial-insights:${input.businessId ?? "none"}:${input.branchId ?? "all"}:${input.days}:${input.useLegacySchema ? "legacy" : "scoped"}`;
+  const reader = unstable_cache(
+    async () => {
+      const supabase = getSupabaseServerClient();
+      if (!supabase) {
+        return null;
+      }
 
-  const rows = Array.from(map.entries()).map(([day, values]) => ({
-    day,
-    sales: values.sales,
-    refunds: values.refunds,
-    net: values.sales - values.refunds,
-  }));
+      const start = new Date();
+      start.setHours(0, 0, 0, 0);
+      start.setDate(start.getDate() - (input.days - 1));
 
-  return { rows, usingDemoData: false };
+      const paymentBase = supabase
+        .from("payments")
+        .select("id, order_id, payment_type, method, amount, note, created_at")
+        .gte("created_at", start.toISOString())
+        .order("created_at", { ascending: false });
+      const paidBase = supabase
+        .from("orders")
+        .select("id, discount_amount, service_fee, final_price, updated_at")
+        .eq("status", "paid")
+        .gte("updated_at", start.toISOString());
+      const servedBase = supabase.from("orders").select("id, final_price").eq("status", "served");
+      const cancelledBase = supabase
+        .from("orders")
+        .select("id")
+        .eq("status", "cancelled")
+        .gte("updated_at", start.toISOString());
+
+      const [
+        { data: payments, error: paymentsError },
+        { data: paidOrders, error: paidOrdersError },
+        { data: servedOrders, error: servedOrdersError },
+        { data: cancelledOrders, error: cancelledOrdersError },
+      ] = await Promise.all([
+        !input.useLegacySchema && input.businessId
+          ? (input.branchId
+              ? paymentBase.eq("business_id", input.businessId).eq("branch_id", input.branchId)
+              : paymentBase.eq("business_id", input.businessId))
+          : paymentBase,
+        !input.useLegacySchema && input.businessId
+          ? (input.branchId
+              ? paidBase.eq("business_id", input.businessId).eq("branch_id", input.branchId)
+              : paidBase.eq("business_id", input.businessId))
+          : paidBase,
+        !input.useLegacySchema && input.businessId
+          ? (input.branchId
+              ? servedBase.eq("business_id", input.businessId).eq("branch_id", input.branchId)
+              : servedBase.eq("business_id", input.businessId))
+          : servedBase,
+        !input.useLegacySchema && input.businessId
+          ? (input.branchId
+              ? cancelledBase.eq("business_id", input.businessId).eq("branch_id", input.branchId)
+              : cancelledBase.eq("business_id", input.businessId))
+          : cancelledBase,
+      ]);
+
+      if (paymentsError || paidOrdersError || servedOrdersError || cancelledOrdersError) {
+        return {
+          hasError: true,
+          summary: {
+            grossSales: 0,
+            refunds: 0,
+            netSales: 0,
+            discountTotal: 0,
+            serviceFeeTotal: 0,
+            paidOrderCount: 0,
+            averageTicket: 0,
+            outstandingReceivables: 0,
+            cancelledCount: 0,
+          },
+          methodBreakdown: [] as Array<{ method: string; sales: number; refunds: number; net: number }>,
+          hourlySales: [] as Array<{ hour: string; sales: number }>,
+          topProducts: [] as Array<{ productName: string; qty: number; revenue: number }>,
+          recentPayments: [] as Array<{
+            id: string;
+            order_id: string;
+            payment_type: string;
+            method: string;
+            amount: number;
+            note: string | null;
+            created_at: string;
+          }>,
+        };
+      }
+
+      const paymentRows = (payments ?? []) as Array<{
+        id: string;
+        order_id: string;
+        payment_type: "sale" | "refund";
+        method: "cash" | "card" | "mixed";
+        amount: number;
+        note: string | null;
+        created_at: string;
+      }>;
+
+      let grossSales = 0;
+      let refunds = 0;
+      const methodMap = new Map<string, { sales: number; refunds: number }>([
+        ["cash", { sales: 0, refunds: 0 }],
+        ["card", { sales: 0, refunds: 0 }],
+        ["mixed", { sales: 0, refunds: 0 }],
+      ]);
+      const hourMap = new Map<string, number>();
+      for (let i = 0; i < 24; i += 1) {
+        hourMap.set(String(i).padStart(2, "0"), 0);
+      }
+
+      for (const row of paymentRows) {
+        const amount = Number(row.amount);
+        const methodBucket = methodMap.get(row.method) ?? { sales: 0, refunds: 0 };
+        if (row.payment_type === "refund") {
+          refunds += amount;
+          methodBucket.refunds += amount;
+        } else {
+          grossSales += amount;
+          methodBucket.sales += amount;
+          const hour = new Date(row.created_at).getHours().toString().padStart(2, "0");
+          hourMap.set(hour, (hourMap.get(hour) ?? 0) + amount);
+        }
+        methodMap.set(row.method, methodBucket);
+      }
+
+      const paidOrderRows = (paidOrders ?? []) as Array<{
+        id: string;
+        discount_amount: number;
+        service_fee: number;
+        final_price: number;
+      }>;
+      const paidOrderIds = paidOrderRows.map((row) => row.id);
+
+      let topProducts: Array<{ productName: string; qty: number; revenue: number }> = [];
+      if (paidOrderIds.length > 0) {
+        const { data: itemRows } = await supabase
+          .from("order_items")
+          .select("order_id, product_name, quantity, line_total")
+          .in("order_id", paidOrderIds);
+
+        const productMap = new Map<string, { qty: number; revenue: number }>();
+        for (const row of (itemRows ?? []) as Array<{
+          order_id: string;
+          product_name: string;
+          quantity: number;
+          line_total: number;
+        }>) {
+          const bucket = productMap.get(row.product_name) ?? { qty: 0, revenue: 0 };
+          bucket.qty += Number(row.quantity);
+          bucket.revenue += Number(row.line_total);
+          productMap.set(row.product_name, bucket);
+        }
+        topProducts = Array.from(productMap.entries())
+          .map(([productName, values]) => ({
+            productName,
+            qty: values.qty,
+            revenue: values.revenue,
+          }))
+          .sort((a, b) => b.revenue - a.revenue)
+          .slice(0, 10);
+      }
+
+      const discountTotal = paidOrderRows.reduce((sum, row) => sum + Number(row.discount_amount ?? 0), 0);
+      const serviceFeeTotal = paidOrderRows.reduce((sum, row) => sum + Number(row.service_fee ?? 0), 0);
+      const paidOrderCount = paidOrderRows.length;
+      const averageTicket = paidOrderCount > 0 ? grossSales / paidOrderCount : 0;
+      const servedOrderRows = (servedOrders ?? []) as Array<{ id: string; final_price: number }>;
+      const servedPaymentSummary = await getOrderPaymentSummaryMap(
+        supabase,
+        servedOrderRows.map((row) => row.id),
+      );
+      const outstandingReceivables = servedOrderRows.reduce((sum, row) => {
+        const remaining = Number(row.final_price ?? 0) - (servedPaymentSummary.get(row.id)?.net ?? 0);
+        return sum + Math.max(0, remaining);
+      }, 0);
+
+      return {
+        hasError: false,
+        summary: {
+          grossSales,
+          refunds,
+          netSales: grossSales - refunds,
+          discountTotal,
+          serviceFeeTotal,
+          paidOrderCount,
+          averageTicket,
+          outstandingReceivables,
+          cancelledCount: (cancelledOrders ?? []).length,
+        },
+        methodBreakdown: Array.from(methodMap.entries()).map(([method, values]) => ({
+          method,
+          sales: values.sales,
+          refunds: values.refunds,
+          net: values.sales - values.refunds,
+        })),
+        hourlySales: Array.from(hourMap.entries()).map(([hour, sales]) => ({
+          hour,
+          sales,
+        })),
+        topProducts,
+        recentPayments: paymentRows.slice(0, 60),
+      };
+    },
+    [cacheKey],
+    { revalidate: 15, tags: ["financial-insights"] },
+  );
+
+  return reader();
 }
 
 export async function getFinancialInsights(days = 7) {
@@ -4151,50 +4458,16 @@ export async function getFinancialInsights(days = 7) {
     };
   }
 
-  const safeDays = Math.max(1, Math.min(90, Math.floor(days)));
-  const start = new Date();
-  start.setHours(0, 0, 0, 0);
-  start.setDate(start.getDate() - (safeDays - 1));
-
   const scope = await getDefaultBusinessScope();
-  const paymentBase = supabase
-    .from("payments")
-    .select("id, order_id, payment_type, method, amount, note, created_at")
-    .gte("created_at", start.toISOString())
-    .order("created_at", { ascending: false });
-  const paidBase = supabase
-    .from("orders")
-    .select("id, discount_amount, service_fee, final_price, updated_at")
-    .eq("status", "paid")
-    .gte("updated_at", start.toISOString());
-  const servedBase = supabase.from("orders").select("id, final_price").eq("status", "served");
-  const cancelledBase = supabase
-    .from("orders")
-    .select("id")
-    .eq("status", "cancelled")
-    .gte("updated_at", start.toISOString());
+  const safeDays = Math.max(1, Math.min(90, Math.floor(days)));
+  const cached = await getCachedFinancialInsightsRow({
+    businessId: scope.businessId,
+    branchId: scope.branchId,
+    useLegacySchema: scope.useLegacySchema,
+    days: safeDays,
+  });
 
-  const [
-    { data: payments, error: paymentsError },
-    { data: paidOrders, error: paidOrdersError },
-    { data: servedOrders, error: servedOrdersError },
-    { data: cancelledOrders, error: cancelledOrdersError },
-  ] = await Promise.all([
-    !scope.useLegacySchema && scope.businessId
-      ? (scope.branchId ? paymentBase.eq("business_id", scope.businessId).eq("branch_id", scope.branchId) : paymentBase.eq("business_id", scope.businessId))
-      : paymentBase,
-    !scope.useLegacySchema && scope.businessId
-      ? (scope.branchId ? paidBase.eq("business_id", scope.businessId).eq("branch_id", scope.branchId) : paidBase.eq("business_id", scope.businessId))
-      : paidBase,
-    !scope.useLegacySchema && scope.businessId
-      ? (scope.branchId ? servedBase.eq("business_id", scope.businessId).eq("branch_id", scope.branchId) : servedBase.eq("business_id", scope.businessId))
-      : servedBase,
-    !scope.useLegacySchema && scope.businessId
-      ? (scope.branchId ? cancelledBase.eq("business_id", scope.businessId).eq("branch_id", scope.branchId) : cancelledBase.eq("business_id", scope.businessId))
-      : cancelledBase,
-  ]);
-
-  if (paymentsError || paidOrdersError || servedOrdersError || cancelledOrdersError) {
+  if (!cached || cached.hasError) {
     return {
       usingDemoData: false,
       summary: {
@@ -4223,123 +4496,13 @@ export async function getFinancialInsights(days = 7) {
     };
   }
 
-  const paymentRows = (payments ?? []) as Array<{
-    id: string;
-    order_id: string;
-    payment_type: "sale" | "refund";
-    method: "cash" | "card" | "mixed";
-    amount: number;
-    note: string | null;
-    created_at: string;
-  }>;
-
-  let grossSales = 0;
-  let refunds = 0;
-  const methodMap = new Map<string, { sales: number; refunds: number }>([
-    ["cash", { sales: 0, refunds: 0 }],
-    ["card", { sales: 0, refunds: 0 }],
-    ["mixed", { sales: 0, refunds: 0 }],
-  ]);
-  const hourMap = new Map<string, number>();
-  for (let i = 0; i < 24; i += 1) {
-    hourMap.set(String(i).padStart(2, "0"), 0);
-  }
-
-  for (const row of paymentRows) {
-    const amount = Number(row.amount);
-    const methodBucket = methodMap.get(row.method) ?? { sales: 0, refunds: 0 };
-    if (row.payment_type === "refund") {
-      refunds += amount;
-      methodBucket.refunds += amount;
-    } else {
-      grossSales += amount;
-      methodBucket.sales += amount;
-      const hour = new Date(row.created_at).getHours().toString().padStart(2, "0");
-      hourMap.set(hour, (hourMap.get(hour) ?? 0) + amount);
-    }
-    methodMap.set(row.method, methodBucket);
-  }
-
-  const paidOrderRows = (paidOrders ?? []) as Array<{
-    id: string;
-    discount_amount: number;
-    service_fee: number;
-    final_price: number;
-  }>;
-  const paidOrderIds = paidOrderRows.map((row) => row.id);
-
-  let topProducts: Array<{ productName: string; qty: number; revenue: number }> = [];
-  if (paidOrderIds.length > 0) {
-    const { data: itemRows } = await supabase
-      .from("order_items")
-      .select("order_id, product_name, quantity, line_total")
-      .in("order_id", paidOrderIds);
-
-    const productMap = new Map<string, { qty: number; revenue: number }>();
-    for (const row of (itemRows ?? []) as Array<{
-      order_id: string;
-      product_name: string;
-      quantity: number;
-      line_total: number;
-    }>) {
-      const bucket = productMap.get(row.product_name) ?? { qty: 0, revenue: 0 };
-      bucket.qty += Number(row.quantity);
-      bucket.revenue += Number(row.line_total);
-      productMap.set(row.product_name, bucket);
-    }
-    topProducts = Array.from(productMap.entries())
-      .map(([productName, values]) => ({
-        productName,
-        qty: values.qty,
-        revenue: values.revenue,
-      }))
-      .sort((a, b) => b.revenue - a.revenue)
-      .slice(0, 10);
-  }
-
-  const discountTotal = paidOrderRows.reduce((sum, row) => sum + Number(row.discount_amount ?? 0), 0);
-  const serviceFeeTotal = paidOrderRows.reduce((sum, row) => sum + Number(row.service_fee ?? 0), 0);
-  const paidOrderCount = paidOrderRows.length;
-  const averageTicket = paidOrderCount > 0 ? grossSales / paidOrderCount : 0;
-  const servedOrderRows = (servedOrders ?? []) as Array<{ id: string; final_price: number }>;
-  const servedPaymentSummary = await getOrderPaymentSummaryMap(
-    supabase,
-    servedOrderRows.map((row) => row.id),
-  );
-  const outstandingReceivables = servedOrderRows.reduce((sum, row) => {
-    const remaining = Number(row.final_price ?? 0) - (servedPaymentSummary.get(row.id)?.net ?? 0);
-    return sum + Math.max(0, remaining);
-  }, 0);
-
-  const methodBreakdown = Array.from(methodMap.entries()).map(([method, values]) => ({
-    method,
-    sales: values.sales,
-    refunds: values.refunds,
-    net: values.sales - values.refunds,
-  }));
-
-  const hourlySales = Array.from(hourMap.entries()).map(([hour, sales]) => ({
-    hour,
-    sales,
-  }));
-
   return {
     usingDemoData: false,
-    summary: {
-      grossSales,
-      refunds,
-      netSales: grossSales - refunds,
-      discountTotal,
-      serviceFeeTotal,
-      paidOrderCount,
-      averageTicket,
-      outstandingReceivables,
-      cancelledCount: (cancelledOrders ?? []).length,
-    },
-    methodBreakdown,
-    hourlySales,
-    topProducts,
-    recentPayments: paymentRows.slice(0, 60),
+    summary: cached.summary,
+    methodBreakdown: cached.methodBreakdown,
+    hourlySales: cached.hourlySales,
+    topProducts: cached.topProducts,
+    recentPayments: cached.recentPayments,
   };
 }
 
