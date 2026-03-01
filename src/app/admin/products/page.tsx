@@ -35,7 +35,6 @@ async function addCategoryAction(formData: FormData) {
   await createCategory(name, sortOrder);
   revalidatePath("/admin/products");
   revalidatePath("/admin/categories");
-  revalidatePath("/qr/table-1");
 }
 
 async function reorderCategoriesAction(ids: string[]) {
@@ -44,7 +43,6 @@ async function reorderCategoriesAction(ids: string[]) {
   await reorderCategories(ids);
   revalidatePath("/admin/products");
   revalidatePath("/admin/categories");
-  revalidatePath("/qr/table-1");
 }
 
 async function deleteCategoryAction(formData: FormData) {
@@ -59,7 +57,6 @@ async function deleteCategoryAction(formData: FormData) {
   await deleteCategory(categoryId);
   revalidatePath("/admin/products");
   revalidatePath("/admin/categories");
-  revalidatePath("/qr/table-1");
 }
 
 async function addProductAction(formData: FormData) {
@@ -87,7 +84,6 @@ async function addProductAction(formData: FormData) {
     isAvailable: true,
   });
   revalidatePath("/admin/products");
-  revalidatePath("/qr/table-1");
 }
 
 async function updateProductAction(formData: FormData) {
@@ -124,7 +120,6 @@ async function updateProductAction(formData: FormData) {
     isAvailable,
   });
   revalidatePath("/admin/products");
-  revalidatePath("/qr/table-1");
 }
 
 async function deleteProductAction(formData: FormData) {
@@ -138,7 +133,6 @@ async function deleteProductAction(formData: FormData) {
 
   await deleteProduct(productId);
   revalidatePath("/admin/products");
-  revalidatePath("/qr/table-1");
 }
 
 async function bulkPriceAction(formData: FormData) {
@@ -153,7 +147,6 @@ async function bulkPriceAction(formData: FormData) {
 
   await bulkUpdateCategoryPrices(categoryId, percent);
   revalidatePath("/admin/products");
-  revalidatePath("/qr/table-1");
 }
 
 async function addIngredientAction(formData: FormData) {

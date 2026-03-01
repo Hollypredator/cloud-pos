@@ -16,64 +16,72 @@ export function hasExactRoleAccess(role: AppRole | null, allowedRoles: AppRole[]
 }
 
 export const getCurrentUserWithRole = cache(async () => {
-  const supabase = await getSupabaseAuthServerClient();
-  if (!supabase) {
+  const authClient = await getSupabaseAuthServerClient();
+  if (!authClient) {
     return { user: null, role: null as AppRole | null, usingDemoData: true };
   }
 
   const {
     data: { user },
-  } = await supabase.auth.getUser();
+  } = await authClient.auth.getUser();
   if (!user) {
     return { user: null, role: null as AppRole | null, usingDemoData: false };
   }
 
-  const serverClient = getSupabaseServerClient();
-  if (!serverClient) {
+  const tenantClient = authClient;
+  if (!tenantClient) {
     return { user, role: null as AppRole | null, usingDemoData: false };
   }
 
-  const { data: profile } = await serverClient
+  const { data: profile } = await tenantClient
     .from("profiles")
     .select("role")
     .eq("id", user.id)
     .maybeSingle();
 
   const activeSlug = (await getActiveBusinessSlug()) || DEFAULT_BUSINESS_SLUG;
-  const { data: business } = await serverClient
+  const { data: accessibleBusinesses } = await tenantClient
     .from("businesses")
-    .select("id")
-    .eq("slug", activeSlug)
-    .maybeSingle();
+    .select("id, slug")
+    .eq("is_active", true);
+
+  const business =
+    (accessibleBusinesses ?? []).find((item) => item.slug === activeSlug) ??
+    (accessibleBusinesses ?? [])[0] ??
+    null;
+
+  if (!business) {
+    return {
+      user,
+      role: (profile?.role as AppRole | undefined) ?? null,
+      accessScope: ((profile?.role as AppRole | undefined) ?? null) === "owner" ? "business" : "branch",
+      primaryBranchId: null,
+      branchAccessIds: [],
+      usingDemoData: false,
+    };
+  }
+
+  const { data: accessRows } = await tenantClient
+    .from("staff_branch_access")
+    .select("branch_id, access_scope, is_primary")
+    .eq("profile_id", user.id)
+    .eq("business_id", business.id);
 
   let accessScope: StaffAccessScope =
     (profile?.role as AppRole | undefined) === "owner" ? "business" : "branch";
   let primaryBranchId: string | null = null;
   let branchAccessIds: string[] = [];
 
-  if (business?.id) {
-    const { data: accessRows } = await serverClient
-      .from("staff_branch_access")
-      .select("branch_id, access_scope, is_primary")
-      .eq("profile_id", user.id)
-      .eq("business_id", business.id);
+  const rows = (accessRows ?? []) as Array<{
+    branch_id: string | null;
+    access_scope: StaffAccessScope;
+    is_primary: boolean;
+  }>;
 
-    const rows = (accessRows ?? []) as Array<{
-      branch_id: string | null;
-      access_scope: StaffAccessScope;
-      is_primary: boolean;
-    }>;
-
-    if (rows.length > 0) {
-      accessScope = rows.some((row) => row.access_scope === "business") ? "business" : "branch";
-      branchAccessIds = rows
-        .map((row) => row.branch_id)
-        .filter((branchId): branchId is string => Boolean(branchId));
-      primaryBranchId =
-        rows.find((row) => row.is_primary && row.branch_id)?.branch_id ??
-        branchAccessIds[0] ??
-        null;
-    }
+  if (rows.length > 0) {
+    accessScope = rows.some((row) => row.access_scope === "business") ? "business" : "branch";
+    branchAccessIds = rows.map((row) => row.branch_id).filter((branchId): branchId is string => Boolean(branchId));
+    primaryBranchId = rows.find((row) => row.is_primary && row.branch_id)?.branch_id ?? branchAccessIds[0] ?? null;
   }
 
   return {

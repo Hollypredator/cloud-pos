@@ -22,6 +22,9 @@ npm install
 NEXT_PUBLIC_SUPABASE_URL=...
 NEXT_PUBLIC_SUPABASE_ANON_KEY=...
 SUPABASE_SERVICE_ROLE_KEY=...
+STUDIO_ADMIN_EMAILS=admin@example.com
+APP_HOST=
+STUDIO_HOST=
 NEXT_PUBLIC_APP_URL=http://localhost:3000
 NEXT_PUBLIC_DEFAULT_BUSINESS_SLUG=default
 ALERT_WEBHOOK_URL=...
@@ -53,13 +56,22 @@ NEXT_PUBLIC_VAT_RATE=10
 - `supabase/migrations/20260228_add_site_content.sql`
 - `supabase/migrations/20260228_add_app_settings.sql`
 - `supabase/migrations/20260228_add_media_library.sql`
+- `supabase/migrations/20260228_add_media_storage_fields.sql`
 - `supabase/migrations/20260228_add_blog_posts.sql`
 - `supabase/migrations/20260228_add_sales_lead_notes.sql`
 - `supabase/migrations/20260228_add_order_channels.sql`
 - `supabase/migrations/20260228_add_couriers.sql`
 - `supabase/migrations/20260228_add_product_modifiers.sql`
 - `supabase/migrations/20260228_add_studio_access.sql`
+- `supabase/migrations/20260228_add_studio_roles.sql`
 - `supabase/migrations/20260228_harden_studio_policies.sql`
+- `supabase/migrations/20260301_add_business_plans.sql`
+- `supabase/migrations/20260301_add_owner_role.sql`
+- `supabase/migrations/20260301_add_branches.sql`
+- `supabase/migrations/20260301_add_staff_branch_access.sql`
+- `supabase/migrations/20260301_add_table_names.sql`
+- `supabase/migrations/20260301_harden_core_rls.sql`
+- `supabase/migrations/20260302_scope_profiles_rls.sql`
 
 4. Gelistirme sunucusunu baslatin:
 
@@ -118,6 +130,11 @@ npm run dev
 - `APP_HOST` ve `STUDIO_HOST` ile ileride `app.domain.com` / `studio.domain.com` ayrimini aktif edebilirsiniz.
 - Studio erisimi env listesinden veya `studio_access_users` tablosundan verilebilir.
 - Studio/backoffice tablolarinda dogrudan tenant admin erisimi kapatilmis, islem server-side service role akisi uzerine alinmistir.
+- Musteri operasyon yuzeyi ile studio/backoffice bilincli olarak ayridir:
+  - public/studio: web
+  - musteri operasyonu: web tabanli uygulama, ileride desktop shell / hybrid mobile shell icin uygun
+- Coklu sube senaryosu desteklenir. Branch secimi cookie + `staff_branch_access` + RLS ile scope edilir.
+- `owner` ve `admin` ayni yetki seviyesi degildir; owner isletme ve personel yapisini yonetir, admin operasyonel yonetim alanlarina erisir.
 - SQL migration dosyasinda RLS starter policy bulunur.
 - Siparisler hem `orders.items` (geriye uyum) hem `order_items` (normalize raporlama) yapisina yazilir.
 - Landing teklif formu SMTP ayarlari yapildiysa otomatik e-posta bildirimi gonderebilir.
@@ -132,9 +149,9 @@ npm run dev
 - Faz 4 (tamamlandi): Realtime operasyon (panel, mutfak, kasa, masa ekranlarinda canli guncelleme + mutfakta yeni siparis sesi).
 - Faz 5 (devam ediyor): Odeme akisi (nakit/kart/karma), indirim-servis ucreti, siparis iptal/iade, kasa acilis-kapanis.
 
-## Not
+## Operasyon Notlari
 
-- Coklu sube senaryosu bu projede bilincli olarak kapsam disi tutuldu.
+- Coklu sube yapisinda masa, siparis, kurye, odeme ve personel erisimi branch scope ile sinirlanir.
 - QR menu ekraninda `stock_count = 0` urunler otomatik gizlenir.
 - Admin urun ekraninda kategori bazli toplu fiyat guncelleme vardir.
 - Admin kategori ekraninda kategori sirasini yukari/asagi tasiyabilirsiniz.
@@ -150,6 +167,7 @@ npm run dev
 ## Uretim Checklist
 
 - Tum migration dosyalarini sirayla uygulayin.
+- `branches`, `staff_branch_access`, `owner` role ve core RLS migrationlarini atlamayin.
 - Supabase Realtime publication tablolari:
   - `orders`
   - `tables`
@@ -157,7 +175,12 @@ npm run dev
   - `cash_register_sessions`
   - `table_requests`
 - `.env.local` degiskenlerini eksiksiz girin.
+- Vercel kullaniyorsan ayni env degerlerini Project Settings > Environment Variables altina da girin.
 - Rol atamalarini `/admin/roles` ekranindan tamamlayin.
+- Studio erisimi icin:
+  - `STUDIO_ADMIN_EMAILS`
+  - veya `studio_access_users`
+  ayarlarindan en az birini tanimlayin.
 - Vardiya basinda `/cashier/session` ekranindan kasa acilisi yapin.
 - Uptime izleme aracina `/api/health` endpointini baglayin.
 - Alert webhook icin:

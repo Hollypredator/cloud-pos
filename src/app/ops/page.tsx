@@ -212,8 +212,8 @@ export default async function OpsPage() {
 
           <SidebarPanel title="Hizli Aksiyonlar" description="En sik kullanilan operasyon gecisleri.">
             <div className="grid gap-3">
-              <Link href={`/${activeBusinessSlug}/qr/table-1`} className="rounded-2xl bg-slate-100 px-4 py-4 text-sm font-semibold text-slate-800 transition hover:bg-slate-200">
-                QR Siparis Ekrani
+              <Link href="/admin/tables" className="rounded-2xl bg-slate-100 px-4 py-4 text-sm font-semibold text-slate-800 transition hover:bg-slate-200">
+                Masa QR Yonetimi
               </Link>
               {canKitchen ? (
                 <Link href="/kitchen" className="rounded-2xl bg-slate-100 px-4 py-4 text-sm font-semibold text-slate-800 transition hover:bg-slate-200">

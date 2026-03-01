@@ -2,6 +2,22 @@ import { revalidateTag, unstable_cache } from "next/cache";
 import { cache } from "react";
 import { getSupabaseServerClient } from "@/lib/supabase/server";
 import { getSupabaseAuthServerClient } from "@/lib/supabase/auth-server";
+import {
+  createTableImpl,
+  deleteTableImpl,
+  getOrderHistoryByTableIdImpl,
+  getTableMapImpl,
+  listLatestOrdersByTableIdsImpl,
+  updateTableDetailsImpl,
+} from "@/lib/server/tables-data";
+import {
+  createCategoryImpl,
+  createProductImpl,
+  deleteCategoryImpl,
+  deleteProductImpl,
+  getProductManagementDataImpl,
+  updateProductImpl,
+} from "@/lib/server/products-data";
 import { ALL_BRANCHES_VALUE, DEFAULT_BUSINESS_SLUG, normalizeBusinessSlug } from "@/lib/business";
 import { getActiveBusinessSlug } from "@/lib/business-server";
 import { getActiveBranchId } from "@/lib/branch-server";
@@ -62,6 +78,10 @@ import type {
   OrderItemModifierSelection,
 } from "@/lib/types";
 
+type AuthServerClient = NonNullable<Awaited<ReturnType<typeof getSupabaseAuthServerClient>>>;
+type ServiceServerClient = NonNullable<ReturnType<typeof getSupabaseServerClient>>;
+type TenantSupabaseClient = AuthServerClient | ServiceServerClient;
+
 function minutesAgo(minutes: number) {
   return new Date(Date.now() - minutes * 60_000).toISOString();
 }
@@ -73,6 +93,14 @@ async function withQueryTimeout<T>(promise: PromiseLike<T>, ms = 8000): Promise<
       setTimeout(() => reject(new Error("Query timeout")), ms);
     }),
   ]);
+}
+
+async function getTenantDataClient(): Promise<TenantSupabaseClient | null> {
+  const authClient = await getSupabaseAuthServerClient();
+  if (authClient) {
+    return authClient;
+  }
+  return getSupabaseServerClient();
 }
 
 const demoCategories: Category[] = [
@@ -572,6 +600,40 @@ const resolveBusinessBySlug = cache(async (businessSlug?: string) => {
   };
 });
 
+const getAccessibleBusinesses = cache(async () => {
+  const authClient = await getSupabaseAuthServerClient();
+  if (!authClient) {
+    return { businesses: [] as Business[], hasUser: false, usingDemoData: true, useLegacySchema: false };
+  }
+
+  const {
+    data: { user },
+  } = await authClient.auth.getUser();
+  if (!user) {
+    return { businesses: [] as Business[], hasUser: false, usingDemoData: false, useLegacySchema: false };
+  }
+
+  const { data, error } = await authClient
+    .from("businesses")
+    .select("id, name, slug, plan, is_active, created_at, updated_at")
+    .eq("is_active", true)
+    .order("name", { ascending: true });
+
+  if (error) {
+    if (error.message.toLowerCase().includes("businesses")) {
+      return { businesses: [] as Business[], hasUser: true, usingDemoData: false, useLegacySchema: true };
+    }
+    return { businesses: [] as Business[], hasUser: true, usingDemoData: false, useLegacySchema: false };
+  }
+
+  return {
+    businesses: (data ?? []) as Business[],
+    hasUser: true,
+    usingDemoData: false,
+    useLegacySchema: false,
+  };
+});
+
 export async function getBusinessContextBySlug(businessSlug?: string) {
   const { business, usingDemoData, useLegacySchema } = await resolveBusinessBySlug(businessSlug);
   return {
@@ -585,7 +647,15 @@ export async function getBusinessContextBySlug(businessSlug?: string) {
 const getDefaultBusinessScope = cache(async () => {
   const activeSlug = await getActiveBusinessSlug();
   const activeBranchId = await getActiveBranchId();
-  const { business, useLegacySchema } = await resolveBusinessBySlug(activeSlug || DEFAULT_BUSINESS_SLUG);
+  const { businesses: accessibleBusinesses, hasUser, useLegacySchema: accessibleLegacy } = await getAccessibleBusinesses();
+  const activeBusiness =
+    accessibleBusinesses.find((item) => item.slug === (activeSlug || DEFAULT_BUSINESS_SLUG)) ??
+    accessibleBusinesses[0] ??
+    null;
+  const fallbackContext =
+    activeBusiness || hasUser ? null : await resolveBusinessBySlug(activeSlug || DEFAULT_BUSINESS_SLUG);
+  const business = activeBusiness ?? fallbackContext?.business ?? null;
+  const useLegacySchema = activeBusiness ? accessibleLegacy : fallbackContext?.useLegacySchema;
   const staffAccess = await getCurrentStaffBranchAccess(business?.id ?? null);
   const wantsAllBranches = activeBranchId === ALL_BRANCHES_VALUE;
   const resolvedBranchId =
@@ -607,9 +677,8 @@ const getDefaultBusinessScope = cache(async () => {
 });
 
 const getCurrentStaffBranchAccess = cache(async (businessId: string | null) => {
-  const serverClient = getSupabaseServerClient();
   const authClient = await getSupabaseAuthServerClient();
-  if (!serverClient || !authClient || !businessId) {
+  if (!authClient || !businessId) {
     return {
       accessScope: "business" as StaffAccessScope,
       primaryBranchId: null as string | null,
@@ -628,14 +697,14 @@ const getCurrentStaffBranchAccess = cache(async (businessId: string | null) => {
     };
   }
 
-  const { data: accessRows, error } = await serverClient
+  const { data: accessRows, error } = await authClient
     .from("staff_branch_access")
     .select("branch_id, access_scope, is_primary")
     .eq("profile_id", user.id)
     .eq("business_id", businessId);
 
   if (error || !accessRows || accessRows.length === 0) {
-    const { data: profile } = await serverClient
+    const { data: profile } = await authClient
       .from("profiles")
       .select("role")
       .eq("id", user.id)
@@ -662,12 +731,11 @@ const getCurrentStaffBranchAccess = cache(async (businessId: string | null) => {
 });
 
 export const getAppShellSnapshot = cache(async () => {
-  const serverClient = getSupabaseServerClient();
   const authClient = await getSupabaseAuthServerClient();
   const activeSlug = (await getActiveBusinessSlug()) || DEFAULT_BUSINESS_SLUG;
   const activeBranchCookie = await getActiveBranchId();
 
-  if (!serverClient || !authClient) {
+  if (!authClient) {
     return {
       role: null as AppRole | null,
       user: null,
@@ -688,7 +756,7 @@ export const getAppShellSnapshot = cache(async () => {
     businessesResult,
   ] = await Promise.all([
     authClient.auth.getUser(),
-    serverClient
+    authClient
       .from("businesses")
       .select("id, name, slug, plan, is_active, created_at, updated_at")
       .eq("is_active", true)
@@ -721,9 +789,9 @@ export const getAppShellSnapshot = cache(async () => {
   }
 
   const [{ data: profile }, accessResult] = await Promise.all([
-    serverClient.from("profiles").select("role").eq("id", user.id).maybeSingle(),
+    authClient.from("profiles").select("role").eq("id", user.id).maybeSingle(),
     activeBusiness?.id
-      ? serverClient
+      ? authClient
           .from("staff_branch_access")
           .select("branch_id, access_scope, is_primary")
           .eq("profile_id", user.id)
@@ -754,7 +822,7 @@ export const getAppShellSnapshot = cache(async () => {
     branchAccessIds[0] ??
     null;
 
-  let branchesQuery = serverClient
+  let branchesQuery = authClient
     .from("branches")
     .select("id, business_id, name, slug, is_active, created_at, updated_at")
     .eq("is_active", true)
@@ -808,7 +876,7 @@ export const getAppShellSnapshot = cache(async () => {
 });
 
 export async function listBranches() {
-  const supabase = getSupabaseServerClient();
+  const supabase = await getSupabaseAuthServerClient();
   const scope = await getDefaultBusinessScope();
   const activeBranchId = scope.branchId;
   if (!supabase) {
@@ -860,7 +928,7 @@ export async function listBranches() {
 }
 
 export async function createBranch(input: { name: string; slug: string }) {
-  const supabase = getSupabaseServerClient();
+  const supabase = await getTenantDataClient();
   if (!supabase) {
     return { ok: false, error: "Demo modda sube ekleme pasif." };
   }
@@ -902,7 +970,7 @@ export async function createBranch(input: { name: string; slug: string }) {
 }
 
 export async function updateBranch(input: { branchId: string; name: string; slug: string }) {
-  const supabase = getSupabaseServerClient();
+  const supabase = await getTenantDataClient();
   if (!supabase) {
     return { ok: false, error: "Demo modda sube guncelleme pasif." };
   }
@@ -941,7 +1009,7 @@ export async function updateBranch(input: { branchId: string; name: string; slug
 }
 
 export async function setBranchActiveStatus(input: { branchId: string; isActive: boolean }) {
-  const supabase = getSupabaseServerClient();
+  const supabase = await getTenantDataClient();
   if (!supabase) {
     return { ok: false, error: "Demo modda sube durum guncelleme pasif." };
   }
@@ -985,7 +1053,7 @@ export async function setBranchActiveStatus(input: { branchId: string; isActive:
 }
 
 export async function deleteBranch(branchId: string) {
-  const supabase = getSupabaseServerClient();
+  const supabase = await getTenantDataClient();
   if (!supabase) {
     return { ok: false, error: "Demo modda sube silme pasif." };
   }
@@ -1039,7 +1107,7 @@ export async function deleteBranch(branchId: string) {
 }
 
 export async function listBusinesses() {
-  const supabase = getSupabaseServerClient();
+  const supabase = await getTenantDataClient();
   const activeSlug = await getActiveBusinessSlug();
   if (!supabase) {
     return {
@@ -1149,7 +1217,7 @@ export async function setBusinessActiveStatus(input: { businessId: string; isAct
 }
 
 export async function updateActiveBusinessPlan(plan: BusinessPlan) {
-  const supabase = getSupabaseServerClient();
+  const supabase = await getTenantDataClient();
   if (!supabase) {
     return { ok: false, error: "Demo modda plan guncelleme pasif." };
   }
@@ -1175,7 +1243,7 @@ export async function updateActiveBusinessPlan(plan: BusinessPlan) {
 }
 
 export async function listCouriers() {
-  const supabase = getSupabaseServerClient();
+  const supabase = await getTenantDataClient();
   if (!supabase) {
     return { couriers: demoCouriers, usingDemoData: true };
   }
@@ -1187,7 +1255,7 @@ export async function listCouriers() {
   const cacheKey = `couriers:${scope.businessId ?? "none"}:${scope.branchId ?? "all"}:${scope.useLegacySchema ? "legacy" : "scoped"}`;
   const reader = unstable_cache(
     async () => {
-      const innerSupabase = getSupabaseServerClient();
+      const innerSupabase = await getTenantDataClient();
       if (!innerSupabase) {
         return null;
       }
@@ -1233,7 +1301,7 @@ export async function listCouriers() {
 }
 
 export async function createCourier(input: { fullName: string; phone?: string; businessId?: string | null }) {
-  const supabase = getSupabaseServerClient();
+  const supabase = await getTenantDataClient();
   if (!supabase) {
     return { ok: false, error: "Demo modda kurye eklenemez." };
   }
@@ -1277,7 +1345,7 @@ export async function updateCourier(input: {
   phone?: string;
   isActive?: boolean;
 }) {
-  const supabase = getSupabaseServerClient();
+  const supabase = await getTenantDataClient();
   if (!supabase) {
     return { ok: false, error: "Demo modda kurye guncellenemez." };
   }
@@ -1324,7 +1392,7 @@ export async function updateCourier(input: {
 }
 
 export async function deleteCourier(courierId: string) {
-  const supabase = getSupabaseServerClient();
+  const supabase = await getTenantDataClient();
   if (!supabase) {
     return { ok: false, error: "Demo modda kurye silinemez." };
   }
@@ -1903,7 +1971,7 @@ type OrderItemModifierRow = {
   quantity: number;
 };
 
-async function getOrderPaymentSummaryMap(supabase: ReturnType<typeof getSupabaseServerClient>, orderIds: string[]) {
+async function getOrderPaymentSummaryMap(supabase: TenantSupabaseClient | null, orderIds: string[]) {
   if (!supabase || orderIds.length === 0) {
     return new Map<string, { paid: number; refunds: number; net: number; count: number }>();
   }
@@ -2264,7 +2332,7 @@ export async function listOrders(
   statuses: OrderStatus[],
   options?: { includeItems?: boolean; includePaymentSummary?: boolean; limit?: number; ascending?: boolean },
 ) {
-  const supabase = getSupabaseServerClient();
+  const supabase = await getTenantDataClient();
   const includeItems = options?.includeItems ?? true;
   const includePaymentSummary = options?.includePaymentSummary ?? true;
   const limit = options?.limit;
@@ -2462,65 +2530,13 @@ export async function getKitchenOrdersSnapshot() {
 }
 
 export async function listLatestOrdersByTableIds(tableIds: string[]) {
-  const supabase = getSupabaseServerClient();
-  if (!supabase) {
-    const latestOrders = new Map<string, Order>();
-    for (const tableId of tableIds) {
-      const latest = demoOrders
-        .filter((order) => order.table_id === tableId)
-        .sort((a, b) => b.created_at.localeCompare(a.created_at))[0];
-      if (latest) {
-        latestOrders.set(tableId, latest);
-      }
-    }
-    return { ordersByTableId: latestOrders, usingDemoData: true };
-  }
-
-  if (tableIds.length === 0) {
-    return { ordersByTableId: new Map<string, Order>(), usingDemoData: false };
-  }
-
-  const scope = await getDefaultBusinessScope();
-  let query = supabase
-    .from("orders")
-    .select("id, table_id, total_price, final_price, status, created_at")
-    .in("table_id", tableIds)
-    .order("created_at", { ascending: false });
-  if (!scope.useLegacySchema && scope.businessId) {
-    query = query.eq("business_id", scope.businessId);
-  }
-
-  const { data, error } = await query;
-  if (error) {
-    return { ordersByTableId: new Map<string, Order>(), usingDemoData: false };
-  }
-
-  const latestRows = new Map<string, { id: string; table_id: string; total_price: number; final_price: number | null; status: OrderStatus; created_at: string }>();
-  for (const row of (data ?? []) as Array<{ id: string; table_id: string; total_price: number; final_price: number | null; status: OrderStatus; created_at: string }>) {
-    if (!latestRows.has(row.table_id)) {
-      latestRows.set(row.table_id, row);
-    }
-  }
-
-  const orderIds = [...latestRows.values()].map((row) => row.id);
-  const paymentSummary = await getOrderPaymentSummaryMap(supabase, orderIds);
-  const ordersByTableId = new Map<string, Order>();
-  for (const row of latestRows.values()) {
-    ordersByTableId.set(row.table_id, {
-      id: row.id,
-      table_id: row.table_id,
-      items: [],
-      total_price: Number(row.total_price),
-      final_price: Number(row.final_price ?? row.total_price),
-      amount_paid: paymentSummary.get(row.id)?.net ?? 0,
-      remaining_balance: Math.max(0, Number(row.final_price ?? row.total_price) - (paymentSummary.get(row.id)?.net ?? 0)),
-      payment_count: paymentSummary.get(row.id)?.count ?? 0,
-      status: row.status,
-      created_at: row.created_at,
-    });
-  }
-
-  return { ordersByTableId, usingDemoData: false };
+  return listLatestOrdersByTableIdsImpl(tableIds, {
+    getDefaultBusinessScope,
+    getOrderPaymentSummaryMap,
+    withQueryTimeout,
+    demoOrders,
+    demoTables,
+  });
 }
 
 export async function getLatestOrderByTableId(tableId: string) {
@@ -2529,55 +2545,17 @@ export async function getLatestOrderByTableId(tableId: string) {
 }
 
 export async function getOrderHistoryByTableId(tableId: string, limit = 5) {
-  const supabase = getSupabaseServerClient();
-  if (!supabase) {
-    const history = demoOrders
-      .filter((order) => order.table_id === tableId)
-      .sort((a, b) => b.created_at.localeCompare(a.created_at))
-      .slice(0, limit);
-    return { orders: history, usingDemoData: true };
-  }
-
-  const { data, error } = await supabase
-    .from("orders")
-    .select("id, table_id, total_price, final_price, status, created_at")
-    .eq("table_id", tableId)
-    .order("created_at", { ascending: false })
-    .limit(limit);
-
-  if (error) {
-    return { orders: [] as Order[], usingDemoData: false };
-  }
-
-  const orderIds = ((data ?? []) as Array<{ id: string }>).map((row) => row.id);
-  const paymentSummary = await getOrderPaymentSummaryMap(supabase, orderIds);
-
-  return {
-    orders: ((data ?? []) as Array<{
-      id: string;
-      table_id: string;
-      total_price: number;
-      final_price?: number;
-      status: OrderStatus;
-      created_at: string;
-    }>).map((row) => ({
-      id: row.id,
-      table_id: row.table_id,
-      items: [],
-      total_price: Number(row.total_price),
-      final_price: Number(row.final_price ?? row.total_price),
-      amount_paid: paymentSummary.get(row.id)?.net ?? 0,
-      remaining_balance: Math.max(0, Number(row.final_price ?? row.total_price) - (paymentSummary.get(row.id)?.net ?? 0)),
-      payment_count: paymentSummary.get(row.id)?.count ?? 0,
-      status: row.status,
-      created_at: row.created_at,
-    })),
-    usingDemoData: false,
-  };
+  return getOrderHistoryByTableIdImpl(tableId, limit, {
+    getDefaultBusinessScope,
+    getOrderPaymentSummaryMap,
+    withQueryTimeout,
+    demoOrders,
+    demoTables,
+  });
 }
 
 export async function getOrderReceipt(orderId: string) {
-  const supabase = getSupabaseServerClient();
+  const supabase = await getTenantDataClient();
   if (!supabase) {
     const order = demoOrders.find((row) => row.id === orderId) ?? null;
     return { order, usingDemoData: true };
@@ -2687,7 +2665,7 @@ function getTableNumber(
 }
 
 export async function updateOrderStatus(orderId: string, nextStatus: OrderStatus) {
-  const supabase = getSupabaseServerClient();
+  const supabase = await getTenantDataClient();
   if (!supabase) {
     return { ok: true, usingDemoData: true };
   }
@@ -2743,7 +2721,7 @@ export async function applyOrderFinancials(input: {
   discountAmount: number;
   serviceFee: number;
 }) {
-  const supabase = getSupabaseServerClient();
+  const supabase = await getTenantDataClient();
   if (!supabase) {
     return { ok: false, error: "Demo modda finansal guncelleme pasif." };
   }
@@ -2804,7 +2782,7 @@ export async function completeOrderPayment(input: {
   note?: string;
   createdBy?: string;
 }) {
-  const supabase = getSupabaseServerClient();
+  const supabase = await getTenantDataClient();
   if (!supabase) {
     return { ok: false, error: "Demo modda odeme islemi pasif." };
   }
@@ -2892,7 +2870,7 @@ export async function completeOrderPayment(input: {
 }
 
 export async function cancelOrder(orderId: string, note?: string) {
-  const supabase = getSupabaseServerClient();
+  const supabase = await getTenantDataClient();
   if (!supabase) {
     return { ok: false, error: "Demo modda iptal pasif." };
   }
@@ -2965,7 +2943,7 @@ export async function refundOrder(input: {
   note?: string;
   createdBy?: string;
 }) {
-  const supabase = getSupabaseServerClient();
+  const supabase = await getTenantDataClient();
   if (!supabase) {
     return { ok: false, error: "Demo modda iade pasif." };
   }
@@ -3041,7 +3019,7 @@ export async function assignOrderCourier(input: {
   courierName: string;
   courierPhone?: string | null;
 }) {
-  const supabase = getSupabaseServerClient();
+  const supabase = await getTenantDataClient();
   if (!supabase) {
     return { ok: false, error: "Demo modda kurye atama pasif." };
   }
@@ -3080,11 +3058,12 @@ export async function assignOrderCourier(input: {
     },
   });
 
+  revalidateOperationsCaches();
   return { ok: true };
 }
 
 export async function markDeliveryCompleted(orderId: string) {
-  const supabase = getSupabaseServerClient();
+  const supabase = await getTenantDataClient();
   if (!supabase) {
     return { ok: false, error: "Demo modda teslimat tamamlama pasif." };
   }
@@ -3113,227 +3092,48 @@ export async function markDeliveryCompleted(orderId: string) {
     action: "delivery_completed",
   });
 
+  revalidateOperationsCaches();
   return { ok: true };
 }
 
 export async function getTableMap() {
-  const supabase = getSupabaseServerClient();
-  if (!supabase) {
-    return { tables: demoTables, usingDemoData: true };
-  }
-
-  const scope = await getDefaultBusinessScope();
-  if (!scope.useLegacySchema && !scope.businessId) {
-    return { tables: [] as DiningTable[], usingDemoData: false };
-  }
-
-  const cacheKey = `table-map:${scope.businessId ?? "none"}:${scope.branchId ?? "all"}:${scope.useLegacySchema ? "legacy" : "scoped"}`;
-  const reader = unstable_cache(
-    async () => {
-      const readerSupabase = getSupabaseServerClient();
-      if (!readerSupabase) {
-        return null;
-      }
-
-      let query = readerSupabase
-        .from("tables")
-        .select("id, business_id, branch_id, table_number, name, status, qr_code_identifier")
-        .order("table_number", { ascending: true });
-      if (!scope.useLegacySchema && scope.businessId) {
-        query = query.eq("business_id", scope.businessId);
-      }
-      if (scope.branchId) {
-        query = query.eq("branch_id", scope.branchId);
-      }
-
-      try {
-        const result = (await withQueryTimeout(query)) as { data: unknown[] | null; error: { message: string } | null };
-        return {
-          data: result.data as unknown[] | null,
-          error: result.error as { message: string } | null,
-        };
-      } catch {
-        return { data: null, error: { message: "Query timeout" } };
-      }
-    },
-    [cacheKey],
-    { revalidate: 10, tags: ["table-map"] },
-  );
-
-  const cached = await reader();
-  if (!cached || cached.error) {
-    return { tables: demoTables, usingDemoData: true };
-  }
-
-  return { tables: (cached.data ?? []) as DiningTable[], usingDemoData: false };
-}
-
-function createQrIdentifier(tableNumber: number) {
-  const suffix = Math.random().toString(36).slice(2, 8);
-  return `table-${tableNumber}-${suffix}`;
+  return getTableMapImpl({
+    getDefaultBusinessScope,
+    getOrderPaymentSummaryMap,
+    withQueryTimeout,
+    demoOrders,
+    demoTables,
+  });
 }
 
 export async function createTable(tableNumber: number, name?: string) {
-  const supabase = getSupabaseServerClient();
-  if (!supabase) {
-    return { ok: true, usingDemoData: true, qrCodeIdentifier: createQrIdentifier(tableNumber) };
-  }
-
-  const qrCodeIdentifier = createQrIdentifier(tableNumber);
-  const scope = await getDefaultBusinessScope();
-  const withBusinessPayload = {
-    business_id: scope.businessId,
-    branch_id: scope.branchId,
-    table_number: tableNumber,
-    name: name?.trim() || `Masa ${tableNumber}`,
-    status: "empty" as TableStatus,
-    qr_code_identifier: qrCodeIdentifier,
-  };
-  const fallbackPayload = {
-    table_number: tableNumber,
-    name: name?.trim() || `Masa ${tableNumber}`,
-    status: "empty" as TableStatus,
-    qr_code_identifier: qrCodeIdentifier,
-  };
-
-  let data: { id: string; qr_code_identifier: string } | null = null;
-  let error: { message: string } | null = null;
-  const firstInsert = await supabase
-    .from("tables")
-    .insert(withBusinessPayload)
-    .select("id, qr_code_identifier")
-    .single();
-  data = firstInsert.data as { id: string; qr_code_identifier: string } | null;
-  error = firstInsert.error as { message: string } | null;
-  if (error?.message?.toLowerCase().includes("business_id")) {
-    const secondInsert = await supabase
-      .from("tables")
-      .insert(fallbackPayload)
-      .select("id, qr_code_identifier")
-      .single();
-    data = secondInsert.data as { id: string; qr_code_identifier: string } | null;
-    error = secondInsert.error as { message: string } | null;
-  }
-
-  if (error) {
-    return { ok: false, error: error.message };
-  }
-  if (!data) {
-    return { ok: false, error: "Masa olusturulamadi." };
-  }
-
-  await logAuditEvent({
-    entityType: "table",
-    entityId: data.id as string,
-    action: "create",
-    details: { tableNumber, tableName: name?.trim() || `Masa ${tableNumber}`, qrCodeIdentifier: data.qr_code_identifier as string },
+  return createTableImpl(tableNumber, name, {
+    getDefaultBusinessScope,
+    logAuditEvent,
+    revalidateOperationsCaches,
   });
-
-  revalidateOperationsCaches();
-  return {
-    ok: true,
-    id: data.id as string,
-    qrCodeIdentifier: data.qr_code_identifier as string,
-    usingDemoData: false,
-  };
 }
 
 export async function updateTableDetails(input: { tableId: string; tableNumber: number; name: string }) {
-  const supabase = getSupabaseServerClient();
-  if (!supabase) {
-    return { ok: false, error: "Demo modda masa guncelleme pasif." };
-  }
-
-  const scope = await getDefaultBusinessScope();
-  let query = supabase
-    .from("tables")
-    .update({
-      table_number: input.tableNumber,
-      name: input.name.trim() || `Masa ${input.tableNumber}`,
-    })
-    .eq("id", input.tableId);
-  if (!scope.useLegacySchema && scope.businessId) {
-    query = query.eq("business_id", scope.businessId);
-  }
-  if (scope.branchId) {
-    query = query.eq("branch_id", scope.branchId);
-  }
-
-  const { error } = await query;
-  if (error) {
-    return { ok: false, error: error.message };
-  }
-
-  await logAuditEvent({
-    entityType: "table",
-    entityId: input.tableId,
-    action: "update",
-    details: {
-      tableNumber: input.tableNumber,
-      tableName: input.name.trim() || `Masa ${input.tableNumber}`,
-    },
+  return updateTableDetailsImpl(input, {
+    getDefaultBusinessScope,
+    logAuditEvent,
+    revalidateOperationsCaches,
   });
-
-  revalidateOperationsCaches();
-  return { ok: true };
 }
 
 export async function deleteTable(tableId: string) {
-  const supabase = getSupabaseServerClient();
-  if (!supabase) {
-    return { ok: false, error: "Demo modda silme islemi pasif." };
-  }
-
-  const scope = await getDefaultBusinessScope();
-  let rowQuery = supabase.from("tables").select("id, status").eq("id", tableId);
-  if (!scope.useLegacySchema && scope.businessId) {
-    rowQuery = rowQuery.eq("business_id", scope.businessId);
-  }
-  if (scope.branchId) {
-    rowQuery = rowQuery.eq("branch_id", scope.branchId);
-  }
-  const { data: tableRow, error: rowError } = await rowQuery.maybeSingle();
-
-  if (rowError || !tableRow) {
-    return { ok: false, error: rowError?.message ?? "Masa bulunamadi." };
-  }
-
-  if (tableRow.status !== "empty") {
-    return { ok: false, error: "Yalnizca bos masalar silinebilir." };
-  }
-
-  let deleteQuery = supabase.from("tables").delete().eq("id", tableId);
-  if (!scope.useLegacySchema && scope.businessId) {
-    deleteQuery = deleteQuery.eq("business_id", scope.businessId);
-  }
-  if (scope.branchId) {
-    deleteQuery = deleteQuery.eq("branch_id", scope.branchId);
-  }
-  const { error } = await deleteQuery;
-  if (error) {
-    return { ok: false, error: error.message };
-  }
-
-  await logAuditEvent({
-    entityType: "table",
-    entityId: tableId,
-    action: "delete",
+  return deleteTableImpl(tableId, {
+    getDefaultBusinessScope,
+    logAuditEvent,
+    revalidateOperationsCaches,
   });
-
-  revalidateOperationsCaches();
-  return { ok: true };
 }
-
-type ProductIngredientRow = {
-  product_id: string;
-  ingredient_id: string;
-  quantity: number;
-  ingredients: { id: string; name: string; unit: string } | { id: string; name: string; unit: string }[] | null;
-};
 
 function revalidateProductManagementCaches() {
   revalidateTag("product-management", "max");
   revalidateTag("kitchen-catalog", "max");
+  revalidateTag("menu", "max");
 }
 
 function revalidateReportCaches() {
@@ -3352,143 +3152,22 @@ function revalidateOperationsCaches() {
   revalidateTag("order-receipt", "max");
 }
 
-async function getCachedProductManagementRow(input: {
-  businessId: string | null;
-  useLegacySchema: boolean;
-}) {
-  const cacheKey = `product-management:${input.businessId ?? "none"}:${input.useLegacySchema ? "legacy" : "scoped"}`;
-  const reader = unstable_cache(
-    async () => {
-      const supabase = getSupabaseServerClient();
-      if (!supabase) {
-        return null;
-      }
-
-      const [
-        { data: categories },
-        { data: products },
-        { data: ingredients },
-        { data: productIngredients, error: productIngredientsError },
-        { data: modifierGroups, error: modifierGroupError },
-        { data: modifierOptions, error: modifierOptionError },
-      ] = await Promise.all([
-        (input.useLegacySchema
-          ? supabase.from("categories").select("id, name, sort_order")
-          : supabase.from("categories").select("id, business_id, name, sort_order").eq("business_id", input.businessId!))
-          .order("sort_order", { ascending: true }),
-        (input.useLegacySchema
-          ? supabase.from("products").select("id, category_id, name, price, stock_count, image_url, description, is_available")
-          : supabase
-              .from("products")
-              .select("id, business_id, category_id, name, price, stock_count, image_url, description, is_available")
-              .eq("business_id", input.businessId!))
-          .order("created_at", { ascending: false }),
-        supabase.from("ingredients").select("id, name, unit").order("name", { ascending: true }),
-        supabase.from("product_ingredients").select("product_id, ingredient_id, quantity, ingredients(id, name, unit)"),
-        supabase
-          .from("product_modifier_groups")
-          .select("id, product_id, name, min_select, max_select, is_required, sort_order")
-          .order("sort_order", { ascending: true }),
-        supabase
-          .from("product_modifier_options")
-          .select("id, group_id, name, price_delta, is_default, sort_order")
-          .order("sort_order", { ascending: true }),
-      ]);
-
-      return {
-        categories: (categories ?? []) as Category[],
-        products: (products ?? []) as Product[],
-        ingredients: (ingredients ?? []) as Ingredient[],
-        modifierGroups: (modifierGroups ?? []) as ProductModifierGroup[],
-        modifierOptions: (modifierOptions ?? []) as ProductModifierOption[],
-        productIngredients: ((productIngredients ?? []) as ProductIngredientRow[]).map((row) => ({
-          product_id: row.product_id,
-          ingredient_id: row.ingredient_id,
-          quantity: Number(row.quantity),
-          ingredient: Array.isArray(row.ingredients) ? row.ingredients[0] ?? null : row.ingredients,
-        })),
-        hasError: Boolean(productIngredientsError || modifierGroupError || modifierOptionError),
-      };
-    },
-    [cacheKey],
-    { revalidate: 15, tags: ["product-management"] },
-  );
-
-  return reader();
-}
-
 export async function getProductManagementData() {
-  const supabase = getSupabaseServerClient();
-  if (!supabase) {
-    return {
-      categories: demoCategories,
-      products: demoProducts,
-      ingredients: demoIngredients,
-      modifierGroups: demoModifierGroups,
-      modifierOptions: demoModifierOptions,
-      productIngredients: demoProductIngredients.map((row) => ({
-        product_id: row.product_id,
-        ingredient_id: row.ingredient_id,
-        quantity: row.quantity,
-        ingredient: demoIngredients.find((item) => item.id === row.ingredient_id) ?? null,
-      })),
-      usingDemoData: true,
-    };
-  }
-
-  const scope = await getDefaultBusinessScope();
-  if (!scope.useLegacySchema && !scope.businessId) {
-    return {
-      categories: [] as Category[],
-      products: [] as Product[],
-      ingredients: [] as Ingredient[],
-      modifierGroups: [] as ProductModifierGroup[],
-      modifierOptions: [] as ProductModifierOption[],
-      productIngredients: [] as Array<{
-        product_id: string;
-        ingredient_id: string;
-        quantity: number;
-        ingredient: Ingredient | null;
-      }>,
-      usingDemoData: false,
-    };
-  }
-
-  const cached = await getCachedProductManagementRow({
-    businessId: scope.businessId,
-    useLegacySchema: scope.useLegacySchema,
+  return getProductManagementDataImpl({
+    getDefaultBusinessScope,
+    logAuditEvent,
+    revalidateProductManagementCaches,
+    demoCategories,
+    demoProducts,
+    demoIngredients,
+    demoModifierGroups,
+    demoModifierOptions,
+    demoProductIngredients,
   });
-
-  if (!cached || cached.hasError) {
-    return {
-      categories: demoCategories,
-      products: demoProducts,
-      ingredients: demoIngredients,
-      modifierGroups: demoModifierGroups,
-      modifierOptions: demoModifierOptions,
-      productIngredients: demoProductIngredients.map((row) => ({
-        product_id: row.product_id,
-        ingredient_id: row.ingredient_id,
-        quantity: row.quantity,
-        ingredient: demoIngredients.find((item) => item.id === row.ingredient_id) ?? null,
-      })),
-      usingDemoData: true,
-    };
-  }
-
-  return {
-    categories: cached.categories,
-    products: cached.products,
-    ingredients: cached.ingredients,
-    modifierGroups: cached.modifierGroups,
-    modifierOptions: cached.modifierOptions,
-    productIngredients: cached.productIngredients,
-    usingDemoData: false,
-  };
 }
 
 export async function getKitchenCatalogSnapshot() {
-  const supabase = getSupabaseServerClient();
+  const supabase = await getTenantDataClient();
   if (!supabase) {
     return {
       categories: demoCategories,
@@ -3511,7 +3190,7 @@ export async function getKitchenCatalogSnapshot() {
   const cacheKey = `kitchen-catalog:${scope.businessId ?? "none"}:${scope.useLegacySchema ? "legacy" : "scoped"}`;
   const reader = unstable_cache(
     async () => {
-      const innerSupabase = getSupabaseServerClient();
+      const innerSupabase = await getTenantDataClient();
       if (!innerSupabase) {
         return null;
       }
@@ -3576,7 +3255,7 @@ export async function createProductModifierGroup(input: {
   maxSelect?: number;
   isRequired?: boolean;
 }) {
-  const supabase = getSupabaseServerClient();
+  const supabase = await getTenantDataClient();
   if (!supabase) {
     return { ok: false, error: "Demo modda modifier grubu eklenemez." };
   }
@@ -3614,7 +3293,7 @@ export async function createProductModifierOption(input: {
   priceDelta?: number;
   isDefault?: boolean;
 }) {
-  const supabase = getSupabaseServerClient();
+  const supabase = await getTenantDataClient();
   if (!supabase) {
     return { ok: false, error: "Demo modda modifier opsiyonu eklenemez." };
   }
@@ -3646,7 +3325,7 @@ export async function createProductModifierOption(input: {
 }
 
 export async function deleteProductModifierGroup(groupId: string) {
-  const supabase = getSupabaseServerClient();
+  const supabase = await getTenantDataClient();
   if (!supabase) {
     return { ok: false, error: "Demo modda modifier grubu silinemez." };
   }
@@ -3661,7 +3340,7 @@ export async function deleteProductModifierGroup(groupId: string) {
 }
 
 export async function deleteProductModifierOption(optionId: string) {
-  const supabase = getSupabaseServerClient();
+  const supabase = await getTenantDataClient();
   if (!supabase) {
     return { ok: false, error: "Demo modda modifier opsiyonu silinemez." };
   }
@@ -3684,59 +3363,17 @@ export async function createProduct(input: {
   imageUrl?: string;
   isAvailable?: boolean;
 }) {
-  const supabase = getSupabaseServerClient();
-  if (!supabase) {
-    return { ok: false, error: "Demo modda urun ekleme pasif." };
-  }
-
-  const scope = await getDefaultBusinessScope();
-  const withBusinessPayload = {
-    business_id: scope.businessId,
-    category_id: input.categoryId,
-    name: input.name,
-    price: input.price,
-    stock_count: input.stockCount,
-    description: input.description ?? null,
-    image_url: input.imageUrl ?? null,
-    is_available: input.isAvailable ?? true,
-  };
-  const fallbackPayload = {
-    category_id: input.categoryId,
-    name: input.name,
-    price: input.price,
-    stock_count: input.stockCount,
-    description: input.description ?? null,
-    image_url: input.imageUrl ?? null,
-    is_available: input.isAvailable ?? true,
-  };
-
-  let data: { id: string } | null = null;
-  let error: { message: string } | null = null;
-  const firstInsert = await supabase.from("products").insert(withBusinessPayload).select("id").single();
-  data = firstInsert.data as { id: string } | null;
-  error = firstInsert.error as { message: string } | null;
-  if (error?.message?.toLowerCase().includes("business_id")) {
-    const secondInsert = await supabase.from("products").insert(fallbackPayload).select("id").single();
-    data = secondInsert.data as { id: string } | null;
-    error = secondInsert.error as { message: string } | null;
-  }
-
-  if (error) {
-    return { ok: false, error: error.message };
-  }
-  if (!data) {
-    return { ok: false, error: "Urun olusturulamadi." };
-  }
-
-  await logAuditEvent({
-    entityType: "product",
-    entityId: data.id as string,
-    action: "create",
-    details: { name: input.name, categoryId: input.categoryId, price: input.price, stockCount: input.stockCount },
+  return createProductImpl(input, {
+    getDefaultBusinessScope,
+    logAuditEvent,
+    revalidateProductManagementCaches,
+    demoCategories,
+    demoProducts,
+    demoIngredients,
+    demoModifierGroups,
+    demoModifierOptions,
+    demoProductIngredients,
   });
-
-  revalidateProductManagementCaches();
-  return { ok: true, id: data.id as string };
 }
 
 export async function updateProduct(input: {
@@ -3749,76 +3386,35 @@ export async function updateProduct(input: {
   imageUrl?: string;
   isAvailable: boolean;
 }) {
-  const supabase = getSupabaseServerClient();
-  if (!supabase) {
-    return { ok: false, error: "Demo modda urun guncelleme pasif." };
-  }
-
-  const scope = await getDefaultBusinessScope();
-  let query = supabase
-    .from("products")
-    .update({
-      category_id: input.categoryId,
-      name: input.name,
-      price: input.price,
-      stock_count: input.stockCount,
-      description: input.description ?? null,
-      image_url: input.imageUrl ?? null,
-      is_available: input.isAvailable,
-    })
-    .eq("id", input.productId);
-  if (!scope.useLegacySchema && scope.businessId) {
-    query = query.eq("business_id", scope.businessId);
-  }
-  const { error } = await query;
-
-  if (error) {
-    return { ok: false, error: error.message };
-  }
-
-  await logAuditEvent({
-    entityType: "product",
-    entityId: input.productId,
-    action: "update",
-    details: {
-      categoryId: input.categoryId,
-      name: input.name,
-      price: input.price,
-      stockCount: input.stockCount,
-      isAvailable: input.isAvailable,
-    },
+  return updateProductImpl(input, {
+    getDefaultBusinessScope,
+    logAuditEvent,
+    revalidateProductManagementCaches,
+    demoCategories,
+    demoProducts,
+    demoIngredients,
+    demoModifierGroups,
+    demoModifierOptions,
+    demoProductIngredients,
   });
-
-  revalidateProductManagementCaches();
-  return { ok: true };
 }
 
 export async function deleteProduct(productId: string) {
-  const supabase = getSupabaseServerClient();
-  if (!supabase) {
-    return { ok: false, error: "Demo modda urun silme pasif." };
-  }
-
-  const scope = await getDefaultBusinessScope();
-  let query = supabase.from("products").delete().eq("id", productId);
-  if (!scope.useLegacySchema && scope.businessId) {
-    query = query.eq("business_id", scope.businessId);
-  }
-  const { error } = await query;
-  if (error) {
-    return { ok: false, error: error.message };
-  }
-  await logAuditEvent({
-    entityType: "product",
-    entityId: productId,
-    action: "delete",
+  return deleteProductImpl(productId, {
+    getDefaultBusinessScope,
+    logAuditEvent,
+    revalidateProductManagementCaches,
+    demoCategories,
+    demoProducts,
+    demoIngredients,
+    demoModifierGroups,
+    demoModifierOptions,
+    demoProductIngredients,
   });
-  revalidateProductManagementCaches();
-  return { ok: true };
 }
 
 export async function createIngredient(name: string, unit: string) {
-  const supabase = getSupabaseServerClient();
+  const supabase = await getTenantDataClient();
   if (!supabase) {
     return { ok: false, error: "Demo modda malzeme ekleme pasif." };
   }
@@ -3838,7 +3434,7 @@ export async function createIngredient(name: string, unit: string) {
 }
 
 export async function deleteIngredient(ingredientId: string) {
-  const supabase = getSupabaseServerClient();
+  const supabase = await getTenantDataClient();
   if (!supabase) {
     return { ok: false, error: "Demo modda malzeme silme pasif." };
   }
@@ -3856,7 +3452,7 @@ export async function attachIngredientToProduct(input: {
   ingredientId: string;
   quantity: number;
 }) {
-  const supabase = getSupabaseServerClient();
+  const supabase = await getTenantDataClient();
   if (!supabase) {
     return { ok: false, error: "Demo modda urun malzemesi duzenleme pasif." };
   }
@@ -3893,8 +3489,9 @@ export async function detachIngredientFromProduct(productId: string, ingredientI
 }
 
 export async function listProfiles() {
-  const supabase = getSupabaseServerClient();
-  if (!supabase) {
+  const authClient = await getSupabaseAuthServerClient();
+  const serviceClient = getSupabaseServerClient();
+  if (!authClient) {
     return {
       profiles: [] as Array<{
         id: string;
@@ -3910,33 +3507,43 @@ export async function listProfiles() {
   }
 
   const scope = await getDefaultBusinessScope();
-  const { data, error } = await supabase
-    .from("profiles")
-    .select("id, full_name, role")
-    .order("created_at", { ascending: false });
-  if (error) {
-    return { profiles: [] as Array<{ id: string; full_name: string | null; role: AppRole }>, usingDemoData: true };
+  if (!scope.businessId) {
+    return { profiles: [] as Array<{ id: string; full_name: string | null; role: AppRole }>, usingDemoData: false };
   }
 
-  const { data: authUsers } = await supabase.auth.admin.listUsers();
+  const { data: accessRows, error: accessError } = await authClient
+    .from("staff_branch_access")
+    .select("profile_id, branch_id, access_scope, is_primary, branches(name)")
+    .eq("business_id", scope.businessId);
+
+  if (accessError) {
+    return { profiles: [] as Array<{ id: string; full_name: string | null; role: AppRole }>, usingDemoData: false };
+  }
+
+  const profileIds = [...new Set(((accessRows ?? []) as Array<{ profile_id: string }>).map((row) => row.profile_id))];
+  if (profileIds.length === 0) {
+    return { profiles: [] as Array<{ id: string; full_name: string | null; role: AppRole }>, usingDemoData: false };
+  }
+
+  const { data, error } = await authClient
+    .from("profiles")
+    .select("id, full_name, role")
+    .in("id", profileIds)
+    .order("created_at", { ascending: false });
+  if (error) {
+    return { profiles: [] as Array<{ id: string; full_name: string | null; role: AppRole }>, usingDemoData: false };
+  }
+
+  const { data: authUsers } = serviceClient ? await serviceClient.auth.admin.listUsers() : { data: { users: [] } };
   const emailById = new Map((authUsers?.users ?? []).map((user) => [user.id, user.email ?? null]));
-  const accessRows =
-    !scope.businessId
-      ? []
-      : ((
-          await supabase
-            .from("staff_branch_access")
-            .select("profile_id, branch_id, access_scope, is_primary, branches(name)")
-            .eq("business_id", scope.businessId)
-        ).data ?? []) as Array<{
-          profile_id: string;
-          branch_id: string | null;
-          access_scope: StaffAccessScope;
-          is_primary: boolean;
-          branches?: { name: string } | { name: string }[] | null;
-        }>;
   const accessByProfile = new Map(
-    accessRows.map((row) => [
+    ((accessRows ?? []) as Array<{
+      profile_id: string;
+      branch_id: string | null;
+      access_scope: StaffAccessScope;
+      is_primary: boolean;
+      branches?: { name: string } | { name: string }[] | null;
+    }>).map((row) => [
       row.profile_id,
       {
         access_scope: row.access_scope,
@@ -3959,75 +3566,91 @@ export async function listProfiles() {
 }
 
 export async function updateProfileRole(profileId: string, role: AppRole) {
-  const supabase = getSupabaseServerClient();
-  if (!supabase) {
+  const authClient = await getSupabaseAuthServerClient();
+  if (!authClient) {
     return { ok: false, error: "Demo modda rol guncelleme pasif." };
   }
 
   const businessScope = await getDefaultBusinessScope();
-  const { error: profileError } = await supabase.from("profiles").update({ role }).eq("id", profileId);
+  if (!businessScope.businessId) {
+    return { ok: false, error: "Aktif isletme bulunamadi." };
+  }
+
+  const { data: existingAccess, error: accessFindError } = await authClient
+    .from("staff_branch_access")
+    .select("profile_id, branch_id")
+    .eq("profile_id", profileId)
+    .eq("business_id", businessScope.businessId);
+
+  if (accessFindError) {
+    return { ok: false, error: accessFindError.message };
+  }
+
+  if (!existingAccess || existingAccess.length === 0) {
+    return { ok: false, error: "Bu personel aktif isletme kapsaminda bulunamadi." };
+  }
+
+  const { error: profileError } = await authClient.from("profiles").update({ role }).eq("id", profileId);
   if (profileError) {
     return { ok: false, error: profileError.message };
   }
 
-  if (businessScope.businessId) {
-    const normalizedAccessScope: StaffAccessScope = role === "owner" ? "business" : "branch";
-    let branchId: string | null = null;
+  const normalizedAccessScope: StaffAccessScope = role === "owner" ? "business" : "branch";
+  let branchId: string | null = null;
 
-    if (normalizedAccessScope === "branch") {
-      const { data: currentPrimary } = await supabase
-        .from("staff_branch_access")
-        .select("branch_id")
-        .eq("profile_id", profileId)
+  if (normalizedAccessScope === "branch") {
+    const { data: currentPrimary } = await authClient
+      .from("staff_branch_access")
+      .select("branch_id")
+      .eq("profile_id", profileId)
+      .eq("business_id", businessScope.businessId)
+      .eq("is_primary", true)
+      .maybeSingle();
+
+    branchId = (currentPrimary?.branch_id as string | null | undefined) ?? null;
+
+    if (!branchId) {
+      const { data: firstBranch, error: branchError } = await authClient
+        .from("branches")
+        .select("id")
         .eq("business_id", businessScope.businessId)
-        .eq("is_primary", true)
+        .eq("is_active", true)
+        .order("created_at", { ascending: true })
+        .limit(1)
         .maybeSingle();
 
-      branchId = (currentPrimary?.branch_id as string | null | undefined) ?? null;
-
-      if (!branchId) {
-        const { data: firstBranch, error: branchError } = await supabase
-          .from("branches")
-          .select("id")
-          .eq("business_id", businessScope.businessId)
-          .eq("is_active", true)
-          .order("created_at", { ascending: true })
-          .limit(1)
-          .maybeSingle();
-
-        if (branchError) {
-          return { ok: false, error: branchError.message };
-        }
-
-        branchId = (firstBranch?.id as string | undefined) ?? null;
+      if (branchError) {
+        return { ok: false, error: branchError.message };
       }
 
-      if (!branchId) {
-        return { ok: false, error: "Sube yoneticisi icin once en az bir aktif sube olusturulmalidir." };
-      }
+      branchId = (firstBranch?.id as string | undefined) ?? null;
     }
 
-    const { error: accessCleanupError } = await supabase
-      .from("staff_branch_access")
-      .delete()
-      .eq("profile_id", profileId)
-      .eq("business_id", businessScope.businessId);
-
-    if (accessCleanupError) {
-      return { ok: false, error: accessCleanupError.message };
+    if (!branchId) {
+      return { ok: false, error: "Sube personeli icin once en az bir aktif sube olusturulmalidir." };
     }
+  }
 
-    const { error: accessInsertError } = await supabase.from("staff_branch_access").insert({
-      profile_id: profileId,
-      business_id: businessScope.businessId,
-      branch_id: branchId,
-      access_scope: normalizedAccessScope,
-      is_primary: true,
-    });
+  const { error: accessCleanupError } = await authClient
+    .from("staff_branch_access")
+    .delete()
+    .eq("profile_id", profileId)
+    .eq("business_id", businessScope.businessId);
 
-    if (accessInsertError) {
-      return { ok: false, error: accessInsertError.message };
-    }
+  if (accessCleanupError) {
+    return { ok: false, error: accessCleanupError.message };
+  }
+
+  const { error: accessInsertError } = await authClient.from("staff_branch_access").insert({
+    profile_id: profileId,
+    business_id: businessScope.businessId,
+    branch_id: branchId,
+    access_scope: normalizedAccessScope,
+    is_primary: true,
+  });
+
+  if (accessInsertError) {
+    return { ok: false, error: accessInsertError.message };
   }
 
   await logAuditEvent({
@@ -4052,8 +3675,9 @@ export async function updateStaffAccount(input: {
   branchId?: string | null;
   password?: string;
 }) {
-  const supabase = getSupabaseServerClient();
-  if (!supabase) {
+  const authClient = await getSupabaseAuthServerClient();
+  const serviceClient = getSupabaseServerClient();
+  if (!authClient || !serviceClient) {
     return { ok: false, error: "Demo modda personel guncelleme pasif." };
   }
 
@@ -4074,7 +3698,26 @@ export async function updateStaffAccount(input: {
     return { ok: false, error: "Sube personeli icin bir sube secilmelidir." };
   }
 
-  const authUpdate = await supabase.auth.admin.updateUserById(input.profileId, {
+  const businessScope = await getDefaultBusinessScope();
+  if (!businessScope.businessId) {
+    return { ok: false, error: "Aktif isletme bulunamadi." };
+  }
+
+  const { data: existingAccess, error: existingAccessError } = await authClient
+    .from("staff_branch_access")
+    .select("profile_id")
+    .eq("profile_id", input.profileId)
+    .eq("business_id", businessScope.businessId);
+
+  if (existingAccessError) {
+    return { ok: false, error: existingAccessError.message };
+  }
+
+  if (!existingAccess || existingAccess.length === 0) {
+    return { ok: false, error: "Bu personel aktif isletme kapsaminda bulunamadi." };
+  }
+
+  const authUpdate = await serviceClient.auth.admin.updateUserById(input.profileId, {
     email,
     ...(password ? { password } : {}),
     user_metadata: {
@@ -4085,7 +3728,7 @@ export async function updateStaffAccount(input: {
     return { ok: false, error: authUpdate.error.message };
   }
 
-  const { error: profileError } = await supabase
+  const { error: profileError } = await authClient
     .from("profiles")
     .update({
       full_name: fullName,
@@ -4097,27 +3740,24 @@ export async function updateStaffAccount(input: {
     return { ok: false, error: profileError.message };
   }
 
-  const businessScope = await getDefaultBusinessScope();
-  if (businessScope.businessId) {
-    const { error: accessCleanupError } = await supabase
-      .from("staff_branch_access")
-      .delete()
-      .eq("profile_id", input.profileId)
-      .eq("business_id", businessScope.businessId);
-    if (accessCleanupError) {
-      return { ok: false, error: accessCleanupError.message };
-    }
+  const { error: accessCleanupError } = await authClient
+    .from("staff_branch_access")
+    .delete()
+    .eq("profile_id", input.profileId)
+    .eq("business_id", businessScope.businessId);
+  if (accessCleanupError) {
+    return { ok: false, error: accessCleanupError.message };
+  }
 
-    const { error: accessInsertError } = await supabase.from("staff_branch_access").insert({
-      profile_id: input.profileId,
-      business_id: businessScope.businessId,
-      branch_id: normalizedBranchId,
-      access_scope: normalizedAccessScope,
-      is_primary: true,
-    });
-    if (accessInsertError) {
-      return { ok: false, error: accessInsertError.message };
-    }
+  const { error: accessInsertError } = await authClient.from("staff_branch_access").insert({
+    profile_id: input.profileId,
+    business_id: businessScope.businessId,
+    branch_id: normalizedBranchId,
+    access_scope: normalizedAccessScope,
+    is_primary: true,
+  });
+  if (accessInsertError) {
+    return { ok: false, error: accessInsertError.message };
   }
 
   await logAuditEvent({
@@ -4138,12 +3778,34 @@ export async function updateStaffAccount(input: {
 }
 
 export async function deleteStaffAccount(profileId: string) {
-  const supabase = getSupabaseServerClient();
-  if (!supabase) {
+  const authClient = await getSupabaseAuthServerClient();
+  const serviceClient = getSupabaseServerClient();
+  if (!authClient || !serviceClient) {
     return { ok: false, error: "Demo modda personel silme pasif." };
   }
 
-  const { data: profile, error: profileError } = await supabase
+  const businessScope = await getDefaultBusinessScope();
+  if (!businessScope.businessId) {
+    return { ok: false, error: "Aktif isletme bulunamadi." };
+  }
+
+  const { data: accessRows, error: accessError } = await authClient
+    .from("staff_branch_access")
+    .select("business_id")
+    .eq("profile_id", profileId);
+  if (accessError || !accessRows || accessRows.length === 0) {
+    return { ok: false, error: accessError?.message ?? "Personel erisim kaydi bulunamadi." };
+  }
+
+  if (!(accessRows as Array<{ business_id: string }>).some((row) => row.business_id === businessScope.businessId)) {
+    return { ok: false, error: "Bu personel aktif isletme kapsaminda bulunamadi." };
+  }
+
+  if ((accessRows as Array<{ business_id: string }>).some((row) => row.business_id !== businessScope.businessId)) {
+    return { ok: false, error: "Bu hesap birden fazla isletmede kullaniliyor. Guvenlik icin global silme engellendi." };
+  }
+
+  const { data: profile, error: profileError } = await authClient
     .from("profiles")
     .select("id, role")
     .eq("id", profileId)
@@ -4153,10 +3815,17 @@ export async function deleteStaffAccount(profileId: string) {
   }
 
   if ((profile.role as AppRole) === "owner") {
-    const { count, error: countError } = await supabase
+    const ownerIds = [...new Set(
+      ((await authClient
+        .from("staff_branch_access")
+        .select("profile_id")
+        .eq("business_id", businessScope.businessId)).data ?? []).map((row) => row.profile_id),
+    )];
+    const { count, error: countError } = await authClient
       .from("profiles")
       .select("id", { count: "exact", head: true })
-      .eq("role", "owner");
+      .eq("role", "owner")
+      .in("id", ownerIds);
     if (countError) {
       return { ok: false, error: countError.message };
     }
@@ -4165,12 +3834,12 @@ export async function deleteStaffAccount(profileId: string) {
     }
   }
 
-  const deleteAuth = await supabase.auth.admin.deleteUser(profileId);
+  const deleteAuth = await serviceClient.auth.admin.deleteUser(profileId);
   if (deleteAuth.error) {
     return { ok: false, error: deleteAuth.error.message };
   }
 
-  await supabase.from("profiles").delete().eq("id", profileId);
+  await authClient.from("profiles").delete().eq("id", profileId);
 
   await logAuditEvent({
     entityType: "profile",
@@ -4189,8 +3858,9 @@ export async function createStaffAccount(input: {
   accessScope: StaffAccessScope;
   branchId?: string | null;
 }) {
-  const supabase = getSupabaseServerClient();
-  if (!supabase) {
+  const authClient = await getSupabaseAuthServerClient();
+  const serviceClient = getSupabaseServerClient();
+  if (!authClient || !serviceClient) {
     return { ok: false, error: "Demo modda kullanici olusturma pasif." };
   }
 
@@ -4212,7 +3882,12 @@ export async function createStaffAccount(input: {
     return { ok: false, error: "Sube personeli icin bir sube secilmelidir." };
   }
 
-  const { data: usersData, error: usersError } = await supabase.auth.admin.listUsers();
+  const businessScope = await getDefaultBusinessScope();
+  if (!businessScope.businessId) {
+    return { ok: false, error: "Aktif isletme bulunamadi." };
+  }
+
+  const { data: usersData, error: usersError } = await serviceClient.auth.admin.listUsers();
   if (usersError) {
     return { ok: false, error: usersError.message };
   }
@@ -4220,8 +3895,23 @@ export async function createStaffAccount(input: {
   const existingUser = usersData.users.find((user) => user.email?.toLowerCase() === email);
   let userId = existingUser?.id;
 
+  if (userId) {
+    const existingAccessRows =
+      (
+        await serviceClient
+          .from("staff_branch_access")
+          .select("business_id")
+          .eq("profile_id", userId)
+      ).data ?? [];
+
+    const businessIds = [...new Set((existingAccessRows as Array<{ business_id: string }>).map((row) => row.business_id))];
+    if (businessIds.some((businessId) => businessId !== businessScope.businessId)) {
+      return { ok: false, error: "Bu e-posta baska bir isletmede kullaniliyor. Tenant guvenligi icin ayni hesap yeniden baglanamaz." };
+    }
+  }
+
   if (!userId) {
-    const { data: createdUser, error: createError } = await supabase.auth.admin.createUser({
+    const { data: createdUser, error: createError } = await serviceClient.auth.admin.createUser({
       email,
       password,
       email_confirm: true,
@@ -4236,7 +3926,7 @@ export async function createStaffAccount(input: {
 
     userId = createdUser.user?.id;
   } else {
-    const { error: updateUserError } = await supabase.auth.admin.updateUserById(userId, {
+    const { error: updateUserError } = await serviceClient.auth.admin.updateUserById(userId, {
       password,
       user_metadata: {
         full_name: fullName,
@@ -4251,7 +3941,7 @@ export async function createStaffAccount(input: {
     return { ok: false, error: "Kullanici hesabi olusturulamadi." };
   }
 
-  const { error: profileError } = await supabase.from("profiles").upsert(
+  const { error: profileError } = await serviceClient.from("profiles").upsert(
     {
       id: userId,
       full_name: fullName,
@@ -4262,28 +3952,25 @@ export async function createStaffAccount(input: {
 
   if (profileError) {
     if (!existingUser) {
-      await supabase.auth.admin.deleteUser(userId);
+      await serviceClient.auth.admin.deleteUser(userId);
     }
     return { ok: false, error: profileError.message };
   }
 
-  const businessScope = await getDefaultBusinessScope();
-  if (businessScope.businessId) {
-    await supabase
-      .from("staff_branch_access")
-      .delete()
-      .eq("profile_id", userId)
-      .eq("business_id", businessScope.businessId);
-    const { error: accessError } = await supabase.from("staff_branch_access").insert({
-      profile_id: userId,
-      business_id: businessScope.businessId,
-        branch_id: normalizedBranchId,
-        access_scope: normalizedAccessScope,
-        is_primary: true,
-      });
-    if (accessError) {
-      return { ok: false, error: accessError.message };
-    }
+  await authClient
+    .from("staff_branch_access")
+    .delete()
+    .eq("profile_id", userId)
+    .eq("business_id", businessScope.businessId);
+  const { error: accessError } = await authClient.from("staff_branch_access").insert({
+    profile_id: userId,
+    business_id: businessScope.businessId,
+    branch_id: normalizedBranchId,
+    access_scope: normalizedAccessScope,
+    is_primary: true,
+  });
+  if (accessError) {
+    return { ok: false, error: accessError.message };
   }
 
   await logAuditEvent({
@@ -4338,42 +4025,21 @@ export async function createDemoStaffSet() {
 }
 
 export async function createCategory(name: string, sortOrder: number) {
-  const supabase = getSupabaseServerClient();
-  if (!supabase) {
-    return { ok: false, error: "Demo modda kategori ekleme pasif." };
-  }
-
-  const scope = await getDefaultBusinessScope();
-  const withBusinessPayload = { business_id: scope.businessId, name, sort_order: sortOrder };
-  const fallbackPayload = { name, sort_order: sortOrder };
-  let data: { id: string } | null = null;
-  let error: { message: string } | null = null;
-  const firstInsert = await supabase.from("categories").insert(withBusinessPayload).select("id").single();
-  data = firstInsert.data as { id: string } | null;
-  error = firstInsert.error as { message: string } | null;
-  if (error?.message?.toLowerCase().includes("business_id")) {
-    const secondInsert = await supabase.from("categories").insert(fallbackPayload).select("id").single();
-    data = secondInsert.data as { id: string } | null;
-    error = secondInsert.error as { message: string } | null;
-  }
-  if (error) {
-    return { ok: false, error: error.message };
-  }
-  if (!data) {
-    return { ok: false, error: "Kategori olusturulamadi." };
-  }
-  await logAuditEvent({
-    entityType: "category",
-    entityId: data.id as string,
-    action: "create",
-    details: { name, sortOrder },
+  return createCategoryImpl(name, sortOrder, {
+    getDefaultBusinessScope,
+    logAuditEvent,
+    revalidateProductManagementCaches,
+    demoCategories,
+    demoProducts,
+    demoIngredients,
+    demoModifierGroups,
+    demoModifierOptions,
+    demoProductIngredients,
   });
-  revalidateProductManagementCaches();
-  return { ok: true, id: data.id as string };
 }
 
 export async function updateCategorySortOrder(categoryId: string, sortOrder: number) {
-  const supabase = getSupabaseServerClient();
+  const supabase = await getTenantDataClient();
   if (!supabase) {
     return { ok: false, error: "Demo modda kategori sira guncelleme pasif." };
   }
@@ -4398,7 +4064,7 @@ export async function updateCategorySortOrder(categoryId: string, sortOrder: num
 }
 
 export async function reorderCategories(categoryIds: string[]) {
-  const supabase = getSupabaseServerClient();
+  const supabase = await getTenantDataClient();
   if (!supabase) {
     return { ok: false, error: "Demo modda kategori sira guncelleme pasif." };
   }
@@ -4432,44 +4098,21 @@ export async function reorderCategories(categoryIds: string[]) {
 }
 
 export async function deleteCategory(categoryId: string) {
-  const supabase = getSupabaseServerClient();
-  if (!supabase) {
-    return { ok: false, error: "Demo modda kategori silme pasif." };
-  }
-
-  const scope = await getDefaultBusinessScope();
-  let linkedProductsQuery = supabase
-    .from("products")
-    .select("id")
-    .eq("category_id", categoryId)
-    .limit(1);
-  if (!scope.useLegacySchema && scope.businessId) {
-    linkedProductsQuery = linkedProductsQuery.eq("business_id", scope.businessId);
-  }
-  const { data: linkedProducts } = await linkedProductsQuery;
-  if ((linkedProducts ?? []).length > 0) {
-    return { ok: false, error: "Bu kategoriye bagli urunler var." };
-  }
-
-  let deleteQuery = supabase.from("categories").delete().eq("id", categoryId);
-  if (!scope.useLegacySchema && scope.businessId) {
-    deleteQuery = deleteQuery.eq("business_id", scope.businessId);
-  }
-  const { error } = await deleteQuery;
-  if (error) {
-    return { ok: false, error: error.message };
-  }
-  await logAuditEvent({
-    entityType: "category",
-    entityId: categoryId,
-    action: "delete",
+  return deleteCategoryImpl(categoryId, {
+    getDefaultBusinessScope,
+    logAuditEvent,
+    revalidateProductManagementCaches,
+    demoCategories,
+    demoProducts,
+    demoIngredients,
+    demoModifierGroups,
+    demoModifierOptions,
+    demoProductIngredients,
   });
-  revalidateProductManagementCaches();
-  return { ok: true };
 }
 
 export async function bulkUpdateCategoryPrices(categoryId: string, percent: number) {
-  const supabase = getSupabaseServerClient();
+  const supabase = await getTenantDataClient();
   if (!supabase) {
     return { ok: false, error: "Demo modda toplu fiyat guncelleme pasif." };
   }
@@ -4506,7 +4149,7 @@ export async function bulkUpdateCategoryPrices(categoryId: string, percent: numb
 }
 
 export async function listStockMovements(limit = 100) {
-  const supabase = getSupabaseServerClient();
+  const supabase = await getTenantDataClient();
   if (!supabase) {
     return { movements: [] as StockMovement[], usingDemoData: true };
   }
@@ -4541,7 +4184,7 @@ export async function listStockMovements(limit = 100) {
 }
 
 export async function listAuditLogs(limit = 200) {
-  const supabase = getSupabaseServerClient();
+  const supabase = await getTenantDataClient();
   if (!supabase) {
     return { logs: [] as AuditLog[], usingDemoData: true };
   }
@@ -4637,7 +4280,7 @@ async function getCachedSalesReportSummaryRow(input: {
 }
 
 export async function getSalesReportSummary(days = 7) {
-  const supabase = getSupabaseServerClient();
+  const supabase = await getTenantDataClient();
   if (!supabase) {
     return { rows: [] as Array<{ day: string; sales: number; refunds: number; net: number }>, usingDemoData: true };
   }
@@ -4873,7 +4516,7 @@ async function getCachedFinancialInsightsRow(input: {
 }
 
 export async function getFinancialInsights(days = 7) {
-  const supabase = getSupabaseServerClient();
+  const supabase = await getTenantDataClient();
   if (!supabase) {
     return {
       usingDemoData: true,
@@ -4952,7 +4595,7 @@ export async function getFinancialInsights(days = 7) {
 }
 
 export async function getCurrentCashSession() {
-  const supabase = getSupabaseServerClient();
+  const supabase = await getTenantDataClient();
   if (!supabase) {
     return { session: null as CashRegisterSession | null, usingDemoData: true };
   }
@@ -4977,7 +4620,7 @@ export async function getCurrentCashSession() {
 }
 
 export async function openCashSession(openingCash: number, note?: string, openedBy?: string) {
-  const supabase = getSupabaseServerClient();
+  const supabase = await getTenantDataClient();
   if (!supabase) {
     return { ok: false, error: "Demo modda kasa oturumu pasif." };
   }
@@ -5025,7 +4668,7 @@ export async function closeCashSession(input: {
   note?: string;
   closedBy?: string;
 }) {
-  const supabase = getSupabaseServerClient();
+  const supabase = await getTenantDataClient();
   if (!supabase) {
     return { ok: false, error: "Demo modda kasa kapatma pasif." };
   }
@@ -5090,7 +4733,7 @@ export async function closeCashSession(input: {
 }
 
 export async function getPaymentOverview() {
-  const supabase = getSupabaseServerClient();
+  const supabase = await getTenantDataClient();
   if (!supabase) {
     return {
       today: { cashSale: 0, cardSale: 0, mixedSale: 0, refunds: 0, net: 0 },

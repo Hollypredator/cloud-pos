@@ -37,6 +37,24 @@ body {
   min-height: 100vh;
 }
 
+button {
+  transition:
+    transform 140ms ease,
+    box-shadow 140ms ease,
+    filter 140ms ease,
+    opacity 140ms ease;
+  will-change: transform;
+}
+
+button:active:not(:disabled) {
+  transform: translateY(1px) scale(0.985);
+  filter: saturate(0.96) brightness(0.98);
+}
+
+button:disabled {
+  cursor: not-allowed;
+}
+
 ::selection {
   background: rgba(255, 106, 61, 0.22);
   color: #111827;
