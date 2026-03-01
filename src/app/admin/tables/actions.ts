@@ -3,7 +3,7 @@
 import { revalidatePath } from "next/cache";
 import { redirect } from "next/navigation";
 import { requireRole } from "@/lib/auth";
-import { createTable, deleteTable, updateTableDetails } from "@/lib/data";
+import { createTable, deleteTable, moveTableOrder, updateTableDetails } from "@/lib/data";
 import { feedbackHref } from "./helpers";
 
 export async function addTableAction(formData: FormData) {
@@ -69,5 +69,28 @@ export async function deleteTableAction(formData: FormData) {
     redirect(feedbackHref("success", "Masa silindi."));
   } catch {
     redirect(feedbackHref("error", "Masa silinemedi. Aktif operasyonu olan masalar silinemez."));
+  }
+}
+
+export async function moveTableOrderAction(formData: FormData) {
+  await requireRole(["admin"], "/admin/tables");
+
+  const sourceTableId = String(formData.get("sourceTableId") ?? "");
+  const targetTableId = String(formData.get("targetTableId") ?? "");
+  if (!sourceTableId || !targetTableId) {
+    redirect(feedbackHref("error", "Adisyonu tasimak icin kaynak ve hedef masa secilmeli."));
+  }
+
+  try {
+    const result = await moveTableOrder({ sourceTableId, targetTableId });
+    if (!result.ok) {
+      redirect(feedbackHref("error", result.error ?? "Adisyon tasinamadi."));
+    }
+    revalidatePath("/admin/tables");
+    revalidatePath("/tables");
+    revalidatePath("/cashier");
+    redirect(feedbackHref("success", "Adisyon yeni masaya tasindi."));
+  } catch {
+    redirect(feedbackHref("error", "Adisyon yeni masaya tasinamadi."));
   }
 }

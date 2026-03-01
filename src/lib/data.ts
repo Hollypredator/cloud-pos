@@ -8,6 +8,7 @@ import {
   getOrderHistoryByTableIdImpl,
   getTableMapImpl,
   listLatestOrdersByTableIdsImpl,
+  moveTableOrderImpl,
   updateTableDetailsImpl,
 } from "@/lib/server/tables-data";
 import {
@@ -3130,6 +3131,14 @@ export async function updateTableDetails(input: { tableId: string; tableNumber: 
 
 export async function deleteTable(tableId: string) {
   return deleteTableImpl(tableId, {
+    getDefaultBusinessScope,
+    logAuditEvent,
+    revalidateOperationsCaches,
+  });
+}
+
+export async function moveTableOrder(input: { sourceTableId: string; targetTableId: string }) {
+  return moveTableOrderImpl(input, {
     getDefaultBusinessScope,
     logAuditEvent,
     revalidateOperationsCaches,

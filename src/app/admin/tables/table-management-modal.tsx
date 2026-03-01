@@ -3,7 +3,7 @@ import Link from "next/link";
 import { EmptyPanel } from "@/components/backoffice-ui";
 import { PendingSubmitButton } from "@/components/pending-submit-button";
 import type { DiningTable } from "@/lib/types";
-import { deleteTableAction, updateTableAction } from "./actions";
+import { deleteTableAction, moveTableOrderAction, updateTableAction } from "./actions";
 import { orderTone, tableStatusLabel } from "./helpers";
 
 type TableOrderSummary = {
@@ -30,12 +30,14 @@ export function TableManagementModal({
   orders,
   qrTarget,
   qrImage,
+  movableTables,
 }: {
   table: DiningTable;
   latestOrder: TableOrderSummary | null;
   orders: TableOrderHistoryItem[];
   qrTarget: string;
   qrImage: string;
+  movableTables: Array<{ id: string; label: string }>;
 }) {
   return (
     <div className="fixed inset-0 z-50 flex items-end justify-center bg-slate-950/42 p-0 backdrop-blur-[2px] sm:items-center sm:p-4">
@@ -111,6 +113,40 @@ export function TableManagementModal({
                 </Link>
               </div>
             </article>
+
+            {latestOrder ? (
+              <article className="rounded-[28px] border border-slate-200 bg-white p-5">
+                <h3 className="font-display text-2xl font-semibold tracking-tight text-slate-900">Adisyonu Tas</h3>
+                <p className="mt-2 text-sm text-slate-600">Aktif adisyonu bos bir masaya tasiyarak eski masayi aninda kapat.</p>
+                <form action={moveTableOrderAction} className="mt-4 grid gap-3">
+                  <input type="hidden" name="sourceTableId" value={table.id} />
+                  <select
+                    name="targetTableId"
+                    required
+                    className="rounded-2xl border border-slate-300 px-4 py-3 text-sm"
+                    defaultValue=""
+                  >
+                    <option value="" disabled>
+                      Hedef masa sec
+                    </option>
+                    {movableTables.map((candidate) => (
+                      <option key={candidate.id} value={candidate.id}>
+                        {candidate.label}
+                      </option>
+                    ))}
+                  </select>
+                  <PendingSubmitButton
+                    idleLabel="Adisyonu Bu Masaya Tas"
+                    pendingLabel="Tasinıyor..."
+                    disabled={movableTables.length === 0}
+                    className="rounded-2xl border border-slate-200 bg-slate-900 px-4 py-3 text-sm font-semibold text-white disabled:cursor-not-allowed disabled:opacity-50"
+                  />
+                </form>
+                {movableTables.length === 0 ? (
+                  <p className="mt-3 text-sm text-slate-500">Tasimak icin bos baska masa bulunmuyor.</p>
+                ) : null}
+              </article>
+            ) : null}
 
             <article className="rounded-[28px] border border-rose-200 bg-rose-50/60 p-5">
               <h3 className="font-display text-2xl font-semibold tracking-tight text-slate-900">Masayi Kaldir</h3>

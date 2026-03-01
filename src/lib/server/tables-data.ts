@@ -25,6 +25,10 @@ type MutationDeps = {
   revalidateOperationsCaches: () => void;
 };
 
+type TableMoveResult =
+  | { ok: true }
+  | { ok: false; error: string };
+
 type QueryDeps = {
   getDefaultBusinessScope: () => Promise<Scope>;
   getOrderPaymentSummaryMap: (
@@ -406,6 +410,94 @@ export async function deleteTableImpl(tableId: string, deps: MutationDeps) {
   }
 
   await deps.logAuditEvent({ entityType: "table", entityId: tableId, action: "delete" });
+  deps.revalidateOperationsCaches();
+  return { ok: true };
+}
+
+export async function moveTableOrderImpl(
+  input: { sourceTableId: string; targetTableId: string },
+  deps: MutationDeps,
+): Promise<TableMoveResult> {
+  const supabase = getSupabaseServerClient();
+  if (!supabase) {
+    return { ok: false, error: "Demo modda adisyon tasima pasif." };
+  }
+
+  if (input.sourceTableId === input.targetTableId) {
+    return { ok: false, error: "Adisyon ayni masaya tasinamaz." };
+  }
+
+  const scope = await deps.getDefaultBusinessScope();
+  const targetBranchId = await resolveMutationBranchId(supabase, scope);
+
+  let activeOrderQuery = supabase
+    .from("orders")
+    .select("id, status, table_id")
+    .eq("table_id", input.sourceTableId)
+    .in("status", ["pending", "preparing", "served"])
+    .order("created_at", { ascending: false })
+    .limit(1);
+  if (!scope.useLegacySchema && scope.businessId) {
+    activeOrderQuery = activeOrderQuery.eq("business_id", scope.businessId);
+  }
+  if (targetBranchId) {
+    activeOrderQuery = activeOrderQuery.eq("branch_id", targetBranchId);
+  }
+
+  const { data: orderRow, error: orderError } = await activeOrderQuery.maybeSingle();
+  if (orderError || !orderRow) {
+    return { ok: false, error: orderError?.message ?? "Tasinacak aktif adisyon bulunamadi." };
+  }
+
+  let targetTableQuery = supabase
+    .from("tables")
+    .select("id, status")
+    .eq("id", input.targetTableId);
+  if (!scope.useLegacySchema && scope.businessId) {
+    targetTableQuery = targetTableQuery.eq("business_id", scope.businessId);
+  }
+  if (targetBranchId) {
+    targetTableQuery = targetTableQuery.eq("branch_id", targetBranchId);
+  }
+
+  const { data: targetTable, error: targetTableError } = await targetTableQuery.maybeSingle();
+  if (targetTableError || !targetTable) {
+    return { ok: false, error: targetTableError?.message ?? "Hedef masa bulunamadi." };
+  }
+
+  if ((targetTable.status as TableStatus) !== "empty") {
+    return { ok: false, error: "Adisyon sadece bos bir masaya tasinabilir." };
+  }
+
+  let updateOrderQuery = supabase
+    .from("orders")
+    .update({ table_id: input.targetTableId })
+    .eq("id", orderRow.id);
+  if (!scope.useLegacySchema && scope.businessId) {
+    updateOrderQuery = updateOrderQuery.eq("business_id", scope.businessId);
+  }
+  if (targetBranchId) {
+    updateOrderQuery = updateOrderQuery.eq("branch_id", targetBranchId);
+  }
+
+  const { error: updateOrderError } = await updateOrderQuery;
+  if (updateOrderError) {
+    return { ok: false, error: updateOrderError.message };
+  }
+
+  await supabase.from("tables").update({ status: "empty" as TableStatus }).eq("id", input.sourceTableId);
+  await supabase.from("tables").update({ status: "occupied" as TableStatus }).eq("id", input.targetTableId);
+
+  await deps.logAuditEvent({
+    entityType: "order",
+    entityId: orderRow.id as string,
+    action: "move_table",
+    details: {
+      fromTableId: input.sourceTableId,
+      toTableId: input.targetTableId,
+    },
+  });
+
   deps.revalidateOperationsCaches();
   return { ok: true };
 }

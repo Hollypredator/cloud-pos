@@ -28,6 +28,14 @@ export default async function AdminTablesPage({
   const latestOrderMap = ordersByTableId;
   const selectedTable = selectedTableId ? tables.find((table) => table.id === selectedTableId) ?? null : null;
   const { orders: selectedTableHistory } = selectedTable ? await getOrderHistoryByTableId(selectedTable.id, 8) : { orders: [] };
+  const movableTables = selectedTable
+    ? tables
+        .filter((table) => table.id !== selectedTable.id && table.status === "empty")
+        .map((table) => ({
+          id: table.id,
+          label: `${table.name || `Masa ${table.table_number}`} (No ${table.table_number})`,
+        }))
+    : [];
   const occupiedCount = tables.filter((table) => table.status === "occupied").length;
   const emptyCount = tables.filter((table) => table.status === "empty").length;
   const activeOrderCount = tables.filter((table) => {
@@ -195,6 +203,7 @@ export default async function AdminTablesPage({
           orders={selectedTableHistory}
           qrTarget={targetMap.get(selectedTable.id)?.target ?? "#"}
           qrImage={targetMap.get(selectedTable.id)?.image ?? "#"}
+          movableTables={movableTables}
         />
       ) : null}
     </BackofficePage>
