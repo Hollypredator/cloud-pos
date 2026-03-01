@@ -144,9 +144,9 @@ export function LandingContactCard({
   );
 
   return (
-    <section className="rounded-[2rem] border border-slate-200 bg-white/85 p-6 shadow-[0_20px_60px_rgba(15,23,42,0.10)] backdrop-blur">
+    <section className="rounded-[1.5rem] border border-slate-200 bg-white/85 p-4 shadow-[0_20px_60px_rgba(15,23,42,0.10)] backdrop-blur sm:rounded-[2rem] sm:p-6">
       <p className="text-xs uppercase tracking-[0.28em] text-slate-500">{eyebrow}</p>
-      <h3 className="mt-3 text-3xl font-semibold tracking-tight text-slate-900">{title}</h3>
+      <h3 className="mt-3 text-2xl font-semibold tracking-tight text-slate-900 sm:text-3xl">{title}</h3>
       <p className="mt-3 max-w-2xl text-sm leading-7 text-slate-600">{body}</p>
 
       {leadStatus === "success" ? (
@@ -160,7 +160,7 @@ export function LandingContactCard({
         </p>
       ) : null}
 
-      <div className="mt-6 grid gap-4 lg:grid-cols-[1.1fr_0.9fr]">
+      <div className="mt-5 grid gap-4 lg:grid-cols-[1.1fr_0.9fr]">
         {previewMode ? (
           <div className="grid gap-4 sm:grid-cols-2">{formFields}</div>
         ) : (
@@ -169,9 +169,9 @@ export function LandingContactCard({
           </form>
         )}
 
-        <div className="rounded-[1.5rem] bg-slate-950 p-5 text-white">
+        <div className="rounded-[1.25rem] bg-slate-950 p-4 text-white sm:rounded-[1.5rem] sm:p-5">
           <p className="text-xs uppercase tracking-[0.24em] text-slate-400">Hizli Iletisim</p>
-          <p className="mt-3 text-2xl font-semibold tracking-tight">Demo tarihi netlestir</p>
+          <p className="mt-3 text-xl font-semibold tracking-tight sm:text-2xl">Demo tarihi netlestir</p>
           <p className="mt-3 text-sm leading-7 text-slate-300">
             Satista bekleme yaratma. Hazir mesajla iletisime gec, ayni gorusmede sonraki adimi al.
           </p>

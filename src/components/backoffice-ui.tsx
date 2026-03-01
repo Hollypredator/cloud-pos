@@ -23,17 +23,17 @@ export function BackofficePage({
   actions?: React.ReactNode;
 }) {
   return (
-    <div className="min-h-screen bg-[#e9eaee] px-4 py-5 md:px-6">
+    <div className="min-h-screen bg-[#e9eaee] px-3 py-4 md:px-6">
       <main className="mx-auto flex w-full max-w-[1600px] flex-col gap-5 xl:flex-row">
         {sidebar ? <aside className="w-full xl:w-[320px]">{sidebar}</aside> : null}
         <section className="min-w-0 flex-1 space-y-5">
-          <div className="panel-surface mesh-accent rounded-[28px] px-6 py-5">
+          <div className="panel-surface mesh-accent rounded-[24px] px-4 py-4 sm:px-6 sm:py-5">
             <div className="flex flex-wrap items-center justify-between gap-4">
               <div>
                 <p className="text-sm font-medium text-slate-500">{description}</p>
-                <h1 className="font-display mt-1 text-3xl font-semibold tracking-tight text-slate-900">{title}</h1>
+                <h1 className="font-display mt-1 text-2xl font-semibold tracking-tight text-slate-900 sm:text-3xl">{title}</h1>
               </div>
-              {actions ? <div className="flex flex-wrap items-center gap-3">{actions}</div> : null}
+              {actions ? <div className="flex w-full flex-wrap items-center gap-2 sm:w-auto sm:gap-3">{actions}</div> : null}
             </div>
           </div>
           {children}
@@ -108,7 +108,7 @@ export function SummaryCard({
       <div className="flex items-start justify-between gap-3">
         <div>
           <p className="text-xs font-bold uppercase tracking-[0.16em] text-slate-500">{label}</p>
-          <p className="font-display font-numeric mt-5 text-[2rem] font-semibold tracking-tight text-slate-900">{value}</p>
+          <p className="font-display font-numeric mt-4 text-[1.8rem] font-semibold tracking-tight text-slate-900 sm:mt-5 sm:text-[2rem]">{value}</p>
           {hint ? <p className="mt-2 text-sm text-slate-500">{hint}</p> : null}
         </div>
         <span className={cn("inline-flex h-12 w-12 items-center justify-center rounded-2xl text-sm font-bold", toneStyles[tone])}>

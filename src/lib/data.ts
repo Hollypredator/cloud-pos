@@ -4610,24 +4610,48 @@ function isKitchenOrderCritical(order: { status: string; created_at: string }) {
 }
 
 export async function getOpsMetricsSnapshot() {
-  const [{ metrics }, { orders }, { requests }] = await Promise.all([
-    getDashboardData(),
-    listOrders(["pending", "preparing"], { includeItems: false }),
-    listTableRequests("open"),
-  ]);
+  const supabase = getSupabaseServerClient();
+  if (!supabase) {
+    const pendingOrders = demoOrders.filter((order) => order.status === "pending" || order.status === "preparing");
+    const delayedKitchenOrders = pendingOrders.filter((order) => isKitchenOrderDelayed(order)).length;
+    const criticalKitchenOrders = pendingOrders.filter((order) => isKitchenOrderCritical(order)).length;
+    const dashboard = await getDashboardData();
+    return {
+      openOrders: dashboard.metrics.openOrders,
+      pendingOrders: dashboard.metrics.pending,
+      preparingOrders: dashboard.metrics.preparing,
+      servedOrders: dashboard.metrics.served,
+      occupiedTables: dashboard.metrics.occupiedTables,
+      emptyTables: dashboard.metrics.emptyTables,
+      todayRevenue: Number(dashboard.metrics.todayRevenue.toFixed(2)),
+      openServiceRequests: 0,
+      delayedKitchenOrders,
+      criticalKitchenOrders,
+    };
+  }
+
+  const [dashboard, scope] = await Promise.all([getDashboardData(), getDefaultBusinessScope()]);
+  const cached = await getCachedOpsSignalsRow({
+    businessId: scope.businessId,
+    branchId: scope.branchId,
+    useLegacySchema: scope.useLegacySchema,
+  });
+
+  const orders = cached?.orders ?? [];
+  const openServiceRequests = cached?.openServiceRequests ?? 0;
 
   const delayedKitchenOrders = orders.filter((order) => isKitchenOrderDelayed(order)).length;
   const criticalKitchenOrders = orders.filter((order) => isKitchenOrderCritical(order)).length;
 
   return {
-    openOrders: metrics.openOrders,
-    pendingOrders: metrics.pending,
-    preparingOrders: metrics.preparing,
-    servedOrders: metrics.served,
-    occupiedTables: metrics.occupiedTables,
-    emptyTables: metrics.emptyTables,
-    todayRevenue: Number(metrics.todayRevenue.toFixed(2)),
-    openServiceRequests: requests.length,
+    openOrders: dashboard.metrics.openOrders,
+    pendingOrders: dashboard.metrics.pending,
+    preparingOrders: dashboard.metrics.preparing,
+    servedOrders: dashboard.metrics.served,
+    occupiedTables: dashboard.metrics.occupiedTables,
+    emptyTables: dashboard.metrics.emptyTables,
+    todayRevenue: Number(dashboard.metrics.todayRevenue.toFixed(2)),
+    openServiceRequests,
     delayedKitchenOrders,
     criticalKitchenOrders,
   };
@@ -4661,94 +4685,20 @@ export async function getDashboardData() {
     };
   }
 
-  const todayStart = new Date();
-  todayStart.setHours(0, 0, 0, 0);
-
   const scope = await getDefaultBusinessScope();
-  const [
-    { data: openRows },
-    { data: pendingRows },
-    { data: preparingRows },
-    { data: servedRows },
-    { data: paymentRows },
-    { data: tablesRows },
-    { data: recentOrderRows },
-    { data: lowStockRows },
-  ] = await Promise.all([
-    !scope.useLegacySchema && scope.businessId
-      ? (scope.branchId
-          ? supabase.from("orders").select("id, status").eq("business_id", scope.businessId).eq("branch_id", scope.branchId)
-          : supabase.from("orders").select("id, status").eq("business_id", scope.businessId))
-      : supabase.from("orders").select("id, status"),
-    !scope.useLegacySchema && scope.businessId
-      ? (scope.branchId
-          ? supabase.from("orders").select("id").eq("status", "pending").eq("business_id", scope.businessId).eq("branch_id", scope.branchId)
-          : supabase.from("orders").select("id").eq("status", "pending").eq("business_id", scope.businessId))
-      : supabase.from("orders").select("id").eq("status", "pending"),
-    !scope.useLegacySchema && scope.businessId
-      ? (scope.branchId
-          ? supabase.from("orders").select("id").eq("status", "preparing").eq("business_id", scope.businessId).eq("branch_id", scope.branchId)
-          : supabase.from("orders").select("id").eq("status", "preparing").eq("business_id", scope.businessId))
-      : supabase.from("orders").select("id").eq("status", "preparing"),
-    !scope.useLegacySchema && scope.businessId
-      ? (scope.branchId
-          ? supabase.from("orders").select("id").eq("status", "served").eq("business_id", scope.businessId).eq("branch_id", scope.branchId)
-          : supabase.from("orders").select("id").eq("status", "served").eq("business_id", scope.businessId))
-      : supabase.from("orders").select("id").eq("status", "served"),
-    !scope.useLegacySchema && scope.businessId
-      ? (scope.branchId
-          ? supabase
-              .from("payments")
-              .select("amount, payment_type")
-              .eq("business_id", scope.businessId)
-              .eq("branch_id", scope.branchId)
-              .gte("created_at", todayStart.toISOString())
-          : supabase
-              .from("payments")
-              .select("amount, payment_type")
-              .eq("business_id", scope.businessId)
-              .gte("created_at", todayStart.toISOString()))
-      : supabase.from("payments").select("amount, payment_type").gte("created_at", todayStart.toISOString()),
-    !scope.useLegacySchema && scope.businessId
-      ? (scope.branchId
-          ? supabase.from("tables").select("id, status").eq("business_id", scope.businessId).eq("branch_id", scope.branchId)
-          : supabase.from("tables").select("id, status").eq("business_id", scope.businessId))
-      : supabase.from("tables").select("id, status"),
-    !scope.useLegacySchema && scope.businessId
-      ? (scope.branchId
-          ? supabase
-              .from("orders")
-              .select("id, table_id, total_price, final_price, channel, customer_name, customer_phone, delivery_address, courier_id, courier_name, fulfillment_status, status, created_at, tables(table_number)")
-              .eq("business_id", scope.businessId)
-              .eq("branch_id", scope.branchId)
-              .order("created_at", { ascending: false })
-              .limit(8)
-          : supabase
-              .from("orders")
-              .select("id, table_id, total_price, final_price, channel, customer_name, customer_phone, delivery_address, courier_id, courier_name, fulfillment_status, status, created_at, tables(table_number)")
-              .eq("business_id", scope.businessId)
-              .order("created_at", { ascending: false })
-              .limit(8))
-      : supabase
-          .from("orders")
-          .select("id, table_id, total_price, final_price, channel, customer_name, customer_phone, delivery_address, courier_id, courier_name, fulfillment_status, status, created_at, tables(table_number)")
-          .order("created_at", { ascending: false })
-          .limit(8),
-    !scope.useLegacySchema && scope.businessId
-      ? supabase
-          .from("products")
-          .select("id, category_id, name, price, stock_count, image_url, description, is_available")
-          .eq("business_id", scope.businessId)
-          .lte("stock_count", 10)
-          .order("stock_count", { ascending: true })
-          .limit(8)
-      : supabase
-          .from("products")
-          .select("id, category_id, name, price, stock_count, image_url, description, is_available")
-          .lte("stock_count", 10)
-          .order("stock_count", { ascending: true })
-          .limit(8),
-  ]);
+  const cached = await getCachedDashboardDataRow({
+    businessId: scope.businessId,
+    branchId: scope.branchId,
+    useLegacySchema: scope.useLegacySchema,
+  });
+  const openRows = cached?.openRows ?? [];
+  const pendingRows = cached?.pendingRows ?? [];
+  const preparingRows = cached?.preparingRows ?? [];
+  const servedRows = cached?.servedRows ?? [];
+  const paymentRows = cached?.paymentRows ?? [];
+  const tablesRows = cached?.tablesRows ?? [];
+  const recentOrderRows = cached?.recentOrderRows ?? [];
+  const lowStockRows = cached?.lowStockRows ?? [];
 
   const tableRows = (tablesRows ?? []) as Array<{ id: string; status: TableStatus }>;
   const occupiedTables = tableRows.filter((row) => row.status === "occupied").length;
@@ -5014,28 +4964,16 @@ export async function getSetupChecklistSummary() {
     };
   }
 
-  const [
-    { count: businesses },
-    { count: products },
-    { count: tables },
-    { count: staff },
-    { count: leads },
-  ] = await Promise.all([
-    supabase.from("businesses").select("id", { count: "exact", head: true }).eq("is_active", true),
-    supabase.from("products").select("id", { count: "exact", head: true }),
-    supabase.from("tables").select("id", { count: "exact", head: true }),
-    supabase.from("profiles").select("id", { count: "exact", head: true }),
-    supabase.from("sales_leads").select("id", { count: "exact", head: true }),
-  ]);
+  const cached = await getCachedSetupChecklistSummary();
 
   return {
     usingDemoData: false,
     counts: {
-      businesses: businesses ?? 0,
-      products: products ?? 0,
-      tables: tables ?? 0,
-      staff: staff ?? 0,
-      leads: leads ?? 0,
+      businesses: cached?.businesses ?? 0,
+      products: cached?.products ?? 0,
+      tables: cached?.tables ?? 0,
+      staff: cached?.staff ?? 0,
+      leads: cached?.leads ?? 0,
     },
   };
 }
@@ -5147,20 +5085,20 @@ async function getCachedDashboardDataRow(input: {
           ? (input.branchId
               ? supabase
                   .from("orders")
-                  .select("id, table_number, customer_name, channel, status, total_price, final_price, created_at")
+                  .select("id, table_id, total_price, final_price, channel, customer_name, customer_phone, delivery_address, courier_id, courier_name, fulfillment_status, status, created_at, tables(table_number)")
                   .eq("business_id", input.businessId)
                   .eq("branch_id", input.branchId)
                   .order("created_at", { ascending: false })
                   .limit(8)
               : supabase
                   .from("orders")
-                  .select("id, table_number, customer_name, channel, status, total_price, final_price, created_at")
+                  .select("id, table_id, total_price, final_price, channel, customer_name, customer_phone, delivery_address, courier_id, courier_name, fulfillment_status, status, created_at, tables(table_number)")
                   .eq("business_id", input.businessId)
                   .order("created_at", { ascending: false })
                   .limit(8))
           : supabase
               .from("orders")
-              .select("id, table_number, customer_name, channel, status, total_price, final_price, created_at")
+              .select("id, table_id, total_price, final_price, channel, customer_name, customer_phone, delivery_address, courier_id, courier_name, fulfillment_status, status, created_at, tables(table_number)")
               .order("created_at", { ascending: false })
               .limit(8),
         !input.useLegacySchema && input.businessId
@@ -5181,12 +5119,67 @@ async function getCachedDashboardDataRow(input: {
         servedRows: (servedRows ?? []) as Array<{ id: string }>,
         paymentRows: (paymentRows ?? []) as Array<{ amount: number; payment_type: "sale" | "refund" }>,
         tablesRows: (tablesRows ?? []) as Array<{ id: string; status?: TableStatus }>,
-        recentOrderRows: (recentOrderRows ?? []) as Array<Order>,
+        recentOrderRows: (recentOrderRows ?? []) as Array<OrderRow>,
         lowStockRows: (lowStockRows ?? []) as Array<Pick<Product, "id" | "name" | "stock_count">>,
       };
     },
     [cacheKey],
     { revalidate: 10, tags: ["dashboard-snapshot"] },
+  );
+
+  return reader();
+}
+
+async function getCachedOpsSignalsRow(input: {
+  businessId: string | null;
+  branchId: string | null;
+  useLegacySchema: boolean;
+}) {
+  const cacheKey = `ops-signals:${input.businessId ?? "none"}:${input.branchId ?? "all"}:${input.useLegacySchema ? "legacy" : "scoped"}`;
+  const reader = unstable_cache(
+    async () => {
+      const supabase = getSupabaseServerClient();
+      if (!supabase) {
+        return null;
+      }
+
+      const ordersQuery =
+        !input.useLegacySchema && input.businessId
+          ? (input.branchId
+              ? supabase
+                  .from("orders")
+                  .select("status, created_at")
+                  .eq("business_id", input.businessId)
+                  .eq("branch_id", input.branchId)
+                  .in("status", ["pending", "preparing"])
+              : supabase
+                  .from("orders")
+                  .select("status, created_at")
+                  .eq("business_id", input.businessId)
+                  .in("status", ["pending", "preparing"]))
+          : supabase.from("orders").select("status, created_at").in("status", ["pending", "preparing"]);
+
+      const requestsQuery =
+        !input.useLegacySchema && input.businessId
+          ? (input.branchId
+              ? supabase
+                  .from("table_requests")
+                  .select("id")
+                  .eq("business_id", input.businessId)
+                  .eq("branch_id", input.branchId)
+                  .eq("status", "open")
+              : supabase.from("table_requests").select("id").eq("business_id", input.businessId).eq("status", "open"))
+          : supabase.from("table_requests").select("id").eq("status", "open");
+
+      const [{ data: orders }, { data: requests }] = await Promise.all([ordersQuery, requestsQuery]);
+
+      return {
+        orders: (orders ?? []) as Array<{ status: string; created_at: string }>,
+        openServiceRequests: (requests ?? []).length,
+      };
+    },
+    [cacheKey],
+    { revalidate: 5, tags: ["ops-signals"] },
   );
 
   return reader();
