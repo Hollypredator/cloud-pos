@@ -1,4 +1,5 @@
 import type { Metadata } from "next";
+import { headers } from "next/headers";
 import { Sora, Space_Grotesk, Geist_Mono } from "next/font/google";
 import "./globals.css";
 import { AppShell } from "@/components/app-shell";
@@ -56,6 +57,23 @@ export default async function RootLayout({
 }: Readonly<{
   children: React.ReactNode;
 }>) {
+  const pathname = (await headers()).get("x-pathname") ?? "/";
+  const needsAppShell = ["/ops", "/kitchen", "/cashier", "/service-requests", "/tables", "/delivery", "/admin"].some(
+    (prefix) => pathname === prefix || pathname.startsWith(`${prefix}/`),
+  );
+
+  if (!needsAppShell) {
+    return (
+      <html lang="tr">
+        <body
+          className={`${sora.variable} ${spaceGrotesk.variable} ${geistMono.variable} antialiased`}
+        >
+          {children}
+        </body>
+      </html>
+    );
+  }
+
   const [shellSnapshot, { settings: generalSettings }, { settings: applicationSettings }] = await Promise.all([
     getAppShellSnapshot(),
     getGeneralSettings(),

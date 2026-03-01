@@ -1,6 +1,8 @@
 import { NextResponse, type NextRequest } from "next/server";
 import { createServerClient } from "@supabase/ssr";
 
+const authRoutePrefixes = ["/ops", "/kitchen", "/cashier", "/service-requests", "/tables", "/delivery", "/admin", "/studio", "/login", "/auth"];
+
 function normalizeHost(host: string | null) {
   return (host ?? "").toLowerCase().split(":")[0];
 }
@@ -35,13 +37,28 @@ export async function middleware(request: NextRequest) {
     return hostResponse;
   }
 
+  const requestHeaders = new Headers(request.headers);
+  requestHeaders.set("x-pathname", request.nextUrl.pathname);
+
+  const needsAuthRefresh = authRoutePrefixes.some(
+    (prefix) => request.nextUrl.pathname === prefix || request.nextUrl.pathname.startsWith(`${prefix}/`),
+  );
+
   const supabaseUrl = process.env.NEXT_PUBLIC_SUPABASE_URL;
   const anonKey = process.env.NEXT_PUBLIC_SUPABASE_ANON_KEY;
-  if (!supabaseUrl || !anonKey) {
-    return NextResponse.next();
+  if (!supabaseUrl || !anonKey || !needsAuthRefresh) {
+    return NextResponse.next({
+      request: {
+        headers: requestHeaders,
+      },
+    });
   }
 
-  let response = NextResponse.next({ request });
+  let response = NextResponse.next({
+    request: {
+      headers: requestHeaders,
+    },
+  });
   const supabase = createServerClient(supabaseUrl, anonKey, {
     cookies: {
       getAll() {
