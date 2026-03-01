@@ -3140,6 +3140,7 @@ export async function deleteTable(tableId: string) {
 export async function moveTableOrder(input: { sourceTableId: string; targetTableId: string }) {
   return moveTableOrderImpl(input, {
     getDefaultBusinessScope,
+    getTenantDataClient,
     logAuditEvent,
     revalidateOperationsCaches,
   });
@@ -6122,6 +6123,142 @@ export async function clearDemoOperationsData() {
   });
 
   return { ok: true, clearedOrders: orderIds.length };
+}
+
+export async function clearBusinessOperationalData(options?: { deleteTables?: boolean }) {
+  const supabase = await getTenantDataClient();
+  if (!supabase) {
+    return { ok: false, error: "Demo fallback modunda isletme temizligi pasif." };
+  }
+
+  const scope = await getDefaultBusinessScope();
+  if (!scope.businessId) {
+    return { ok: false, error: "Aktif isletme bulunamadi." };
+  }
+
+  const deleteTables = Boolean(options?.deleteTables);
+
+  const { data: tableRows, error: tableRowsError } = await supabase
+    .from("tables")
+    .select("id")
+    .eq("business_id", scope.businessId);
+  if (tableRowsError) {
+    return { ok: false, error: tableRowsError.message };
+  }
+
+  const tableIds = ((tableRows ?? []) as Array<{ id: string }>).map((row) => row.id);
+
+  const { data: orderRows, error: orderRowsError } = await supabase
+    .from("orders")
+    .select("id")
+    .eq("business_id", scope.businessId);
+  if (orderRowsError) {
+    return { ok: false, error: orderRowsError.message };
+  }
+
+  const orderIds = ((orderRows ?? []) as Array<{ id: string }>).map((row) => row.id);
+
+  if (tableIds.length > 0) {
+    const { error: tableRequestsError } = await supabase
+      .from("table_requests")
+      .delete()
+      .in("table_id", tableIds);
+    if (tableRequestsError) {
+      return { ok: false, error: tableRequestsError.message };
+    }
+  }
+
+  if (orderIds.length > 0) {
+    const { error: modifierDeleteError } = await supabase
+      .from("order_item_modifiers")
+      .delete()
+      .in("order_id", orderIds);
+    if (modifierDeleteError) {
+      return { ok: false, error: modifierDeleteError.message };
+    }
+
+    const { error: itemDeleteError } = await supabase
+      .from("order_items")
+      .delete()
+      .in("order_id", orderIds);
+    if (itemDeleteError) {
+      return { ok: false, error: itemDeleteError.message };
+    }
+
+    const { error: paymentDeleteError } = await supabase
+      .from("payments")
+      .delete()
+      .in("order_id", orderIds);
+    if (paymentDeleteError) {
+      return { ok: false, error: paymentDeleteError.message };
+    }
+
+    const { error: orderDeleteError } = await supabase
+      .from("orders")
+      .delete()
+      .in("id", orderIds)
+      .eq("business_id", scope.businessId);
+    if (orderDeleteError) {
+      return { ok: false, error: orderDeleteError.message };
+    }
+  }
+
+  const { error: courierDeleteError } = await supabase
+    .from("couriers")
+    .delete()
+    .eq("business_id", scope.businessId);
+  if (courierDeleteError) {
+    return { ok: false, error: courierDeleteError.message };
+  }
+
+  const { error: sessionDeleteError } = await supabase
+    .from("cash_register_sessions")
+    .delete()
+    .eq("business_id", scope.businessId);
+  if (sessionDeleteError) {
+    return { ok: false, error: sessionDeleteError.message };
+  }
+
+  if (deleteTables) {
+    if (tableIds.length > 0) {
+      const { error: tableDeleteError } = await supabase
+        .from("tables")
+        .delete()
+        .in("id", tableIds)
+        .eq("business_id", scope.businessId);
+      if (tableDeleteError) {
+        return { ok: false, error: tableDeleteError.message };
+      }
+    }
+  } else if (tableIds.length > 0) {
+    const { error: tableResetError } = await supabase
+      .from("tables")
+      .update({ status: "empty" as TableStatus })
+      .in("id", tableIds)
+      .eq("business_id", scope.businessId);
+    if (tableResetError) {
+      return { ok: false, error: tableResetError.message };
+    }
+  }
+
+  await logAuditEvent({
+    entityType: "business",
+    entityId: scope.businessId,
+    action: deleteTables ? "reset_operational_data_and_tables" : "reset_operational_data",
+    details: {
+      clearedOrders: orderIds.length,
+      clearedTables: deleteTables ? tableIds.length : 0,
+      resetTableStatuses: deleteTables ? 0 : tableIds.length,
+    },
+  });
+
+  revalidateOperationsCaches();
+  return {
+    ok: true,
+    clearedOrders: orderIds.length,
+    clearedTables: deleteTables ? tableIds.length : 0,
+    resetTableStatuses: deleteTables ? 0 : tableIds.length,
+  };
 }
 
 export async function getGeneralSettings() {

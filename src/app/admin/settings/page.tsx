@@ -3,6 +3,7 @@ import Link from "next/link";
 import { getCurrentUserWithRole, requireExactRole } from "@/lib/auth";
 import {
   clearDemoOperationsData,
+  clearBusinessOperationalData,
   ensureDemoOperationsData,
   getApplicationSettings,
   getGeneralSettings,
@@ -120,6 +121,27 @@ async function clearDemoOperationsAction() {
   revalidatePath("/cashier/session");
   revalidatePath("/delivery");
   revalidatePath("/tables");
+  revalidatePath("/admin/reports");
+  revalidatePath("/admin/finance");
+}
+
+async function resetBusinessOperationalDataAction(formData: FormData) {
+  "use server";
+  await requireExactRole(["owner"], "/admin/settings");
+  const deleteTables = formData.get("deleteTables") === "on";
+  const result = await clearBusinessOperationalData({ deleteTables });
+  if (!result.ok) {
+    return;
+  }
+
+  revalidatePath("/admin/settings");
+  revalidatePath("/ops");
+  revalidatePath("/kitchen");
+  revalidatePath("/cashier");
+  revalidatePath("/cashier/session");
+  revalidatePath("/delivery");
+  revalidatePath("/tables");
+  revalidatePath("/admin/tables");
   revalidatePath("/admin/reports");
   revalidatePath("/admin/finance");
 }
@@ -362,6 +384,26 @@ export default async function AdminSettingsPage() {
           <button type="submit" className="rounded-2xl border border-slate-200 bg-slate-50 px-5 py-3 text-sm font-semibold text-slate-800">
             Demo Verisini Temizle
           </button>
+        </form>
+
+        <form action={resetBusinessOperationalDataAction}>
+          <ContentCard title="Operasyon Verisini Sifirla">
+            <div className="space-y-4">
+              <div className="rounded-[24px] border border-rose-200 bg-rose-50 px-5 py-4 text-sm text-rose-900">
+                Bu islem aktif isletmedeki adisyonlari, odemeleri, masa taleplerini, kurye ve kasa oturumlarini temizler.
+                Urunler, kategoriler, personel ve ayarlar korunur.
+              </div>
+              <label className="flex items-center gap-3 rounded-2xl border border-slate-200 bg-slate-50 px-4 py-4 text-sm text-slate-700">
+                <input type="checkbox" name="deleteTables" className="h-4 w-4 rounded border-slate-300" />
+                Masalari da tamamen sil
+              </label>
+              <div className="flex justify-end">
+                <button type="submit" className="rounded-2xl border border-rose-300 bg-white px-5 py-3 text-sm font-semibold text-rose-700">
+                  Isletme Operasyonunu Temizle
+                </button>
+              </div>
+            </div>
+          </ContentCard>
         </form>
       </div>
 

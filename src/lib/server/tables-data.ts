@@ -16,6 +16,7 @@ type CreateTableResult =
 
 type MutationDeps = {
   getDefaultBusinessScope: () => Promise<Scope>;
+  getTenantDataClient?: () => Promise<NonNullable<ReturnType<typeof getSupabaseServerClient>> | null>;
   logAuditEvent: (input: {
     entityType: string;
     entityId: string;
@@ -418,7 +419,7 @@ export async function moveTableOrderImpl(
   input: { sourceTableId: string; targetTableId: string },
   deps: MutationDeps,
 ): Promise<TableMoveResult> {
-  const supabase = getSupabaseServerClient();
+  const supabase = (await deps.getTenantDataClient?.()) ?? getSupabaseServerClient();
   if (!supabase) {
     return { ok: false, error: "Demo modda adisyon tasima pasif." };
   }
