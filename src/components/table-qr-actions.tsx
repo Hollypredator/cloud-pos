@@ -39,8 +39,8 @@ export function TableQrActions({
       </button>
 
       {open ? (
-        <div className="fixed inset-0 z-50 flex items-center justify-center bg-slate-950/45 px-4 py-8">
-          <div className="w-full max-w-5xl rounded-[28px] border border-slate-200 bg-white p-6 shadow-2xl">
+        <div className="fixed inset-0 z-50 flex items-end justify-center bg-slate-950/45 px-0 py-0 sm:items-center sm:px-4 sm:py-8">
+          <div className="w-full max-w-5xl rounded-none border border-slate-200 bg-white p-4 shadow-2xl sm:rounded-[28px] sm:p-6">
             <div className="flex items-start justify-between gap-4">
               <div>
                 <p className="text-xs font-bold uppercase tracking-[0.2em] text-slate-500">Masa QR</p>

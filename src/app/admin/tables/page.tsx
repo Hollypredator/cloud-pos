@@ -328,8 +328,8 @@ function TableManagementModal({
   qrImage: string;
 }) {
   return (
-    <div className="fixed inset-0 z-50 flex items-center justify-center bg-slate-950/42 p-4 backdrop-blur-[2px]">
-      <div className="panel-surface max-h-[92vh] w-full max-w-6xl overflow-auto rounded-[32px] p-6">
+    <div className="fixed inset-0 z-50 flex items-end justify-center bg-slate-950/42 p-0 backdrop-blur-[2px] sm:items-center sm:p-4">
+      <div className="panel-surface h-[100dvh] w-full max-w-6xl overflow-auto rounded-none p-4 sm:max-h-[92vh] sm:h-auto sm:rounded-[32px] sm:p-6">
         <div className="mb-5 flex flex-wrap items-start justify-between gap-4 border-b border-slate-200 pb-5">
           <div>
             <p className="text-xs font-bold uppercase tracking-[0.16em] text-slate-500">Masa Yonetimi</p>
