@@ -1,0 +1,166 @@
+export type GeneralSettings = {
+  siteName: string;
+  siteTagline: string;
+  contactPhone: string;
+  whatsappPhone: string;
+  supportEmail: string;
+  address: string;
+  logoUrl: string;
+  footerNote: string;
+};
+
+export type SmtpSettings = {
+  host: string;
+  port: number;
+  secure: boolean;
+  username: string;
+  password: string;
+  fromEmail: string;
+  fromName: string;
+  replyToEmail: string;
+  notificationEmail: string;
+};
+
+export type SeoSettings = {
+  metaTitle: string;
+  metaDescription: string;
+  ogTitle: string;
+  ogDescription: string;
+  ogImageUrl: string;
+  twitterHandle: string;
+  indexable: boolean;
+  canonicalUrl: string;
+};
+
+export type ApplicationSettings = {
+  appPrintingEnabled: boolean;
+  demoMode: boolean;
+  sidebarTheme: "ember" | "ocean" | "night";
+  sidebarOrder: "default" | "service_first" | "management_first";
+  sidebarAccentColor: string;
+  ownerSidebarOrder: string[];
+  adminSidebarOrder: string[];
+};
+
+export const sidebarThemeOptions = [
+  { value: "ember", label: "Sicak Turuncu" },
+  { value: "ocean", label: "Okyanus" },
+  { value: "night", label: "Gece Grafit" },
+] as const;
+
+export const sidebarOrderOptions = [
+  { value: "default", label: "Dengeli Standart" },
+  { value: "service_first", label: "Servis Once" },
+  { value: "management_first", label: "Yonetim Once" },
+] as const;
+
+export const defaultGeneralSettings: GeneralSettings = {
+  siteName: "Cloud POS",
+  siteTagline: "Yeni nesil cafe ve restoran operasyonu",
+  contactPhone: "+90 555 000 00 00",
+  whatsappPhone: "+90 555 000 00 00",
+  supportEmail: "info@cloudpos.local",
+  address: "Istanbul",
+  logoUrl: "",
+  footerNote: "Cloud POS ile masa, siparis, mutfak ve kasa akislarini tek panelde yonetin.",
+};
+
+export const defaultSmtpSettings: SmtpSettings = {
+  host: "",
+  port: 587,
+  secure: false,
+  username: "",
+  password: "",
+  fromEmail: "",
+  fromName: "Cloud POS",
+  replyToEmail: "",
+  notificationEmail: "",
+};
+
+export const defaultSeoSettings: SeoSettings = {
+  metaTitle: "Cloud POS | Cafe ve restoran operasyonu",
+  metaDescription: "Cloud POS ile masa, siparis, mutfak, kasa ve raporlama akislarini tek panelde yonetin.",
+  ogTitle: "Cloud POS",
+  ogDescription: "Cafe ve restoranlar icin yeni nesil operasyon, QR siparis ve raporlama platformu.",
+  ogImageUrl: "",
+  twitterHandle: "",
+  indexable: true,
+  canonicalUrl: "",
+};
+
+export const defaultApplicationSettings: ApplicationSettings = {
+  appPrintingEnabled: false,
+  demoMode: false,
+  sidebarTheme: "ember",
+  sidebarOrder: "default",
+  sidebarAccentColor: "#ff7848",
+  ownerSidebarOrder: [],
+  adminSidebarOrder: [],
+};
+
+function normalizeHexColor(value: string | undefined) {
+  const normalized = (value ?? "").trim();
+  return /^#[0-9a-fA-F]{6}$/.test(normalized) ? normalized.toLowerCase() : defaultApplicationSettings.sidebarAccentColor;
+}
+
+function normalizeSidebarOrder(value: unknown) {
+  if (!Array.isArray(value)) return [];
+  return value.filter((item): item is string => typeof item === "string" && item.startsWith("/"));
+}
+
+export function normalizeGeneralSettings(input?: Partial<GeneralSettings> | null): GeneralSettings {
+  return {
+    ...defaultGeneralSettings,
+    ...(input ?? {}),
+  };
+}
+
+export function normalizeSmtpSettings(input?: Partial<SmtpSettings> | null): SmtpSettings {
+  const merged = {
+    ...defaultSmtpSettings,
+    ...(input ?? {}),
+  };
+
+  return {
+    ...merged,
+    port: Number(merged.port) || defaultSmtpSettings.port,
+    secure: Boolean(merged.secure),
+  };
+}
+
+export function isSmtpConfigured(settings: SmtpSettings) {
+  return Boolean(settings.host && settings.port && settings.username && settings.password && settings.fromEmail);
+}
+
+export function normalizeSeoSettings(input?: Partial<SeoSettings> | null): SeoSettings {
+  const merged = {
+    ...defaultSeoSettings,
+    ...(input ?? {}),
+  };
+
+  return {
+    ...merged,
+    indexable: Boolean(merged.indexable),
+  };
+}
+
+export function normalizeApplicationSettings(input?: Partial<ApplicationSettings> | null): ApplicationSettings {
+  const merged = {
+    ...defaultApplicationSettings,
+    ...(input ?? {}),
+  };
+
+  return {
+    appPrintingEnabled: Boolean(merged.appPrintingEnabled),
+    demoMode: Boolean(merged.demoMode),
+    sidebarTheme:
+      merged.sidebarTheme === "ocean" || merged.sidebarTheme === "night" ? merged.sidebarTheme : "ember",
+    sidebarOrder:
+      merged.sidebarOrder === "service_first" || merged.sidebarOrder === "management_first"
+        ? merged.sidebarOrder
+        : "default",
+    sidebarAccentColor: normalizeHexColor(typeof merged.sidebarAccentColor === "string" ? merged.sidebarAccentColor : undefined),
+    ownerSidebarOrder: normalizeSidebarOrder(merged.ownerSidebarOrder),
+    adminSidebarOrder: normalizeSidebarOrder(merged.adminSidebarOrder),
+  };
+}

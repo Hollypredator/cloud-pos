@@ -1,26 +1,106 @@
 @import "tailwindcss";
 
 :root {
-  --background: #ffffff;
-  --foreground: #171717;
+  --background: #edf0f4;
+  --foreground: #0f172a;
+  --panel: rgba(255, 255, 255, 0.88);
+  --panel-border: rgba(148, 163, 184, 0.18);
+  --panel-shadow: 0 14px 34px rgba(15, 23, 42, 0.07);
+  --panel-shadow-hover: 0 20px 44px rgba(15, 23, 42, 0.12);
+  --brand-1: #ff6a3d;
+  --brand-2: #f2b44f;
+  --brand-3: #0f766e;
+  --font-sans-base: var(--font-sora);
+  --font-display: var(--font-space-grotesk);
+  --font-numeric: var(--font-space-grotesk);
 }
 
 @theme inline {
   --color-background: var(--background);
   --color-foreground: var(--foreground);
-  --font-sans: var(--font-geist-sans);
+  --font-sans: var(--font-sans-base);
   --font-mono: var(--font-geist-mono);
 }
 
-@media (prefers-color-scheme: dark) {
-  :root {
-    --background: #0a0a0a;
-    --foreground: #ededed;
-  }
+html {
+  min-height: 100%;
+  background:
+    radial-gradient(circle at top left, rgba(255, 106, 61, 0.12), transparent 26%),
+    radial-gradient(circle at top right, rgba(15, 118, 110, 0.1), transparent 22%),
+    linear-gradient(180deg, #f5f7fa 0%, #eceff3 100%);
 }
 
 body {
   background: var(--background);
   color: var(--foreground);
-  font-family: Arial, Helvetica, sans-serif;
+  font-family: var(--font-sans-base), sans-serif;
+  min-height: 100vh;
+}
+
+::selection {
+  background: rgba(255, 106, 61, 0.22);
+  color: #111827;
+}
+
+.font-display {
+  font-family: var(--font-display), sans-serif;
+}
+
+.font-numeric {
+  font-family: var(--font-numeric), sans-serif;
+  font-variant-numeric: tabular-nums lining-nums;
+  letter-spacing: -0.03em;
+}
+
+.panel-surface {
+  background: var(--panel);
+  border: 1px solid var(--panel-border);
+  box-shadow: var(--panel-shadow);
+  backdrop-filter: blur(18px);
+}
+
+.panel-hover {
+  transition:
+    transform 180ms ease,
+    box-shadow 180ms ease,
+    border-color 180ms ease,
+    background-color 180ms ease;
+}
+
+.panel-hover:hover {
+  transform: translateY(-2px);
+  box-shadow: var(--panel-shadow-hover);
+  border-color: rgba(255, 106, 61, 0.22);
+}
+
+.mesh-accent {
+  background-image:
+    radial-gradient(circle at 10% 10%, rgba(255, 106, 61, 0.13), transparent 28%),
+    radial-gradient(circle at 90% 20%, rgba(242, 180, 79, 0.13), transparent 24%),
+    radial-gradient(circle at 80% 90%, rgba(15, 118, 110, 0.1), transparent 26%);
+}
+
+@media print {
+  @page {
+    size: A4;
+    margin: 12mm;
+  }
+
+  nav,
+  aside,
+  button,
+  .no-print {
+    display: none !important;
+  }
+
+  body {
+    background: #ffffff !important;
+    color: #000000 !important;
+    font-size: 12px;
+  }
+
+  .print-card {
+    box-shadow: none !important;
+    border: 1px solid #d4d4d4 !important;
+  }
 }

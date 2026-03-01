@@ -1,0 +1,1605 @@
+⚠ Fast Refresh had to perform a full reload when ./src/components/backoffice-ui.tsx changed. Read more: https://nextjs.org/docs/messages/fast-refresh-reload
+⚠ Fast Refresh had to perform a full reload when ./src/components/backoffice-ui.tsx changed. Read more: https://nextjs.org/docs/messages/fast-refresh-reload
+⚠ Fast Refresh had to perform a full reload when ./src/components/backoffice-ui.tsx changed. Read more: https://nextjs.org/docs/messages/fast-refresh-reload
+⚠ Fast Refresh had to perform a full reload when ./src/components/backoffice-ui.tsx changed. Read more: https://nextjs.org/docs/messages/fast-refresh-reload
+⨯ ReferenceError: sidebarOrderPresets is not defined
+    at AppNav (src\components\app-nav.tsx:159:23)
+  157 |     allowAll || (!!role && (roles.includes(role) || (role === "owner" && roles.includes("admin"))));
+  158 |   const theme = sidebarThemes[sidebarTheme] ?? sidebarThemes.ember;
+> 159 |   const orderPreset = sidebarOrderPresets[sidebarOrder] ?? sidebarOrderPresets.default;
+      |                       ^
+  160 |   const visibleLinks = operationLinks
+  161 |     .filter((link) => canAccess(link.roles) && (!link.requiresBusinessScope || branchAccessScope === "business"))
+  162 |     .sort((a, b) => { {
+  digest: '740719615'
+}
+⨯ ReferenceError: sidebarOrderPresets is not defined
+    at AppNav (src\components\app-nav.tsx:159:23)
+  157 |     allowAll || (!!role && (roles.includes(role) || (role === "owner" && roles.includes("admin"))));
+  158 |   const theme = sidebarThemes[sidebarTheme] ?? sidebarThemes.ember;
+> 159 |   const orderPreset = sidebarOrderPresets[sidebarOrder] ?? sidebarOrderPresets.default;
+      |                       ^
+  160 |   const visibleLinks = operationLinks
+  161 |     .filter((link) => canAccess(link.roles) && (!link.requiresBusinessScope || branchAccessScope === "business"))
+  162 |     .sort((a, b) => { {
+  digest: '740719615'
+}
+⨯ ReferenceError: sidebarOrderPresets is not defined
+    at AppNav (src\components\app-nav.tsx:159:23)
+  157 |     allowAll || (!!role && (roles.includes(role) || (role === "owner" && roles.includes("admin"))));
+  158 |   const theme = sidebarThemes[sidebarTheme] ?? sidebarThemes.ember;
+> 159 |   const orderPreset = sidebarOrderPresets[sidebarOrder] ?? sidebarOrderPresets.default;
+      |                       ^
+  160 |   const visibleLinks = operationLinks
+  161 |     .filter((link) => canAccess(link.roles) && (!link.requiresBusinessScope || branchAccessScope === "business"))
+  162 |     .sort((a, b) => { {
+  digest: '740719615'
+}
+⨯ ReferenceError: sidebarOrderPresets is not defined
+    at AppNav (src\components\app-nav.tsx:159:23)
+  157 |     allowAll || (!!role && (roles.includes(role) || (role === "owner" && roles.includes("admin"))));
+  158 |   const theme = sidebarThemes[sidebarTheme] ?? sidebarThemes.ember;
+> 159 |   const orderPreset = sidebarOrderPresets[sidebarOrder] ?? sidebarOrderPresets.default;
+      |                       ^
+  160 |   const visibleLinks = operationLinks
+  161 |     .filter((link) => canAccess(link.roles) && (!link.requiresBusinessScope || branchAccessScope === "business"))
+  162 |     .sort((a, b) => { {
+  digest: '740719615'
+}
+⚠ Fast Refresh had to perform a full reload due to a runtime error.
+⚠ Fast Refresh had to perform a full reload due to a runtime error.
+⨯ TypeError: Cannot read properties of undefined (reading 'length')
+    at AppNav (src\components\app-nav.tsx:196:19)
+  194 |   const resolvedOrder = role === "owner" ? ownerSidebarOrder : adminSidebarOrder;
+  195 |   const orderPreset =
+> 196 |     resolvedOrder.length > 0
+      |                   ^
+  197 |       ? resolvedOrder
+  198 |       : role === "owner"
+  199 |         ? defaultOwnerSidebarOrder {
+  digest: '1618213603'
+}
+⨯ TypeError: Cannot read properties of undefined (reading 'length')
+    at AppNav (src\components\app-nav.tsx:196:19)
+  194 |   const resolvedOrder = role === "owner" ? ownerSidebarOrder : adminSidebarOrder;
+  195 |   const orderPreset =
+> 196 |     resolvedOrder.length > 0
+      |                   ^
+  197 |       ? resolvedOrder
+  198 |       : role === "owner"
+  199 |         ? defaultOwnerSidebarOrder {
+  digest: '1618213603'
+}
+⚠ Fast Refresh had to perform a full reload due to a runtime error.
+⚠ Fast Refresh had to perform a full reload due to a runtime error.
+⨯ TypeError: Cannot read properties of undefined (reading 'length')
+    at AppNav (src\components\app-nav.tsx:196:19)
+  194 |   const resolvedOrder = role === "owner" ? ownerSidebarOrder : adminSidebarOrder;
+  195 |   const orderPreset =
+> 196 |     resolvedOrder.length > 0
+      |                   ^
+  197 |       ? resolvedOrder
+  198 |       : role === "owner"
+  199 |         ? defaultOwnerSidebarOrder {
+  digest: '1693672544'
+}
+⨯ TypeError: Cannot read properties of undefined (reading 'length')
+    at AppNav (src\components\app-nav.tsx:196:19)
+  194 |   const resolvedOrder = role === "owner" ? ownerSidebarOrder : adminSidebarOrder;
+  195 |   const orderPreset =
+> 196 |     resolvedOrder.length > 0
+      |                   ^
+  197 |       ? resolvedOrder
+  198 |       : role === "owner"
+  199 |         ? defaultOwnerSidebarOrder {
+  digest: '1693672544'
+}
+⨯ TypeError: Cannot read properties of undefined (reading 'length')
+    at AppNav (src\components\app-nav.tsx:196:19)
+  194 |   const resolvedOrder = role === "owner" ? ownerSidebarOrder : adminSidebarOrder;
+  195 |   const orderPreset =
+> 196 |     resolvedOrder.length > 0
+      |                   ^
+  197 |       ? resolvedOrder
+  198 |       : role === "owner"
+  199 |         ? defaultOwnerSidebarOrder {
+  digest: '1693672544'
+}
+⨯ TypeError: Cannot read properties of undefined (reading 'length')
+    at AppNav (src\components\app-nav.tsx:196:19)
+  194 |   const resolvedOrder = role === "owner" ? ownerSidebarOrder : adminSidebarOrder;
+  195 |   const orderPreset =
+> 196 |     resolvedOrder.length > 0
+      |                   ^
+  197 |       ? resolvedOrder
+  198 |       : role === "owner"
+  199 |         ? defaultOwnerSidebarOrder {
+  digest: '1693672544'
+}
+⚠ Fast Refresh had to perform a full reload due to a runtime error.
+⚠ Fast Refresh had to perform a full reload due to a runtime error.
+⨯ ReferenceError: Link is not defined
+    at AdminSettingsPage (src\app\admin\settings\page.tsx:228:16)
+  226 |               <p className="text-lg font-semibold text-slate-900">Uygulama</p>
+  227 |               <p className="mt-1 text-sm text-slate-500">Yazdirma, demo ve sidebar tercihi</p>
+> 228 |               <Link href="/admin/print-center" className="mt-3 inline-flex rounded-xl border border-slate-200 bg-white px-3 py-2 text-xs font-semibold text-slate-700">
+      |                ^
+  229 |                 Yazdirma Merkezi
+  230 |               </Link>
+  231 |             </div> {
+  digest: '2445561562'
+}
+⨯ ReferenceError: Link is not defined
+    at AdminSettingsPage (src\app\admin\settings\page.tsx:228:16)
+  226 |               <p className="text-lg font-semibold text-slate-900">Uygulama</p>
+  227 |               <p className="mt-1 text-sm text-slate-500">Yazdirma, demo ve sidebar tercihi</p>
+> 228 |               <Link href="/admin/print-center" className="mt-3 inline-flex rounded-xl border border-slate-200 bg-white px-3 py-2 text-xs font-semibold text-slate-700">
+      |                ^
+  229 |                 Yazdirma Merkezi
+  230 |               </Link>
+  231 |             </div> {
+  digest: '4202443832'
+}
+⨯ ReferenceError: Link is not defined
+    at AdminSettingsPage (src\app\admin\settings\page.tsx:228:16)
+  226 |               <p className="text-lg font-semibold text-slate-900">Uygulama</p>
+  227 |               <p className="mt-1 text-sm text-slate-500">Yazdirma, demo ve sidebar tercihi</p>
+> 228 |               <Link href="/admin/print-center" className="mt-3 inline-flex rounded-xl border border-slate-200 bg-white px-3 py-2 text-xs font-semibold text-slate-700">
+      |                ^
+  229 |                 Yazdirma Merkezi
+  230 |               </Link>
+  231 |             </div> {
+  digest: '4202443832'
+}
+⨯ ReferenceError: Link is not defined
+    at AdminSettingsPage (src\app\admin\settings\page.tsx:228:16)
+  226 |               <p className="text-lg font-semibold text-slate-900">Uygulama</p>
+  227 |               <p className="mt-1 text-sm text-slate-500">Yazdirma, demo ve sidebar tercihi</p>
+> 228 |               <Link href="/admin/print-center" className="mt-3 inline-flex rounded-xl border border-slate-200 bg-white px-3 py-2 text-xs font-semibold text-slate-700">
+      |                ^
+  229 |                 Yazdirma Merkezi
+  230 |               </Link>
+  231 |             </div> {
+  digest: '4202443832'
+}
+⨯ ReferenceError: Link is not defined
+    at AdminSettingsPage (src\app\admin\settings\page.tsx:228:16)
+  226 |               <p className="text-lg font-semibold text-slate-900">Uygulama</p>
+  227 |               <p className="mt-1 text-sm text-slate-500">Yazdirma, demo ve sidebar tercihi</p>
+> 228 |               <Link href="/admin/print-center" className="mt-3 inline-flex rounded-xl border border-slate-200 bg-white px-3 py-2 text-xs font-semibold text-slate-700">
+      |                ^
+  229 |                 Yazdirma Merkezi
+  230 |               </Link>
+  231 |             </div> {
+  digest: '2445561562'
+}
+⨯ ReferenceError: Link is not defined
+    at AdminSettingsPage (src\app\admin\settings\page.tsx:228:16)
+  226 |               <p className="text-lg font-semibold text-slate-900">Uygulama</p>
+  227 |               <p className="mt-1 text-sm text-slate-500">Yazdirma, demo ve sidebar tercihi</p>
+> 228 |               <Link href="/admin/print-center" className="mt-3 inline-flex rounded-xl border border-slate-200 bg-white px-3 py-2 text-xs font-semibold text-slate-700">
+      |                ^
+  229 |                 Yazdirma Merkezi
+  230 |               </Link>
+  231 |             </div> {
+  digest: '2445561562'
+}
+⨯ ReferenceError: Link is not defined
+    at AdminSettingsPage (src\app\admin\settings\page.tsx:228:16)
+  226 |               <p className="text-lg font-semibold text-slate-900">Uygulama</p>
+  227 |               <p className="mt-1 text-sm text-slate-500">Yazdirma, demo ve sidebar tercihi</p>
+> 228 |               <Link href="/admin/print-center" className="mt-3 inline-flex rounded-xl border border-slate-200 bg-white px-3 py-2 text-xs font-semibold text-slate-700">
+      |                ^
+  229 |                 Yazdirma Merkezi
+  230 |               </Link>
+  231 |             </div> {
+  digest: '2445561562'
+}
+⨯ ReferenceError: Link is not defined
+    at AdminSettingsPage (src\app\admin\settings\page.tsx:228:16)
+  226 |               <p className="text-lg font-semibold text-slate-900">Uygulama</p>
+  227 |               <p className="mt-1 text-sm text-slate-500">Yazdirma, demo ve sidebar tercihi</p>
+> 228 |               <Link href="/admin/print-center" className="mt-3 inline-flex rounded-xl border border-slate-200 bg-white px-3 py-2 text-xs font-semibold text-slate-700">
+      |                ^
+  229 |                 Yazdirma Merkezi
+  230 |               </Link>
+  231 |             </div> {
+  digest: '2445561562'
+}
+⨯ ReferenceError: Link is not defined
+    at AdminSettingsPage (src\app\admin\settings\page.tsx:228:16)
+  226 |               <p className="text-lg font-semibold text-slate-900">Uygulama</p>
+  227 |               <p className="mt-1 text-sm text-slate-500">Yazdirma, demo ve sidebar tercihi</p>
+> 228 |               <Link href="/admin/print-center" className="mt-3 inline-flex rounded-xl border border-slate-200 bg-white px-3 py-2 text-xs font-semibold text-slate-700">
+      |                ^
+  229 |                 Yazdirma Merkezi
+  230 |               </Link>
+  231 |             </div> {
+  digest: '2445561562'
+}
+⨯ ReferenceError: Link is not defined
+    at AdminSettingsPage (src\app\admin\settings\page.tsx:228:16)
+  226 |               <p className="text-lg font-semibold text-slate-900">Uygulama</p>
+  227 |               <p className="mt-1 text-sm text-slate-500">Yazdirma, demo ve sidebar tercihi</p>
+> 228 |               <Link href="/admin/print-center" className="mt-3 inline-flex rounded-xl border border-slate-200 bg-white px-3 py-2 text-xs font-semibold text-slate-700">
+      |                ^
+  229 |                 Yazdirma Merkezi
+  230 |               </Link>
+  231 |             </div> {
+  digest: '2445561562'
+}
+⨯ ReferenceError: Link is not defined
+    at AdminSettingsPage (src\app\admin\settings\page.tsx:228:16)
+  226 |               <p className="text-lg font-semibold text-slate-900">Uygulama</p>
+  227 |               <p className="mt-1 text-sm text-slate-500">Yazdirma, demo ve sidebar tercihi</p>
+> 228 |               <Link href="/admin/print-center" className="mt-3 inline-flex rounded-xl border border-slate-200 bg-white px-3 py-2 text-xs font-semibold text-slate-700">
+      |                ^
+  229 |                 Yazdirma Merkezi
+  230 |               </Link>
+  231 |             </div> {
+  digest: '2445561562'
+}
+⨯ ReferenceError: Link is not defined
+    at AdminSettingsPage (src\app\admin\settings\page.tsx:228:16)
+  226 |               <p className="text-lg font-semibold text-slate-900">Uygulama</p>
+  227 |               <p className="mt-1 text-sm text-slate-500">Yazdirma, demo ve sidebar tercihi</p>
+> 228 |               <Link href="/admin/print-center" className="mt-3 inline-flex rounded-xl border border-slate-200 bg-white px-3 py-2 text-xs font-semibold text-slate-700">
+      |                ^
+  229 |                 Yazdirma Merkezi
+  230 |               </Link>
+  231 |             </div> {
+  digest: '2445561562'
+}
+⨯ ReferenceError: Link is not defined
+    at AdminSettingsPage (src\app\admin\settings\page.tsx:228:16)
+  226 |               <p className="text-lg font-semibold text-slate-900">Uygulama</p>
+  227 |               <p className="mt-1 text-sm text-slate-500">Yazdirma, demo ve sidebar tercihi</p>
+> 228 |               <Link href="/admin/print-center" className="mt-3 inline-flex rounded-xl border border-slate-200 bg-white px-3 py-2 text-xs font-semibold text-slate-700">
+      |                ^
+  229 |                 Yazdirma Merkezi
+  230 |               </Link>
+  231 |             </div> {
+  digest: '2445561562'
+}
+⨯ ReferenceError: Link is not defined
+    at AdminSettingsPage (src\app\admin\settings\page.tsx:228:16)
+  226 |               <p className="text-lg font-semibold text-slate-900">Uygulama</p>
+  227 |               <p className="mt-1 text-sm text-slate-500">Yazdirma, demo ve sidebar tercihi</p>
+> 228 |               <Link href="/admin/print-center" className="mt-3 inline-flex rounded-xl border border-slate-200 bg-white px-3 py-2 text-xs font-semibold text-slate-700">
+      |                ^
+  229 |                 Yazdirma Merkezi
+  230 |               </Link>
+  231 |             </div> {
+  digest: '2445561562'
+}
+⨯ ReferenceError: Link is not defined
+    at AdminSettingsPage (src\app\admin\settings\page.tsx:228:16)
+  226 |               <p className="text-lg font-semibold text-slate-900">Uygulama</p>
+  227 |               <p className="mt-1 text-sm text-slate-500">Yazdirma, demo ve sidebar tercihi</p>
+> 228 |               <Link href="/admin/print-center" className="mt-3 inline-flex rounded-xl border border-slate-200 bg-white px-3 py-2 text-xs font-semibold text-slate-700">
+      |                ^
+  229 |                 Yazdirma Merkezi
+  230 |               </Link>
+  231 |             </div> {
+  digest: '2696261909'
+}
+⨯ ReferenceError: Link is not defined
+    at AdminSettingsPage (src\app\admin\settings\page.tsx:228:16)
+  226 |               <p className="text-lg font-semibold text-slate-900">Uygulama</p>
+  227 |               <p className="mt-1 text-sm text-slate-500">Yazdirma, demo ve sidebar tercihi</p>
+> 228 |               <Link href="/admin/print-center" className="mt-3 inline-flex rounded-xl border border-slate-200 bg-white px-3 py-2 text-xs font-semibold text-slate-700">
+      |                ^
+  229 |                 Yazdirma Merkezi
+  230 |               </Link>
+  231 |             </div> {
+  digest: '2445561562'
+}
+⨯ ReferenceError: Link is not defined
+    at AdminSettingsPage (src\app\admin\settings\page.tsx:228:16)
+  226 |               <p className="text-lg font-semibold text-slate-900">Uygulama</p>
+  227 |               <p className="mt-1 text-sm text-slate-500">Yazdirma, demo ve sidebar tercihi</p>
+> 228 |               <Link href="/admin/print-center" className="mt-3 inline-flex rounded-xl border border-slate-200 bg-white px-3 py-2 text-xs font-semibold text-slate-700">
+      |                ^
+  229 |                 Yazdirma Merkezi
+  230 |               </Link>
+  231 |             </div> {
+  digest: '2445561562'
+}
+⨯ ReferenceError: Link is not defined
+    at AdminSettingsPage (src\app\admin\settings\page.tsx:228:16)
+  226 |               <p className="text-lg font-semibold text-slate-900">Uygulama</p>
+  227 |               <p className="mt-1 text-sm text-slate-500">Yazdirma, demo ve sidebar tercihi</p>
+> 228 |               <Link href="/admin/print-center" className="mt-3 inline-flex rounded-xl border border-slate-200 bg-white px-3 py-2 text-xs font-semibold text-slate-700">
+      |                ^
+  229 |                 Yazdirma Merkezi
+  230 |               </Link>
+  231 |             </div> {
+  digest: '2445561562'
+}
+⨯ ReferenceError: Link is not defined
+    at AdminSettingsPage (src\app\admin\settings\page.tsx:228:16)
+  226 |               <p className="text-lg font-semibold text-slate-900">Uygulama</p>
+  227 |               <p className="mt-1 text-sm text-slate-500">Yazdirma, demo ve sidebar tercihi</p>
+> 228 |               <Link href="/admin/print-center" className="mt-3 inline-flex rounded-xl border border-slate-200 bg-white px-3 py-2 text-xs font-semibold text-slate-700">
+      |                ^
+  229 |                 Yazdirma Merkezi
+  230 |               </Link>
+  231 |             </div> {
+  digest: '2445561562'
+}
+⨯ ReferenceError: Link is not defined
+    at AdminSettingsPage (src\app\admin\settings\page.tsx:228:16)
+  226 |               <p className="text-lg font-semibold text-slate-900">Uygulama</p>
+  227 |               <p className="mt-1 text-sm text-slate-500">Yazdirma, demo ve sidebar tercihi</p>
+> 228 |               <Link href="/admin/print-center" className="mt-3 inline-flex rounded-xl border border-slate-200 bg-white px-3 py-2 text-xs font-semibold text-slate-700">
+      |                ^
+  229 |                 Yazdirma Merkezi
+  230 |               </Link>
+  231 |             </div> {
+  digest: '2445561562'
+}
+⨯ ReferenceError: Link is not defined
+    at AdminSettingsPage (src\app\admin\settings\page.tsx:228:16)
+  226 |               <p className="text-lg font-semibold text-slate-900">Uygulama</p>
+  227 |               <p className="mt-1 text-sm text-slate-500">Yazdirma, demo ve sidebar tercihi</p>
+> 228 |               <Link href="/admin/print-center" className="mt-3 inline-flex rounded-xl border border-slate-200 bg-white px-3 py-2 text-xs font-semibold text-slate-700">
+      |                ^
+  229 |                 Yazdirma Merkezi
+  230 |               </Link>
+  231 |             </div> {
+  digest: '2445561562'
+}
+⨯ ReferenceError: Link is not defined
+    at AdminSettingsPage (src\app\admin\settings\page.tsx:228:16)
+  226 |               <p className="text-lg font-semibold text-slate-900">Uygulama</p>
+  227 |               <p className="mt-1 text-sm text-slate-500">Yazdirma, demo ve sidebar tercihi</p>
+> 228 |               <Link href="/admin/print-center" className="mt-3 inline-flex rounded-xl border border-slate-200 bg-white px-3 py-2 text-xs font-semibold text-slate-700">
+      |                ^
+  229 |                 Yazdirma Merkezi
+  230 |               </Link>
+  231 |             </div> {
+  digest: '4202443832'
+}
+⨯ ReferenceError: Link is not defined
+    at AdminSettingsPage (src\app\admin\settings\page.tsx:228:16)
+  226 |               <p className="text-lg font-semibold text-slate-900">Uygulama</p>
+  227 |               <p className="mt-1 text-sm text-slate-500">Yazdirma, demo ve sidebar tercihi</p>
+> 228 |               <Link href="/admin/print-center" className="mt-3 inline-flex rounded-xl border border-slate-200 bg-white px-3 py-2 text-xs font-semibold text-slate-700">
+      |                ^
+  229 |                 Yazdirma Merkezi
+  230 |               </Link>
+  231 |             </div> {
+  digest: '2445561562'
+}
+⨯ ReferenceError: Link is not defined
+    at AdminSettingsPage (src\app\admin\settings\page.tsx:228:16)
+  226 |               <p className="text-lg font-semibold text-slate-900">Uygulama</p>
+  227 |               <p className="mt-1 text-sm text-slate-500">Yazdirma, demo ve sidebar tercihi</p>
+> 228 |               <Link href="/admin/print-center" className="mt-3 inline-flex rounded-xl border border-slate-200 bg-white px-3 py-2 text-xs font-semibold text-slate-700">
+      |                ^
+  229 |                 Yazdirma Merkezi
+  230 |               </Link>
+  231 |             </div> {
+  digest: '2696261909'
+}
+⨯ ReferenceError: Link is not defined
+    at AdminSettingsPage (src\app\admin\settings\page.tsx:228:16)
+  226 |               <p className="text-lg font-semibold text-slate-900">Uygulama</p>
+  227 |               <p className="mt-1 text-sm text-slate-500">Yazdirma, demo ve sidebar tercihi</p>
+> 228 |               <Link href="/admin/print-center" className="mt-3 inline-flex rounded-xl border border-slate-200 bg-white px-3 py-2 text-xs font-semibold text-slate-700">
+      |                ^
+  229 |                 Yazdirma Merkezi
+  230 |               </Link>
+  231 |             </div> {
+  digest: '4202443832'
+}
+⨯ ReferenceError: Link is not defined
+    at AdminSettingsPage (src\app\admin\settings\page.tsx:228:16)
+  226 |               <p className="text-lg font-semibold text-slate-900">Uygulama</p>
+  227 |               <p className="mt-1 text-sm text-slate-500">Yazdirma, demo ve sidebar tercihi</p>
+> 228 |               <Link href="/admin/print-center" className="mt-3 inline-flex rounded-xl border border-slate-200 bg-white px-3 py-2 text-xs font-semibold text-slate-700">
+      |                ^
+  229 |                 Yazdirma Merkezi
+  230 |               </Link>
+  231 |             </div> {
+  digest: '2445561562'
+}
+⨯ ReferenceError: Link is not defined
+    at AdminSettingsPage (src\app\admin\settings\page.tsx:228:16)
+  226 |               <p className="text-lg font-semibold text-slate-900">Uygulama</p>
+  227 |               <p className="mt-1 text-sm text-slate-500">Yazdirma, demo ve sidebar tercihi</p>
+> 228 |               <Link href="/admin/print-center" className="mt-3 inline-flex rounded-xl border border-slate-200 bg-white px-3 py-2 text-xs font-semibold text-slate-700">
+      |                ^
+  229 |                 Yazdirma Merkezi
+  230 |               </Link>
+  231 |             </div> {
+  digest: '2445561562'
+}
+⨯ ReferenceError: Link is not defined
+    at AdminSettingsPage (src\app\admin\settings\page.tsx:228:16)
+  226 |               <p className="text-lg font-semibold text-slate-900">Uygulama</p>
+  227 |               <p className="mt-1 text-sm text-slate-500">Yazdirma, demo ve sidebar tercihi</p>
+> 228 |               <Link href="/admin/print-center" className="mt-3 inline-flex rounded-xl border border-slate-200 bg-white px-3 py-2 text-xs font-semibold text-slate-700">
+      |                ^
+  229 |                 Yazdirma Merkezi
+  230 |               </Link>
+  231 |             </div> {
+  digest: '2445561562'
+}
+⨯ ReferenceError: Link is not defined
+    at AdminSettingsPage (src\app\admin\settings\page.tsx:228:16)
+  226 |               <p className="text-lg font-semibold text-slate-900">Uygulama</p>
+  227 |               <p className="mt-1 text-sm text-slate-500">Yazdirma, demo ve sidebar tercihi</p>
+> 228 |               <Link href="/admin/print-center" className="mt-3 inline-flex rounded-xl border border-slate-200 bg-white px-3 py-2 text-xs font-semibold text-slate-700">
+      |                ^
+  229 |                 Yazdirma Merkezi
+  230 |               </Link>
+  231 |             </div> {
+  digest: '2445561562'
+}
+⨯ ReferenceError: Link is not defined
+    at AdminSettingsPage (src\app\admin\settings\page.tsx:228:16)
+  226 |               <p className="text-lg font-semibold text-slate-900">Uygulama</p>
+  227 |               <p className="mt-1 text-sm text-slate-500">Yazdirma, demo ve sidebar tercihi</p>
+> 228 |               <Link href="/admin/print-center" className="mt-3 inline-flex rounded-xl border border-slate-200 bg-white px-3 py-2 text-xs font-semibold text-slate-700">
+      |                ^
+  229 |                 Yazdirma Merkezi
+  230 |               </Link>
+  231 |             </div> {
+  digest: '2445561562'
+}
+⨯ ReferenceError: Link is not defined
+    at AdminSettingsPage (src\app\admin\settings\page.tsx:228:16)
+  226 |               <p className="text-lg font-semibold text-slate-900">Uygulama</p>
+  227 |               <p className="mt-1 text-sm text-slate-500">Yazdirma, demo ve sidebar tercihi</p>
+> 228 |               <Link href="/admin/print-center" className="mt-3 inline-flex rounded-xl border border-slate-200 bg-white px-3 py-2 text-xs font-semibold text-slate-700">
+      |                ^
+  229 |                 Yazdirma Merkezi
+  230 |               </Link>
+  231 |             </div> {
+  digest: '2445561562'
+}
+⨯ ReferenceError: Link is not defined
+    at AdminSettingsPage (src\app\admin\settings\page.tsx:228:16)
+  226 |               <p className="text-lg font-semibold text-slate-900">Uygulama</p>
+  227 |               <p className="mt-1 text-sm text-slate-500">Yazdirma, demo ve sidebar tercihi</p>
+> 228 |               <Link href="/admin/print-center" className="mt-3 inline-flex rounded-xl border border-slate-200 bg-white px-3 py-2 text-xs font-semibold text-slate-700">
+      |                ^
+  229 |                 Yazdirma Merkezi
+  230 |               </Link>
+  231 |             </div> {
+  digest: '2445561562'
+}
+⨯ ReferenceError: Link is not defined
+    at AdminSettingsPage (src\app\admin\settings\page.tsx:228:16)
+  226 |               <p className="text-lg font-semibold text-slate-900">Uygulama</p>
+  227 |               <p className="mt-1 text-sm text-slate-500">Yazdirma, demo ve sidebar tercihi</p>
+> 228 |               <Link href="/admin/print-center" className="mt-3 inline-flex rounded-xl border border-slate-200 bg-white px-3 py-2 text-xs font-semibold text-slate-700">
+      |                ^
+  229 |                 Yazdirma Merkezi
+  230 |               </Link>
+  231 |             </div> {
+  digest: '2445561562'
+}
+⨯ ReferenceError: Link is not defined
+    at AdminSettingsPage (src\app\admin\settings\page.tsx:228:16)
+  226 |               <p className="text-lg font-semibold text-slate-900">Uygulama</p>
+  227 |               <p className="mt-1 text-sm text-slate-500">Yazdirma, demo ve sidebar tercihi</p>
+> 228 |               <Link href="/admin/print-center" className="mt-3 inline-flex rounded-xl border border-slate-200 bg-white px-3 py-2 text-xs font-semibold text-slate-700">
+      |                ^
+  229 |                 Yazdirma Merkezi
+  230 |               </Link>
+  231 |             </div> {
+  digest: '2696261909'
+}
+⨯ ReferenceError: Link is not defined
+    at AdminSettingsPage (src\app\admin\settings\page.tsx:228:16)
+  226 |               <p className="text-lg font-semibold text-slate-900">Uygulama</p>
+  227 |               <p className="mt-1 text-sm text-slate-500">Yazdirma, demo ve sidebar tercihi</p>
+> 228 |               <Link href="/admin/print-center" className="mt-3 inline-flex rounded-xl border border-slate-200 bg-white px-3 py-2 text-xs font-semibold text-slate-700">
+      |                ^
+  229 |                 Yazdirma Merkezi
+  230 |               </Link>
+  231 |             </div> {
+  digest: '2696261909'
+}
+⨯ ReferenceError: Link is not defined
+    at AdminSettingsPage (src\app\admin\settings\page.tsx:228:16)
+  226 |               <p className="text-lg font-semibold text-slate-900">Uygulama</p>
+  227 |               <p className="mt-1 text-sm text-slate-500">Yazdirma, demo ve sidebar tercihi</p>
+> 228 |               <Link href="/admin/print-center" className="mt-3 inline-flex rounded-xl border border-slate-200 bg-white px-3 py-2 text-xs font-semibold text-slate-700">
+      |                ^
+  229 |                 Yazdirma Merkezi
+  230 |               </Link>
+  231 |             </div> {
+  digest: '2445561562'
+}
+⨯ ReferenceError: Link is not defined
+    at AdminSettingsPage (src\app\admin\settings\page.tsx:228:16)
+  226 |               <p className="text-lg font-semibold text-slate-900">Uygulama</p>
+  227 |               <p className="mt-1 text-sm text-slate-500">Yazdirma, demo ve sidebar tercihi</p>
+> 228 |               <Link href="/admin/print-center" className="mt-3 inline-flex rounded-xl border border-slate-200 bg-white px-3 py-2 text-xs font-semibold text-slate-700">
+      |                ^
+  229 |                 Yazdirma Merkezi
+  230 |               </Link>
+  231 |             </div> {
+  digest: '2696261909'
+}
+⨯ ReferenceError: Link is not defined
+    at AdminSettingsPage (src\app\admin\settings\page.tsx:228:16)
+  226 |               <p className="text-lg font-semibold text-slate-900">Uygulama</p>
+  227 |               <p className="mt-1 text-sm text-slate-500">Yazdirma, demo ve sidebar tercihi</p>
+> 228 |               <Link href="/admin/print-center" className="mt-3 inline-flex rounded-xl border border-slate-200 bg-white px-3 py-2 text-xs font-semibold text-slate-700">
+      |                ^
+  229 |                 Yazdirma Merkezi
+  230 |               </Link>
+  231 |             </div> {
+  digest: '2445561562'
+}
+⨯ ReferenceError: Link is not defined
+    at AdminSettingsPage (src\app\admin\settings\page.tsx:228:16)
+  226 |               <p className="text-lg font-semibold text-slate-900">Uygulama</p>
+  227 |               <p className="mt-1 text-sm text-slate-500">Yazdirma, demo ve sidebar tercihi</p>
+> 228 |               <Link href="/admin/print-center" className="mt-3 inline-flex rounded-xl border border-slate-200 bg-white px-3 py-2 text-xs font-semibold text-slate-700">
+      |                ^
+  229 |                 Yazdirma Merkezi
+  230 |               </Link>
+  231 |             </div> {
+  digest: '2445561562'
+}
+⨯ ReferenceError: Link is not defined
+    at AdminSettingsPage (src\app\admin\settings\page.tsx:228:16)
+  226 |               <p className="text-lg font-semibold text-slate-900">Uygulama</p>
+  227 |               <p className="mt-1 text-sm text-slate-500">Yazdirma, demo ve sidebar tercihi</p>
+> 228 |               <Link href="/admin/print-center" className="mt-3 inline-flex rounded-xl border border-slate-200 bg-white px-3 py-2 text-xs font-semibold text-slate-700">
+      |                ^
+  229 |                 Yazdirma Merkezi
+  230 |               </Link>
+  231 |             </div> {
+  digest: '2445561562'
+}
+⨯ ReferenceError: Link is not defined
+    at AdminSettingsPage (src\app\admin\settings\page.tsx:228:16)
+  226 |               <p className="text-lg font-semibold text-slate-900">Uygulama</p>
+  227 |               <p className="mt-1 text-sm text-slate-500">Yazdirma, demo ve sidebar tercihi</p>
+> 228 |               <Link href="/admin/print-center" className="mt-3 inline-flex rounded-xl border border-slate-200 bg-white px-3 py-2 text-xs font-semibold text-slate-700">
+      |                ^
+  229 |                 Yazdirma Merkezi
+  230 |               </Link>
+  231 |             </div> {
+  digest: '2445561562'
+}
+⨯ ReferenceError: Link is not defined
+    at AdminSettingsPage (src\app\admin\settings\page.tsx:228:16)
+  226 |               <p className="text-lg font-semibold text-slate-900">Uygulama</p>
+  227 |               <p className="mt-1 text-sm text-slate-500">Yazdirma, demo ve sidebar tercihi</p>
+> 228 |               <Link href="/admin/print-center" className="mt-3 inline-flex rounded-xl border border-slate-200 bg-white px-3 py-2 text-xs font-semibold text-slate-700">
+      |                ^
+  229 |                 Yazdirma Merkezi
+  230 |               </Link>
+  231 |             </div> {
+  digest: '2445561562'
+}
+⨯ ReferenceError: Link is not defined
+    at AdminSettingsPage (src\app\admin\settings\page.tsx:228:16)
+  226 |               <p className="text-lg font-semibold text-slate-900">Uygulama</p>
+  227 |               <p className="mt-1 text-sm text-slate-500">Yazdirma, demo ve sidebar tercihi</p>
+> 228 |               <Link href="/admin/print-center" className="mt-3 inline-flex rounded-xl border border-slate-200 bg-white px-3 py-2 text-xs font-semibold text-slate-700">
+      |                ^
+  229 |                 Yazdirma Merkezi
+  230 |               </Link>
+  231 |             </div> {
+  digest: '2445561562'
+}
+⨯ ReferenceError: Link is not defined
+    at AdminSettingsPage (src\app\admin\settings\page.tsx:228:16)
+  226 |               <p className="text-lg font-semibold text-slate-900">Uygulama</p>
+  227 |               <p className="mt-1 text-sm text-slate-500">Yazdirma, demo ve sidebar tercihi</p>
+> 228 |               <Link href="/admin/print-center" className="mt-3 inline-flex rounded-xl border border-slate-200 bg-white px-3 py-2 text-xs font-semibold text-slate-700">
+      |                ^
+  229 |                 Yazdirma Merkezi
+  230 |               </Link>
+  231 |             </div> {
+  digest: '2445561562'
+}
+⨯ ReferenceError: Link is not defined
+    at AdminSettingsPage (src\app\admin\settings\page.tsx:228:16)
+  226 |               <p className="text-lg font-semibold text-slate-900">Uygulama</p>
+  227 |               <p className="mt-1 text-sm text-slate-500">Yazdirma, demo ve sidebar tercihi</p>
+> 228 |               <Link href="/admin/print-center" className="mt-3 inline-flex rounded-xl border border-slate-200 bg-white px-3 py-2 text-xs font-semibold text-slate-700">
+      |                ^
+  229 |                 Yazdirma Merkezi
+  230 |               </Link>
+  231 |             </div> {
+  digest: '2445561562'
+}
+⨯ ReferenceError: Link is not defined
+    at AdminSettingsPage (src\app\admin\settings\page.tsx:228:16)
+  226 |               <p className="text-lg font-semibold text-slate-900">Uygulama</p>
+  227 |               <p className="mt-1 text-sm text-slate-500">Yazdirma, demo ve sidebar tercihi</p>
+> 228 |               <Link href="/admin/print-center" className="mt-3 inline-flex rounded-xl border border-slate-200 bg-white px-3 py-2 text-xs font-semibold text-slate-700">
+      |                ^
+  229 |                 Yazdirma Merkezi
+  230 |               </Link>
+  231 |             </div> {
+  digest: '4202443832'
+}
+⨯ ReferenceError: Link is not defined
+    at AdminSettingsPage (src\app\admin\settings\page.tsx:228:16)
+  226 |               <p className="text-lg font-semibold text-slate-900">Uygulama</p>
+  227 |               <p className="mt-1 text-sm text-slate-500">Yazdirma, demo ve sidebar tercihi</p>
+> 228 |               <Link href="/admin/print-center" className="mt-3 inline-flex rounded-xl border border-slate-200 bg-white px-3 py-2 text-xs font-semibold text-slate-700">
+      |                ^
+  229 |                 Yazdirma Merkezi
+  230 |               </Link>
+  231 |             </div> {
+  digest: '2696261909'
+}
+⨯ ReferenceError: Link is not defined
+    at AdminSettingsPage (src\app\admin\settings\page.tsx:228:16)
+  226 |               <p className="text-lg font-semibold text-slate-900">Uygulama</p>
+  227 |               <p className="mt-1 text-sm text-slate-500">Yazdirma, demo ve sidebar tercihi</p>
+> 228 |               <Link href="/admin/print-center" className="mt-3 inline-flex rounded-xl border border-slate-200 bg-white px-3 py-2 text-xs font-semibold text-slate-700">
+      |                ^
+  229 |                 Yazdirma Merkezi
+  230 |               </Link>
+  231 |             </div> {
+  digest: '2445561562'
+}
+⨯ ReferenceError: Link is not defined
+    at AdminSettingsPage (src\app\admin\settings\page.tsx:228:16)
+  226 |               <p className="text-lg font-semibold text-slate-900">Uygulama</p>
+  227 |               <p className="mt-1 text-sm text-slate-500">Yazdirma, demo ve sidebar tercihi</p>
+> 228 |               <Link href="/admin/print-center" className="mt-3 inline-flex rounded-xl border border-slate-200 bg-white px-3 py-2 text-xs font-semibold text-slate-700">
+      |                ^
+  229 |                 Yazdirma Merkezi
+  230 |               </Link>
+  231 |             </div> {
+  digest: '2445561562'
+}
+⨯ ReferenceError: Link is not defined
+    at AdminSettingsPage (src\app\admin\settings\page.tsx:228:16)
+  226 |               <p className="text-lg font-semibold text-slate-900">Uygulama</p>
+  227 |               <p className="mt-1 text-sm text-slate-500">Yazdirma, demo ve sidebar tercihi</p>
+> 228 |               <Link href="/admin/print-center" className="mt-3 inline-flex rounded-xl border border-slate-200 bg-white px-3 py-2 text-xs font-semibold text-slate-700">
+      |                ^
+  229 |                 Yazdirma Merkezi
+  230 |               </Link>
+  231 |             </div> {
+  digest: '2445561562'
+}
+⨯ ReferenceError: Link is not defined
+    at AdminSettingsPage (src\app\admin\settings\page.tsx:228:16)
+  226 |               <p className="text-lg font-semibold text-slate-900">Uygulama</p>
+  227 |               <p className="mt-1 text-sm text-slate-500">Yazdirma, demo ve sidebar tercihi</p>
+> 228 |               <Link href="/admin/print-center" className="mt-3 inline-flex rounded-xl border border-slate-200 bg-white px-3 py-2 text-xs font-semibold text-slate-700">
+      |                ^
+  229 |                 Yazdirma Merkezi
+  230 |               </Link>
+  231 |             </div> {
+  digest: '2445561562'
+}
+⨯ ReferenceError: Link is not defined
+    at AdminSettingsPage (src\app\admin\settings\page.tsx:228:16)
+  226 |               <p className="text-lg font-semibold text-slate-900">Uygulama</p>
+  227 |               <p className="mt-1 text-sm text-slate-500">Yazdirma, demo ve sidebar tercihi</p>
+> 228 |               <Link href="/admin/print-center" className="mt-3 inline-flex rounded-xl border border-slate-200 bg-white px-3 py-2 text-xs font-semibold text-slate-700">
+      |                ^
+  229 |                 Yazdirma Merkezi
+  230 |               </Link>
+  231 |             </div> {
+  digest: '2445561562'
+}
+⨯ ReferenceError: Link is not defined
+    at AdminSettingsPage (src\app\admin\settings\page.tsx:228:16)
+  226 |               <p className="text-lg font-semibold text-slate-900">Uygulama</p>
+  227 |               <p className="mt-1 text-sm text-slate-500">Yazdirma, demo ve sidebar tercihi</p>
+> 228 |               <Link href="/admin/print-center" className="mt-3 inline-flex rounded-xl border border-slate-200 bg-white px-3 py-2 text-xs font-semibold text-slate-700">
+      |                ^
+  229 |                 Yazdirma Merkezi
+  230 |               </Link>
+  231 |             </div> {
+  digest: '4202443832'
+}
+⨯ ReferenceError: Link is not defined
+    at AdminSettingsPage (src\app\admin\settings\page.tsx:228:16)
+  226 |               <p className="text-lg font-semibold text-slate-900">Uygulama</p>
+  227 |               <p className="mt-1 text-sm text-slate-500">Yazdirma, demo ve sidebar tercihi</p>
+> 228 |               <Link href="/admin/print-center" className="mt-3 inline-flex rounded-xl border border-slate-200 bg-white px-3 py-2 text-xs font-semibold text-slate-700">
+      |                ^
+  229 |                 Yazdirma Merkezi
+  230 |               </Link>
+  231 |             </div> {
+  digest: '2445561562'
+}
+⨯ ReferenceError: Link is not defined
+    at AdminSettingsPage (src\app\admin\settings\page.tsx:228:16)
+  226 |               <p className="text-lg font-semibold text-slate-900">Uygulama</p>
+  227 |               <p className="mt-1 text-sm text-slate-500">Yazdirma, demo ve sidebar tercihi</p>
+> 228 |               <Link href="/admin/print-center" className="mt-3 inline-flex rounded-xl border border-slate-200 bg-white px-3 py-2 text-xs font-semibold text-slate-700">
+      |                ^
+  229 |                 Yazdirma Merkezi
+  230 |               </Link>
+  231 |             </div> {
+  digest: '2445561562'
+}
+⨯ ReferenceError: Link is not defined
+    at AdminSettingsPage (src\app\admin\settings\page.tsx:228:16)
+  226 |               <p className="text-lg font-semibold text-slate-900">Uygulama</p>
+  227 |               <p className="mt-1 text-sm text-slate-500">Yazdirma, demo ve sidebar tercihi</p>
+> 228 |               <Link href="/admin/print-center" className="mt-3 inline-flex rounded-xl border border-slate-200 bg-white px-3 py-2 text-xs font-semibold text-slate-700">
+      |                ^
+  229 |                 Yazdirma Merkezi
+  230 |               </Link>
+  231 |             </div> {
+  digest: '2696261909'
+}
+⨯ ReferenceError: Link is not defined
+    at AdminSettingsPage (src\app\admin\settings\page.tsx:228:16)
+  226 |               <p className="text-lg font-semibold text-slate-900">Uygulama</p>
+  227 |               <p className="mt-1 text-sm text-slate-500">Yazdirma, demo ve sidebar tercihi</p>
+> 228 |               <Link href="/admin/print-center" className="mt-3 inline-flex rounded-xl border border-slate-200 bg-white px-3 py-2 text-xs font-semibold text-slate-700">
+      |                ^
+  229 |                 Yazdirma Merkezi
+  230 |               </Link>
+  231 |             </div> {
+  digest: '2445561562'
+}
+⨯ ReferenceError: Link is not defined
+    at AdminSettingsPage (src\app\admin\settings\page.tsx:228:16)
+  226 |               <p className="text-lg font-semibold text-slate-900">Uygulama</p>
+  227 |               <p className="mt-1 text-sm text-slate-500">Yazdirma, demo ve sidebar tercihi</p>
+> 228 |               <Link href="/admin/print-center" className="mt-3 inline-flex rounded-xl border border-slate-200 bg-white px-3 py-2 text-xs font-semibold text-slate-700">
+      |                ^
+  229 |                 Yazdirma Merkezi
+  230 |               </Link>
+  231 |             </div> {
+  digest: '2445561562'
+}
+⨯ ReferenceError: Link is not defined
+    at AdminSettingsPage (src\app\admin\settings\page.tsx:228:16)
+  226 |               <p className="text-lg font-semibold text-slate-900">Uygulama</p>
+  227 |               <p className="mt-1 text-sm text-slate-500">Yazdirma, demo ve sidebar tercihi</p>
+> 228 |               <Link href="/admin/print-center" className="mt-3 inline-flex rounded-xl border border-slate-200 bg-white px-3 py-2 text-xs font-semibold text-slate-700">
+      |                ^
+  229 |                 Yazdirma Merkezi
+  230 |               </Link>
+  231 |             </div> {
+  digest: '2445561562'
+}
+⨯ ReferenceError: Link is not defined
+    at AdminSettingsPage (src\app\admin\settings\page.tsx:228:16)
+  226 |               <p className="text-lg font-semibold text-slate-900">Uygulama</p>
+  227 |               <p className="mt-1 text-sm text-slate-500">Yazdirma, demo ve sidebar tercihi</p>
+> 228 |               <Link href="/admin/print-center" className="mt-3 inline-flex rounded-xl border border-slate-200 bg-white px-3 py-2 text-xs font-semibold text-slate-700">
+      |                ^
+  229 |                 Yazdirma Merkezi
+  230 |               </Link>
+  231 |             </div> {
+  digest: '4202443832'
+}
+⨯ ReferenceError: Link is not defined
+    at AdminSettingsPage (src\app\admin\settings\page.tsx:228:16)
+  226 |               <p className="text-lg font-semibold text-slate-900">Uygulama</p>
+  227 |               <p className="mt-1 text-sm text-slate-500">Yazdirma, demo ve sidebar tercihi</p>
+> 228 |               <Link href="/admin/print-center" className="mt-3 inline-flex rounded-xl border border-slate-200 bg-white px-3 py-2 text-xs font-semibold text-slate-700">
+      |                ^
+  229 |                 Yazdirma Merkezi
+  230 |               </Link>
+  231 |             </div> {
+  digest: '4202443832'
+}
+⨯ ReferenceError: Link is not defined
+    at AdminSettingsPage (src\app\admin\settings\page.tsx:228:16)
+  226 |               <p className="text-lg font-semibold text-slate-900">Uygulama</p>
+  227 |               <p className="mt-1 text-sm text-slate-500">Yazdirma, demo ve sidebar tercihi</p>
+> 228 |               <Link href="/admin/print-center" className="mt-3 inline-flex rounded-xl border border-slate-200 bg-white px-3 py-2 text-xs font-semibold text-slate-700">
+      |                ^
+  229 |                 Yazdirma Merkezi
+  230 |               </Link>
+  231 |             </div> {
+  digest: '2445561562'
+}
+⨯ ReferenceError: Link is not defined
+    at AdminSettingsPage (src\app\admin\settings\page.tsx:228:16)
+  226 |               <p className="text-lg font-semibold text-slate-900">Uygulama</p>
+  227 |               <p className="mt-1 text-sm text-slate-500">Yazdirma, demo ve sidebar tercihi</p>
+> 228 |               <Link href="/admin/print-center" className="mt-3 inline-flex rounded-xl border border-slate-200 bg-white px-3 py-2 text-xs font-semibold text-slate-700">
+      |                ^
+  229 |                 Yazdirma Merkezi
+  230 |               </Link>
+  231 |             </div> {
+  digest: '2445561562'
+}
+⨯ ReferenceError: Link is not defined
+    at AdminSettingsPage (src\app\admin\settings\page.tsx:228:16)
+  226 |               <p className="text-lg font-semibold text-slate-900">Uygulama</p>
+  227 |               <p className="mt-1 text-sm text-slate-500">Yazdirma, demo ve sidebar tercihi</p>
+> 228 |               <Link href="/admin/print-center" className="mt-3 inline-flex rounded-xl border border-slate-200 bg-white px-3 py-2 text-xs font-semibold text-slate-700">
+      |                ^
+  229 |                 Yazdirma Merkezi
+  230 |               </Link>
+  231 |             </div> {
+  digest: '2445561562'
+}
+⨯ ReferenceError: Link is not defined
+    at AdminSettingsPage (src\app\admin\settings\page.tsx:228:16)
+  226 |               <p className="text-lg font-semibold text-slate-900">Uygulama</p>
+  227 |               <p className="mt-1 text-sm text-slate-500">Yazdirma, demo ve sidebar tercihi</p>
+> 228 |               <Link href="/admin/print-center" className="mt-3 inline-flex rounded-xl border border-slate-200 bg-white px-3 py-2 text-xs font-semibold text-slate-700">
+      |                ^
+  229 |                 Yazdirma Merkezi
+  230 |               </Link>
+  231 |             </div> {
+  digest: '2445561562'
+}
+⨯ ReferenceError: Link is not defined
+    at AdminSettingsPage (src\app\admin\settings\page.tsx:228:16)
+  226 |               <p className="text-lg font-semibold text-slate-900">Uygulama</p>
+  227 |               <p className="mt-1 text-sm text-slate-500">Yazdirma, demo ve sidebar tercihi</p>
+> 228 |               <Link href="/admin/print-center" className="mt-3 inline-flex rounded-xl border border-slate-200 bg-white px-3 py-2 text-xs font-semibold text-slate-700">
+      |                ^
+  229 |                 Yazdirma Merkezi
+  230 |               </Link>
+  231 |             </div> {
+  digest: '4202443832'
+}
+⨯ ReferenceError: Link is not defined
+    at AdminSettingsPage (src\app\admin\settings\page.tsx:228:16)
+  226 |               <p className="text-lg font-semibold text-slate-900">Uygulama</p>
+  227 |               <p className="mt-1 text-sm text-slate-500">Yazdirma, demo ve sidebar tercihi</p>
+> 228 |               <Link href="/admin/print-center" className="mt-3 inline-flex rounded-xl border border-slate-200 bg-white px-3 py-2 text-xs font-semibold text-slate-700">
+      |                ^
+  229 |                 Yazdirma Merkezi
+  230 |               </Link>
+  231 |             </div> {
+  digest: '2696261909'
+}
+⨯ ReferenceError: Link is not defined
+    at AdminSettingsPage (src\app\admin\settings\page.tsx:228:16)
+  226 |               <p className="text-lg font-semibold text-slate-900">Uygulama</p>
+  227 |               <p className="mt-1 text-sm text-slate-500">Yazdirma, demo ve sidebar tercihi</p>
+> 228 |               <Link href="/admin/print-center" className="mt-3 inline-flex rounded-xl border border-slate-200 bg-white px-3 py-2 text-xs font-semibold text-slate-700">
+      |                ^
+  229 |                 Yazdirma Merkezi
+  230 |               </Link>
+  231 |             </div> {
+  digest: '2445561562'
+}
+⨯ ReferenceError: Link is not defined
+    at AdminSettingsPage (src\app\admin\settings\page.tsx:228:16)
+  226 |               <p className="text-lg font-semibold text-slate-900">Uygulama</p>
+  227 |               <p className="mt-1 text-sm text-slate-500">Yazdirma, demo ve sidebar tercihi</p>
+> 228 |               <Link href="/admin/print-center" className="mt-3 inline-flex rounded-xl border border-slate-200 bg-white px-3 py-2 text-xs font-semibold text-slate-700">
+      |                ^
+  229 |                 Yazdirma Merkezi
+  230 |               </Link>
+  231 |             </div> {
+  digest: '4202443832'
+}
+⨯ ReferenceError: Link is not defined
+    at AdminSettingsPage (src\app\admin\settings\page.tsx:228:16)
+  226 |               <p className="text-lg font-semibold text-slate-900">Uygulama</p>
+  227 |               <p className="mt-1 text-sm text-slate-500">Yazdirma, demo ve sidebar tercihi</p>
+> 228 |               <Link href="/admin/print-center" className="mt-3 inline-flex rounded-xl border border-slate-200 bg-white px-3 py-2 text-xs font-semibold text-slate-700">
+      |                ^
+  229 |                 Yazdirma Merkezi
+  230 |               </Link>
+  231 |             </div> {
+  digest: '2445561562'
+}
+⨯ ReferenceError: Link is not defined
+    at AdminSettingsPage (src\app\admin\settings\page.tsx:228:16)
+  226 |               <p className="text-lg font-semibold text-slate-900">Uygulama</p>
+  227 |               <p className="mt-1 text-sm text-slate-500">Yazdirma, demo ve sidebar tercihi</p>
+> 228 |               <Link href="/admin/print-center" className="mt-3 inline-flex rounded-xl border border-slate-200 bg-white px-3 py-2 text-xs font-semibold text-slate-700">
+      |                ^
+  229 |                 Yazdirma Merkezi
+  230 |               </Link>
+  231 |             </div> {
+  digest: '4202443832'
+}
+⨯ ReferenceError: Link is not defined
+    at AdminSettingsPage (src\app\admin\settings\page.tsx:228:16)
+  226 |               <p className="text-lg font-semibold text-slate-900">Uygulama</p>
+  227 |               <p className="mt-1 text-sm text-slate-500">Yazdirma, demo ve sidebar tercihi</p>
+> 228 |               <Link href="/admin/print-center" className="mt-3 inline-flex rounded-xl border border-slate-200 bg-white px-3 py-2 text-xs font-semibold text-slate-700">
+      |                ^
+  229 |                 Yazdirma Merkezi
+  230 |               </Link>
+  231 |             </div> {
+  digest: '2445561562'
+}
+⨯ ReferenceError: Link is not defined
+    at AdminSettingsPage (src\app\admin\settings\page.tsx:228:16)
+  226 |               <p className="text-lg font-semibold text-slate-900">Uygulama</p>
+  227 |               <p className="mt-1 text-sm text-slate-500">Yazdirma, demo ve sidebar tercihi</p>
+> 228 |               <Link href="/admin/print-center" className="mt-3 inline-flex rounded-xl border border-slate-200 bg-white px-3 py-2 text-xs font-semibold text-slate-700">
+      |                ^
+  229 |                 Yazdirma Merkezi
+  230 |               </Link>
+  231 |             </div> {
+  digest: '2445561562'
+}
+⨯ ReferenceError: Link is not defined
+    at AdminSettingsPage (src\app\admin\settings\page.tsx:228:16)
+  226 |               <p className="text-lg font-semibold text-slate-900">Uygulama</p>
+  227 |               <p className="mt-1 text-sm text-slate-500">Yazdirma, demo ve sidebar tercihi</p>
+> 228 |               <Link href="/admin/print-center" className="mt-3 inline-flex rounded-xl border border-slate-200 bg-white px-3 py-2 text-xs font-semibold text-slate-700">
+      |                ^
+  229 |                 Yazdirma Merkezi
+  230 |               </Link>
+  231 |             </div> {
+  digest: '4202443832'
+}
+⨯ ReferenceError: Link is not defined
+    at AdminSettingsPage (src\app\admin\settings\page.tsx:228:16)
+  226 |               <p className="text-lg font-semibold text-slate-900">Uygulama</p>
+  227 |               <p className="mt-1 text-sm text-slate-500">Yazdirma, demo ve sidebar tercihi</p>
+> 228 |               <Link href="/admin/print-center" className="mt-3 inline-flex rounded-xl border border-slate-200 bg-white px-3 py-2 text-xs font-semibold text-slate-700">
+      |                ^
+  229 |                 Yazdirma Merkezi
+  230 |               </Link>
+  231 |             </div> {
+  digest: '2445561562'
+}
+⨯ ReferenceError: Link is not defined
+    at AdminSettingsPage (src\app\admin\settings\page.tsx:228:16)
+  226 |               <p className="text-lg font-semibold text-slate-900">Uygulama</p>
+  227 |               <p className="mt-1 text-sm text-slate-500">Yazdirma, demo ve sidebar tercihi</p>
+> 228 |               <Link href="/admin/print-center" className="mt-3 inline-flex rounded-xl border border-slate-200 bg-white px-3 py-2 text-xs font-semibold text-slate-700">
+      |                ^
+  229 |                 Yazdirma Merkezi
+  230 |               </Link>
+  231 |             </div> {
+  digest: '2445561562'
+}
+⨯ ReferenceError: Link is not defined
+    at AdminSettingsPage (src\app\admin\settings\page.tsx:228:16)
+  226 |               <p className="text-lg font-semibold text-slate-900">Uygulama</p>
+  227 |               <p className="mt-1 text-sm text-slate-500">Yazdirma, demo ve sidebar tercihi</p>
+> 228 |               <Link href="/admin/print-center" className="mt-3 inline-flex rounded-xl border border-slate-200 bg-white px-3 py-2 text-xs font-semibold text-slate-700">
+      |                ^
+  229 |                 Yazdirma Merkezi
+  230 |               </Link>
+  231 |             </div> {
+  digest: '2445561562'
+}
+⨯ ReferenceError: Link is not defined
+    at AdminSettingsPage (src\app\admin\settings\page.tsx:228:16)
+  226 |               <p className="text-lg font-semibold text-slate-900">Uygulama</p>
+  227 |               <p className="mt-1 text-sm text-slate-500">Yazdirma, demo ve sidebar tercihi</p>
+> 228 |               <Link href="/admin/print-center" className="mt-3 inline-flex rounded-xl border border-slate-200 bg-white px-3 py-2 text-xs font-semibold text-slate-700">
+      |                ^
+  229 |                 Yazdirma Merkezi
+  230 |               </Link>
+  231 |             </div> {
+  digest: '2445561562'
+}
+⨯ ReferenceError: Link is not defined
+    at AdminSettingsPage (src\app\admin\settings\page.tsx:228:16)
+  226 |               <p className="text-lg font-semibold text-slate-900">Uygulama</p>
+  227 |               <p className="mt-1 text-sm text-slate-500">Yazdirma, demo ve sidebar tercihi</p>
+> 228 |               <Link href="/admin/print-center" className="mt-3 inline-flex rounded-xl border border-slate-200 bg-white px-3 py-2 text-xs font-semibold text-slate-700">
+      |                ^
+  229 |                 Yazdirma Merkezi
+  230 |               </Link>
+  231 |             </div> {
+  digest: '2696261909'
+}
+⨯ ReferenceError: Link is not defined
+    at AdminSettingsPage (src\app\admin\settings\page.tsx:228:16)
+  226 |               <p className="text-lg font-semibold text-slate-900">Uygulama</p>
+  227 |               <p className="mt-1 text-sm text-slate-500">Yazdirma, demo ve sidebar tercihi</p>
+> 228 |               <Link href="/admin/print-center" className="mt-3 inline-flex rounded-xl border border-slate-200 bg-white px-3 py-2 text-xs font-semibold text-slate-700">
+      |                ^
+  229 |                 Yazdirma Merkezi
+  230 |               </Link>
+  231 |             </div> {
+  digest: '2696261909'
+}
+⨯ ReferenceError: Link is not defined
+    at AdminSettingsPage (src\app\admin\settings\page.tsx:228:16)
+  226 |               <p className="text-lg font-semibold text-slate-900">Uygulama</p>
+  227 |               <p className="mt-1 text-sm text-slate-500">Yazdirma, demo ve sidebar tercihi</p>
+> 228 |               <Link href="/admin/print-center" className="mt-3 inline-flex rounded-xl border border-slate-200 bg-white px-3 py-2 text-xs font-semibold text-slate-700">
+      |                ^
+  229 |                 Yazdirma Merkezi
+  230 |               </Link>
+  231 |             </div> {
+  digest: '2445561562'
+}
+⨯ ReferenceError: Link is not defined
+    at AdminSettingsPage (src\app\admin\settings\page.tsx:228:16)
+  226 |               <p className="text-lg font-semibold text-slate-900">Uygulama</p>
+  227 |               <p className="mt-1 text-sm text-slate-500">Yazdirma, demo ve sidebar tercihi</p>
+> 228 |               <Link href="/admin/print-center" className="mt-3 inline-flex rounded-xl border border-slate-200 bg-white px-3 py-2 text-xs font-semibold text-slate-700">
+      |                ^
+  229 |                 Yazdirma Merkezi
+  230 |               </Link>
+  231 |             </div> {
+  digest: '2445561562'
+}
+⨯ ReferenceError: Link is not defined
+    at AdminSettingsPage (src\app\admin\settings\page.tsx:228:16)
+  226 |               <p className="text-lg font-semibold text-slate-900">Uygulama</p>
+  227 |               <p className="mt-1 text-sm text-slate-500">Yazdirma, demo ve sidebar tercihi</p>
+> 228 |               <Link href="/admin/print-center" className="mt-3 inline-flex rounded-xl border border-slate-200 bg-white px-3 py-2 text-xs font-semibold text-slate-700">
+      |                ^
+  229 |                 Yazdirma Merkezi
+  230 |               </Link>
+  231 |             </div> {
+  digest: '2445561562'
+}
+⨯ ReferenceError: Link is not defined
+    at AdminSettingsPage (src\app\admin\settings\page.tsx:228:16)
+  226 |               <p className="text-lg font-semibold text-slate-900">Uygulama</p>
+  227 |               <p className="mt-1 text-sm text-slate-500">Yazdirma, demo ve sidebar tercihi</p>
+> 228 |               <Link href="/admin/print-center" className="mt-3 inline-flex rounded-xl border border-slate-200 bg-white px-3 py-2 text-xs font-semibold text-slate-700">
+      |                ^
+  229 |                 Yazdirma Merkezi
+  230 |               </Link>
+  231 |             </div> {
+  digest: '4202443832'
+}
+⨯ ReferenceError: Link is not defined
+    at AdminSettingsPage (src\app\admin\settings\page.tsx:228:16)
+  226 |               <p className="text-lg font-semibold text-slate-900">Uygulama</p>
+  227 |               <p className="mt-1 text-sm text-slate-500">Yazdirma, demo ve sidebar tercihi</p>
+> 228 |               <Link href="/admin/print-center" className="mt-3 inline-flex rounded-xl border border-slate-200 bg-white px-3 py-2 text-xs font-semibold text-slate-700">
+      |                ^
+  229 |                 Yazdirma Merkezi
+  230 |               </Link>
+  231 |             </div> {
+  digest: '2445561562'
+}
+⨯ ReferenceError: Link is not defined
+    at AdminSettingsPage (src\app\admin\settings\page.tsx:228:16)
+  226 |               <p className="text-lg font-semibold text-slate-900">Uygulama</p>
+  227 |               <p className="mt-1 text-sm text-slate-500">Yazdirma, demo ve sidebar tercihi</p>
+> 228 |               <Link href="/admin/print-center" className="mt-3 inline-flex rounded-xl border border-slate-200 bg-white px-3 py-2 text-xs font-semibold text-slate-700">
+      |                ^
+  229 |                 Yazdirma Merkezi
+  230 |               </Link>
+  231 |             </div> {
+  digest: '2696261909'
+}
+⨯ ReferenceError: Link is not defined
+    at AdminSettingsPage (src\app\admin\settings\page.tsx:228:16)
+  226 |               <p className="text-lg font-semibold text-slate-900">Uygulama</p>
+  227 |               <p className="mt-1 text-sm text-slate-500">Yazdirma, demo ve sidebar tercihi</p>
+> 228 |               <Link href="/admin/print-center" className="mt-3 inline-flex rounded-xl border border-slate-200 bg-white px-3 py-2 text-xs font-semibold text-slate-700">
+      |                ^
+  229 |                 Yazdirma Merkezi
+  230 |               </Link>
+  231 |             </div> {
+  digest: '2696261909'
+}
+⨯ ReferenceError: Link is not defined
+    at AdminSettingsPage (src\app\admin\settings\page.tsx:228:16)
+  226 |               <p className="text-lg font-semibold text-slate-900">Uygulama</p>
+  227 |               <p className="mt-1 text-sm text-slate-500">Yazdirma, demo ve sidebar tercihi</p>
+> 228 |               <Link href="/admin/print-center" className="mt-3 inline-flex rounded-xl border border-slate-200 bg-white px-3 py-2 text-xs font-semibold text-slate-700">
+      |                ^
+  229 |                 Yazdirma Merkezi
+  230 |               </Link>
+  231 |             </div> {
+  digest: '2445561562'
+}
+⨯ ReferenceError: Link is not defined
+    at AdminSettingsPage (src\app\admin\settings\page.tsx:228:16)
+  226 |               <p className="text-lg font-semibold text-slate-900">Uygulama</p>
+  227 |               <p className="mt-1 text-sm text-slate-500">Yazdirma, demo ve sidebar tercihi</p>
+> 228 |               <Link href="/admin/print-center" className="mt-3 inline-flex rounded-xl border border-slate-200 bg-white px-3 py-2 text-xs font-semibold text-slate-700">
+      |                ^
+  229 |                 Yazdirma Merkezi
+  230 |               </Link>
+  231 |             </div> {
+  digest: '2445561562'
+}
+⨯ ReferenceError: Link is not defined
+    at AdminSettingsPage (src\app\admin\settings\page.tsx:228:16)
+  226 |               <p className="text-lg font-semibold text-slate-900">Uygulama</p>
+  227 |               <p className="mt-1 text-sm text-slate-500">Yazdirma, demo ve sidebar tercihi</p>
+> 228 |               <Link href="/admin/print-center" className="mt-3 inline-flex rounded-xl border border-slate-200 bg-white px-3 py-2 text-xs font-semibold text-slate-700">
+      |                ^
+  229 |                 Yazdirma Merkezi
+  230 |               </Link>
+  231 |             </div> {
+  digest: '4202443832'
+}
+⨯ ReferenceError: Link is not defined
+    at AdminSettingsPage (src\app\admin\settings\page.tsx:228:16)
+  226 |               <p className="text-lg font-semibold text-slate-900">Uygulama</p>
+  227 |               <p className="mt-1 text-sm text-slate-500">Yazdirma, demo ve sidebar tercihi</p>
+> 228 |               <Link href="/admin/print-center" className="mt-3 inline-flex rounded-xl border border-slate-200 bg-white px-3 py-2 text-xs font-semibold text-slate-700">
+      |                ^
+  229 |                 Yazdirma Merkezi
+  230 |               </Link>
+  231 |             </div> {
+  digest: '2445561562'
+}
+⨯ ReferenceError: Link is not defined
+    at AdminSettingsPage (src\app\admin\settings\page.tsx:228:16)
+  226 |               <p className="text-lg font-semibold text-slate-900">Uygulama</p>
+  227 |               <p className="mt-1 text-sm text-slate-500">Yazdirma, demo ve sidebar tercihi</p>
+> 228 |               <Link href="/admin/print-center" className="mt-3 inline-flex rounded-xl border border-slate-200 bg-white px-3 py-2 text-xs font-semibold text-slate-700">
+      |                ^
+  229 |                 Yazdirma Merkezi
+  230 |               </Link>
+  231 |             </div> {
+  digest: '2445561562'
+}
+⨯ ReferenceError: Link is not defined
+    at AdminSettingsPage (src\app\admin\settings\page.tsx:228:16)
+  226 |               <p className="text-lg font-semibold text-slate-900">Uygulama</p>
+  227 |               <p className="mt-1 text-sm text-slate-500">Yazdirma, demo ve sidebar tercihi</p>
+> 228 |               <Link href="/admin/print-center" className="mt-3 inline-flex rounded-xl border border-slate-200 bg-white px-3 py-2 text-xs font-semibold text-slate-700">
+      |                ^
+  229 |                 Yazdirma Merkezi
+  230 |               </Link>
+  231 |             </div> {
+  digest: '2445561562'
+}
+⨯ ReferenceError: Link is not defined
+    at AdminSettingsPage (src\app\admin\settings\page.tsx:228:16)
+  226 |               <p className="text-lg font-semibold text-slate-900">Uygulama</p>
+  227 |               <p className="mt-1 text-sm text-slate-500">Yazdirma, demo ve sidebar tercihi</p>
+> 228 |               <Link href="/admin/print-center" className="mt-3 inline-flex rounded-xl border border-slate-200 bg-white px-3 py-2 text-xs font-semibold text-slate-700">
+      |                ^
+  229 |                 Yazdirma Merkezi
+  230 |               </Link>
+  231 |             </div> {
+  digest: '2445561562'
+}
+⨯ ReferenceError: Link is not defined
+    at AdminSettingsPage (src\app\admin\settings\page.tsx:228:16)
+  226 |               <p className="text-lg font-semibold text-slate-900">Uygulama</p>
+  227 |               <p className="mt-1 text-sm text-slate-500">Yazdirma, demo ve sidebar tercihi</p>
+> 228 |               <Link href="/admin/print-center" className="mt-3 inline-flex rounded-xl border border-slate-200 bg-white px-3 py-2 text-xs font-semibold text-slate-700">
+      |                ^
+  229 |                 Yazdirma Merkezi
+  230 |               </Link>
+  231 |             </div> {
+  digest: '4202443832'
+}
+⨯ ReferenceError: Link is not defined
+    at AdminSettingsPage (src\app\admin\settings\page.tsx:228:16)
+  226 |               <p className="text-lg font-semibold text-slate-900">Uygulama</p>
+  227 |               <p className="mt-1 text-sm text-slate-500">Yazdirma, demo ve sidebar tercihi</p>
+> 228 |               <Link href="/admin/print-center" className="mt-3 inline-flex rounded-xl border border-slate-200 bg-white px-3 py-2 text-xs font-semibold text-slate-700">
+      |                ^
+  229 |                 Yazdirma Merkezi
+  230 |               </Link>
+  231 |             </div> {
+  digest: '2445561562'
+}
+⨯ ReferenceError: Link is not defined
+    at AdminSettingsPage (src\app\admin\settings\page.tsx:228:16)
+  226 |               <p className="text-lg font-semibold text-slate-900">Uygulama</p>
+  227 |               <p className="mt-1 text-sm text-slate-500">Yazdirma, demo ve sidebar tercihi</p>
+> 228 |               <Link href="/admin/print-center" className="mt-3 inline-flex rounded-xl border border-slate-200 bg-white px-3 py-2 text-xs font-semibold text-slate-700">
+      |                ^
+  229 |                 Yazdirma Merkezi
+  230 |               </Link>
+  231 |             </div> {
+  digest: '2445561562'
+}
+⨯ ReferenceError: Link is not defined
+    at AdminSettingsPage (src\app\admin\settings\page.tsx:228:16)
+  226 |               <p className="text-lg font-semibold text-slate-900">Uygulama</p>
+  227 |               <p className="mt-1 text-sm text-slate-500">Yazdirma, demo ve sidebar tercihi</p>
+> 228 |               <Link href="/admin/print-center" className="mt-3 inline-flex rounded-xl border border-slate-200 bg-white px-3 py-2 text-xs font-semibold text-slate-700">
+      |                ^
+  229 |                 Yazdirma Merkezi
+  230 |               </Link>
+  231 |             </div> {
+  digest: '2445561562'
+}
+⨯ ReferenceError: Link is not defined
+    at AdminSettingsPage (src\app\admin\settings\page.tsx:228:16)
+  226 |               <p className="text-lg font-semibold text-slate-900">Uygulama</p>
+  227 |               <p className="mt-1 text-sm text-slate-500">Yazdirma, demo ve sidebar tercihi</p>
+> 228 |               <Link href="/admin/print-center" className="mt-3 inline-flex rounded-xl border border-slate-200 bg-white px-3 py-2 text-xs font-semibold text-slate-700">
+      |                ^
+  229 |                 Yazdirma Merkezi
+  230 |               </Link>
+  231 |             </div> {
+  digest: '2445561562'
+}
+⨯ ReferenceError: Link is not defined
+    at AdminSettingsPage (src\app\admin\settings\page.tsx:228:16)
+  226 |               <p className="text-lg font-semibold text-slate-900">Uygulama</p>
+  227 |               <p className="mt-1 text-sm text-slate-500">Yazdirma, demo ve sidebar tercihi</p>
+> 228 |               <Link href="/admin/print-center" className="mt-3 inline-flex rounded-xl border border-slate-200 bg-white px-3 py-2 text-xs font-semibold text-slate-700">
+      |                ^
+  229 |                 Yazdirma Merkezi
+  230 |               </Link>
+  231 |             </div> {
+  digest: '2445561562'
+}
+⨯ ReferenceError: Link is not defined
+    at AdminSettingsPage (src\app\admin\settings\page.tsx:228:16)
+  226 |               <p className="text-lg font-semibold text-slate-900">Uygulama</p>
+  227 |               <p className="mt-1 text-sm text-slate-500">Yazdirma, demo ve sidebar tercihi</p>
+> 228 |               <Link href="/admin/print-center" className="mt-3 inline-flex rounded-xl border border-slate-200 bg-white px-3 py-2 text-xs font-semibold text-slate-700">
+      |                ^
+  229 |                 Yazdirma Merkezi
+  230 |               </Link>
+  231 |             </div> {
+  digest: '2445561562'
+}
+⨯ ReferenceError: Link is not defined
+    at AdminSettingsPage (src\app\admin\settings\page.tsx:228:16)
+  226 |               <p className="text-lg font-semibold text-slate-900">Uygulama</p>
+  227 |               <p className="mt-1 text-sm text-slate-500">Yazdirma, demo ve sidebar tercihi</p>
+> 228 |               <Link href="/admin/print-center" className="mt-3 inline-flex rounded-xl border border-slate-200 bg-white px-3 py-2 text-xs font-semibold text-slate-700">
+      |                ^
+  229 |                 Yazdirma Merkezi
+  230 |               </Link>
+  231 |             </div> {
+  digest: '2445561562'
+}
+⨯ ReferenceError: Link is not defined
+    at AdminSettingsPage (src\app\admin\settings\page.tsx:228:16)
+  226 |               <p className="text-lg font-semibold text-slate-900">Uygulama</p>
+  227 |               <p className="mt-1 text-sm text-slate-500">Yazdirma, demo ve sidebar tercihi</p>
+> 228 |               <Link href="/admin/print-center" className="mt-3 inline-flex rounded-xl border border-slate-200 bg-white px-3 py-2 text-xs font-semibold text-slate-700">
+      |                ^
+  229 |                 Yazdirma Merkezi
+  230 |               </Link>
+  231 |             </div> {
+  digest: '2445561562'
+}
+⨯ ReferenceError: Link is not defined
+    at AdminSettingsPage (src\app\admin\settings\page.tsx:228:16)
+  226 |               <p className="text-lg font-semibold text-slate-900">Uygulama</p>
+  227 |               <p className="mt-1 text-sm text-slate-500">Yazdirma, demo ve sidebar tercihi</p>
+> 228 |               <Link href="/admin/print-center" className="mt-3 inline-flex rounded-xl border border-slate-200 bg-white px-3 py-2 text-xs font-semibold text-slate-700">
+      |                ^
+  229 |                 Yazdirma Merkezi
+  230 |               </Link>
+  231 |             </div> {
+  digest: '2445561562'
+}
+⨯ ReferenceError: Link is not defined
+    at AdminSettingsPage (src\app\admin\settings\page.tsx:228:16)
+  226 |               <p className="text-lg font-semibold text-slate-900">Uygulama</p>
+  227 |               <p className="mt-1 text-sm text-slate-500">Yazdirma, demo ve sidebar tercihi</p>
+> 228 |               <Link href="/admin/print-center" className="mt-3 inline-flex rounded-xl border border-slate-200 bg-white px-3 py-2 text-xs font-semibold text-slate-700">
+      |                ^
+  229 |                 Yazdirma Merkezi
+  230 |               </Link>
+  231 |             </div> {
+  digest: '2445561562'
+}
+⨯ ReferenceError: Link is not defined
+    at AdminSettingsPage (src\app\admin\settings\page.tsx:228:16)
+  226 |               <p className="text-lg font-semibold text-slate-900">Uygulama</p>
+  227 |               <p className="mt-1 text-sm text-slate-500">Yazdirma, demo ve sidebar tercihi</p>
+> 228 |               <Link href="/admin/print-center" className="mt-3 inline-flex rounded-xl border border-slate-200 bg-white px-3 py-2 text-xs font-semibold text-slate-700">
+      |                ^
+  229 |                 Yazdirma Merkezi
+  230 |               </Link>
+  231 |             </div> {
+  digest: '2445561562'
+}
+⨯ ReferenceError: Link is not defined
+    at AdminSettingsPage (src\app\admin\settings\page.tsx:228:16)
+  226 |               <p className="text-lg font-semibold text-slate-900">Uygulama</p>
+  227 |               <p className="mt-1 text-sm text-slate-500">Yazdirma, demo ve sidebar tercihi</p>
+> 228 |               <Link href="/admin/print-center" className="mt-3 inline-flex rounded-xl border border-slate-200 bg-white px-3 py-2 text-xs font-semibold text-slate-700">
+      |                ^
+  229 |                 Yazdirma Merkezi
+  230 |               </Link>
+  231 |             </div> {
+  digest: '2445561562'
+}
+⨯ ReferenceError: Link is not defined
+    at AdminSettingsPage (src\app\admin\settings\page.tsx:228:16)
+  226 |               <p className="text-lg font-semibold text-slate-900">Uygulama</p>
+  227 |               <p className="mt-1 text-sm text-slate-500">Yazdirma, demo ve sidebar tercihi</p>
+> 228 |               <Link href="/admin/print-center" className="mt-3 inline-flex rounded-xl border border-slate-200 bg-white px-3 py-2 text-xs font-semibold text-slate-700">
+      |                ^
+  229 |                 Yazdirma Merkezi
+  230 |               </Link>
+  231 |             </div> {
+  digest: '2445561562'
+}
+⨯ ReferenceError: Link is not defined
+    at AdminSettingsPage (src\app\admin\settings\page.tsx:228:16)
+  226 |               <p className="text-lg font-semibold text-slate-900">Uygulama</p>
+  227 |               <p className="mt-1 text-sm text-slate-500">Yazdirma, demo ve sidebar tercihi</p>
+> 228 |               <Link href="/admin/print-center" className="mt-3 inline-flex rounded-xl border border-slate-200 bg-white px-3 py-2 text-xs font-semibold text-slate-700">
+      |                ^
+  229 |                 Yazdirma Merkezi
+  230 |               </Link>
+  231 |             </div> {
+  digest: '2445561562'
+}
+⨯ ReferenceError: Link is not defined
+    at AdminSettingsPage (src\app\admin\settings\page.tsx:228:16)
+  226 |               <p className="text-lg font-semibold text-slate-900">Uygulama</p>
+  227 |               <p className="mt-1 text-sm text-slate-500">Yazdirma, demo ve sidebar tercihi</p>
+> 228 |               <Link href="/admin/print-center" className="mt-3 inline-flex rounded-xl border border-slate-200 bg-white px-3 py-2 text-xs font-semibold text-slate-700">
+      |                ^
+  229 |                 Yazdirma Merkezi
+  230 |               </Link>
+  231 |             </div> {
+  digest: '2696261909'
+}
+⨯ ReferenceError: Link is not defined
+    at AdminSettingsPage (src\app\admin\settings\page.tsx:228:16)
+  226 |               <p className="text-lg font-semibold text-slate-900">Uygulama</p>
+  227 |               <p className="mt-1 text-sm text-slate-500">Yazdirma, demo ve sidebar tercihi</p>
+> 228 |               <Link href="/admin/print-center" className="mt-3 inline-flex rounded-xl border border-slate-200 bg-white px-3 py-2 text-xs font-semibold text-slate-700">
+      |                ^
+  229 |                 Yazdirma Merkezi
+  230 |               </Link>
+  231 |             </div> {
+  digest: '2696261909'
+}
+⨯ ReferenceError: Link is not defined
+    at AdminSettingsPage (src\app\admin\settings\page.tsx:228:16)
+  226 |               <p className="text-lg font-semibold text-slate-900">Uygulama</p>
+  227 |               <p className="mt-1 text-sm text-slate-500">Yazdirma, demo ve sidebar tercihi</p>
+> 228 |               <Link href="/admin/print-center" className="mt-3 inline-flex rounded-xl border border-slate-200 bg-white px-3 py-2 text-xs font-semibold text-slate-700">
+      |                ^
+  229 |                 Yazdirma Merkezi
+  230 |               </Link>
+  231 |             </div> {
+  digest: '2696261909'
+}
+⨯ ReferenceError: Link is not defined
+    at AdminSettingsPage (src\app\admin\settings\page.tsx:228:16)
+  226 |               <p className="text-lg font-semibold text-slate-900">Uygulama</p>
+  227 |               <p className="mt-1 text-sm text-slate-500">Yazdirma, demo ve sidebar tercihi</p>
+> 228 |               <Link href="/admin/print-center" className="mt-3 inline-flex rounded-xl border border-slate-200 bg-white px-3 py-2 text-xs font-semibold text-slate-700">
+      |                ^
+  229 |                 Yazdirma Merkezi
+  230 |               </Link>
+  231 |             </div> {
+  digest: '2445561562'
+}
+⨯ ReferenceError: Link is not defined
+    at AdminSettingsPage (src\app\admin\settings\page.tsx:228:16)
+  226 |               <p className="text-lg font-semibold text-slate-900">Uygulama</p>
+  227 |               <p className="mt-1 text-sm text-slate-500">Yazdirma, demo ve sidebar tercihi</p>
+> 228 |               <Link href="/admin/print-center" className="mt-3 inline-flex rounded-xl border border-slate-200 bg-white px-3 py-2 text-xs font-semibold text-slate-700">
+      |                ^
+  229 |                 Yazdirma Merkezi
+  230 |               </Link>
+  231 |             </div> {
+  digest: '2445561562'
+}
+⨯ ReferenceError: Link is not defined
+    at AdminSettingsPage (src\app\admin\settings\page.tsx:228:16)
+  226 |               <p className="text-lg font-semibold text-slate-900">Uygulama</p>
+  227 |               <p className="mt-1 text-sm text-slate-500">Yazdirma, demo ve sidebar tercihi</p>
+> 228 |               <Link href="/admin/print-center" className="mt-3 inline-flex rounded-xl border border-slate-200 bg-white px-3 py-2 text-xs font-semibold text-slate-700">
+      |                ^
+  229 |                 Yazdirma Merkezi
+  230 |               </Link>
+  231 |             </div> {
+  digest: '2445561562'
+}
+⨯ ReferenceError: Link is not defined
+    at AdminSettingsPage (src\app\admin\settings\page.tsx:228:16)
+  226 |               <p className="text-lg font-semibold text-slate-900">Uygulama</p>
+  227 |               <p className="mt-1 text-sm text-slate-500">Yazdirma, demo ve sidebar tercihi</p>
+> 228 |               <Link href="/admin/print-center" className="mt-3 inline-flex rounded-xl border border-slate-200 bg-white px-3 py-2 text-xs font-semibold text-slate-700">
+      |                ^
+  229 |                 Yazdirma Merkezi
+  230 |               </Link>
+  231 |             </div> {
+  digest: '2445561562'
+}
+⨯ ReferenceError: Link is not defined
+    at AdminSettingsPage (src\app\admin\settings\page.tsx:228:16)
+  226 |               <p className="text-lg font-semibold text-slate-900">Uygulama</p>
+  227 |               <p className="mt-1 text-sm text-slate-500">Yazdirma, demo ve sidebar tercihi</p>
+> 228 |               <Link href="/admin/print-center" className="mt-3 inline-flex rounded-xl border border-slate-200 bg-white px-3 py-2 text-xs font-semibold text-slate-700">
+      |                ^
+  229 |                 Yazdirma Merkezi
+  230 |               </Link>
+  231 |             </div> {
+  digest: '2445561562'
+}
+⨯ ReferenceError: Link is not defined
+    at AdminSettingsPage (src\app\admin\settings\page.tsx:228:16)
+  226 |               <p className="text-lg font-semibold text-slate-900">Uygulama</p>
+  227 |               <p className="mt-1 text-sm text-slate-500">Yazdirma, demo ve sidebar tercihi</p>
+> 228 |               <Link href="/admin/print-center" className="mt-3 inline-flex rounded-xl border border-slate-200 bg-white px-3 py-2 text-xs font-semibold text-slate-700">
+      |                ^
+  229 |                 Yazdirma Merkezi
+  230 |               </Link>
+  231 |             </div> {
+  digest: '2445561562'
+}
+⨯ ReferenceError: Link is not defined
+    at AdminSettingsPage (src\app\admin\settings\page.tsx:228:16)
+  226 |               <p className="text-lg font-semibold text-slate-900">Uygulama</p>
+  227 |               <p className="mt-1 text-sm text-slate-500">Yazdirma, demo ve sidebar tercihi</p>
+> 228 |               <Link href="/admin/print-center" className="mt-3 inline-flex rounded-xl border border-slate-200 bg-white px-3 py-2 text-xs font-semibold text-slate-700">
+      |                ^
+  229 |                 Yazdirma Merkezi
+  230 |               </Link>
+  231 |             </div> {
+  digest: '2445561562'
+}
+⨯ ReferenceError: Link is not defined
+    at AdminSettingsPage (src\app\admin\settings\page.tsx:228:16)
+  226 |               <p className="text-lg font-semibold text-slate-900">Uygulama</p>
+  227 |               <p className="mt-1 text-sm text-slate-500">Yazdirma, demo ve sidebar tercihi</p>
+> 228 |               <Link href="/admin/print-center" className="mt-3 inline-flex rounded-xl border border-slate-200 bg-white px-3 py-2 text-xs font-semibold text-slate-700">
+      |                ^
+  229 |                 Yazdirma Merkezi
+  230 |               </Link>
+  231 |             </div> {
+  digest: '2445561562'
+}
+⨯ ReferenceError: Link is not defined
+    at AdminSettingsPage (src\app\admin\settings\page.tsx:228:16)
+  226 |               <p className="text-lg font-semibold text-slate-900">Uygulama</p>
+  227 |               <p className="mt-1 text-sm text-slate-500">Yazdirma, demo ve sidebar tercihi</p>
+> 228 |               <Link href="/admin/print-center" className="mt-3 inline-flex rounded-xl border border-slate-200 bg-white px-3 py-2 text-xs font-semibold text-slate-700">
+      |                ^
+  229 |                 Yazdirma Merkezi
+  230 |               </Link>
+  231 |             </div> {
+  digest: '2445561562'
+}
+⨯ ReferenceError: Link is not defined
+    at AdminSettingsPage (src\app\admin\settings\page.tsx:228:16)
+  226 |               <p className="text-lg font-semibold text-slate-900">Uygulama</p>
+  227 |               <p className="mt-1 text-sm text-slate-500">Yazdirma, demo ve sidebar tercihi</p>
+> 228 |               <Link href="/admin/print-center" className="mt-3 inline-flex rounded-xl border border-slate-200 bg-white px-3 py-2 text-xs font-semibold text-slate-700">
+      |                ^
+  229 |                 Yazdirma Merkezi
+  230 |               </Link>
+  231 |             </div> {
+  digest: '4202443832'
+}
+⨯ ReferenceError: Link is not defined
+    at AdminSettingsPage (src\app\admin\settings\page.tsx:228:16)
+  226 |               <p className="text-lg font-semibold text-slate-900">Uygulama</p>
+  227 |               <p className="mt-1 text-sm text-slate-500">Yazdirma, demo ve sidebar tercihi</p>
+> 228 |               <Link href="/admin/print-center" className="mt-3 inline-flex rounded-xl border border-slate-200 bg-white px-3 py-2 text-xs font-semibold text-slate-700">
+      |                ^
+  229 |                 Yazdirma Merkezi
+  230 |               </Link>
+  231 |             </div> {
+  digest: '2445561562'
+}
+⨯ ReferenceError: Link is not defined
+    at AdminSettingsPage (src\app\admin\settings\page.tsx:228:16)
+  226 |               <p className="text-lg font-semibold text-slate-900">Uygulama</p>
+  227 |               <p className="mt-1 text-sm text-slate-500">Yazdirma, demo ve sidebar tercihi</p>
+> 228 |               <Link href="/admin/print-center" className="mt-3 inline-flex rounded-xl border border-slate-200 bg-white px-3 py-2 text-xs font-semibold text-slate-700">
+      |                ^
+  229 |                 Yazdirma Merkezi
+  230 |               </Link>
+  231 |             </div> {
+  digest: '2445561562'
+}
+⨯ ReferenceError: Link is not defined
+    at AdminSettingsPage (src\app\admin\settings\page.tsx:228:16)
+  226 |               <p className="text-lg font-semibold text-slate-900">Uygulama</p>
+  227 |               <p className="mt-1 text-sm text-slate-500">Yazdirma, demo ve sidebar tercihi</p>
+> 228 |               <Link href="/admin/print-center" className="mt-3 inline-flex rounded-xl border border-slate-200 bg-white px-3 py-2 text-xs font-semibold text-slate-700">
+      |                ^
+  229 |                 Yazdirma Merkezi
+  230 |               </Link>
+  231 |             </div> {
+  digest: '2445561562'
+}
+⨯ ReferenceError: Link is not defined
+    at AdminSettingsPage (src\app\admin\settings\page.tsx:228:16)
+  226 |               <p className="text-lg font-semibold text-slate-900">Uygulama</p>
+  227 |               <p className="mt-1 text-sm text-slate-500">Yazdirma, demo ve sidebar tercihi</p>
+> 228 |               <Link href="/admin/print-center" className="mt-3 inline-flex rounded-xl border border-slate-200 bg-white px-3 py-2 text-xs font-semibold text-slate-700">
+      |                ^
+  229 |                 Yazdirma Merkezi
+  230 |               </Link>
+  231 |             </div> {
+  digest: '2445561562'
+}
+⨯ ReferenceError: Link is not defined
+    at AdminSettingsPage (src\app\admin\settings\page.tsx:228:16)
+  226 |               <p className="text-lg font-semibold text-slate-900">Uygulama</p>
+  227 |               <p className="mt-1 text-sm text-slate-500">Yazdirma, demo ve sidebar tercihi</p>
+> 228 |               <Link href="/admin/print-center" className="mt-3 inline-flex rounded-xl border border-slate-200 bg-white px-3 py-2 text-xs font-semibold text-slate-700">
+      |                ^
+  229 |                 Yazdirma Merkezi
+  230 |               </Link>
+  231 |             </div> {
+  digest: '2445561562'
+}
+⨯ ReferenceError: Link is not defined
+    at AdminSettingsPage (src\app\admin\settings\page.tsx:228:16)
+  226 |               <p className="text-lg font-semibold text-slate-900">Uygulama</p>
+  227 |               <p className="mt-1 text-sm text-slate-500">Yazdirma, demo ve sidebar tercihi</p>
+> 228 |               <Link href="/admin/print-center" className="mt-3 inline-flex rounded-xl border border-slate-200 bg-white px-3 py-2 text-xs font-semibold text-slate-700">
+      |                ^
+  229 |                 Yazdirma Merkezi
+  230 |               </Link>
+  231 |             </div> {
+  digest: '2445561562'
+}
+⨯ ReferenceError: Link is not defined
+    at AdminSettingsPage (src\app\admin\settings\page.tsx:228:16)
+  226 |               <p className="text-lg font-semibold text-slate-900">Uygulama</p>
+  227 |               <p className="mt-1 text-sm text-slate-500">Yazdirma, demo ve sidebar tercihi</p>
+> 228 |               <Link href="/admin/print-center" className="mt-3 inline-flex rounded-xl border border-slate-200 bg-white px-3 py-2 text-xs font-semibold text-slate-700">
+      |                ^
+  229 |                 Yazdirma Merkezi
+  230 |               </Link>
+  231 |             </div> {
+  digest: '2445561562'
+}
+⨯ ReferenceError: Link is not defined
+    at AdminSettingsPage (src\app\admin\settings\page.tsx:228:16)
+  226 |               <p className="text-lg font-semibold text-slate-900">Uygulama</p>
+  227 |               <p className="mt-1 text-sm text-slate-500">Yazdirma, demo ve sidebar tercihi</p>
+> 228 |               <Link href="/admin/print-center" className="mt-3 inline-flex rounded-xl border border-slate-200 bg-white px-3 py-2 text-xs font-semibold text-slate-700">
+      |                ^
+  229 |                 Yazdirma Merkezi
+  230 |               </Link>
+  231 |             </div> {
+  digest: '4202443832'
+}
+⨯ ReferenceError: Link is not defined
+    at AdminSettingsPage (src\app\admin\settings\page.tsx:228:16)
+  226 |               <p className="text-lg font-semibold text-slate-900">Uygulama</p>
+  227 |               <p className="mt-1 text-sm text-slate-500">Yazdirma, demo ve sidebar tercihi</p>
+> 228 |               <Link href="/admin/print-center" className="mt-3 inline-flex rounded-xl border border-slate-200 bg-white px-3 py-2 text-xs font-semibold text-slate-700">
+      |                ^
+  229 |                 Yazdirma Merkezi
+  230 |               </Link>
+  231 |             </div> {
+  digest: '2445561562'
+}
+⨯ ReferenceError: Link is not defined
+    at AdminSettingsPage (src\app\admin\settings\page.tsx:228:16)
+  226 |               <p className="text-lg font-semibold text-slate-900">Uygulama</p>
+  227 |               <p className="mt-1 text-sm text-slate-500">Yazdirma, demo ve sidebar tercihi</p>
+> 228 |               <Link href="/admin/print-center" className="mt-3 inline-flex rounded-xl border border-slate-200 bg-white px-3 py-2 text-xs font-semibold text-slate-700">
+      |                ^
+  229 |                 Yazdirma Merkezi
+  230 |               </Link>
+  231 |             </div> {
+  digest: '2445561562'
+}
+⨯ ReferenceError: Link is not defined
+    at AdminSettingsPage (src\app\admin\settings\page.tsx:228:16)
+  226 |               <p className="text-lg font-semibold text-slate-900">Uygulama</p>
+  227 |               <p className="mt-1 text-sm text-slate-500">Yazdirma, demo ve sidebar tercihi</p>
+> 228 |               <Link href="/admin/print-center" className="mt-3 inline-flex rounded-xl border border-slate-200 bg-white px-3 py-2 text-xs font-semibold text-slate-700">
+      |                ^
+  229 |                 Yazdirma Merkezi
+  230 |               </Link>
+  231 |             </div> {
+  digest: '2445561562'
+}
+⨯ ReferenceError: Link is not defined
+    at AdminSettingsPage (src\app\admin\settings\page.tsx:228:16)
+  226 |               <p className="text-lg font-semibold text-slate-900">Uygulama</p>
+  227 |               <p className="mt-1 text-sm text-slate-500">Yazdirma, demo ve sidebar tercihi</p>
+> 228 |               <Link href="/admin/print-center" className="mt-3 inline-flex rounded-xl border border-slate-200 bg-white px-3 py-2 text-xs font-semibold text-slate-700">
+      |                ^
+  229 |                 Yazdirma Merkezi
+  230 |               </Link>
+  231 |             </div> {
+  digest: '2445561562'
+}
+⨯ ReferenceError: Link is not defined
+    at AdminSettingsPage (src\app\admin\settings\page.tsx:228:16)
+  226 |               <p className="text-lg font-semibold text-slate-900">Uygulama</p>
+  227 |               <p className="mt-1 text-sm text-slate-500">Yazdirma, demo ve sidebar tercihi</p>
+> 228 |               <Link href="/admin/print-center" className="mt-3 inline-flex rounded-xl border border-slate-200 bg-white px-3 py-2 text-xs font-semibold text-slate-700">
+      |                ^
+  229 |                 Yazdirma Merkezi
+  230 |               </Link>
+  231 |             </div> {
+  digest: '2445561562'
+}
