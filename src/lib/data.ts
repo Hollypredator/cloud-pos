@@ -2349,6 +2349,8 @@ export async function updateOrderStatus(orderId: string, nextStatus: OrderStatus
     details: { nextStatus },
   });
 
+  revalidateOperationsCaches();
+  revalidateReportCaches();
   return { ok: true, usingDemoData: false };
 }
 
@@ -2406,6 +2408,8 @@ export async function applyOrderFinancials(input: {
     details: { discountAmount, serviceFee, finalPrice },
   });
 
+  revalidateOperationsCaches();
+  revalidateReportCaches();
   return { ok: true, finalPrice };
 }
 
@@ -2498,6 +2502,8 @@ export async function completeOrderPayment(input: {
     action: "complete_payment",
     details: { method: input.method, amount, nextPaidTotal, remaining: Math.max(0, targetAmount - nextPaidTotal) },
   });
+  revalidateOperationsCaches();
+  revalidateReportCaches();
   return { ok: true, status: nextStatus, amountPaid: nextPaidTotal, remaining: Math.max(0, targetAmount - nextPaidTotal) };
 }
 
@@ -2563,6 +2569,8 @@ export async function cancelOrder(orderId: string, note?: string) {
     action: "cancel",
     details: { note: note ?? null },
   });
+  revalidateOperationsCaches();
+  revalidateReportCaches();
   return { ok: true };
 }
 
@@ -2638,6 +2646,8 @@ export async function refundOrder(input: {
     details: { method: input.method, amount, note: input.note ?? null },
   });
 
+  revalidateOperationsCaches();
+  revalidateReportCaches();
   return { ok: true };
 }
 
@@ -2733,31 +2743,45 @@ export async function getTableMap() {
     return { tables: [] as DiningTable[], usingDemoData: false };
   }
 
-  let query = supabase
-    .from("tables")
-    .select("id, business_id, branch_id, table_number, name, status, qr_code_identifier")
-    .order("table_number", { ascending: true });
-  if (!scope.useLegacySchema && scope.businessId) {
-    query = query.eq("business_id", scope.businessId);
-  }
-  if (scope.branchId) {
-    query = query.eq("branch_id", scope.branchId);
-  }
-  let data: unknown[] | null = null;
-  let error: { message: string } | null = null;
-  try {
-    const result = (await withQueryTimeout(query)) as { data: unknown[] | null; error: { message: string } | null };
-    data = result.data as unknown[] | null;
-    error = result.error as { message: string } | null;
-  } catch {
+  const cacheKey = `table-map:${scope.businessId ?? "none"}:${scope.branchId ?? "all"}:${scope.useLegacySchema ? "legacy" : "scoped"}`;
+  const reader = unstable_cache(
+    async () => {
+      const readerSupabase = getSupabaseServerClient();
+      if (!readerSupabase) {
+        return null;
+      }
+
+      let query = readerSupabase
+        .from("tables")
+        .select("id, business_id, branch_id, table_number, name, status, qr_code_identifier")
+        .order("table_number", { ascending: true });
+      if (!scope.useLegacySchema && scope.businessId) {
+        query = query.eq("business_id", scope.businessId);
+      }
+      if (scope.branchId) {
+        query = query.eq("branch_id", scope.branchId);
+      }
+
+      try {
+        const result = (await withQueryTimeout(query)) as { data: unknown[] | null; error: { message: string } | null };
+        return {
+          data: result.data as unknown[] | null,
+          error: result.error as { message: string } | null,
+        };
+      } catch {
+        return { data: null, error: { message: "Query timeout" } };
+      }
+    },
+    [cacheKey],
+    { revalidate: 10, tags: ["table-map"] },
+  );
+
+  const cached = await reader();
+  if (!cached || cached.error) {
     return { tables: demoTables, usingDemoData: true };
   }
 
-  if (error) {
-    return { tables: demoTables, usingDemoData: true };
-  }
-
-  return { tables: (data ?? []) as DiningTable[], usingDemoData: false };
+  return { tables: (cached.data ?? []) as DiningTable[], usingDemoData: false };
 }
 
 function createQrIdentifier(tableNumber: number) {
@@ -2821,6 +2845,7 @@ export async function createTable(tableNumber: number, name?: string) {
     details: { tableNumber, tableName: name?.trim() || `Masa ${tableNumber}`, qrCodeIdentifier: data.qr_code_identifier as string },
   });
 
+  revalidateOperationsCaches();
   return {
     ok: true,
     id: data.id as string,
@@ -2865,6 +2890,7 @@ export async function updateTableDetails(input: { tableId: string; tableNumber: 
     },
   });
 
+  revalidateOperationsCaches();
   return { ok: true };
 }
 
@@ -2910,6 +2936,7 @@ export async function deleteTable(tableId: string) {
     action: "delete",
   });
 
+  revalidateOperationsCaches();
   return { ok: true };
 }
 
@@ -2927,6 +2954,12 @@ function revalidateProductManagementCaches() {
 function revalidateReportCaches() {
   revalidateTag("sales-report-summary", "max");
   revalidateTag("financial-insights", "max");
+}
+
+function revalidateOperationsCaches() {
+  revalidateTag("table-map", "max");
+  revalidateTag("dashboard-snapshot", "max");
+  revalidateTag("ops-signals", "max");
 }
 
 async function getCachedProductManagementRow(input: {

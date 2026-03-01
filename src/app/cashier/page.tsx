@@ -15,6 +15,7 @@ import {
   applyOrderFinancials,
   cancelOrder,
   completeOrderPayment,
+  getOrderReceipt,
   listOrders,
   refundOrder,
 } from "@/lib/data";
@@ -149,14 +150,15 @@ export default async function CashierPage({
 }) {
   await requireRole(["admin", "cashier"], "/cashier");
   const { order: selectedOrderId } = await searchParams;
-  const [{ orders: servedOrders, usingDemoData }, { orders: paidOrders }] = await Promise.all([
-    listOrders(["served"]),
+  const [{ orders: servedOrders, usingDemoData }, { orders: paidOrders }, selectedOrderResult] = await Promise.all([
+    listOrders(["served"], { includeItems: false }),
     listOrders(["paid"], { includeItems: false, limit: 8, ascending: false }),
+    typeof selectedOrderId === "string" ? getOrderReceipt(selectedOrderId) : Promise.resolve({ order: null, usingDemoData: false }),
   ]);
 
   const servedTotals = totals(servedOrders);
   const paidTotals = totals(paidOrders);
-  const selectedOrder = selectedOrderId ? servedOrders.find((order) => order.id === selectedOrderId) ?? null : null;
+  const selectedOrder = selectedOrderResult.order;
 
   return (
     <BackofficePage
