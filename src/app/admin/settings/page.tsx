@@ -1,6 +1,6 @@
 import { revalidatePath } from "next/cache";
 import Link from "next/link";
-import { requireRole } from "@/lib/auth";
+import { getCurrentUserWithRole, requireExactRole } from "@/lib/auth";
 import {
   clearDemoOperationsData,
   ensureDemoOperationsData,
@@ -25,7 +25,7 @@ function readString(formData: FormData, key: string) {
 
 async function updateGeneralSettingsAction(formData: FormData) {
   "use server";
-  await requireRole(["admin"], "/admin/settings");
+  await requireExactRole(["owner"], "/admin/settings");
   const { settings: currentSettings } = await getGeneralSettings();
 
   await updateGeneralSettings({
@@ -45,7 +45,7 @@ async function updateGeneralSettingsAction(formData: FormData) {
 
 async function updateApplicationSettingsAction(formData: FormData) {
   "use server";
-  await requireRole(["admin"], "/admin/settings");
+  await requireExactRole(["owner"], "/admin/settings");
 
   const { settings: currentSettings } = await getApplicationSettings();
 
@@ -106,7 +106,7 @@ async function updateApplicationSettingsAction(formData: FormData) {
 
 async function clearDemoOperationsAction() {
   "use server";
-  await requireRole(["admin"], "/admin/settings");
+  await requireExactRole(["owner"], "/admin/settings");
   const { settings: applicationSettings } = await getApplicationSettings();
   await updateApplicationSettings({
     ...applicationSettings,
@@ -126,7 +126,7 @@ async function clearDemoOperationsAction() {
 
 async function updateBusinessPlanAction(formData: FormData) {
   "use server";
-  await requireRole(["admin"], "/admin/settings");
+  await requireExactRole(["owner"], "/admin/settings");
 
   const plan = formData.get("plan");
   if (typeof plan !== "string") {
@@ -202,7 +202,19 @@ function ToggleField({
 }
 
 export default async function AdminSettingsPage() {
-  await requireRole(["admin"], "/admin/settings");
+  const auth = await getCurrentUserWithRole();
+  if (!auth.usingDemoData && auth.role !== "owner") {
+    return (
+      <BackofficePage
+        title="Isletme Ayarlari"
+        description="Bu alan yalnizca patron hesabi tarafindan yonetilir."
+      >
+        <div className="rounded-[24px] border border-amber-200 bg-amber-50 px-5 py-4 text-sm text-amber-900">
+          Paket, demo modu, sidebar duzeni ve isletme marka ayarlari yalnizca patron tarafindan degistirilebilir.
+        </div>
+      </BackofficePage>
+    );
+  }
   const [{ settings: generalSettings, usingDemoData }, { settings: applicationSettings }, planContext] = await Promise.all([
     getGeneralSettings(),
     getApplicationSettings(),

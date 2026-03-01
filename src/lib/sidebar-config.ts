@@ -18,12 +18,12 @@ export const operationLinks: SidebarNavItem[] = [
   { href: "/cashier", label: "Adisyonlar", icon: "AD", roles: ["admin", "cashier"] },
   { href: "/admin/audit", label: "Islem Loglari", icon: "LG", roles: ["admin"], feature: "audit_logs" },
   { href: "/admin/finance", label: "Gelir/Gider", icon: "GG", roles: ["admin"], feature: "finance_dashboard" },
-  { href: "/admin/settings", label: "Isletme Ayarlari", icon: "AY", roles: ["admin"] },
-  { href: "/admin/businesses", label: "Subeler", icon: "SB", roles: ["admin"], feature: "multi_branch", requiresBusinessScope: true },
+  { href: "/admin/settings", label: "Isletme Ayarlari", icon: "AY", roles: ["owner"] },
+  { href: "/admin/businesses", label: "Subeler", icon: "SB", roles: ["owner"], feature: "multi_branch", requiresBusinessScope: true },
   { href: "/admin/products", label: "Urunler", icon: "UR", roles: ["admin"] },
   { href: "/admin/tables", label: "Bolge ve Masa", icon: "MS", roles: ["admin"] },
   { href: "/delivery", label: "Teslimat", icon: "DL", roles: ["admin", "waiter", "cashier"], feature: "delivery_dispatch" },
-  { href: "/admin/roles", label: "Personel", icon: "PR", roles: ["admin"], feature: "staff_management" },
+  { href: "/admin/roles", label: "Personel", icon: "PR", roles: ["owner"], feature: "staff_management" },
 ];
 
 export const sidebarPresetOrders = {
@@ -55,7 +55,6 @@ export const sidebarPresetOrders = {
       "/admin/reports",
       "/admin/finance",
       "/admin/audit",
-      "/admin/roles",
       "/admin/settings",
       "/admin/businesses",
     ],
@@ -72,8 +71,6 @@ export const sidebarPresetOrders = {
       "/admin/reports",
       "/admin/finance",
       "/admin/audit",
-      "/admin/roles",
-      "/admin/settings",
     ],
     service_first: [
       "/ops",
@@ -86,12 +83,9 @@ export const sidebarPresetOrders = {
       "/admin/reports",
       "/admin/finance",
       "/admin/audit",
-      "/admin/roles",
-      "/admin/settings",
     ],
   },
 } as const;
 
 export const defaultOwnerSidebarOrder = sidebarPresetOrders.owner.management_first;
 export const defaultAdminSidebarOrder = sidebarPresetOrders.admin.service_first;
-

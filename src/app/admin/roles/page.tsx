@@ -2,7 +2,7 @@ import Link from "next/link";
 import { revalidatePath } from "next/cache";
 import { redirect } from "next/navigation";
 import { BackofficePage, ContentCard, EmptyPanel, FeatureLockedState, SidebarPanel, SummaryCard, WorkflowGuide } from "@/components/backoffice-ui";
-import { requireRole } from "@/lib/auth";
+import { requireExactRole } from "@/lib/auth";
 import { createStaffAccount, deleteStaffAccount, listBranches, listProfiles, updateProfileRole, updateStaffAccount } from "@/lib/data";
 import { getFeatureAccess } from "@/lib/plan-access";
 import type { AppRole, StaffAccessScope } from "@/lib/types";
@@ -26,7 +26,7 @@ function feedbackHref(tone: "success" | "error", message: string, staffId?: stri
 
 async function updateRoleAction(formData: FormData) {
   "use server";
-  await requireRole(["admin"], "/admin/roles");
+  await requireExactRole(["owner"], "/admin/roles");
 
   const profileId = formData.get("profileId");
   const role = formData.get("role");
@@ -44,7 +44,7 @@ async function updateRoleAction(formData: FormData) {
 
 async function createStaffAction(formData: FormData) {
   "use server";
-  await requireRole(["admin"], "/admin/roles");
+  await requireExactRole(["owner"], "/admin/roles");
 
   const fullName = formData.get("fullName");
   const email = formData.get("email");
@@ -79,7 +79,7 @@ async function createStaffAction(formData: FormData) {
 
 async function updateStaffAction(formData: FormData) {
   "use server";
-  await requireRole(["admin"], "/admin/roles");
+  await requireExactRole(["owner"], "/admin/roles");
 
   const profileId = formData.get("profileId");
   const fullName = formData.get("fullName");
@@ -117,7 +117,7 @@ async function updateStaffAction(formData: FormData) {
 
 async function deleteStaffAction(formData: FormData) {
   "use server";
-  await requireRole(["admin"], "/admin/roles");
+  await requireExactRole(["owner"], "/admin/roles");
 
   const profileId = formData.get("profileId");
   if (typeof profileId !== "string") {
@@ -150,7 +150,7 @@ export default async function AdminRolesPage({
 }: {
   searchParams: Promise<{ staff?: string; feedback?: string; tone?: "success" | "error" }>;
 }) {
-  await requireRole(["admin"], "/admin/roles");
+  await requireExactRole(["owner"], "/admin/roles");
   const featureAccess = await getFeatureAccess("staff_management");
   if (!featureAccess.enabled) {
     return (

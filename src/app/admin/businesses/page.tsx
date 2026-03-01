@@ -2,7 +2,7 @@ import Link from "next/link";
 import { revalidatePath } from "next/cache";
 import { redirect } from "next/navigation";
 import { BackofficePage, ContentCard, EmptyPanel, FeatureLockedState, NoticeBanner, SidebarPanel, SummaryCard, WorkflowGuide } from "@/components/backoffice-ui";
-import { getCurrentUserWithRole, requireRole } from "@/lib/auth";
+import { getCurrentUserWithRole, requireExactRole } from "@/lib/auth";
 import { createBranch, deleteBranch, listBranches, setBranchActiveStatus, updateBranch } from "@/lib/data";
 import { getFeatureAccess } from "@/lib/plan-access";
 
@@ -14,7 +14,7 @@ function feedbackHref(tone: "success" | "error", message: string, branchId?: str
 
 async function createBranchAction(formData: FormData) {
   "use server";
-  await requireRole(["admin"], "/admin/businesses");
+  await requireExactRole(["owner"], "/admin/businesses");
 
   const name = formData.get("name");
   const slug = formData.get("slug");
@@ -33,7 +33,7 @@ async function createBranchAction(formData: FormData) {
 
 async function updateBranchAction(formData: FormData) {
   "use server";
-  await requireRole(["admin"], "/admin/businesses");
+  await requireExactRole(["owner"], "/admin/businesses");
 
   const branchId = formData.get("branchId");
   const name = formData.get("name");
@@ -53,7 +53,7 @@ async function updateBranchAction(formData: FormData) {
 
 async function toggleBranchAction(formData: FormData) {
   "use server";
-  await requireRole(["admin"], "/admin/businesses");
+  await requireExactRole(["owner"], "/admin/businesses");
 
   const branchId = formData.get("branchId");
   const isActive = formData.get("isActive") === "true";
@@ -72,7 +72,7 @@ async function toggleBranchAction(formData: FormData) {
 
 async function deleteBranchAction(formData: FormData) {
   "use server";
-  await requireRole(["admin"], "/admin/businesses");
+  await requireExactRole(["owner"], "/admin/businesses");
 
   const branchId = formData.get("branchId");
   if (typeof branchId !== "string") {
@@ -99,7 +99,7 @@ export default async function AdminBusinessesPage({
 }: {
   searchParams: Promise<BranchParams>;
 }) {
-  await requireRole(["admin"], "/admin/businesses");
+  await requireExactRole(["owner"], "/admin/businesses");
   const authContext = await getCurrentUserWithRole();
   if (authContext.accessScope === "branch") {
     redirect("/ops");

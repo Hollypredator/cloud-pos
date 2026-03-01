@@ -1,4 +1,5 @@
 import { redirect } from "next/navigation";
+import { cache } from "react";
 import { DEFAULT_BUSINESS_SLUG } from "@/lib/business";
 import { getActiveBusinessSlug } from "@/lib/business-server";
 import type { AppRole, StaffAccessScope, StudioRole } from "@/lib/types";
@@ -10,7 +11,11 @@ export function hasRoleAccess(role: AppRole | null, allowedRoles: AppRole[]) {
   return !!role && (allowedRoles.includes(role) || (role === "owner" && allowedRoles.includes("admin")));
 }
 
-export async function getCurrentUserWithRole() {
+export function hasExactRoleAccess(role: AppRole | null, allowedRoles: AppRole[]) {
+  return !!role && allowedRoles.includes(role);
+}
+
+export const getCurrentUserWithRole = cache(async () => {
   const supabase = await getSupabaseAuthServerClient();
   if (!supabase) {
     return { user: null, role: null as AppRole | null, usingDemoData: true };
@@ -79,7 +84,7 @@ export async function getCurrentUserWithRole() {
     branchAccessIds,
     usingDemoData: false,
   };
-}
+});
 
 export async function requireRole(allowedRoles: AppRole[], nextPath: string) {
   const context = await getCurrentUserWithRole();
@@ -95,6 +100,23 @@ export async function requireRole(allowedRoles: AppRole[], nextPath: string) {
     hasRoleAccess(context.role, allowedRoles);
 
   if (!roleAllowed) {
+    redirect("/unauthorized");
+  }
+
+  return { bypass: false as const, role: context.role };
+}
+
+export async function requireExactRole(allowedRoles: AppRole[], nextPath: string) {
+  const context = await getCurrentUserWithRole();
+  if (context.usingDemoData) {
+    return { bypass: true as const };
+  }
+
+  if (!context.user) {
+    redirect(`/login?next=${encodeURIComponent(nextPath)}`);
+  }
+
+  if (!hasExactRoleAccess(context.role, allowedRoles)) {
     redirect("/unauthorized");
   }
 

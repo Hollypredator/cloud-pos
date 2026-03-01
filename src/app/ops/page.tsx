@@ -65,6 +65,7 @@ export default async function OpsPage() {
   const allowAll = auth.usingDemoData;
   const isManagement = role === "owner" || role === "admin";
   const canAdmin = allowAll || isManagement;
+  const canOwner = allowAll || role === "owner";
   const canKitchen = allowAll || isManagement || role === "kitchen";
   const canCashier = allowAll || isManagement || role === "cashier";
   const canWaiterOps = allowAll || isManagement || role === "waiter" || role === "cashier";
@@ -99,6 +100,7 @@ export default async function OpsPage() {
       done: setup.counts.staff >= 4,
       href: "/admin/roles",
       cta: "Personeli ac",
+      ownerOnly: true,
     },
     {
       label: "Ilk siparis testi",
@@ -267,7 +269,7 @@ export default async function OpsPage() {
           </div>
 
           <div className="mt-5 grid gap-3 xl:grid-cols-2">
-            {setupSteps.map((step) => (
+            {setupSteps.filter((step) => !step.ownerOnly || canOwner).map((step) => (
               <div key={step.label} className="rounded-[24px] border border-amber-200 bg-white/85 px-4 py-4">
                 <div className="flex items-start justify-between gap-4">
                   <div>
@@ -408,7 +410,7 @@ export default async function OpsPage() {
                 Gelir / Gider
               </Link>
             ) : null}
-            {canAdmin ? (
+            {canOwner ? (
               <Link href="/admin/settings" className="rounded-[24px] border border-slate-200 bg-slate-50 px-4 py-5 text-sm font-semibold text-slate-800 transition hover:border-slate-300 hover:bg-white">
                 Isletme Ayarlari
               </Link>

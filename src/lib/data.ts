@@ -539,7 +539,7 @@ const getCachedSeoSettingsRow = unstable_cache(
   { tags: ["app-settings-seo"] },
 );
 
-async function resolveBusinessBySlug(businessSlug?: string) {
+const resolveBusinessBySlug = cache(async (businessSlug?: string) => {
   const slug = normalizeBusinessSlug(businessSlug);
   const supabase = getSupabaseServerClient();
   if (!supabase) {
@@ -570,7 +570,7 @@ async function resolveBusinessBySlug(businessSlug?: string) {
     usingDemoData: false,
     useLegacySchema: false,
   };
-}
+});
 
 export async function getBusinessContextBySlug(businessSlug?: string) {
   const { business, usingDemoData, useLegacySchema } = await resolveBusinessBySlug(businessSlug);
@@ -582,7 +582,7 @@ export async function getBusinessContextBySlug(businessSlug?: string) {
   };
 }
 
-async function getDefaultBusinessScope() {
+const getDefaultBusinessScope = cache(async () => {
   const activeSlug = await getActiveBusinessSlug();
   const activeBranchId = await getActiveBranchId();
   const { business, useLegacySchema } = await resolveBusinessBySlug(activeSlug || DEFAULT_BUSINESS_SLUG);
@@ -604,9 +604,9 @@ async function getDefaultBusinessScope() {
     branchAccessIds: staffAccess.branchAccessIds,
     canAccessAllBranches: staffAccess.accessScope === "business",
   };
-}
+});
 
-async function getCurrentStaffBranchAccess(businessId: string | null) {
+const getCurrentStaffBranchAccess = cache(async (businessId: string | null) => {
   const serverClient = getSupabaseServerClient();
   const authClient = await getSupabaseAuthServerClient();
   if (!serverClient || !authClient || !businessId) {
@@ -659,7 +659,7 @@ async function getCurrentStaffBranchAccess(businessId: string | null) {
     primaryBranchId: rows.find((row) => row.is_primary && row.branch_id)?.branch_id ?? branchAccessIds[0] ?? null,
     branchAccessIds,
   };
-}
+});
 
 export const getAppShellSnapshot = cache(async () => {
   const serverClient = getSupabaseServerClient();
@@ -5087,9 +5087,201 @@ function buildSitePageKey(slug?: string) {
   return normalizedSlug === "home" ? "landing_page" : `site_page:${normalizedSlug}`;
 }
 
+async function getCachedDashboardDataRow(input: {
+  businessId: string | null;
+  branchId: string | null;
+  useLegacySchema: boolean;
+}) {
+  const cacheKey = `dashboard:${input.businessId ?? "none"}:${input.branchId ?? "all"}:${input.useLegacySchema ? "legacy" : "scoped"}`;
+  const reader = unstable_cache(
+    async () => {
+      const supabase = getSupabaseServerClient();
+      if (!supabase) {
+        return null;
+      }
+
+      const todayStart = new Date();
+      todayStart.setHours(0, 0, 0, 0);
+
+      const [
+        { data: openRows },
+        { data: pendingRows },
+        { data: preparingRows },
+        { data: servedRows },
+        { data: paymentRows },
+        { data: tablesRows },
+        { data: recentOrderRows },
+        { data: lowStockRows },
+      ] = await Promise.all([
+        !input.useLegacySchema && input.businessId
+          ? (input.branchId
+              ? supabase.from("orders").select("id, status").eq("business_id", input.businessId).eq("branch_id", input.branchId)
+              : supabase.from("orders").select("id, status").eq("business_id", input.businessId))
+          : supabase.from("orders").select("id, status"),
+        !input.useLegacySchema && input.businessId
+          ? (input.branchId
+              ? supabase.from("orders").select("id").eq("status", "pending").eq("business_id", input.businessId).eq("branch_id", input.branchId)
+              : supabase.from("orders").select("id").eq("status", "pending").eq("business_id", input.businessId))
+          : supabase.from("orders").select("id").eq("status", "pending"),
+        !input.useLegacySchema && input.businessId
+          ? (input.branchId
+              ? supabase.from("orders").select("id").eq("status", "preparing").eq("business_id", input.businessId).eq("branch_id", input.branchId)
+              : supabase.from("orders").select("id").eq("status", "preparing").eq("business_id", input.businessId))
+          : supabase.from("orders").select("id").eq("status", "preparing"),
+        !input.useLegacySchema && input.businessId
+          ? (input.branchId
+              ? supabase.from("orders").select("id").eq("status", "served").eq("business_id", input.businessId).eq("branch_id", input.branchId)
+              : supabase.from("orders").select("id").eq("status", "served").eq("business_id", input.businessId))
+          : supabase.from("orders").select("id").eq("status", "served"),
+        !input.useLegacySchema && input.businessId
+          ? (input.branchId
+              ? supabase.from("payments").select("amount, payment_type").eq("business_id", input.businessId).eq("branch_id", input.branchId).gte("created_at", todayStart.toISOString())
+              : supabase.from("payments").select("amount, payment_type").eq("business_id", input.businessId).gte("created_at", todayStart.toISOString()))
+          : supabase.from("payments").select("amount, payment_type").gte("created_at", todayStart.toISOString()),
+        !input.useLegacySchema && input.businessId
+          ? (input.branchId
+              ? supabase.from("tables").select("id, status").eq("business_id", input.businessId).eq("branch_id", input.branchId)
+              : supabase.from("tables").select("id, status").eq("business_id", input.businessId))
+          : supabase.from("tables").select("id, status"),
+        !input.useLegacySchema && input.businessId
+          ? (input.branchId
+              ? supabase
+                  .from("orders")
+                  .select("id, table_number, customer_name, channel, status, total_price, final_price, created_at")
+                  .eq("business_id", input.businessId)
+                  .eq("branch_id", input.branchId)
+                  .order("created_at", { ascending: false })
+                  .limit(8)
+              : supabase
+                  .from("orders")
+                  .select("id, table_number, customer_name, channel, status, total_price, final_price, created_at")
+                  .eq("business_id", input.businessId)
+                  .order("created_at", { ascending: false })
+                  .limit(8))
+          : supabase
+              .from("orders")
+              .select("id, table_number, customer_name, channel, status, total_price, final_price, created_at")
+              .order("created_at", { ascending: false })
+              .limit(8),
+        !input.useLegacySchema && input.businessId
+          ? supabase
+              .from("products")
+              .select("id, name, stock_count")
+              .eq("business_id", input.businessId)
+              .lte("stock_count", 10)
+              .order("stock_count", { ascending: true })
+              .limit(8)
+          : supabase.from("products").select("id, name, stock_count").lte("stock_count", 10).order("stock_count", { ascending: true }).limit(8),
+      ]);
+
+      return {
+        openRows: (openRows ?? []) as Array<{ id: string; status?: OrderStatus }>,
+        pendingRows: (pendingRows ?? []) as Array<{ id: string }>,
+        preparingRows: (preparingRows ?? []) as Array<{ id: string }>,
+        servedRows: (servedRows ?? []) as Array<{ id: string }>,
+        paymentRows: (paymentRows ?? []) as Array<{ amount: number; payment_type: "sale" | "refund" }>,
+        tablesRows: (tablesRows ?? []) as Array<{ id: string; status?: TableStatus }>,
+        recentOrderRows: (recentOrderRows ?? []) as Array<Order>,
+        lowStockRows: (lowStockRows ?? []) as Array<Pick<Product, "id" | "name" | "stock_count">>,
+      };
+    },
+    [cacheKey],
+    { revalidate: 10, tags: ["dashboard-snapshot"] },
+  );
+
+  return reader();
+}
+
+const getCachedSetupChecklistSummary = unstable_cache(
+  async () => {
+    const supabase = getSupabaseServerClient();
+    if (!supabase) {
+      return null;
+    }
+
+    const [
+      { count: businesses },
+      { count: products },
+      { count: tables },
+      { count: staff },
+      { count: leads },
+    ] = await Promise.all([
+      supabase.from("businesses").select("id", { count: "exact", head: true }).eq("is_active", true),
+      supabase.from("products").select("id", { count: "exact", head: true }),
+      supabase.from("tables").select("id", { count: "exact", head: true }),
+      supabase.from("profiles").select("id", { count: "exact", head: true }),
+      supabase.from("sales_leads").select("id", { count: "exact", head: true }),
+    ]);
+
+    return {
+      businesses: businesses ?? 0,
+      products: products ?? 0,
+      tables: tables ?? 0,
+      staff: staff ?? 0,
+      leads: leads ?? 0,
+    };
+  },
+  ["setup-checklist-summary"],
+  { revalidate: 30, tags: ["setup-checklist-summary"] },
+);
+
+const getCachedSitePagesRows = unstable_cache(
+  async () => {
+    const supabase = getSupabaseServerClient();
+    if (!supabase) {
+      return null;
+    }
+
+    const { data, error } = await supabase
+      .from("site_content")
+      .select("key, content, updated_at")
+      .or("key.eq.landing_page,key.like.site_page:%")
+      .order("updated_at", { ascending: false });
+
+    if (error) {
+      return { error: true as const, rows: [] };
+    }
+
+    return {
+      error: false as const,
+      rows: (data ?? []) as Array<{ key: string; content: Partial<LandingContent> | null; updated_at: string | null }>,
+    };
+  },
+  ["site-content-pages"],
+  { tags: ["site-content-pages"] },
+);
+
+async function getCachedSitePageRow(slug?: string) {
+  const key = buildSitePageKey(slug);
+  const cachedReader = unstable_cache(
+    async () => {
+      const supabase = getSupabaseServerClient();
+      if (!supabase) {
+        return null;
+      }
+
+      const { data, error } = await supabase
+        .from("site_content")
+        .select("id, key, content, created_at, updated_at")
+        .eq("key", key)
+        .maybeSingle();
+
+      if (error) {
+        return { error: true as const, row: null };
+      }
+
+      return { error: false as const, row: (data as SiteContent | null) ?? null };
+    },
+    [`site-content-page-${key}`],
+    { tags: ["site-content-pages", `site-content-page:${key}`] },
+  );
+
+  return cachedReader();
+}
+
 export async function listSitePages() {
-  const supabase = getSupabaseServerClient();
-  if (!supabase) {
+  const cached = await getCachedSitePagesRows();
+  if (!cached) {
     return {
       pages: [
         {
@@ -5105,17 +5297,11 @@ export async function listSitePages() {
     };
   }
 
-  const { data, error } = await supabase
-    .from("site_content")
-    .select("key, content, updated_at")
-    .or("key.eq.landing_page,key.like.site_page:%")
-    .order("updated_at", { ascending: false });
-
-  if (error) {
+  if (cached.error) {
     return { pages: [] as Array<{ slug: string; path: string; key: string; title: string; updatedAt: string | null; isHome: boolean }>, usingDemoData: false };
   }
 
-  const rows = (data ?? []) as Array<{ key: string; content: Partial<LandingContent> | null; updated_at: string | null }>;
+  const rows = cached.rows;
   const pages = rows.map((row) => {
     const slug = row.key === "landing_page" ? "home" : row.key.replace(/^site_page:/, "");
     const normalizedContent = normalizeLandingContent(row.content ?? null);
@@ -5144,22 +5330,16 @@ export async function listSitePages() {
 }
 
 export async function getSitePageContent(slug?: string) {
-  const supabase = getSupabaseServerClient();
-  if (!supabase) {
+  const cached = await getCachedSitePageRow(slug);
+  if (!cached) {
     return { content: defaultLandingContent, usingDemoData: true };
   }
 
-  const { data, error } = await supabase
-    .from("site_content")
-    .select("id, key, content, created_at, updated_at")
-    .eq("key", buildSitePageKey(slug))
-    .maybeSingle();
-
-  if (error) {
+  if (cached.error) {
     return { content: defaultLandingContent, usingDemoData: false, found: false };
   }
 
-  const row = data as SiteContent | null;
+  const row = cached.row;
   return {
     content: normalizeLandingContent((row?.content as Partial<LandingContent> | null) ?? null),
     usingDemoData: false,
@@ -5208,6 +5388,9 @@ export async function createSitePage(input: { slug: string; pageTitle: string })
     details: { key, slug },
   });
 
+  revalidateTag("site-content-pages", "max");
+  revalidateTag(`site-content-page:${key}`, "max");
+
   return { ok: true, slug };
 }
 
@@ -5237,6 +5420,10 @@ export async function updateLandingContent(content: LandingContent, slug?: strin
     details: { key: buildSitePageKey(slug), slug: normalizeSitePageSlug(slug) },
   });
 
+  const key = buildSitePageKey(slug);
+  revalidateTag("site-content-pages", "max");
+  revalidateTag(`site-content-page:${key}`, "max");
+
   return { ok: true };
 }
 
@@ -5264,6 +5451,9 @@ export async function deleteSitePage(slug?: string) {
     action: "delete",
     details: { key, slug: normalizedSlug },
   });
+
+  revalidateTag("site-content-pages", "max");
+  revalidateTag(`site-content-page:${key}`, "max");
 
   return { ok: true };
 }
@@ -5301,6 +5491,9 @@ export async function resetSitePageToEmpty(slug?: string) {
     action: "reset",
     details: { key, slug: normalizedSlug },
   });
+
+  revalidateTag("site-content-pages", "max");
+  revalidateTag(`site-content-page:${key}`, "max");
 
   return { ok: true };
 }

@@ -117,6 +117,12 @@ function renderHeaderActions(content: DemoPageContent, previewMode?: boolean) {
     return (
       <>
         <span className="rounded-2xl border border-white/20 px-4 py-2 text-sm font-semibold text-white">
+          Ana Sayfa
+        </span>
+        <span className="rounded-2xl border border-white/20 px-4 py-2 text-sm font-semibold text-white">
+          Blog
+        </span>
+        <span className="rounded-2xl border border-white/20 px-4 py-2 text-sm font-semibold text-white">
           {content.opsCtaLabel}
         </span>
         <span className="rounded-2xl bg-white px-4 py-2 text-sm font-semibold text-slate-950">
@@ -128,6 +134,12 @@ function renderHeaderActions(content: DemoPageContent, previewMode?: boolean) {
 
   return (
     <>
+      <Link href="/" className="rounded-2xl border border-white/20 px-4 py-2 text-sm font-semibold text-white">
+        Ana Sayfa
+      </Link>
+      <Link href="/blog" className="rounded-2xl border border-white/20 px-4 py-2 text-sm font-semibold text-white">
+        Blog
+      </Link>
       <Link href="/ops" className="rounded-2xl border border-white/20 px-4 py-2 text-sm font-semibold text-white">
         {content.opsCtaLabel}
       </Link>
