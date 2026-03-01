@@ -73,6 +73,7 @@ NEXT_PUBLIC_VAT_RATE=10
 - `supabase/migrations/20260301_harden_core_rls.sql`
 - `supabase/migrations/20260302_scope_profiles_rls.sql`
 - `supabase/migrations/20260302_fix_profiles_rls_recursion.sql`
+- `supabase/migrations/20260302_allow_table_delete_with_order_history.sql`
 
 4. Gelistirme sunucusunu baslatin:
 

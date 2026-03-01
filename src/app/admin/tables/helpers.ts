@@ -1,11 +1,12 @@
 import { getActiveBusinessSlug } from "@/lib/business-server";
+import { getAppBaseUrl } from "@/lib/app-url";
 
 export function feedbackHref(tone: "success" | "error", message: string) {
   return `/admin/tables?tone=${encodeURIComponent(tone)}&feedback=${encodeURIComponent(message)}`;
 }
 
 export async function buildQrTarget(identifier: string) {
-  const base = process.env.NEXT_PUBLIC_APP_URL ?? "http://localhost:3000";
+  const base = getAppBaseUrl();
   const businessSlug = await getActiveBusinessSlug();
   return `${base}/${businessSlug}/qr/${identifier}`;
 }

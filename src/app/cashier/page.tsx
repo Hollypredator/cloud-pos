@@ -10,6 +10,7 @@ import {
   WorkflowGuide,
 } from "@/components/backoffice-ui";
 import { LiveOpsBridge } from "@/components/live-ops-bridge";
+import { getAppBaseUrl } from "@/lib/app-url";
 import { requireRole } from "@/lib/auth";
 import {
   applyOrderFinancials,
@@ -22,7 +23,7 @@ import {
 import type { Order, OrderItem, PaymentMethod } from "@/lib/types";
 
 function buildReceiptLink(orderId: string) {
-  const base = process.env.NEXT_PUBLIC_APP_URL ?? "http://localhost:3000";
+  const base = getAppBaseUrl();
   return `${base}/receipt/${orderId}`;
 }
 

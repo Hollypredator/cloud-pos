@@ -1,11 +1,12 @@
 import Image from "next/image";
 import { notFound } from "next/navigation";
+import { getAppBaseUrl } from "@/lib/app-url";
 import { requireRole } from "@/lib/auth";
 import { getActiveBusinessSlug } from "@/lib/business-server";
 import { getTableMap } from "@/lib/data";
 
 async function buildQrTarget(identifier: string) {
-  const base = process.env.NEXT_PUBLIC_APP_URL ?? "http://localhost:3000";
+  const base = getAppBaseUrl();
   const businessSlug = await getActiveBusinessSlug();
   return `${base}/${businessSlug}/qr/${identifier}`;
 }
