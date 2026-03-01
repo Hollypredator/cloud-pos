@@ -9,7 +9,6 @@ import type {
   ProductModifierOption,
 } from "@/lib/types";
 import { OrderStatusWidget } from "@/components/order-status-widget";
-import { OrderHistoryWidget } from "@/components/order-history-widget";
 
 type CartEntry = {
   key: string;
@@ -190,27 +189,6 @@ export function QrOrderingClient({
       }
     }
     addConfiguredProduct(product, buildModifierSelections(activeProductId));
-  }
-
-  function reorderFromLatest(items: Array<{ productId: string; quantity: number }>) {
-    setCart((prev) => {
-      const next = { ...prev };
-      for (const row of items) {
-        const product = products.find((item) => item.id === row.productId);
-        if (!product) {
-          continue;
-        }
-        const key = buildCartKey(product.id, []);
-        next[key] = {
-          key,
-          product,
-          modifiers: [],
-          quantity: (next[key]?.quantity ?? 0) + row.quantity,
-        };
-      }
-      return next;
-    });
-    setMessage("Son siparisteki urunler sepete eklendi.");
   }
 
   function removeProduct(key: string) {
@@ -490,12 +468,7 @@ export function QrOrderingClient({
             <OrderStatusWidget
               businessSlug={businessSlug}
               qrCodeIdentifier={qrCodeIdentifier}
-              onReorder={reorderFromLatest}
             />
-          </div>
-
-          <div className="mt-4">
-            <OrderHistoryWidget businessSlug={businessSlug} qrCodeIdentifier={qrCodeIdentifier} />
           </div>
         </aside>
       </div>

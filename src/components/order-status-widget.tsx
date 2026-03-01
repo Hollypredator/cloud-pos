@@ -34,11 +34,9 @@ function statusClass(status: OrderStatus) {
 export function OrderStatusWidget({
   businessSlug,
   qrCodeIdentifier,
-  onReorder,
 }: {
   businessSlug?: string;
   qrCodeIdentifier: string;
-  onReorder?: (items: Array<{ productId: string; quantity: number }>) => void;
 }) {
   const [order, setOrder] = useState<LatestOrder | null>(null);
   const [loading, setLoading] = useState(true);
@@ -89,17 +87,6 @@ export function OrderStatusWidget({
           <p className="text-xs text-slate-500">{new Date(order.createdAt).toLocaleString("tr-TR")}</p>
           <p className="text-xs text-slate-500">Tahmini kalan sure: {estimateEta(order.status, order.createdAt)}</p>
           <p className="text-sm text-slate-700">Toplam: {Number(order.finalPrice).toFixed(2)} TL</p>
-          {onReorder ? (
-            <button
-              type="button"
-              onClick={() =>
-                onReorder(order.items.map((item) => ({ productId: item.productId, quantity: item.quantity })))
-              }
-              className="mt-1 rounded-lg border border-slate-300 px-3 py-2 text-xs font-medium text-slate-700"
-            >
-              Son Siparisi Sepete Ekle
-            </button>
-          ) : null}
         </div>
       )}
     </section>

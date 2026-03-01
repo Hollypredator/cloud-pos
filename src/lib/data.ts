@@ -2538,7 +2538,16 @@ export async function listLatestOrdersByTableIds(tableIds: string[]) {
 
 export async function getLatestOrderByTableId(tableId: string) {
   const { ordersByTableId, usingDemoData } = await listLatestOrdersByTableIds([tableId]);
-  return { order: ordersByTableId.get(tableId) ?? null, usingDemoData };
+  const order = ordersByTableId.get(tableId) ?? null;
+  if (!order) {
+    return { order: null, usingDemoData };
+  }
+
+  if (["paid", "cancelled", "refunded"].includes(order.status)) {
+    return { order: null, usingDemoData };
+  }
+
+  return { order, usingDemoData };
 }
 
 export async function getOrderHistoryByTableId(tableId: string, limit = 5) {
