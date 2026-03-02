@@ -52,7 +52,7 @@ export default async function AdminOnboardingPage() {
       title="Kurulum Merkezi"
       description="Ilk kez kuruluyorsa tum temel operasyon adimlarini tek yerden tamamla."
       actions={
-        <Link href="/ops" className="rounded-2xl border border-slate-200 bg-white px-5 py-3 text-sm font-semibold text-slate-800">
+        <Link href="/ops" className="w-full rounded-2xl border border-slate-200 bg-white px-5 py-3 text-center text-sm font-semibold text-slate-800 sm:w-auto">
           Operasyona Don
         </Link>
       }

@@ -45,7 +45,7 @@ export function TableManagementModal({
         <div className="mb-5 flex flex-wrap items-start justify-between gap-4 border-b border-slate-200 pb-5">
           <div>
             <p className="text-xs font-bold uppercase tracking-[0.16em] text-slate-500">Masa Yonetimi</p>
-            <h2 className="font-display mt-2 text-3xl font-semibold tracking-tight text-slate-900">{table.name || `Masa ${table.table_number}`}</h2>
+            <h2 className="font-display mt-2 text-2xl font-semibold tracking-tight text-slate-900 sm:text-3xl">{table.name || `Masa ${table.table_number}`}</h2>
             <p className="mt-1 text-sm text-slate-500">Duzenleme, QR ve siparis gecmisi ayni popup icinde tamamlanir.</p>
           </div>
           <Link href="/admin/tables" className="rounded-2xl border border-slate-200 bg-white px-4 py-3 text-sm font-semibold text-slate-700">
@@ -84,7 +84,7 @@ export function TableManagementModal({
                 <PendingSubmitButton
                   idleLabel="Masa Bilgilerini Kaydet"
                   pendingLabel="Kaydediliyor..."
-                  className="rounded-2xl bg-slate-900 px-4 py-3 text-sm font-semibold text-white"
+                  className="w-full rounded-2xl bg-slate-900 px-4 py-3 text-sm font-semibold text-white sm:w-auto"
                 />
               </form>
             </article>
@@ -92,7 +92,7 @@ export function TableManagementModal({
             <article className="rounded-[28px] border border-slate-200 bg-white p-5">
               <h3 className="font-display text-2xl font-semibold tracking-tight text-slate-900">QR ve Hizli Aksiyonlar</h3>
               <div className="mt-4 flex items-center justify-center rounded-[22px] border border-dashed border-slate-200 bg-slate-50 p-5">
-                <Image src={qrImage} alt={`${table.name || `Masa ${table.table_number}`} QR`} width={180} height={180} className="h-40 w-40 rounded-2xl object-cover" unoptimized />
+                <Image src={qrImage} alt={`${table.name || `Masa ${table.table_number}`} QR`} width={180} height={180} className="h-32 w-32 rounded-2xl object-cover sm:h-40 sm:w-40" unoptimized />
               </div>
               <div className="mt-3 rounded-2xl border border-slate-200 bg-slate-50 px-4 py-3">
                 <p className="text-[11px] font-bold uppercase tracking-[0.16em] text-slate-500">QR Linki</p>
@@ -139,7 +139,7 @@ export function TableManagementModal({
                     idleLabel="Adisyonu Bu Masaya Tas"
                     pendingLabel="Tasinıyor..."
                     disabled={movableTables.length === 0}
-                    className="rounded-2xl border border-slate-200 bg-slate-900 px-4 py-3 text-sm font-semibold text-white disabled:cursor-not-allowed disabled:opacity-50"
+                    className="w-full rounded-2xl border border-slate-200 bg-slate-900 px-4 py-3 text-sm font-semibold text-white disabled:cursor-not-allowed disabled:opacity-50 sm:w-auto"
                   />
                 </form>
                 {movableTables.length === 0 ? (
@@ -157,7 +157,7 @@ export function TableManagementModal({
                   idleLabel="Masayi Sil"
                   pendingLabel="Siliniyor..."
                   disabled={table.status !== "empty"}
-                  className="rounded-2xl border border-rose-300 bg-white px-4 py-3 text-sm font-semibold text-rose-700 disabled:cursor-not-allowed disabled:opacity-50"
+                  className="w-full rounded-2xl border border-rose-300 bg-white px-4 py-3 text-sm font-semibold text-rose-700 disabled:cursor-not-allowed disabled:opacity-50 sm:w-auto"
                 />
               </form>
             </article>
@@ -211,10 +211,10 @@ export function TableManagementModal({
                         </div>
                       </div>
                       <div className="mt-4 flex flex-wrap gap-2">
-                        <Link href={`/receipt/${order.id}`} className="rounded-2xl border border-slate-200 bg-white px-4 py-3 text-sm font-semibold text-slate-700">
+                        <Link href={`/receipt/${order.id}`} className="w-full rounded-2xl border border-slate-200 bg-white px-4 py-3 text-center text-sm font-semibold text-slate-700 sm:w-auto">
                           Adisyonu Gor
                         </Link>
-                        <Link href={`/cashier?order=${order.id}`} className="rounded-2xl bg-gradient-to-r from-[#ff6a3d] to-[#f2b44f] px-4 py-3 text-sm font-semibold text-white">
+                        <Link href={`/cashier?order=${order.id}`} className="w-full rounded-2xl bg-gradient-to-r from-[#ff6a3d] to-[#f2b44f] px-4 py-3 text-center text-sm font-semibold text-white sm:w-auto">
                           Popup Tahsilat
                         </Link>
                       </div>

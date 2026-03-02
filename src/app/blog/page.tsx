@@ -21,8 +21,8 @@ export default async function BlogIndexPage() {
   return (
     <div className="min-h-screen bg-[linear-gradient(180deg,#f8fafc_0%,#eef2f7_100%)] px-3 py-5 sm:px-4 sm:py-8 md:px-8 md:py-10">
       <main className="mx-auto max-w-6xl space-y-6 sm:space-y-8">
-        <header className="flex flex-wrap items-end justify-between gap-4">
-          <div>
+        <header className="flex flex-col items-start justify-between gap-4 lg:flex-row lg:items-end">
+          <div className="min-w-0">
             <p className="text-xs uppercase tracking-[0.28em] text-slate-500">Cloud POS Blog</p>
             <h1 className="mt-3 text-3xl font-semibold tracking-tight text-slate-900 sm:text-4xl">Duyurular, operasyon notlari ve saha icgoruleri</h1>
             <p className="mt-4 max-w-3xl text-sm leading-7 text-slate-600 sm:text-base sm:leading-8">
@@ -41,7 +41,7 @@ export default async function BlogIndexPage() {
                 </p>
                 <h2 className="mt-4 text-3xl font-semibold tracking-tight text-slate-900 sm:text-4xl">{featured.title}</h2>
                 <p className="mt-4 text-base leading-7 text-slate-600 sm:text-lg sm:leading-8">{featured.excerpt || featured.body.slice(0, 240)}</p>
-                <Link href={`/blog/${featured.slug}`} className="mt-8 inline-flex rounded-2xl bg-slate-950 px-5 py-3 text-sm font-semibold text-white">
+                <Link href={`/blog/${featured.slug}`} className="mt-8 inline-flex w-full rounded-2xl bg-slate-950 px-5 py-3 text-center text-sm font-semibold text-white sm:w-auto">
                   Yaziyi Oku
                 </Link>
               </div>

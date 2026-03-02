@@ -22,8 +22,8 @@ export default async function AdminOrdersPage() {
         <SidebarPanel title="Hazirlik" description="Siparis girmeden once masa ve menu durumunu kontrol et.">
           <div className="rounded-[24px] bg-gradient-to-br from-slate-900 via-slate-800 to-slate-700 p-5 text-white">
             <p className="text-xs font-bold uppercase tracking-[0.18em] text-slate-300">Aktif Isletme</p>
-            <p className="mt-4 text-3xl font-semibold tracking-tight">{businessSlug}</p>
-            <div className="mt-5 grid grid-cols-2 gap-3">
+            <p className="mt-4 break-all text-2xl font-semibold tracking-tight sm:text-3xl">{businessSlug}</p>
+            <div className="mt-5 grid gap-3 sm:grid-cols-2">
               <div className="rounded-2xl bg-white/10 p-3">
                 <p className="text-xs uppercase tracking-[0.16em] text-slate-300">Masa</p>
                 <p className="mt-2 text-2xl font-semibold">{tables.length}</p>
@@ -45,7 +45,7 @@ export default async function AdminOrdersPage() {
         </SidebarPanel>
       }
       actions={
-        <Link href="/ops" className="rounded-2xl border border-slate-200 bg-white px-5 py-3 text-sm font-semibold text-slate-800">
+        <Link href="/ops" className="w-full rounded-2xl border border-slate-200 bg-white px-5 py-3 text-center text-sm font-semibold text-slate-800 sm:w-auto">
           Panele Don
         </Link>
       }

@@ -888,22 +888,44 @@ export async function listBranches() {
     return { branches: [] as Branch[], activeBranchId: activeBranchId || "", usingDemoData: false };
   }
 
-  let query = supabase
-    .from("branches")
-    .select("id, business_id, name, slug, is_active, created_at, updated_at")
-    .eq("is_active", true)
-    .order("name", { ascending: true });
-  if (!scope.useLegacySchema && scope.businessId) {
-    query = query.eq("business_id", scope.businessId);
-  }
-  if (!scope.canAccessAllBranches) {
-    if (scope.branchAccessIds.length === 0) {
-      return { branches: [] as Branch[], activeBranchId: "", usingDemoData: false };
-    }
-    query = query.in("id", scope.branchAccessIds);
+  if (!scope.canAccessAllBranches && scope.branchAccessIds.length === 0) {
+    return { branches: [] as Branch[], activeBranchId: "", usingDemoData: false };
   }
 
-  const { data, error } = await query;
+  const cacheKey = `branches:${scope.businessId ?? "none"}:${scope.branchId ?? "all"}:${scope.canAccessAllBranches ? "all" : scope.branchAccessIds.join(",")}:${scope.useLegacySchema ? "legacy" : "scoped"}`;
+  const reader = unstable_cache(
+    async () => {
+      const innerSupabase = await getSupabaseAuthServerClient();
+      if (!innerSupabase) {
+        return null;
+      }
+
+      let query = innerSupabase
+        .from("branches")
+        .select("id, business_id, name, slug, is_active, created_at, updated_at")
+        .eq("is_active", true)
+        .order("name", { ascending: true });
+      if (!scope.useLegacySchema && scope.businessId) {
+        query = query.eq("business_id", scope.businessId);
+      }
+      if (!scope.canAccessAllBranches) {
+        query = query.in("id", scope.branchAccessIds);
+      }
+
+      const { data, error } = await query;
+      return {
+        hasError: Boolean(error),
+        errorMessage: error?.message ?? null,
+        branches: (data ?? []) as Branch[],
+      };
+    },
+    [cacheKey],
+    { revalidate: 20, tags: ["branches"] },
+  );
+
+  const cached = await reader();
+  const data = cached?.branches ?? [];
+  const error = cached?.hasError ? { message: cached.errorMessage ?? "branches" } : null;
   if (error) {
     if (error.message.toLowerCase().includes("branches")) {
       return { branches: [] as Branch[], activeBranchId: activeBranchId || "", usingDemoData: false };
@@ -1115,11 +1137,32 @@ export async function listBusinesses() {
     };
   }
 
-  const { data, error } = await supabase
-    .from("businesses")
-    .select("id, name, slug, plan, is_active, created_at, updated_at")
-    .eq("is_active", true)
-    .order("name", { ascending: true });
+  const reader = unstable_cache(
+    async () => {
+      const innerSupabase = await getTenantDataClient();
+      if (!innerSupabase) {
+        return null;
+      }
+
+      const { data, error } = await innerSupabase
+        .from("businesses")
+        .select("id, name, slug, plan, is_active, created_at, updated_at")
+        .eq("is_active", true)
+        .order("name", { ascending: true });
+
+      return {
+        hasError: Boolean(error),
+        errorMessage: error?.message ?? null,
+        businesses: (data ?? []) as Business[],
+      };
+    },
+    ["businesses:active"],
+    { revalidate: 30, tags: ["businesses"] },
+  );
+
+  const cached = await reader();
+  const data = cached?.businesses ?? [];
+  const error = cached?.hasError ? { message: cached.errorMessage ?? "businesses" } : null;
 
   if (error) {
     if (error.message.toLowerCase().includes("businesses")) {
@@ -3168,7 +3211,11 @@ function revalidateOperationsCaches() {
   revalidateTag("order-receipt", "max");
 }
 
-export async function getProductManagementData() {
+export async function getProductManagementData(
+  options?: {
+    tab?: import("@/lib/server/products-data").ProductManagementTab;
+  },
+) {
   return getProductManagementDataImpl({
     getDefaultBusinessScope,
     logAuditEvent,
@@ -3179,7 +3226,7 @@ export async function getProductManagementData() {
     demoModifierGroups,
     demoModifierOptions,
     demoProductIngredients,
-  });
+  }, options);
 }
 
 export async function getKitchenCatalogSnapshot() {
@@ -3527,39 +3574,75 @@ export async function listProfiles() {
     return { profiles: [] as Array<{ id: string; full_name: string | null; role: AppRole }>, usingDemoData: false };
   }
 
-  const { data: accessRows, error: accessError } = await authClient
-    .from("staff_branch_access")
-    .select("profile_id, branch_id, access_scope, is_primary, branches(name)")
-    .eq("business_id", scope.businessId);
+  const cacheKey = `profiles:${scope.businessId}:${scope.useLegacySchema ? "legacy" : "scoped"}`;
+  const reader = unstable_cache(
+    async () => {
+      const innerAuthClient = await getSupabaseAuthServerClient();
+      if (!innerAuthClient) {
+        return null;
+      }
 
-  if (accessError) {
+      const { data: accessRows, error: accessError } = await innerAuthClient
+        .from("staff_branch_access")
+        .select("profile_id, branch_id, access_scope, is_primary, branches(name)")
+        .eq("business_id", scope.businessId);
+
+      if (accessError) {
+        return { hasError: true as const, profiles: [] as Array<{ id: string; full_name: string | null; role: AppRole }>, accessRows: [] as unknown[] };
+      }
+
+      const profileIds = [...new Set(((accessRows ?? []) as Array<{ profile_id: string }>).map((row) => row.profile_id))];
+      if (profileIds.length === 0) {
+        return { hasError: false as const, profiles: [] as Array<{ id: string; full_name: string | null; role: AppRole }>, accessRows: (accessRows ?? []) as unknown[] };
+      }
+
+      const { data, error } = await innerAuthClient
+        .from("profiles")
+        .select("id, full_name, role")
+        .in("id", profileIds)
+        .order("created_at", { ascending: false });
+
+      return {
+        hasError: Boolean(error),
+        profiles: ((data ?? []) as Array<{ id: string; full_name: string | null; role: AppRole }>),
+        accessRows: (accessRows ?? []) as unknown[],
+      };
+    },
+    [cacheKey],
+    { revalidate: 20, tags: ["profiles", "staff-access"] },
+  );
+
+  const cached = await reader();
+  if (!cached || cached.hasError) {
     return { profiles: [] as Array<{ id: string; full_name: string | null; role: AppRole }>, usingDemoData: false };
   }
 
-  const profileIds = [...new Set(((accessRows ?? []) as Array<{ profile_id: string }>).map((row) => row.profile_id))];
-  if (profileIds.length === 0) {
-    return { profiles: [] as Array<{ id: string; full_name: string | null; role: AppRole }>, usingDemoData: false };
-  }
+  const accessRows = cached.accessRows as Array<{
+    profile_id: string;
+    branch_id: string | null;
+    access_scope: StaffAccessScope;
+    is_primary: boolean;
+    branches?: { name: string } | { name: string }[] | null;
+  }>;
 
-  const { data, error } = await authClient
-    .from("profiles")
-    .select("id, full_name, role")
-    .in("id", profileIds)
-    .order("created_at", { ascending: false });
-  if (error) {
-    return { profiles: [] as Array<{ id: string; full_name: string | null; role: AppRole }>, usingDemoData: false };
-  }
-
-  const { data: authUsers } = serviceClient ? await serviceClient.auth.admin.listUsers() : { data: { users: [] } };
-  const emailById = new Map((authUsers?.users ?? []).map((user) => [user.id, user.email ?? null]));
+  const getCachedAuthUsers = unstable_cache(
+    async () => {
+      if (!serviceClient) {
+        return [] as Array<{ id: string; email: string | null }>;
+      }
+      const { data } = await serviceClient.auth.admin.listUsers();
+      return (data?.users ?? []).map((user) => ({
+        id: user.id,
+        email: user.email ?? null,
+      }));
+    },
+    ["auth-users:emails"],
+    { revalidate: 60, tags: ["profiles"] },
+  );
+  const authUsers = await getCachedAuthUsers();
+  const emailById = new Map(authUsers.map((user) => [user.id, user.email]));
   const accessByProfile = new Map(
-    ((accessRows ?? []) as Array<{
-      profile_id: string;
-      branch_id: string | null;
-      access_scope: StaffAccessScope;
-      is_primary: boolean;
-      branches?: { name: string } | { name: string }[] | null;
-    }>).map((row) => [
+    accessRows.map((row) => [
       row.profile_id,
       {
         access_scope: row.access_scope,
@@ -3570,7 +3653,7 @@ export async function listProfiles() {
   );
 
   return {
-    profiles: ((data ?? []) as Array<{ id: string; full_name: string | null; role: AppRole }>).map((profile) => ({
+    profiles: cached.profiles.map((profile) => ({
       ...profile,
       email: emailById.get(profile.id) ?? null,
       access_scope: accessByProfile.get(profile.id)?.access_scope ?? (profile.role === "owner" ? "business" : "branch"),

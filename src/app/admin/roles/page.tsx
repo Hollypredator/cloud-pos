@@ -4,6 +4,7 @@ import { redirect } from "next/navigation";
 import { BackofficePage, ContentCard, EmptyPanel, FeatureLockedState, SidebarPanel, SummaryCard, WorkflowGuide } from "@/components/backoffice-ui";
 import { requireExactRole } from "@/lib/auth";
 import { createStaffAccount, deleteStaffAccount, listBranches, listProfiles, updateProfileRole, updateStaffAccount } from "@/lib/data";
+import { logServerPerf, measureAsync } from "@/lib/perf";
 import { getFeatureAccess } from "@/lib/plan-access";
 import type { AppRole, StaffAccessScope } from "@/lib/types";
 
@@ -151,8 +152,10 @@ export default async function AdminRolesPage({
   searchParams: Promise<{ staff?: string; feedback?: string; tone?: "success" | "error" }>;
 }) {
   await requireExactRole(["owner"], "/admin/roles");
-  const featureAccess = await getFeatureAccess("staff_management");
+  const featureAccessResult = await measureAsync("feature_access", () => getFeatureAccess("staff_management"));
+  const featureAccess = featureAccessResult.value;
   if (!featureAccess.enabled) {
+    logServerPerf("/admin/roles", [featureAccessResult]);
     return (
       <BackofficePage title="Personel" description="Ekip ve rol yonetimi">
         <FeatureLockedState
@@ -165,7 +168,13 @@ export default async function AdminRolesPage({
     );
   }
   const { staff: selectedStaffId, feedback, tone } = await searchParams;
-  const [{ profiles, usingDemoData }, { branches }] = await Promise.all([listProfiles(), listBranches()]);
+  const [profilesResult, branchesResult] = await Promise.all([
+    measureAsync("list_profiles", () => listProfiles()),
+    measureAsync("list_branches", () => listBranches()),
+  ]);
+  const { profiles, usingDemoData } = profilesResult.value;
+  const { branches } = branchesResult.value;
+  logServerPerf("/admin/roles", [featureAccessResult, profilesResult, branchesResult]);
   const staffProfiles = profiles as StaffProfile[];
   const selectedStaff = selectedStaffId ? staffProfiles.find((profile) => profile.id === selectedStaffId) ?? null : null;
   const roleCounts = {
@@ -184,8 +193,8 @@ export default async function AdminRolesPage({
         <SidebarPanel title="Ekip Ozet" description="Aktif kadroyu operasyon rollerine gore dengele.">
           <div className="rounded-[24px] bg-gradient-to-br from-slate-900 via-slate-800 to-slate-700 p-5 text-white">
             <p className="text-xs font-bold uppercase tracking-[0.18em] text-slate-300">Toplam Personel</p>
-            <p className="mt-4 text-4xl font-semibold tracking-tight">{staffProfiles.length}</p>
-            <div className="mt-5 grid grid-cols-2 gap-3">
+            <p className="mt-4 text-3xl font-semibold tracking-tight sm:text-4xl">{staffProfiles.length}</p>
+            <div className="mt-5 grid gap-3 sm:grid-cols-2">
               <div className="rounded-2xl bg-white/10 p-3">
                 <p className="text-xs uppercase tracking-[0.16em] text-slate-300">Kasa</p>
                 <p className="mt-2 text-2xl font-semibold">{roleCounts.cashier}</p>
@@ -202,7 +211,7 @@ export default async function AdminRolesPage({
         </SidebarPanel>
       }
       actions={
-        <Link href="/ops" className="rounded-2xl border border-slate-200 bg-white px-5 py-3 text-sm font-semibold text-slate-800">
+        <Link href="/ops" className="w-full rounded-2xl border border-slate-200 bg-white px-5 py-3 text-center text-sm font-semibold text-slate-800 sm:w-auto">
           Panele Don
         </Link>
       }
@@ -307,7 +316,7 @@ export default async function AdminRolesPage({
                     <select
                       name="role"
                       defaultValue={profile.role}
-                      className="rounded-xl border border-slate-300 bg-white px-3 py-2 text-sm"
+                      className="w-full rounded-xl border border-slate-300 bg-white px-3 py-2 text-sm sm:w-auto"
                     >
                       {roles.map((role) => (
                         <option key={role} value={role}>
@@ -315,10 +324,10 @@ export default async function AdminRolesPage({
                         </option>
                       ))}
                     </select>
-                    <button type="submit" className="rounded-xl bg-slate-900 px-4 py-2 text-sm font-semibold text-white">
+                    <button type="submit" className="w-full rounded-xl bg-slate-900 px-4 py-2 text-sm font-semibold text-white sm:w-auto">
                       Rol Guncelle
                     </button>
-                    <Link href={`/admin/roles?staff=${profile.id}`} className="rounded-xl border border-slate-200 bg-white px-4 py-2 text-sm font-semibold text-slate-700">
+                    <Link href={`/admin/roles?staff=${profile.id}`} className="w-full rounded-xl border border-slate-200 bg-white px-4 py-2 text-center text-sm font-semibold text-slate-700 sm:w-auto">
                       Yonet
                     </Link>
                   </form>
@@ -330,12 +339,12 @@ export default async function AdminRolesPage({
       </section>
 
       {selectedStaff ? (
-        <div className="fixed inset-0 z-50 flex items-center justify-center bg-slate-950/42 p-4 backdrop-blur-[2px]">
-          <div className="panel-surface max-h-[92vh] w-full max-w-4xl overflow-auto rounded-[32px] p-6">
+        <div className="fixed inset-0 z-50 flex items-end justify-center bg-slate-950/42 p-0 backdrop-blur-[2px] sm:items-center sm:p-4">
+          <div className="panel-surface h-[100dvh] w-full max-w-4xl overflow-auto rounded-none p-4 sm:max-h-[92vh] sm:h-auto sm:rounded-[32px] sm:p-6">
             <div className="mb-5 flex flex-wrap items-start justify-between gap-4 border-b border-slate-200 pb-5">
               <div>
                 <p className="text-xs font-bold uppercase tracking-[0.16em] text-slate-500">Personel Yonetimi</p>
-                <h2 className="font-display mt-2 text-3xl font-semibold tracking-tight text-slate-900">{selectedStaff.full_name ?? "Isimsiz kullanici"}</h2>
+                <h2 className="font-display mt-2 text-2xl font-semibold tracking-tight text-slate-900 sm:text-3xl">{selectedStaff.full_name ?? "Isimsiz kullanici"}</h2>
                 <p className="mt-1 text-sm text-slate-500">{selectedStaff.email ?? "E-posta bilgisi yok"}</p>
               </div>
               <Link href="/admin/roles" className="rounded-2xl border border-slate-200 bg-white px-4 py-3 text-sm font-semibold text-slate-700">

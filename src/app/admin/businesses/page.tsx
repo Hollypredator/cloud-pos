@@ -4,6 +4,7 @@ import { redirect } from "next/navigation";
 import { BackofficePage, ContentCard, EmptyPanel, FeatureLockedState, NoticeBanner, SidebarPanel, SummaryCard, WorkflowGuide } from "@/components/backoffice-ui";
 import { getCurrentUserWithRole, requireExactRole } from "@/lib/auth";
 import { createBranch, deleteBranch, listBranches, setBranchActiveStatus, updateBranch } from "@/lib/data";
+import { logServerPerf, measureAsync } from "@/lib/perf";
 import { getFeatureAccess } from "@/lib/plan-access";
 
 function feedbackHref(tone: "success" | "error", message: string, branchId?: string) {
@@ -100,12 +101,15 @@ export default async function AdminBusinessesPage({
   searchParams: Promise<BranchParams>;
 }) {
   await requireExactRole(["owner"], "/admin/businesses");
-  const authContext = await getCurrentUserWithRole();
+  const authContextResult = await measureAsync("current_user", () => getCurrentUserWithRole());
+  const authContext = authContextResult.value;
   if (authContext.accessScope === "branch") {
     redirect("/ops");
   }
-  const featureAccess = await getFeatureAccess("multi_branch");
+  const featureAccessResult = await measureAsync("feature_access", () => getFeatureAccess("multi_branch"));
+  const featureAccess = featureAccessResult.value;
   if (!featureAccess.enabled) {
+    logServerPerf("/admin/businesses", [authContextResult, featureAccessResult]);
     return (
       <BackofficePage title="Subeler" description="Coklu sube ve merkezden yonetim">
         <FeatureLockedState
@@ -119,7 +123,9 @@ export default async function AdminBusinessesPage({
   }
 
   const { branch: selectedBranchId, feedback, tone } = await searchParams;
-  const { branches, activeBranchId, usingDemoData } = await listBranches();
+  const branchesResult = await measureAsync("list_branches", () => listBranches());
+  const { branches, activeBranchId, usingDemoData } = branchesResult.value;
+  logServerPerf("/admin/businesses", [authContextResult, featureAccessResult, branchesResult]);
   const selectedBranch = selectedBranchId ? branches.find((branch) => branch.id === selectedBranchId) ?? null : null;
   const activeCount = branches.filter((branch) => branch.is_active).length;
 
@@ -131,8 +137,8 @@ export default async function AdminBusinessesPage({
         <SidebarPanel title="Sube Ozet" description="Coklu sube kullaniminda aktif yapinin dengeli kalmasini sagla.">
           <div className="rounded-[24px] bg-gradient-to-br from-slate-900 via-slate-800 to-slate-700 p-5 text-white">
             <p className="text-xs font-bold uppercase tracking-[0.18em] text-slate-300">Toplam Sube</p>
-            <p className="mt-4 text-4xl font-semibold tracking-tight">{branches.length}</p>
-            <div className="mt-5 grid grid-cols-2 gap-3">
+            <p className="mt-4 text-3xl font-semibold tracking-tight sm:text-4xl">{branches.length}</p>
+            <div className="mt-5 grid gap-3 sm:grid-cols-2">
               <div className="rounded-2xl bg-white/10 p-3">
                 <p className="text-xs uppercase tracking-[0.16em] text-slate-300">Aktif</p>
                 <p className="mt-2 text-2xl font-semibold">{activeCount}</p>
@@ -154,7 +160,7 @@ export default async function AdminBusinessesPage({
         </SidebarPanel>
       }
       actions={
-        <Link href="/ops" className="rounded-2xl border border-slate-200 bg-white px-5 py-3 text-sm font-semibold text-slate-800">
+        <Link href="/ops" className="w-full rounded-2xl border border-slate-200 bg-white px-5 py-3 text-center text-sm font-semibold text-slate-800 sm:w-auto">
           Panele Don
         </Link>
       }
@@ -229,12 +235,12 @@ export default async function AdminBusinessesPage({
       </section>
 
       {selectedBranch ? (
-        <div className="fixed inset-0 z-50 flex items-center justify-center bg-slate-950/42 p-4 backdrop-blur-[2px]">
-          <div className="panel-surface max-h-[92vh] w-full max-w-3xl overflow-auto rounded-[32px] p-6">
+        <div className="fixed inset-0 z-50 flex items-end justify-center bg-slate-950/42 p-0 backdrop-blur-[2px] sm:items-center sm:p-4">
+          <div className="panel-surface h-[100dvh] w-full max-w-3xl overflow-auto rounded-none p-4 sm:max-h-[92vh] sm:h-auto sm:rounded-[32px] sm:p-6">
             <div className="mb-5 flex flex-wrap items-start justify-between gap-4 border-b border-slate-200 pb-5">
               <div>
                 <p className="text-xs font-bold uppercase tracking-[0.16em] text-slate-500">Sube Yonetimi</p>
-                <h2 className="font-display mt-2 text-3xl font-semibold tracking-tight text-slate-900">{selectedBranch.name}</h2>
+                <h2 className="font-display mt-2 text-2xl font-semibold tracking-tight text-slate-900 sm:text-3xl">{selectedBranch.name}</h2>
                 <p className="mt-1 text-sm text-slate-500">Slug: /{selectedBranch.slug}</p>
               </div>
               <Link href="/admin/businesses" className="rounded-2xl border border-slate-200 bg-white px-4 py-3 text-sm font-semibold text-slate-700">

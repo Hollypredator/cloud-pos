@@ -46,8 +46,8 @@ export default async function ServiceRequestsPage() {
         <SidebarPanel title="Servis Durumu" description="Acil talepleri gecikmeden kapat.">
           <div className="rounded-[24px] bg-gradient-to-br from-slate-900 via-slate-800 to-slate-700 p-5 text-white">
             <p className="text-xs font-bold uppercase tracking-[0.18em] text-slate-300">Acik Talepler</p>
-            <p className="mt-4 text-4xl font-semibold tracking-tight">{requests.length}</p>
-            <div className="mt-5 grid grid-cols-2 gap-3">
+            <p className="mt-4 text-3xl font-semibold tracking-tight sm:text-4xl">{requests.length}</p>
+            <div className="mt-5 grid gap-3 sm:grid-cols-2">
               <div className="rounded-2xl bg-white/10 p-3">
                 <p className="text-xs uppercase tracking-[0.16em] text-slate-300">Garson</p>
                 <p className="mt-2 text-2xl font-semibold">{waiterCalls}</p>
@@ -110,7 +110,7 @@ export default async function ServiceRequestsPage() {
                 <div className="flex items-start justify-between gap-3">
                   <div>
                     <p className="text-xs font-bold uppercase tracking-[0.16em] text-slate-500">Masa {request.table_number ?? "-"}</p>
-                    <h3 className="mt-2 text-2xl font-semibold tracking-tight text-slate-900">{toLabel(request.request_type)}</h3>
+                    <h3 className="mt-2 text-xl font-semibold tracking-tight text-slate-900 sm:text-2xl">{toLabel(request.request_type)}</h3>
                     <p className="mt-1 text-sm text-slate-500">{new Date(request.created_at).toLocaleString("tr-TR")}</p>
                   </div>
                   <span className="rounded-full bg-amber-100 px-3 py-2 text-xs font-semibold uppercase text-amber-800">

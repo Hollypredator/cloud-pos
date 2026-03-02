@@ -63,14 +63,14 @@ export function CashierPaymentPanel({
     <div className="mt-4 space-y-4 rounded-[24px] border border-slate-200 bg-[#fbfbfc] p-4">
       <div className="grid gap-3 lg:grid-cols-2">
         <div className="rounded-[20px] border border-slate-200 bg-white p-4">
-          <div className="flex items-center justify-between gap-3">
+          <div className="flex flex-col items-start justify-between gap-3 sm:flex-row sm:items-center">
             <div>
               <p className="text-xs font-bold uppercase tracking-[0.16em] text-slate-500">Esit Paylastir</p>
               <p className="mt-1 text-sm text-slate-500">Tek dokunusta kisi basi tahsilat olustur.</p>
             </div>
             <span className="rounded-full bg-[#fff2ee] px-3 py-1 text-xs font-semibold text-[#ff5a34]">Split Bill</span>
           </div>
-          <div className="mt-3 grid grid-cols-3 gap-2">
+          <div className="mt-3 grid gap-2 sm:grid-cols-3">
             {[2, 3, 4].map((splitCount) => (
               <button
                 key={splitCount}
@@ -90,7 +90,7 @@ export function CashierPaymentPanel({
         </div>
 
         <div className="rounded-[20px] border border-slate-200 bg-white p-4">
-          <div className="flex items-center justify-between gap-3">
+          <div className="flex flex-col items-start justify-between gap-3 sm:flex-row sm:items-center">
             <div>
               <p className="text-xs font-bold uppercase tracking-[0.16em] text-slate-500">Hizli Tutar</p>
               <p className="mt-1 text-sm text-slate-500">Kalan bakiyeden tek hamlede tutar sec.</p>
@@ -99,7 +99,7 @@ export function CashierPaymentPanel({
               Kalan {defaultAmount.toFixed(2)} TL
             </span>
           </div>
-          <div className="mt-3 grid grid-cols-2 gap-2">
+          <div className="mt-3 grid gap-2 sm:grid-cols-2">
             {[
               { label: "Tamami", value: defaultAmount },
               { label: "Yarisi", value: defaultAmount / 2 },
@@ -120,7 +120,7 @@ export function CashierPaymentPanel({
       </div>
 
       <div className="rounded-[20px] border border-slate-200 bg-white p-4">
-        <div className="flex items-center justify-between gap-3">
+        <div className="flex flex-col items-start justify-between gap-3 sm:flex-row sm:items-center">
           <div>
             <p className="text-xs font-bold uppercase tracking-[0.16em] text-slate-500">Urun Bazli Bol</p>
             <p className="mt-1 text-sm text-slate-500">Bu odemeye dahil olacak urun miktarlarini sec.</p>
@@ -128,14 +128,17 @@ export function CashierPaymentPanel({
           <button
             type="button"
             onClick={applySelectedItems}
-            className="rounded-2xl border border-slate-200 bg-slate-50 px-3 py-2 text-sm font-semibold text-slate-700"
+            className="w-full rounded-2xl border border-slate-200 bg-slate-50 px-3 py-2 text-sm font-semibold text-slate-700 sm:w-auto"
           >
             Secilenleri Tutarla
           </button>
         </div>
         <div className="mt-3 space-y-2">
           {items.map((item, index) => (
-            <div key={`${item.product_id}-${index}`} className="grid grid-cols-[1fr_92px] items-center gap-2 rounded-2xl bg-slate-50 px-3 py-3">
+            <div
+              key={`${item.product_id}-${index}`}
+              className="grid items-center gap-2 rounded-2xl bg-slate-50 px-3 py-3 sm:grid-cols-[1fr_92px]"
+            >
               <div>
                 <p className="text-sm font-semibold text-slate-800">{item.name}</p>
                 <p className="text-xs text-slate-500">
@@ -166,7 +169,7 @@ export function CashierPaymentPanel({
 
         <div>
           <p className="text-xs font-bold uppercase tracking-[0.16em] text-slate-500">Odeme Tipi</p>
-          <div className="mt-2 grid grid-cols-3 gap-2">
+          <div className="mt-2 grid gap-2 sm:grid-cols-3">
             {[
               ["cash", "Nakit"],
               ["card", "Kart"],

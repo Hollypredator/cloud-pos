@@ -175,7 +175,7 @@ export function LandingContactCard({
           <p className="mt-3 text-sm leading-7 text-slate-300">
             Satista bekleme yaratma. Hazir mesajla iletisime gec, ayni gorusmede sonraki adimi al.
           </p>
-          {supportEmail ? <p className="mt-2 text-sm text-slate-400">{supportEmail}</p> : null}
+          {supportEmail ? <p className="mt-2 break-words text-sm text-slate-400">{supportEmail}</p> : null}
           <div className="mt-6 flex flex-col gap-3">
             <a
               href={whatsappHref}

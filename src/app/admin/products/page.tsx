@@ -21,6 +21,7 @@ import {
 import { requireRole } from "@/lib/auth";
 import { BackofficePage, ContentCard, EmptyPanel, SummaryCard, WorkspaceTabs } from "@/components/backoffice-ui";
 import { CategorySortManager } from "@/components/category-sort-manager";
+import { logServerPerf, measureAsync } from "@/lib/perf";
 
 async function addCategoryAction(formData: FormData) {
   "use server";
@@ -255,11 +256,13 @@ export default async function AdminProductsPage({
 }) {
   await requireRole(["admin"], "/admin/products");
   const { tab: tabParam, categoryId: categoryIdParam } = await searchParams;
-  const { categories, products, ingredients, modifierGroups, modifierOptions, productIngredients, usingDemoData } =
-    await getProductManagementData();
   const activeTab = ["catalog", "menu", "categories", "bulk", "features"].includes(tabParam ?? "")
     ? (tabParam as "catalog" | "menu" | "categories" | "bulk" | "features")
     : "catalog";
+  const productManagementResult = await measureAsync("product_management", () => getProductManagementData({ tab: activeTab }));
+  const { categories, products, ingredients, modifierGroups, modifierOptions, productIngredients, usingDemoData } =
+    productManagementResult.value;
+  logServerPerf("/admin/products", [productManagementResult]);
 
   const orderedCategories = [...categories].sort((a, b) => a.sort_order - b.sort_order);
   const productCountMap = new Map<string, number>();
@@ -313,17 +316,17 @@ export default async function AdminProductsPage({
       description="Katalog, modifier, recete ve stok temel ayarlari"
       actions={
         <form action={addProductAction} className="flex flex-wrap items-center gap-3">
-          <select name="categoryId" required defaultValue={selectedCategoryId} className="rounded-2xl border border-slate-200 bg-slate-50 px-4 py-3 text-sm text-slate-700">
+          <select name="categoryId" required defaultValue={selectedCategoryId} className="w-full rounded-2xl border border-slate-200 bg-slate-50 px-4 py-3 text-sm text-slate-700 sm:w-auto">
             {orderedCategories.map((category) => (
               <option key={category.id} value={category.id}>
                 {category.name}
               </option>
             ))}
           </select>
-          <input name="name" required placeholder="Yeni urun" className="rounded-2xl border border-slate-200 bg-slate-50 px-4 py-3 text-sm" />
-          <input name="price" type="number" min="0" step="0.01" required placeholder="Fiyat" className="w-28 rounded-2xl border border-slate-200 bg-slate-50 px-4 py-3 text-sm" />
-          <input name="stockCount" type="number" min="0" required placeholder="Stok" className="w-28 rounded-2xl border border-slate-200 bg-slate-50 px-4 py-3 text-sm" />
-          <button type="submit" className="rounded-2xl bg-gradient-to-r from-[#ff5a34] to-[#f0b14f] px-5 py-3 text-sm font-semibold text-white">
+          <input name="name" required placeholder="Yeni urun" className="w-full rounded-2xl border border-slate-200 bg-slate-50 px-4 py-3 text-sm sm:flex-1" />
+          <input name="price" type="number" min="0" step="0.01" required placeholder="Fiyat" className="w-full rounded-2xl border border-slate-200 bg-slate-50 px-4 py-3 text-sm sm:w-28" />
+          <input name="stockCount" type="number" min="0" required placeholder="Stok" className="w-full rounded-2xl border border-slate-200 bg-slate-50 px-4 py-3 text-sm sm:w-28" />
+          <button type="submit" className="w-full rounded-2xl bg-gradient-to-r from-[#ff5a34] to-[#f0b14f] px-5 py-3 text-sm font-semibold text-white sm:w-auto">
             Yeni Urun
           </button>
         </form>
@@ -357,7 +360,7 @@ export default async function AdminProductsPage({
         <div className="mt-6 grid gap-5 xl:grid-cols-[320px_1fr]">
           <section className="rounded-[24px] border border-slate-200 bg-[#f6f7f9] p-4">
             <div className="flex items-center justify-between gap-3">
-              <h2 className="text-2xl font-semibold tracking-tight text-slate-900">Kategoriler</h2>
+              <h2 className="text-xl font-semibold tracking-tight text-slate-900 sm:text-2xl">Kategoriler</h2>
               <span className="inline-flex h-10 min-w-10 items-center justify-center rounded-full bg-[#ff5a34] px-3 text-sm font-bold text-white">
                 {orderedCategories.length}
               </span>
@@ -393,19 +396,19 @@ export default async function AdminProductsPage({
             <div className="rounded-[24px] border border-slate-200 bg-[#f6f7f9] p-4">
               <div className="flex flex-wrap items-center justify-between gap-3">
                 <div>
-                  <h2 className="text-2xl font-semibold tracking-tight text-slate-900">Urunler</h2>
+                  <h2 className="text-xl font-semibold tracking-tight text-slate-900 sm:text-2xl">Urunler</h2>
                   <p className="text-sm text-slate-500">Secili kategori: {selectedCategory?.name ?? "Kategori yok"}</p>
                 </div>
                 <form action={bulkPriceAction} className="flex flex-wrap items-center gap-3">
-                  <select name="categoryId" required defaultValue={selectedCategoryId} className="rounded-2xl border border-slate-200 bg-white px-4 py-3 text-sm">
+                  <select name="categoryId" required defaultValue={selectedCategoryId} className="w-full rounded-2xl border border-slate-200 bg-white px-4 py-3 text-sm sm:w-auto">
                     {orderedCategories.map((category) => (
                       <option key={category.id} value={category.id}>
                         {category.name}
                       </option>
                     ))}
                   </select>
-                  <input name="percent" type="number" step="0.1" placeholder="Yuzde" required className="w-28 rounded-2xl border border-slate-200 bg-white px-4 py-3 text-sm" />
-                  <button type="submit" className="rounded-2xl border border-slate-200 bg-white px-4 py-3 text-sm font-semibold text-slate-800">
+                  <input name="percent" type="number" step="0.1" placeholder="Yuzde" required className="w-full rounded-2xl border border-slate-200 bg-white px-4 py-3 text-sm sm:w-28" />
+                  <button type="submit" className="w-full rounded-2xl border border-slate-200 bg-white px-4 py-3 text-sm font-semibold text-slate-800 sm:w-auto">
                     Toplu Guncelle
                   </button>
                 </form>
@@ -443,7 +446,7 @@ export default async function AdminProductsPage({
                           <p className="text-xs font-bold uppercase tracking-[0.14em] text-slate-500">
                             {orderedCategories.find((category) => category.id === product.category_id)?.name ?? "Kategori"}
                           </p>
-                          <h3 className="mt-2 text-2xl font-semibold tracking-tight text-slate-900">{product.name}</h3>
+                          <h3 className="mt-2 text-xl font-semibold tracking-tight text-slate-900 sm:text-2xl">{product.name}</h3>
                           <p className="mt-2 text-sm text-slate-500">{product.description ?? "Aciklama girilmedi."}</p>
                         </div>
                         <form action={deleteProductAction}>
@@ -506,7 +509,7 @@ export default async function AdminProductsPage({
                               </option>
                             ))}
                           </select>
-                          <div className="flex gap-2">
+                          <div className="grid gap-2 sm:grid-cols-[1fr_auto]">
                             <input name="quantity" type="number" min="0.01" step="0.01" required placeholder="Miktar" className="flex-1 rounded-xl border border-slate-200 bg-white px-3 py-2 text-sm" />
                             <button type="submit" className="rounded-xl border border-slate-200 bg-white px-3 py-2 text-sm font-semibold text-slate-800">
                               Ekle
@@ -551,7 +554,7 @@ export default async function AdminProductsPage({
                             <form action={addModifierOptionAction} className="mt-3 grid gap-2">
                               <input type="hidden" name="groupId" value={group.id} />
                               <input name="name" required placeholder="Opsiyon adi" className="rounded-xl border border-slate-200 bg-slate-50 px-3 py-2 text-sm" />
-                              <div className="flex gap-2">
+                              <div className="grid gap-2 sm:grid-cols-[1fr_auto]">
                                 <input name="priceDelta" type="number" step="0.01" defaultValue={0} className="flex-1 rounded-xl border border-slate-200 bg-slate-50 px-3 py-2 text-sm" />
                                 <label className="flex items-center gap-2 rounded-xl border border-slate-200 bg-slate-50 px-3 py-2 text-xs font-medium text-slate-700">
                                   <input name="isDefault" type="checkbox" />
@@ -617,15 +620,15 @@ export default async function AdminProductsPage({
                 <div className="grid gap-3">
                   <div className="rounded-2xl border border-slate-200 bg-slate-50 px-4 py-4">
                     <p className="text-sm text-slate-500">Toplam kategori</p>
-                    <p className="mt-2 text-3xl font-semibold tracking-tight text-slate-900">{orderedCategories.length}</p>
+                    <p className="mt-2 text-2xl font-semibold tracking-tight text-slate-900 sm:text-3xl">{orderedCategories.length}</p>
                   </div>
                   <div className="rounded-2xl border border-slate-200 bg-slate-50 px-4 py-4">
                     <p className="text-sm text-slate-500">Toplam urun</p>
-                    <p className="mt-2 text-3xl font-semibold tracking-tight text-slate-900">{products.length}</p>
+                    <p className="mt-2 text-2xl font-semibold tracking-tight text-slate-900 sm:text-3xl">{products.length}</p>
                   </div>
                   <div className="rounded-2xl border border-slate-200 bg-slate-50 px-4 py-4">
                     <p className="text-sm text-slate-500">Modifier gruplari</p>
-                    <p className="mt-2 text-3xl font-semibold tracking-tight text-slate-900">{modifierGroups.length}</p>
+                    <p className="mt-2 text-2xl font-semibold tracking-tight text-slate-900 sm:text-3xl">{modifierGroups.length}</p>
                   </div>
                 </div>
               </ContentCard>
@@ -638,7 +641,7 @@ export default async function AdminProductsPage({
           <div className="mt-6 grid gap-5 xl:grid-cols-[320px_1fr]">
             <section className="rounded-[24px] border border-slate-200 bg-[#f6f7f9] p-4">
               <div className="flex items-center justify-between gap-3">
-                <h2 className="text-2xl font-semibold tracking-tight text-slate-900">Menu Kategorileri</h2>
+                <h2 className="text-xl font-semibold tracking-tight text-slate-900 sm:text-2xl">Menu Kategorileri</h2>
                 <span className="inline-flex h-10 min-w-10 items-center justify-center rounded-full bg-[#ff5a34] px-3 text-sm font-bold text-white">
                   {orderedCategories.length}
                 </span>
@@ -653,7 +656,7 @@ export default async function AdminProductsPage({
               </div>
             </section>
             <section className="rounded-[24px] border border-slate-200 bg-[#f6f7f9] p-4">
-              <h2 className="text-2xl font-semibold tracking-tight text-slate-900">Menu Akisi</h2>
+              <h2 className="text-xl font-semibold tracking-tight text-slate-900 sm:text-2xl">Menu Akisi</h2>
               <div className="mt-4 flex flex-wrap gap-2">
                 {orderedCategories.map((category) => {
                   const isActive = category.id === selectedCategoryId;
@@ -725,8 +728,8 @@ export default async function AdminProductsPage({
               </form>
             </ContentCard>
             <ContentCard title="Stok ve Fiyat Listesi">
-              <div className="overflow-hidden rounded-[22px] border border-slate-200">
-                <table className="w-full text-left text-sm">
+              <div className="responsive-table-shell rounded-[22px] border border-slate-200">
+                <table className="responsive-table w-full text-left text-sm">
                   <thead className="bg-slate-50 text-slate-500">
                     <tr>
                       <th className="px-4 py-4 font-semibold">Urun</th>

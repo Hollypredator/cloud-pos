@@ -130,10 +130,10 @@ function renderHeaderActions(content: LandingContent, previewMode?: boolean) {
 
   return (
     <>
-      <Link href="/login" className="rounded-2xl border border-slate-300 bg-white/70 px-3 py-2 text-xs font-semibold text-slate-700 sm:px-4 sm:text-sm">
+      <Link href="/login" className="w-full rounded-2xl border border-slate-300 bg-white/70 px-3 py-2 text-center text-xs font-semibold text-slate-700 sm:w-auto sm:px-4 sm:text-sm">
         {content.topLoginLabel}
       </Link>
-      <Link href="/demo" className="rounded-2xl bg-slate-950 px-3 py-2 text-xs font-semibold text-white sm:px-4 sm:text-sm">
+      <Link href="/demo" className="w-full rounded-2xl bg-slate-950 px-3 py-2 text-center text-xs font-semibold text-white sm:w-auto sm:px-4 sm:text-sm">
         {content.topDemoLabel}
       </Link>
     </>
@@ -156,10 +156,10 @@ function renderHeroActions(section: Extract<LandingSection, { type: "hero" }>, p
 
   return (
     <>
-      <Link href="/login" className="rounded-2xl bg-white px-5 py-3 text-sm font-semibold text-slate-950">
+      <Link href="/login" className="w-full rounded-2xl bg-white px-5 py-3 text-center text-sm font-semibold text-slate-950 sm:w-auto">
         {section.primaryCtaLabel}
       </Link>
-      <Link href="/demo" className="rounded-2xl border border-white/20 px-5 py-3 text-sm font-semibold text-white">
+      <Link href="/demo" className="w-full rounded-2xl border border-white/20 px-5 py-3 text-center text-sm font-semibold text-white sm:w-auto">
         {section.secondaryCtaLabel}
       </Link>
     </>
@@ -237,7 +237,7 @@ function renderSection(
             className="rounded-[1.25rem] border border-white/70 bg-white/80 p-4 shadow-[0_20px_60px_rgba(15,23,42,0.10)] backdrop-blur sm:rounded-[1.75rem] sm:p-6"
           >
             <p className="text-xs uppercase tracking-[0.28em] text-slate-500">{item.name}</p>
-            <p className="mt-3 text-3xl font-semibold tracking-tight text-slate-900">{item.price}</p>
+            <p className="mt-3 text-2xl font-semibold tracking-tight text-slate-900 sm:text-3xl">{item.price}</p>
             <p className="mt-3 text-sm leading-7 text-slate-600">{item.summary}</p>
           </article>
         ))}
@@ -322,12 +322,14 @@ export function LandingPageRenderer({
         <header className="flex flex-col gap-4 py-3 sm:py-4 md:flex-row md:items-center md:justify-between">
           <div className="min-w-0">
             {settings.logoUrl ? (
-              <img src={settings.logoUrl} alt={settings.siteName} className="mb-3 h-10 w-auto rounded-lg object-contain" />
+              <img src={settings.logoUrl} alt={settings.siteName} className="mb-3 h-10 max-w-full rounded-lg object-contain" />
             ) : null}
             <p className="text-xs uppercase tracking-[0.28em] text-slate-500">{settings.siteName}</p>
             <h1 className="mt-2 text-xl font-semibold tracking-tight sm:text-2xl">{settings.siteTagline}</h1>
           </div>
-          <div className="flex flex-wrap items-center gap-2 sm:gap-3">{renderHeaderActions(content, editor?.previewMode)}</div>
+          <div className="flex w-full flex-col gap-2 sm:w-auto sm:flex-row sm:flex-wrap sm:items-center sm:gap-3">
+            {renderHeaderActions(content, editor?.previewMode)}
+          </div>
         </header>
 
         {content.sections.map((section) => renderSection(section, settings, leadStatus, content.businessPhone, editor))}
@@ -335,7 +337,7 @@ export function LandingPageRenderer({
         <footer className="border-t border-white/70 py-5 text-sm text-slate-600 sm:py-6">
           <div className="flex flex-col gap-2 md:flex-row md:items-center md:justify-between">
             <p>{settings.footerNote}</p>
-            <p>
+            <p className="break-words">
               {settings.contactPhone} {settings.supportEmail ? `| ${settings.supportEmail}` : ""}
             </p>
           </div>

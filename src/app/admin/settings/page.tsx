@@ -293,7 +293,7 @@ export default async function AdminSettingsPage() {
             <div className="grid gap-4 md:grid-cols-[0.9fr_1.1fr]">
               <div className="rounded-[24px] border border-slate-200 bg-slate-50 p-5">
                 <p className="text-xs font-bold uppercase tracking-[0.16em] text-slate-500">Aktif Paket</p>
-                <p className="mt-3 text-3xl font-semibold tracking-tight text-slate-900">{getPlanLabel(planContext.plan)}</p>
+                <p className="mt-3 text-2xl font-semibold tracking-tight text-slate-900 sm:text-3xl">{getPlanLabel(planContext.plan)}</p>
                 <p className="mt-2 text-sm text-slate-500">{activeFeatureCount} modul acik</p>
                 <select
                   name="plan"
@@ -305,7 +305,7 @@ export default async function AdminSettingsPage() {
                   <option value="custom">Custom</option>
                 </select>
                 <div className="mt-4 flex justify-end">
-                  <button type="submit" className="rounded-2xl bg-gradient-to-r from-[#ff5a34] to-[#f0b14f] px-5 py-3 text-sm font-semibold text-white">
+                  <button type="submit" className="w-full rounded-2xl bg-gradient-to-r from-[#ff5a34] to-[#f0b14f] px-5 py-3 text-sm font-semibold text-white sm:w-auto">
                     Paketi Guncelle
                   </button>
                 </div>
@@ -372,7 +372,7 @@ export default async function AdminSettingsPage() {
                 Kapatmak yeni veri uretimini durdurur; mevcut demo kayitlarini otomatik silmez.
               </div>
               <div className="mt-6 flex justify-end">
-                <button type="submit" className="rounded-2xl bg-gradient-to-r from-[#ff5a34] to-[#f0b14f] px-5 py-3 text-sm font-semibold text-white">
+                <button type="submit" className="w-full rounded-2xl bg-gradient-to-r from-[#ff5a34] to-[#f0b14f] px-5 py-3 text-sm font-semibold text-white sm:w-auto">
                   Uygulama Ayarlarini Kaydet
                 </button>
               </div>
@@ -381,7 +381,7 @@ export default async function AdminSettingsPage() {
         </ContentCard>
 
         <form action={clearDemoOperationsAction} className="flex justify-end">
-          <button type="submit" className="rounded-2xl border border-slate-200 bg-slate-50 px-5 py-3 text-sm font-semibold text-slate-800">
+          <button type="submit" className="w-full rounded-2xl border border-slate-200 bg-slate-50 px-5 py-3 text-sm font-semibold text-slate-800 sm:w-auto">
             Demo Verisini Temizle
           </button>
         </form>
@@ -398,7 +398,7 @@ export default async function AdminSettingsPage() {
                 Masalari da tamamen sil
               </label>
               <div className="flex justify-end">
-                <button type="submit" className="rounded-2xl border border-rose-300 bg-white px-5 py-3 text-sm font-semibold text-rose-700">
+                <button type="submit" className="w-full rounded-2xl border border-rose-300 bg-white px-5 py-3 text-sm font-semibold text-rose-700 sm:w-auto">
                   Isletme Operasyonunu Temizle
                 </button>
               </div>
@@ -421,7 +421,7 @@ export default async function AdminSettingsPage() {
               </div>
             </div>
             <div className="mt-6 flex justify-end">
-              <button type="submit" className="rounded-2xl bg-gradient-to-r from-[#ff5a34] to-[#f0b14f] px-5 py-3 text-sm font-semibold text-white">
+              <button type="submit" className="w-full rounded-2xl bg-gradient-to-r from-[#ff5a34] to-[#f0b14f] px-5 py-3 text-sm font-semibold text-white sm:w-auto">
                 Isletme Bilgilerini Kaydet
               </button>
             </div>

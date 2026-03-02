@@ -22,8 +22,16 @@
   --font-mono: var(--font-geist-mono);
 }
 
+*,
+*::before,
+*::after {
+  box-sizing: border-box;
+}
+
 html {
+  width: 100%;
   min-height: 100%;
+  overflow-x: clip;
   background:
     radial-gradient(circle at top left, rgba(255, 106, 61, 0.12), transparent 26%),
     radial-gradient(circle at top right, rgba(15, 118, 110, 0.1), transparent 22%),
@@ -31,10 +39,43 @@ html {
 }
 
 body {
+  width: 100%;
   background: var(--background);
   color: var(--foreground);
   font-family: var(--font-sans-base), sans-serif;
   min-height: 100vh;
+  overflow-x: clip;
+}
+
+img,
+svg,
+video,
+canvas,
+iframe {
+  max-width: 100%;
+}
+
+input,
+select,
+textarea,
+button {
+  max-width: 100%;
+}
+
+.responsive-table-shell {
+  overflow-x: auto;
+  overflow-y: hidden;
+  -webkit-overflow-scrolling: touch;
+}
+
+.responsive-table {
+  min-width: 100%;
+}
+
+@media (max-width: 767px) {
+  .responsive-table {
+    min-width: 640px;
+  }
 }
 
 button {

@@ -27,7 +27,7 @@ export default async function BlogPostPage({ params }: { params: Promise<{ slug:
   return (
     <div className="min-h-screen bg-[linear-gradient(180deg,#f8fafc_0%,#eef2f7_100%)] px-3 py-5 sm:px-4 sm:py-8 md:px-8 md:py-10">
       <main className="mx-auto max-w-6xl space-y-6 sm:space-y-8">
-        <Link href="/blog" className="inline-flex rounded-xl border border-slate-300 bg-white px-4 py-2 text-sm font-semibold text-slate-700">
+        <Link href="/blog" className="inline-flex w-full rounded-xl border border-slate-300 bg-white px-4 py-2 text-center text-sm font-semibold text-slate-700 sm:w-auto">
           Bloga Don
         </Link>
 
@@ -39,7 +39,7 @@ export default async function BlogPostPage({ params }: { params: Promise<{ slug:
             <p className="text-xs uppercase tracking-[0.24em] text-slate-500">
               {formatDate(post.published_at, post.created_at)} • {readingTime(post.body)} dk okuma
             </p>
-            <h1 className="mt-4 text-3xl font-semibold tracking-tight text-slate-900 md:text-5xl">{post.title}</h1>
+            <h1 className="mt-4 text-3xl font-semibold tracking-tight text-slate-900 sm:text-4xl md:text-5xl">{post.title}</h1>
             {post.excerpt ? <p className="mt-5 text-base leading-7 text-slate-600 sm:text-lg sm:leading-8">{post.excerpt}</p> : null}
             <div className="mt-8 whitespace-pre-wrap text-sm leading-7 text-slate-700 sm:text-base sm:leading-8">{post.body}</div>
           </div>
@@ -59,7 +59,7 @@ export default async function BlogPostPage({ params }: { params: Promise<{ slug:
                   </p>
                   <h3 className="mt-3 text-xl font-semibold text-slate-900">{item.title}</h3>
                   <p className="mt-3 text-sm leading-7 text-slate-600">{item.excerpt || item.body.slice(0, 120)}</p>
-                  <Link href={`/blog/${item.slug}`} className="mt-4 inline-flex rounded-xl bg-slate-900 px-4 py-2 text-sm font-semibold text-white">
+                  <Link href={`/blog/${item.slug}`} className="mt-4 inline-flex w-full rounded-xl bg-slate-900 px-4 py-2 text-center text-sm font-semibold text-white sm:w-auto">
                     Ac
                   </Link>
                 </article>

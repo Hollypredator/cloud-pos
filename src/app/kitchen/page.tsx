@@ -157,7 +157,7 @@ export default async function KitchenPage() {
       actions={
         <>
           <LiveOpsBridge tables={["orders"]} enableSound />
-          <Link href="/ops" className="rounded-2xl border border-slate-200 bg-white px-5 py-3 text-sm font-semibold text-slate-800">
+          <Link href="/ops" className="w-full rounded-2xl border border-slate-200 bg-white px-5 py-3 text-center text-sm font-semibold text-slate-800 sm:w-auto">
             Panele Don
           </Link>
         </>
@@ -193,10 +193,10 @@ export default async function KitchenPage() {
           <div className="grid gap-4 xl:grid-cols-3">
             {stationBoards.map((board) => (
               <section key={board.label} className="rounded-[24px] border border-slate-200 bg-[#f7f8fa] p-4">
-                <div className="flex items-start justify-between gap-3">
+                <div className="flex flex-wrap items-start justify-between gap-3">
                   <div>
                     <p className="text-xs font-bold uppercase tracking-[0.16em] text-slate-500">Istasyon</p>
-                    <h2 className="mt-2 text-2xl font-semibold tracking-tight text-slate-900">{board.label}</h2>
+                    <h2 className="mt-2 text-xl font-semibold tracking-tight text-slate-900 sm:text-2xl">{board.label}</h2>
                     <p className="mt-1 text-sm text-slate-500">
                       {board.pending} bekleyen - {board.preparing} hazirlanan - {board.served} hazir
                     </p>
@@ -226,13 +226,13 @@ export default async function KitchenPage() {
                                 : "border-slate-200"
                           }`}
                         >
-                          <div className="flex items-start justify-between gap-3">
+                          <div className="flex flex-col items-start justify-between gap-3 sm:flex-row">
                             <div>
                               <p className="text-xs font-bold uppercase tracking-[0.16em] text-slate-500">{orderSourceLabel(order)}</p>
                               <h3 className="mt-2 text-xl font-semibold tracking-tight text-slate-900">Siparis #{order.id.slice(0, 8)}</h3>
                               <p className="mt-1 text-sm text-slate-500">{new Date(order.created_at).toLocaleTimeString("tr-TR")}</p>
                             </div>
-                            <div className="flex flex-col items-end gap-2">
+                            <div className="flex w-full flex-col items-start gap-2 sm:w-auto sm:items-end">
                               <span className={`rounded-full px-3 py-1 text-xs font-semibold uppercase ${statusTone(order.status)}`}>{statusLabel(order.status)}</span>
                               <span className={`rounded-full px-3 py-1 text-xs font-semibold ${board.tone}`}>{board.label}</span>
                             </div>
@@ -254,12 +254,12 @@ export default async function KitchenPage() {
 
                           <div className="mt-3 space-y-2">
                             {items.map((item) => (
-                              <div key={`${order.id}-${board.label}-${item.product_id}`} className="rounded-2xl bg-slate-50 px-3 py-3">
-                                <div className="flex items-center justify-between gap-3">
-                                  <span className="font-semibold text-slate-900">
+                            <div key={`${order.id}-${board.label}-${item.product_id}`} className="rounded-2xl bg-slate-50 px-3 py-3">
+                                <div className="flex items-start justify-between gap-3">
+                                  <span className="min-w-0 break-words font-semibold text-slate-900">
                                     {item.quantity}x {item.name}
                                   </span>
-                                  <span className="text-sm text-slate-500">{Number(item.line_total).toFixed(2)} TL</span>
+                                  <span className="shrink-0 text-sm text-slate-500">{Number(item.line_total).toFixed(2)} TL</span>
                                 </div>
                                 {item.modifiers?.length ? (
                                   <div className="mt-1 text-xs text-slate-500">
@@ -270,19 +270,19 @@ export default async function KitchenPage() {
                             ))}
                           </div>
 
-                          <div className="mt-4 flex items-center justify-between gap-3">
+                          <div className="mt-4 flex flex-col items-start gap-3 sm:flex-row sm:items-center sm:justify-between">
                             <div>
                               <p className="text-xs font-bold uppercase tracking-[0.16em] text-slate-500">Istasyon Tutari</p>
                               <p className="mt-1 text-xl font-semibold tracking-tight text-emerald-700">
                                 {items.reduce((sum, item) => sum + Number(item.line_total), 0).toFixed(2)} TL
                               </p>
                             </div>
-                            <div className="flex flex-wrap items-center justify-end gap-2">
+                            <div className="flex w-full flex-wrap items-center gap-2 sm:w-auto sm:justify-end">
                               <Link
                                 href={`/admin/print-center/kitchen/${order.id}?layout=thermal&station=${encodeURIComponent(board.label)}`}
                                 target="_blank"
                                 rel="noreferrer"
-                                className="rounded-2xl border border-slate-200 bg-white px-4 py-3 text-sm font-semibold text-slate-700"
+                                className="w-full rounded-2xl border border-slate-200 bg-white px-4 py-3 text-center text-sm font-semibold text-slate-700 sm:w-auto"
                               >
                                 Fis Yazdir
                               </Link>
@@ -295,7 +295,7 @@ export default async function KitchenPage() {
                                 />
                                 <button
                                   type="submit"
-                                  className={`rounded-2xl px-4 py-3 text-sm font-semibold text-white ${
+                                  className={`w-full rounded-2xl px-4 py-3 text-sm font-semibold text-white sm:w-auto ${
                                     order.status === "pending"
                                       ? "bg-gradient-to-r from-[#ff5a34] to-[#f0b14f] shadow-[0_10px_20px_rgba(255,111,60,0.24)]"
                                       : order.status === "preparing"
@@ -309,7 +309,7 @@ export default async function KitchenPage() {
                             </div>
                           </div>
                           {order.status === "served" ? (
-                            <div className="mt-3 flex items-center justify-between gap-3 rounded-2xl border border-emerald-200 bg-emerald-50 px-3 py-3 text-sm">
+                            <div className="mt-3 flex flex-col items-start gap-3 rounded-2xl border border-emerald-200 bg-emerald-50 px-3 py-3 text-sm sm:flex-row sm:items-center sm:justify-between">
                               <div>
                                 <p className="font-semibold text-emerald-900">Siparis tampon alanda tutuluyor</p>
                                 <p className="mt-1 text-emerald-700">Yanlis basim veya son dakika duzeltmesi icin mutfaktan geri alinabilir.</p>

@@ -381,7 +381,7 @@ export function AdminOrderEntry({
 
         {activeProduct ? (
           <article className="rounded-2xl border border-slate-200 bg-white p-5 shadow-sm">
-            <div className="flex items-center justify-between gap-3">
+            <div className="flex flex-col items-start justify-between gap-3 sm:flex-row sm:items-center">
               <div>
                 <p className="text-xs uppercase tracking-[0.24em] text-slate-500">Modifier Secimi</p>
                 <h2 className="mt-2 text-xl font-semibold text-slate-900">{activeProduct.name}</h2>
@@ -392,7 +392,7 @@ export function AdminOrderEntry({
                   setActiveProductId(null);
                   setSelectedOptions({});
                 }}
-                className="rounded-lg border border-slate-300 px-3 py-2 text-sm text-slate-700"
+                className="w-full rounded-lg border border-slate-300 px-3 py-2 text-sm text-slate-700 sm:w-auto"
               >
                 Kapat
               </button>
@@ -430,7 +430,7 @@ export function AdminOrderEntry({
             <button
               type="button"
               onClick={confirmModifiers}
-              className="mt-5 rounded-xl bg-slate-900 px-4 py-3 text-sm font-semibold text-white"
+              className="mt-5 w-full rounded-xl bg-slate-900 px-4 py-3 text-sm font-semibold text-white sm:w-auto"
             >
               Sepete Ekle
             </button>
@@ -457,7 +457,7 @@ export function AdminOrderEntry({
               <div className="mt-4 grid gap-3 sm:grid-cols-2">
                 {(groupedProducts.get(category.id) ?? []).map((product) => (
                   <div key={product.id} className="rounded-xl border border-slate-200 p-4">
-                    <div className="flex items-start justify-between gap-3">
+                    <div className="flex flex-col items-start justify-between gap-2 sm:flex-row sm:gap-3">
                       <div>
                         <p className="font-semibold text-slate-900">{product.name}</p>
                         <p className="mt-1 text-sm text-slate-600">{product.description ?? "Menu urunu"}</p>
@@ -467,7 +467,7 @@ export function AdminOrderEntry({
                     <button
                       type="button"
                       onClick={() => openModifierPicker(product)}
-                      className="mt-4 rounded-lg bg-slate-900 px-3 py-2 text-sm font-semibold text-white"
+                      className="mt-4 w-full rounded-lg bg-slate-900 px-3 py-2 text-sm font-semibold text-white sm:w-auto"
                     >
                       {(groupsByProduct.get(product.id) ?? []).length > 0 ? "Seceneklerle Ekle" : "Ekle"}
                     </button>
@@ -482,7 +482,7 @@ export function AdminOrderEntry({
       <aside className="h-fit rounded-2xl bg-white p-5 shadow-sm">
         <p className="text-xs uppercase tracking-[0.24em] text-slate-500">Aktif Siparis</p>
         <h2 className="mt-2 text-2xl font-semibold text-slate-900">{channelLabel(channel)}</h2>
-        <div className="mt-4 grid grid-cols-2 gap-3">
+        <div className="mt-4 grid gap-3 sm:grid-cols-2">
           <div className="rounded-2xl bg-slate-50 px-4 py-4">
             <p className="text-xs font-bold uppercase tracking-[0.16em] text-slate-500">Kalem</p>
             <p className="mt-2 text-2xl font-semibold tracking-tight text-slate-900">{cartCount}</p>
@@ -500,7 +500,7 @@ export function AdminOrderEntry({
               const modifierTotal = entry.modifiers.reduce((sum, modifier) => sum + Number(modifier.price_delta), 0);
               return (
                 <div key={entry.key} className="rounded-xl bg-slate-50 px-3 py-3">
-                  <div className="flex items-center justify-between">
+                  <div className="flex flex-col items-start justify-between gap-3 sm:flex-row sm:items-center">
                     <div>
                       <p className="text-sm font-semibold text-slate-900">{entry.product.name}</p>
                       <p className="text-xs text-slate-600">
@@ -510,7 +510,7 @@ export function AdminOrderEntry({
                     <button
                       type="button"
                       onClick={() => removeProduct(entry.key)}
-                      className="rounded-lg border border-slate-300 px-2 py-1 text-xs text-slate-700"
+                      className="w-full rounded-lg border border-slate-300 px-2 py-2 text-xs text-slate-700 sm:w-auto sm:py-1"
                     >
                       Azalt
                     </button>

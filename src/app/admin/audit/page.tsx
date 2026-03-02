@@ -65,8 +65,8 @@ export default async function AdminAuditPage() {
         {logs.length === 0 ? (
           <EmptyPanel title="Kayit Bulunamadi" description="Secili kriterlere uygun islem bulunamadi." />
         ) : (
-          <div className="overflow-hidden rounded-[22px] border border-slate-200">
-            <table className="w-full min-w-[960px] text-left text-sm">
+          <div className="responsive-table-shell rounded-[22px] border border-slate-200">
+            <table className="responsive-table w-full min-w-[960px] text-left text-sm">
               <thead className="bg-slate-50 text-slate-500">
                 <tr>
                   <th className="px-4 py-4 font-semibold">Tarih</th>
@@ -84,7 +84,7 @@ export default async function AdminAuditPage() {
                     <td className="px-4 py-4 text-slate-700">{log.entity_id}</td>
                     <td className="px-4 py-4 text-slate-700">{log.action}</td>
                     <td className="px-4 py-4 text-xs text-slate-600">
-                      <pre className="whitespace-pre-wrap font-mono">{JSON.stringify(log.details, null, 2)}</pre>
+                      <pre className="whitespace-pre-wrap break-all font-mono">{JSON.stringify(log.details, null, 2)}</pre>
                     </td>
                   </tr>
                 ))}

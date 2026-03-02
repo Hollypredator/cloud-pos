@@ -63,21 +63,21 @@ export default async function ReceiptPage({
             ) : null}
           </div>
           {businessPhone ? <p className={`${compact ? "text-[10px]" : "text-xs"} text-slate-600`}>Tel: {businessPhone}</p> : null}
-          {businessAddress ? <p className={`${compact ? "text-[10px]" : "text-xs"} text-slate-600`}>{businessAddress}</p> : null}
-          <p className={`${compact ? "text-[11px]" : "text-sm"} text-slate-600`}>Siparis #{order.id.slice(0, 8)} - {orderSourceLabel(order)}</p>
+          {businessAddress ? <p className={`${compact ? "text-[10px]" : "text-xs"} break-words text-slate-600`}>{businessAddress}</p> : null}
+          <p className={`${compact ? "text-[11px]" : "text-sm"} break-words text-slate-600`}>Siparis #{order.id.slice(0, 8)} - {orderSourceLabel(order)}</p>
           {order.customer_phone ? <p className={`${compact ? "text-[10px]" : "text-xs"} text-slate-600`}>Telefon: {order.customer_phone}</p> : null}
-          {order.delivery_address ? <p className={`${compact ? "text-[10px] leading-tight" : "text-xs"} text-slate-600`}>{order.delivery_address}</p> : null}
+          {order.delivery_address ? <p className={`${compact ? "text-[10px] leading-tight" : "text-xs"} break-words text-slate-600`}>{order.delivery_address}</p> : null}
           <p className={`${compact ? "text-[10px]" : "text-xs"} text-slate-500`}>{new Date(order.created_at).toLocaleString("tr-TR")}</p>
         </header>
 
         <ul className={compact ? "space-y-1.5" : "space-y-2"}>
           {order.items.map((item, index) => (
             <li key={`${order.id}-${item.product_id}-${index}`} className={compact ? "text-xs" : "text-sm"}>
-              <div className="flex items-center justify-between">
-                <span className={`text-slate-700 ${compact ? "pr-2 leading-tight" : ""}`}>
+              <div className="flex items-start justify-between gap-3">
+                <span className={`min-w-0 break-words text-slate-700 ${compact ? "pr-2 leading-tight" : ""}`}>
                   {item.quantity}x {item.name}
                 </span>
-                <span className={`font-medium text-slate-900 ${compact ? "text-[11px]" : ""}`}>{Number(item.line_total).toFixed(2)} TL</span>
+                <span className={`shrink-0 font-medium text-slate-900 ${compact ? "text-[11px]" : ""}`}>{Number(item.line_total).toFixed(2)} TL</span>
               </div>
               {item.modifiers?.length ? (
                 <div className={`mt-1 text-slate-500 ${compact ? "text-[10px] leading-tight" : "text-xs"}`}>
@@ -135,7 +135,7 @@ export default async function ReceiptPage({
           <PrintActions baseHref={`/receipt/${order.id}`} />
         </div>
         <div className="mt-4 flex items-center justify-between">
-          <Link href="/ops" className="text-sm font-medium text-slate-700 underline">
+          <Link href="/ops" className="w-full text-sm font-medium text-slate-700 underline sm:w-auto">
             Ana Panele Don
           </Link>
         </div>

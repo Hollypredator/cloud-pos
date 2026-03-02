@@ -23,9 +23,9 @@ export function BackofficePage({
   actions?: React.ReactNode;
 }) {
   return (
-    <div className="min-h-screen bg-[#e9eaee] px-3 py-4 md:px-6">
+    <div className="min-h-screen overflow-x-clip bg-[#e9eaee] px-3 py-4 md:px-6">
       <main className="mx-auto flex w-full max-w-[1600px] flex-col gap-5 xl:flex-row">
-        {sidebar ? <aside className="w-full xl:w-[320px]">{sidebar}</aside> : null}
+        {sidebar ? <aside className="min-w-0 w-full xl:w-[320px]">{sidebar}</aside> : null}
         <section className="min-w-0 flex-1 space-y-5">
           <div className="panel-surface mesh-accent rounded-[24px] px-4 py-4 sm:px-6 sm:py-5">
             <div className="flex flex-wrap items-center justify-between gap-4">
@@ -125,10 +125,10 @@ export function SegmentedTabs({
   tabs: Array<{ href?: string; label: string; active?: boolean }>;
 }) {
   return (
-    <div className="grid gap-3 rounded-[28px] border border-slate-200 bg-white p-3 shadow-[0_10px_20px_rgba(15,23,42,0.04)] md:grid-cols-4">
+    <div className="flex snap-x gap-3 overflow-x-auto rounded-[28px] border border-slate-200 bg-white p-3 shadow-[0_10px_20px_rgba(15,23,42,0.04)] md:grid md:grid-cols-4 md:overflow-visible">
       {tabs.map((tab) => {
         const className = cn(
-          "rounded-2xl px-4 py-4 text-center text-base font-semibold transition",
+          "min-w-[220px] snap-start rounded-2xl px-4 py-4 text-center text-base font-semibold transition md:min-w-0",
           tab.active
             ? "bg-gradient-to-r from-[#ff5a34] to-[#f0b14f] text-white shadow-[0_10px_20px_rgba(255,111,60,0.24)]"
             : "bg-slate-100 text-slate-600 hover:bg-slate-200",
@@ -290,10 +290,10 @@ export function WorkspaceTabs({
   tabs: Array<{ href?: string; label: string; active?: boolean }>;
 }) {
   return (
-    <div className="flex flex-wrap gap-8 border-b border-slate-200 px-2">
+    <div className="flex gap-4 overflow-x-auto border-b border-slate-200 px-2 sm:gap-6">
       {tabs.map((tab) => {
         const className = cn(
-          "border-b-2 px-2 pb-4 pt-1 text-[1.1rem] font-medium transition",
+          "shrink-0 whitespace-nowrap border-b-2 px-2 pb-4 pt-1 text-base font-medium transition sm:text-[1.1rem]",
           tab.active ? "border-[#ff5a34] text-[#ff5a34]" : "border-transparent text-slate-500 hover:text-slate-900",
         );
 

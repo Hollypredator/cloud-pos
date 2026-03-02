@@ -21,7 +21,7 @@ export default async function PrintCenterPage() {
       title="Yazdirma Merkezi"
       description="Yazici olmadan adisyon, fis ve QR cikti akisini onizle ve test et"
       actions={
-        <Link href="/admin/settings" className="rounded-2xl border border-slate-200 bg-white px-5 py-3 text-sm font-semibold text-slate-800">
+        <Link href="/admin/settings" className="w-full rounded-2xl border border-slate-200 bg-white px-5 py-3 text-center text-sm font-semibold text-slate-800 sm:w-auto">
           Ayarlara Don
         </Link>
       }

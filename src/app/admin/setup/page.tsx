@@ -43,7 +43,7 @@ export default async function AdminSetupPage() {
       title="Product Ready Kontrol"
       description="Canliya cikmadan once kritik akislari tek tek dogrula."
       actions={
-        <Link href="/ops" className="rounded-2xl border border-slate-200 bg-white px-5 py-3 text-sm font-semibold text-slate-800">
+        <Link href="/ops" className="w-full rounded-2xl border border-slate-200 bg-white px-5 py-3 text-center text-sm font-semibold text-slate-800 sm:w-auto">
           Operasyona Don
         </Link>
       }

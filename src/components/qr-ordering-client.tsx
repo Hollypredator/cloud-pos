@@ -301,7 +301,7 @@ export function QrOrderingClient({
 
       {activeProduct ? (
         <section className="rounded-2xl border border-slate-200 bg-white p-4">
-          <div className="flex items-center justify-between gap-3">
+          <div className="flex flex-col items-start justify-between gap-3 sm:flex-row sm:items-center">
             <div>
               <p className="text-xs uppercase tracking-[0.24em] text-slate-500">Secenekler</p>
               <h2 className="mt-2 text-xl font-semibold text-slate-900">{activeProduct.name}</h2>
@@ -312,7 +312,7 @@ export function QrOrderingClient({
                 setActiveProductId(null);
                 setSelectedOptions({});
               }}
-              className="rounded-lg border border-slate-300 px-3 py-2 text-sm text-slate-700"
+              className="w-full rounded-lg border border-slate-300 px-3 py-2 text-sm text-slate-700 sm:w-auto"
             >
               Kapat
             </button>
@@ -347,7 +347,7 @@ export function QrOrderingClient({
           <button
             type="button"
             onClick={confirmModifiers}
-            className="mt-5 rounded-xl bg-slate-900 px-4 py-3 text-sm font-semibold text-white"
+            className="mt-5 w-full rounded-xl bg-slate-900 px-4 py-3 text-sm font-semibold text-white sm:w-auto"
           >
             Sepete Ekle
           </button>
@@ -364,11 +364,11 @@ export function QrOrderingClient({
                   <div key={product.id} className="rounded-xl border border-slate-200 p-3">
                     <p className="font-semibold text-slate-900">{product.name}</p>
                     <p className="text-sm text-slate-600">{product.description ?? "Lezzetli secenek"}</p>
-                    <div className="mt-3 flex items-center justify-between">
+                    <div className="mt-3 flex flex-col items-start justify-between gap-3 sm:flex-row sm:items-center">
                       <span className="font-semibold text-emerald-700">{Number(product.price).toFixed(2)} TL</span>
                       <button
                         onClick={() => openModifierPicker(product)}
-                        className="rounded-lg bg-slate-900 px-3 py-2 text-sm font-medium text-white"
+                        className="w-full rounded-lg bg-slate-900 px-3 py-2 text-sm font-medium text-white sm:w-auto"
                         type="button"
                       >
                         {(groupsByProduct.get(product.id) ?? []).length > 0 ? "Sec" : "Ekle"}
@@ -391,7 +391,7 @@ export function QrOrderingClient({
                 const modifierTotal = entry.modifiers.reduce((sum, modifier) => sum + Number(modifier.price_delta), 0);
                 return (
                   <div key={entry.key} className="rounded-lg bg-slate-50 p-2">
-                    <div className="flex items-center justify-between">
+                    <div className="flex flex-col items-start justify-between gap-3 sm:flex-row sm:items-center">
                       <div>
                         <p className="text-sm font-semibold text-slate-900">{entry.product.name}</p>
                         <p className="text-xs text-slate-600">
@@ -400,7 +400,7 @@ export function QrOrderingClient({
                       </div>
                       <button
                         onClick={() => removeProduct(entry.key)}
-                        className="rounded-md border border-slate-300 px-2 py-1 text-xs"
+                        className="w-full rounded-md border border-slate-300 px-2 py-2 text-xs sm:w-auto sm:py-1"
                         type="button"
                       >
                         Azalt

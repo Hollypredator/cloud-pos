@@ -3,6 +3,7 @@ import { BackofficePage, ContentCard, EmptyPanel, FeatureLockedState, SidebarPan
 import { ALL_BRANCHES_VALUE } from "@/lib/business";
 import { requireRole } from "@/lib/auth";
 import { getFinancialInsights, listBranches } from "@/lib/data";
+import { logServerPerf, measureAsync } from "@/lib/perf";
 import { getFeatureAccess } from "@/lib/plan-access";
 
 function methodLabel(method: string) {
@@ -127,8 +128,10 @@ export default async function AdminFinancePage({
   searchParams: Promise<{ days?: string }>;
 }) {
   await requireRole(["admin"], "/admin/finance");
-  const featureAccess = await getFeatureAccess("finance_dashboard");
+  const featureAccessResult = await measureAsync("feature_access", () => getFeatureAccess("finance_dashboard"));
+  const featureAccess = featureAccessResult.value;
   if (!featureAccess.enabled) {
+    logServerPerf("/admin/finance", [featureAccessResult]);
     return (
       <BackofficePage title="Gelir/Gider" description="Nakit akis ve finans panosu">
         <FeatureLockedState
@@ -142,10 +145,13 @@ export default async function AdminFinancePage({
   }
   const { days: daysParam } = await searchParams;
   const days = Number.isFinite(Number(daysParam)) ? Number(daysParam) : 7;
-  const [{ summary, methodBreakdown, hourlySales, topProducts, recentPayments, usingDemoData }, branchContext] = await Promise.all([
-    getFinancialInsights(days),
-    listBranches(),
+  const [financialResult, branchContextResult] = await Promise.all([
+    measureAsync("financial_insights", () => getFinancialInsights(days)),
+    measureAsync("list_branches", () => listBranches()),
   ]);
+  const { summary, methodBreakdown, hourlySales, topProducts, recentPayments, usingDemoData } = financialResult.value;
+  const branchContext = branchContextResult.value;
+  logServerPerf("/admin/finance", [featureAccessResult, financialResult, branchContextResult]);
   const branchLabel =
     branchContext.activeBranchId === ALL_BRANCHES_VALUE
       ? "Tum Subeler"
@@ -169,7 +175,7 @@ export default async function AdminFinancePage({
       sidebar={
         <SidebarPanel title="Filtreler">
           <form method="get" className="space-y-4">
-            <div className="grid grid-cols-2 gap-2">
+            <div className="grid gap-2 sm:grid-cols-2">
               <button type="button" className="rounded-2xl border border-slate-200 bg-slate-50 px-4 py-3 text-sm font-semibold text-slate-700">
                 Donem Bazli
               </button>
@@ -191,7 +197,7 @@ export default async function AdminFinancePage({
               Verileri Yenile
             </button>
           </form>
-          <div className="grid grid-cols-2 gap-2">
+          <div className="grid gap-2 sm:grid-cols-2">
             <Link href="/admin/finance?days=1" className={`rounded-2xl px-4 py-3 text-center text-sm font-semibold ${days === 1 ? "bg-[#ff5a34] text-white" : "border border-slate-200 bg-slate-50 text-slate-700"}`}>
               Bugun
             </Link>
@@ -226,13 +232,13 @@ export default async function AdminFinancePage({
       }
       actions={
         <>
-          <a href={`/api/reports/sales.csv?days=${days}`} className="rounded-2xl border border-slate-200 bg-white px-5 py-3 text-sm font-semibold text-slate-800">
+          <a href={`/api/reports/sales.csv?days=${days}`} className="w-full rounded-2xl border border-slate-200 bg-white px-5 py-3 text-center text-sm font-semibold text-slate-800 sm:w-auto">
             Excel
           </a>
-          <span className="rounded-2xl border border-slate-200 bg-slate-50 px-5 py-3 text-sm font-semibold text-slate-700">
+          <span className="w-full rounded-2xl border border-slate-200 bg-slate-50 px-5 py-3 text-center text-sm font-semibold text-slate-700 sm:w-auto">
             {branchLabel}
           </span>
-          <a href={`/admin/reports?days=${days}`} className="rounded-2xl border border-slate-200 bg-white px-5 py-3 text-sm font-semibold text-slate-800">
+          <a href={`/admin/reports?days=${days}`} className="w-full rounded-2xl border border-slate-200 bg-white px-5 py-3 text-center text-sm font-semibold text-slate-800 sm:w-auto">
             Raporlara Git
           </a>
         </>
@@ -301,7 +307,7 @@ export default async function AdminFinancePage({
               <div className="space-y-3">
                 <div className="rounded-[24px] border border-slate-200 bg-slate-50 p-4">
                   <p className="text-xs font-bold uppercase tracking-[0.16em] text-slate-500">Net Akis</p>
-                  <p className="font-display font-numeric mt-3 text-3xl font-semibold tracking-tight text-slate-900">{summary.netSales.toFixed(2)} TL</p>
+                  <p className="font-display font-numeric mt-3 text-2xl font-semibold tracking-tight text-slate-900 sm:text-3xl">{summary.netSales.toFixed(2)} TL</p>
                 </div>
                 <div className="rounded-[24px] border border-slate-200 bg-slate-50 p-4">
                   <p className="text-xs font-bold uppercase tracking-[0.16em] text-slate-500">Saatlik Tepe</p>
@@ -349,17 +355,17 @@ export default async function AdminFinancePage({
           <div className="grid gap-3">
             <div className="panel-hover rounded-[22px] border border-slate-200 bg-slate-50 p-4">
               <p className="text-xs font-bold uppercase tracking-[0.16em] text-slate-500">Net Durum</p>
-              <p className="font-display font-numeric mt-3 text-3xl font-semibold tracking-tight text-slate-900">{summary.netSales.toFixed(2)} TL</p>
+              <p className="font-display font-numeric mt-3 text-2xl font-semibold tracking-tight text-slate-900 sm:text-3xl">{summary.netSales.toFixed(2)} TL</p>
               <p className="mt-2 text-sm text-slate-500">Secili aralikta gelir ve iade etkisinin net sonucu.</p>
             </div>
             <div className="panel-hover rounded-[22px] border border-slate-200 bg-slate-50 p-4">
               <p className="text-xs font-bold uppercase tracking-[0.16em] text-slate-500">Ortalama Fis</p>
-              <p className="font-display font-numeric mt-3 text-3xl font-semibold tracking-tight text-slate-900">{averageTicket.toFixed(2)} TL</p>
+              <p className="font-display font-numeric mt-3 text-2xl font-semibold tracking-tight text-slate-900 sm:text-3xl">{averageTicket.toFixed(2)} TL</p>
               <p className="mt-2 text-sm text-slate-500">Tamamlanmis odeme basina ortalama tahsilat.</p>
             </div>
             <div className="panel-hover rounded-[22px] border border-slate-200 bg-slate-50 p-4">
               <p className="text-xs font-bold uppercase tracking-[0.16em] text-slate-500">Guclu Kanal</p>
-              <p className="font-display mt-3 text-3xl font-semibold tracking-tight text-slate-900">{topMethod ? methodLabel(topMethod.method) : "-"}</p>
+              <p className="font-display mt-3 text-2xl font-semibold tracking-tight text-slate-900 sm:text-3xl">{topMethod ? methodLabel(topMethod.method) : "-"}</p>
               <p className="mt-2 text-sm text-slate-500">Net tahsilatta one cikan odeme yontemi.</p>
             </div>
           </div>
@@ -449,8 +455,8 @@ export default async function AdminFinancePage({
           {methodBreakdown.length === 0 ? (
             <EmptyPanel title="Kayit Bulunamadi" description="Secili filtrelere uygun odeme kaydi yok." />
           ) : (
-            <div className="overflow-hidden rounded-[22px] border border-slate-200">
-              <table className="w-full text-left text-sm">
+            <div className="responsive-table-shell rounded-[22px] border border-slate-200">
+              <table className="responsive-table w-full text-left text-sm">
                 <thead className="bg-slate-50 text-slate-500">
                   <tr>
                     <th className="px-4 py-4 font-semibold">Tip</th>
@@ -545,8 +551,8 @@ export default async function AdminFinancePage({
           {recentPayments.length === 0 ? (
             <EmptyPanel title="Kayit Bulunamadi" description="Secili filtrelere uygun hareket yok." />
           ) : (
-            <div className="max-h-[420px] overflow-auto rounded-[22px] border border-slate-200">
-              <table className="w-full text-left text-sm">
+            <div className="responsive-table-shell max-h-[420px] overflow-y-auto rounded-[22px] border border-slate-200">
+              <table className="responsive-table w-full text-left text-sm">
                 <thead className="sticky top-0 bg-slate-50 text-slate-500">
                   <tr>
                     <th className="px-4 py-4 font-semibold">Saat</th>

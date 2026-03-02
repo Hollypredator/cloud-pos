@@ -38,17 +38,36 @@ type ProductDeps = {
   demoProductIngredients: ProductIngredient[];
 };
 
+export type ProductManagementTab = "catalog" | "menu" | "categories" | "bulk" | "features";
+
+function getProductManagementIncludes(tab: ProductManagementTab) {
+  if (tab === "catalog" || tab === "features") {
+    return {
+      includeIngredients: true,
+      includeModifiers: true,
+    };
+  }
+
+  return {
+    includeIngredients: false,
+    includeModifiers: false,
+  };
+}
+
 async function getCachedProductManagementRow(input: {
   businessId: string | null;
   useLegacySchema: boolean;
+  tab: ProductManagementTab;
 }) {
-  const cacheKey = `product-management:${input.businessId ?? "none"}:${input.useLegacySchema ? "legacy" : "scoped"}`;
+  const cacheKey = `product-management:${input.businessId ?? "none"}:${input.useLegacySchema ? "legacy" : "scoped"}:${input.tab}`;
   const reader = unstable_cache(
     async () => {
       const supabase = getSupabaseServerClient();
       if (!supabase) {
         return null;
       }
+
+      const includes = getProductManagementIncludes(input.tab);
 
       const [
         { data: categories },
@@ -69,16 +88,24 @@ async function getCachedProductManagementRow(input: {
               .select("id, business_id, category_id, name, price, stock_count, image_url, description, is_available")
               .eq("business_id", input.businessId!))
           .order("created_at", { ascending: false }),
-        supabase.from("ingredients").select("id, name, unit").order("name", { ascending: true }),
-        supabase.from("product_ingredients").select("product_id, ingredient_id, quantity, ingredients(id, name, unit)"),
-        supabase
-          .from("product_modifier_groups")
-          .select("id, product_id, name, min_select, max_select, is_required, sort_order")
-          .order("sort_order", { ascending: true }),
-        supabase
-          .from("product_modifier_options")
-          .select("id, group_id, name, price_delta, is_default, sort_order")
-          .order("sort_order", { ascending: true }),
+        includes.includeIngredients
+          ? supabase.from("ingredients").select("id, name, unit").order("name", { ascending: true })
+          : Promise.resolve({ data: [], error: null }),
+        includes.includeIngredients
+          ? supabase.from("product_ingredients").select("product_id, ingredient_id, quantity, ingredients(id, name, unit)")
+          : Promise.resolve({ data: [], error: null }),
+        includes.includeModifiers
+          ? supabase
+              .from("product_modifier_groups")
+              .select("id, product_id, name, min_select, max_select, is_required, sort_order")
+              .order("sort_order", { ascending: true })
+          : Promise.resolve({ data: [], error: null }),
+        includes.includeModifiers
+          ? supabase
+              .from("product_modifier_options")
+              .select("id, group_id, name, price_delta, is_default, sort_order")
+              .order("sort_order", { ascending: true })
+          : Promise.resolve({ data: [], error: null }),
       ]);
 
       return {
@@ -103,7 +130,12 @@ async function getCachedProductManagementRow(input: {
   return reader();
 }
 
-export async function getProductManagementDataImpl(deps: ProductDeps) {
+export async function getProductManagementDataImpl(
+  deps: ProductDeps,
+  options?: {
+    tab?: ProductManagementTab;
+  },
+) {
   const supabase = getSupabaseServerClient();
   if (!supabase) {
     return {
@@ -140,9 +172,11 @@ export async function getProductManagementDataImpl(deps: ProductDeps) {
     };
   }
 
+  const tab = options?.tab ?? "catalog";
   const cached = await getCachedProductManagementRow({
     businessId: scope.businessId,
     useLegacySchema: scope.useLegacySchema,
+    tab,
   });
 
   if (!cached || cached.hasError) {

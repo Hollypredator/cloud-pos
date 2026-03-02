@@ -77,7 +77,7 @@ export function OrderStatusWidget({
         <p className="mt-2 text-sm text-slate-500">Bu masa icin aktif siparis bulunmuyor.</p>
       ) : (
         <div className="mt-2 space-y-2">
-          <div className="flex items-center justify-between">
+          <div className="flex flex-col items-start justify-between gap-2 sm:flex-row sm:items-center">
             <p className="text-sm font-medium text-slate-900">#{order.id.slice(0, 8)}</p>
             <span className={`rounded-full px-2 py-1 text-xs font-semibold uppercase ${statusClass(order.status)}`}>
               {statusLabel(order.status)}
@@ -104,7 +104,7 @@ function StatusTimeline({ status }: { status: OrderStatus }) {
   const currentIdx = order.indexOf(status as (typeof order)[number]);
 
   return (
-    <div className="mt-1 grid grid-cols-4 gap-2">
+    <div className="mt-1 grid grid-cols-2 gap-2 sm:grid-cols-4">
       {steps.map((step, idx) => {
         const done = currentIdx >= 0 && idx <= currentIdx;
         return (

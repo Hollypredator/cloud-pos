@@ -168,10 +168,10 @@ export default async function CashierPage({
       actions={
         <>
           <LiveOpsBridge tables={["orders", "tables", "payments", "cash_register_sessions"]} />
-          <Link href="/cashier/session" className="rounded-2xl border border-slate-200 bg-white px-5 py-3 text-sm font-semibold text-slate-800">
+          <Link href="/cashier/session" className="w-full rounded-2xl border border-slate-200 bg-white px-5 py-3 text-center text-sm font-semibold text-slate-800 sm:w-auto">
             Gun Islemleri
           </Link>
-          <Link href="/ops" className="rounded-2xl border border-slate-200 bg-white px-5 py-3 text-sm font-semibold text-slate-800">
+          <Link href="/ops" className="w-full rounded-2xl border border-slate-200 bg-white px-5 py-3 text-center text-sm font-semibold text-slate-800 sm:w-auto">
             Panele Don
           </Link>
         </>
@@ -218,7 +218,7 @@ export default async function CashierPage({
                       : "border-slate-200 bg-slate-50"
                   }`}
                 >
-                  <div className="flex items-start justify-between gap-3">
+                  <div className="flex flex-col items-start justify-between gap-3 sm:flex-row">
                     <div>
                       <p className="text-xs font-bold uppercase tracking-[0.16em] text-slate-500">{orderSourceLabel(order)}</p>
                       <p className="font-display mt-2 text-xl font-semibold tracking-tight text-slate-900">
@@ -227,7 +227,7 @@ export default async function CashierPage({
                     </div>
                     <span className={`rounded-full px-3 py-1 text-xs font-semibold uppercase ${statusTone(order.status)}`}>Acik</span>
                   </div>
-                  <div className="mt-4 flex items-end justify-between gap-3">
+                  <div className="mt-4 flex flex-col items-start gap-3 sm:flex-row sm:items-end sm:justify-between">
                     <div>
                       <p className="text-xs uppercase tracking-[0.16em] text-slate-500">Kalan</p>
                       <p className="font-display font-numeric mt-1 text-2xl font-semibold text-emerald-700">{remaining.toFixed(2)} TL</p>
@@ -259,9 +259,9 @@ export default async function CashierPage({
                         <p className="text-xs font-bold uppercase tracking-[0.16em] text-slate-500">{orderSourceLabel(order)}</p>
                         <h3 className="mt-2 text-2xl font-semibold tracking-tight text-slate-900">Siparis #{order.id.slice(0, 8)}</h3>
                         <p className="mt-1 text-sm text-slate-500">{new Date(order.created_at).toLocaleTimeString("tr-TR")}</p>
-                        {order.delivery_address ? <p className="mt-1 text-sm text-slate-500">{order.delivery_address}</p> : null}
+                        {order.delivery_address ? <p className="mt-1 break-words text-sm text-slate-500">{order.delivery_address}</p> : null}
                       </div>
-                      <div className="flex flex-col items-end gap-2">
+                      <div className="flex w-full flex-col items-start gap-2 sm:w-auto sm:items-end">
                         <span className={`rounded-full px-3 py-1 text-xs font-semibold uppercase ${statusTone(order.status)}`}>{order.status}</span>
                         <p className="text-2xl font-semibold tracking-tight text-emerald-700">{remaining.toFixed(2)} TL</p>
                         <p className="text-xs text-slate-500">Kalan bakiye</p>
@@ -271,14 +271,14 @@ export default async function CashierPage({
                     <div className="mt-4 flex flex-wrap items-center gap-2">
                       <Link
                         href={`/cashier?order=${order.id}`}
-                        className="rounded-2xl bg-gradient-to-r from-[#ff6a3d] to-[#f2b44f] px-4 py-3 text-sm font-semibold text-white shadow-[0_12px_24px_rgba(255,106,61,0.22)]"
+                        className="w-full rounded-2xl bg-gradient-to-r from-[#ff6a3d] to-[#f2b44f] px-4 py-3 text-center text-sm font-semibold text-white shadow-[0_12px_24px_rgba(255,106,61,0.22)] sm:w-auto"
                       >
                         Buyut ve Tahsilata Gec
                       </Link>
-                      <Link href={`/receipt/${order.id}?layout=a4`} target="_blank" rel="noreferrer" className="rounded-2xl border border-slate-200 bg-white px-4 py-3 text-sm font-semibold text-slate-700">
+                      <Link href={`/receipt/${order.id}?layout=a4`} target="_blank" rel="noreferrer" className="w-full rounded-2xl border border-slate-200 bg-white px-4 py-3 text-center text-sm font-semibold text-slate-700 sm:w-auto">
                         Adisyon Yazdir
                       </Link>
-                      <Link href={`/receipt/${order.id}?layout=thermal`} target="_blank" rel="noreferrer" className="rounded-2xl border border-slate-200 bg-white px-4 py-3 text-sm font-semibold text-slate-700">
+                      <Link href={`/receipt/${order.id}?layout=thermal`} target="_blank" rel="noreferrer" className="w-full rounded-2xl border border-slate-200 bg-white px-4 py-3 text-center text-sm font-semibold text-slate-700 sm:w-auto">
                         Fis Yazdir
                       </Link>
                     </div>
@@ -296,7 +296,7 @@ export default async function CashierPage({
             <div className="space-y-4">
               {paidOrders.slice(0, 8).map((order) => (
                 <article key={order.id} className="rounded-[24px] border border-slate-200 bg-[#fbfbfc] p-4">
-                  <div className="flex items-start justify-between gap-3">
+                  <div className="flex flex-col items-start justify-between gap-3 sm:flex-row">
                     <div>
                       <p className="text-xs font-bold uppercase tracking-[0.16em] text-slate-500">{orderSourceLabel(order)}</p>
                       <h3 className="mt-2 text-xl font-semibold tracking-tight text-slate-900">Siparis #{order.id.slice(0, 8)}</h3>
@@ -381,12 +381,12 @@ export default async function CashierPage({
             <div className="mb-5 flex flex-wrap items-start justify-between gap-4 border-b border-slate-200 pb-5">
               <div>
                 <p className="text-xs font-bold uppercase tracking-[0.16em] text-slate-500">{orderSourceLabel(selectedOrder)}</p>
-                <h2 className="font-display mt-2 text-3xl font-semibold tracking-tight text-slate-900">
+                <h2 className="font-display mt-2 text-2xl font-semibold tracking-tight text-slate-900 sm:text-3xl">
                   {selectedOrder.table_number ? `Masa ${selectedOrder.table_number} Adisyonu` : `Siparis #${selectedOrder.id.slice(0, 8)}`}
                 </h2>
                 <p className="mt-1 text-sm text-slate-500">Popup tahsilat akisi. Ekrandan ayrilmadan odeme, split ve iptal yap.</p>
               </div>
-              <Link href="/cashier" className="rounded-2xl border border-slate-200 bg-white px-4 py-3 text-sm font-semibold text-slate-700">
+              <Link href="/cashier" className="w-full rounded-2xl border border-slate-200 bg-white px-4 py-3 text-center text-sm font-semibold text-slate-700 sm:w-auto">
                 Kapat
               </Link>
             </div>
@@ -405,12 +405,12 @@ export default async function CashierPage({
                   <section className="grid gap-4 xl:grid-cols-[0.95fr_1.05fr]">
                     <div className="space-y-4">
                       <div className="rounded-[24px] border border-slate-200 bg-slate-50 p-4">
-                        <div className="flex items-start justify-between gap-3">
+                        <div className="flex flex-col items-start justify-between gap-3 sm:flex-row">
                           <div>
                             <p className="text-xs font-bold uppercase tracking-[0.16em] text-slate-500">Siparis Bilgisi</p>
                             <p className="font-display mt-2 text-2xl font-semibold tracking-tight text-slate-900">Siparis #{order.id.slice(0, 8)}</p>
                             <p className="mt-1 text-sm text-slate-500">{new Date(order.created_at).toLocaleTimeString("tr-TR")}</p>
-                            {order.delivery_address ? <p className="mt-1 text-sm text-slate-500">{order.delivery_address}</p> : null}
+                            {order.delivery_address ? <p className="mt-1 break-words text-sm text-slate-500">{order.delivery_address}</p> : null}
                           </div>
                           <span className={`rounded-full px-3 py-1 text-xs font-semibold uppercase ${statusTone(order.status)}`}>{order.status}</span>
                         </div>
@@ -421,11 +421,11 @@ export default async function CashierPage({
                         <ul className="mt-3 space-y-2 text-sm text-slate-700">
                           {(order.items as OrderItem[]).map((item, index) => (
                             <li key={`${order.id}-${item.product_id}-${index}`} className="rounded-2xl bg-slate-50 px-3 py-3">
-                              <div className="flex items-center justify-between gap-3">
-                                <span className="font-semibold text-slate-900">
+                              <div className="flex items-start justify-between gap-3">
+                                <span className="min-w-0 break-words font-semibold text-slate-900">
                                   {item.quantity}x {item.name}
                                 </span>
-                                <span className="font-numeric">{Number(item.line_total).toFixed(2)} TL</span>
+                                <span className="shrink-0 font-numeric">{Number(item.line_total).toFixed(2)} TL</span>
                               </div>
                               {item.modifiers?.length ? (
                                 <div className="mt-1 text-xs text-slate-500">
@@ -492,7 +492,7 @@ export default async function CashierPage({
                             <Image
                               src={buildReceiptQr(order.id)}
                               alt="Adisyon QR"
-                              className="h-28 w-28 rounded-xl border border-slate-200 bg-white"
+                              className="h-24 w-24 rounded-xl border border-slate-200 bg-white sm:h-28 sm:w-28"
                               width={112}
                               height={112}
                               unoptimized

@@ -12,6 +12,7 @@ import {
   SidebarPanel,
   SummaryCard,
 } from "@/components/backoffice-ui";
+import { logServerPerf, measureAsync } from "@/lib/perf";
 import { getFeatureAccess } from "@/lib/plan-access";
 
 type ReportTab = "general" | "cari" | "detail" | "staff";
@@ -134,8 +135,10 @@ export default async function AdminReportsPage({
   searchParams: Promise<{ tab?: string; days?: string }>;
 }) {
   await requireRole(["admin"], "/admin/reports");
-  const featureAccess = await getFeatureAccess("advanced_reports");
+  const featureAccessResult = await measureAsync("feature_access", () => getFeatureAccess("advanced_reports"));
+  const featureAccess = featureAccessResult.value;
   if (!featureAccess.enabled) {
+    logServerPerf("/admin/reports", [featureAccessResult]);
     return (
       <BackofficePage title="Raporlar" description="Satis, cari ve personel performansi">
         <FeatureLockedState
@@ -151,13 +154,72 @@ export default async function AdminReportsPage({
   const days = Number.isFinite(Number(daysParam)) ? Number(daysParam) : 7;
   const activeTab: ReportTab =
     tabParam === "cari" || tabParam === "detail" || tabParam === "staff" ? tabParam : "general";
-  const [{ rows, usingDemoData }, financial, ops, { profiles }, branchContext] = await Promise.all([
-    getSalesReportSummary(days),
-    getFinancialInsights(days),
-    getOpsMetricsSnapshot(),
-    listProfiles(),
-    listBranches(),
+  const shouldLoadFinancial = activeTab === "cari" || activeTab === "detail";
+  const shouldLoadStaff = activeTab === "staff";
+
+  const [salesResult, financialResult, opsResult, profilesResult, branchContextResult] = await Promise.all([
+    measureAsync("sales_report_summary", () => getSalesReportSummary(days)),
+    shouldLoadFinancial
+      ? measureAsync("financial_insights", () => getFinancialInsights(days))
+      : Promise.resolve({
+          label: "financial_insights",
+          ms: 0,
+          value: {
+            usingDemoData: false,
+            summary: {
+              grossSales: 0,
+              refunds: 0,
+              netSales: 0,
+              discountTotal: 0,
+              serviceFeeTotal: 0,
+              paidOrderCount: 0,
+              averageTicket: 0,
+              outstandingReceivables: 0,
+              cancelledCount: 0,
+            },
+            methodBreakdown: [] as Array<{ method: string; sales: number; refunds: number; net: number }>,
+            hourlySales: [] as Array<{ hour: string; sales: number }>,
+            topProducts: [] as Array<{ productName: string; qty: number; revenue: number }>,
+            recentPayments: [] as Array<{
+              id: string;
+              order_id: string;
+              payment_type: string;
+              method: string;
+              amount: number;
+              note: string | null;
+              created_at: string;
+            }>,
+          },
+        }),
+    shouldLoadStaff
+      ? measureAsync("ops_metrics", () => getOpsMetricsSnapshot())
+      : Promise.resolve({
+          label: "ops_metrics",
+          ms: 0,
+          value: {
+            pendingOrders: 0,
+            servedOrders: 0,
+            openServiceRequests: 0,
+          },
+        }),
+    shouldLoadStaff
+      ? measureAsync("list_profiles", () => listProfiles())
+      : Promise.resolve({
+          label: "list_profiles",
+          ms: 0,
+          value: {
+            profiles: [] as Array<{ role: string }>,
+            usingDemoData: false,
+          },
+        }),
+    measureAsync("list_branches", () => listBranches()),
   ]);
+  const { rows, usingDemoData } = salesResult.value;
+  const financial = financialResult.value;
+  const ops = opsResult.value;
+  const { profiles } = profilesResult.value;
+  const branchContext = branchContextResult.value;
+  logServerPerf("/admin/reports", [featureAccessResult, salesResult, financialResult, opsResult, profilesResult, branchContextResult]);
   const branchLabel =
     branchContext.activeBranchId === ALL_BRANCHES_VALUE
       ? "Tum Subeler"
@@ -183,14 +245,14 @@ export default async function AdminReportsPage({
       description="Satis ritmi, iade etkisi ve net performansi hizli okumak icin tasarlandi"
       sidebar={
         <SidebarPanel title="Filtreler" description="Donem ve gorunum secimi">
-          <div className="grid grid-cols-2 gap-2">
+          <div className="grid gap-2 sm:grid-cols-2">
             <FilterButton>Donem</FilterButton>
             <FilterButton active>Tarih</FilterButton>
           </div>
 
           <div>
             <p className="mb-3 text-sm font-bold uppercase tracking-[0.16em] text-slate-800">Tarih Araligi</p>
-            <div className="grid grid-cols-2 gap-2">
+            <div className="grid gap-2 sm:grid-cols-2">
               <FilterButton>Bugun</FilterButton>
               <FilterButton>Dun</FilterButton>
               <FilterButton active>Son 7 Gun</FilterButton>
@@ -239,10 +301,10 @@ export default async function AdminReportsPage({
             </p>
             <p className="text-sm text-slate-500">{branchLabel}</p>
           </div>
-          <a href={`/api/reports/sales.csv?days=${days}`} className="rounded-2xl border border-slate-200 bg-white px-5 py-3 text-sm font-semibold text-slate-800">
+          <a href={`/api/reports/sales.csv?days=${days}`} className="w-full rounded-2xl border border-slate-200 bg-white px-5 py-3 text-center text-sm font-semibold text-slate-800 sm:w-auto">
             Excel
           </a>
-          <Link href={`/admin/finance?days=${days}`} className="rounded-2xl border border-slate-200 bg-white px-5 py-3 text-sm font-semibold text-slate-800">
+          <Link href={`/admin/finance?days=${days}`} className="w-full rounded-2xl border border-slate-200 bg-white px-5 py-3 text-center text-sm font-semibold text-slate-800 sm:w-auto">
             Finans
           </Link>
         </>
@@ -349,8 +411,8 @@ export default async function AdminReportsPage({
           {rows.length === 0 ? (
             <EmptyPanel title="Kayit Yok" description="Gun bazli tablo gosterilemiyor." />
           ) : (
-            <div className="overflow-hidden rounded-[22px] border border-slate-200">
-              <table className="w-full text-left text-sm">
+            <div className="responsive-table-shell rounded-[22px] border border-slate-200">
+              <table className="responsive-table w-full text-left text-sm">
                 <thead className="bg-slate-50 text-slate-500">
                   <tr>
                     <th className="px-4 py-4 font-semibold">Gun</th>
@@ -447,8 +509,8 @@ export default async function AdminReportsPage({
             {financial.recentPayments.length === 0 ? (
               <EmptyPanel title="Hareket Yok" description="Cari sekmesi icin listelenecek son hareket bulunmuyor." />
             ) : (
-              <div className="max-h-[520px] overflow-auto rounded-[22px] border border-slate-200">
-                <table className="w-full text-left text-sm">
+              <div className="responsive-table-shell max-h-[520px] overflow-y-auto rounded-[22px] border border-slate-200">
+                <table className="responsive-table w-full text-left text-sm">
                   <thead className="sticky top-0 bg-slate-50 text-slate-500">
                     <tr>
                       <th className="px-4 py-4 font-semibold">Saat</th>
@@ -511,8 +573,8 @@ export default async function AdminReportsPage({
             {rows.length === 0 ? (
               <EmptyPanel title="Gunluk Detay Yok" description="Gun bazli detay tablosu gosterilemiyor." />
             ) : (
-              <div className="overflow-hidden rounded-[22px] border border-slate-200">
-                <table className="w-full text-left text-sm">
+              <div className="responsive-table-shell rounded-[22px] border border-slate-200">
+                <table className="responsive-table w-full text-left text-sm">
                   <thead className="bg-slate-50 text-slate-500">
                     <tr>
                       <th className="px-4 py-4 font-semibold">Gun</th>
@@ -554,17 +616,17 @@ export default async function AdminReportsPage({
             <div className="grid gap-3">
               <div className="rounded-[22px] border border-slate-200 bg-slate-50 p-4">
                 <p className="text-xs font-bold uppercase tracking-[0.16em] text-slate-500">Mutfak Bekleyen</p>
-                <p className="font-display font-numeric mt-3 text-3xl font-semibold tracking-tight text-slate-900">{ops.pendingOrders}</p>
+                <p className="font-display font-numeric mt-3 text-2xl font-semibold tracking-tight text-slate-900 sm:text-3xl">{ops.pendingOrders}</p>
                 <p className="mt-2 text-sm text-slate-500">Vardiyada mutfaga bekleyen is</p>
               </div>
               <div className="rounded-[22px] border border-slate-200 bg-slate-50 p-4">
                 <p className="text-xs font-bold uppercase tracking-[0.16em] text-slate-500">Kasada Bekleyen</p>
-                <p className="font-display font-numeric mt-3 text-3xl font-semibold tracking-tight text-slate-900">{ops.servedOrders}</p>
+                <p className="font-display font-numeric mt-3 text-2xl font-semibold tracking-tight text-slate-900 sm:text-3xl">{ops.servedOrders}</p>
                 <p className="mt-2 text-sm text-slate-500">Tahsilat bekleyen adisyon</p>
               </div>
               <div className="rounded-[22px] border border-slate-200 bg-slate-50 p-4">
                 <p className="text-xs font-bold uppercase tracking-[0.16em] text-slate-500">Masa Talepleri</p>
-                <p className="font-display font-numeric mt-3 text-3xl font-semibold tracking-tight text-slate-900">{ops.openServiceRequests}</p>
+                <p className="font-display font-numeric mt-3 text-2xl font-semibold tracking-tight text-slate-900 sm:text-3xl">{ops.openServiceRequests}</p>
                 <p className="mt-2 text-sm text-slate-500">Garson ve hesap talepleri</p>
               </div>
             </div>

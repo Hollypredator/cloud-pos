@@ -161,7 +161,7 @@ function renderOrderCard(
 ) {
   return (
     <article key={order.id} className="rounded-[22px] border border-slate-200 bg-white p-4 shadow-[0_10px_20px_rgba(15,23,42,0.04)]">
-      <div className="flex items-start justify-between gap-3">
+      <div className="flex flex-col items-start justify-between gap-3 sm:flex-row">
         <div>
           <p className="text-xs font-bold uppercase tracking-[0.16em] text-slate-500">Delivery Order</p>
           <h3 className="mt-2 text-xl font-semibold tracking-tight text-slate-900">Siparis #{order.id.slice(0, 8)}</h3>
@@ -171,16 +171,16 @@ function renderOrderCard(
         <span className={`rounded-full px-3 py-1 text-xs font-semibold ${cardTone(kind)}`}>{timelineLabel(order)}</span>
       </div>
 
-      <div className="mt-3 rounded-2xl bg-slate-50 px-3 py-3 text-sm text-slate-600">
+      <div className="mt-3 rounded-2xl bg-slate-50 px-3 py-3 text-sm text-slate-600 break-words">
         {order.delivery_address ?? "Adres belirtilmedi"}
       </div>
 
       <div className="mt-3 grid gap-2 text-sm">
-        <div className="flex items-center justify-between rounded-xl bg-slate-50 px-3 py-3">
+        <div className="flex flex-col items-start justify-between gap-2 rounded-xl bg-slate-50 px-3 py-3 sm:flex-row sm:items-center">
           <span>Tutar</span>
           <span className="font-semibold text-emerald-700">{Number(order.final_price ?? order.total_price).toFixed(2)} TL</span>
         </div>
-        <div className="flex items-center justify-between rounded-xl bg-slate-50 px-3 py-3">
+        <div className="flex flex-col items-start justify-between gap-2 rounded-xl bg-slate-50 px-3 py-3 sm:flex-row sm:items-center">
           <span>Kurye</span>
           <span>{order.courier_name ?? "Atanmadi"}</span>
         </div>
@@ -266,7 +266,7 @@ export default async function DeliveryPage({
       actions={
         <>
           <LiveOpsBridge tables={["orders", "couriers"]} />
-          <Link href="/ops" className="rounded-2xl border border-slate-200 bg-white px-5 py-3 text-sm font-semibold text-slate-800">
+          <Link href="/ops" className="w-full rounded-2xl border border-slate-200 bg-white px-5 py-3 text-center text-sm font-semibold text-slate-800 sm:w-auto">
             Panele Don
           </Link>
         </>
@@ -300,10 +300,10 @@ export default async function DeliveryPage({
           ) : (
             <div className="grid gap-4 xl:grid-cols-3">
               <section className="rounded-[24px] border border-slate-200 bg-[#f7f8fa] p-4">
-                <div className="flex items-center justify-between gap-3">
+                <div className="flex flex-wrap items-start justify-between gap-3">
                   <div>
                     <p className="text-xs font-bold uppercase tracking-[0.16em] text-slate-500">Asama</p>
-                    <h2 className="mt-2 text-2xl font-semibold tracking-tight text-slate-900">Dispatch</h2>
+                    <h2 className="mt-2 text-xl font-semibold tracking-tight text-slate-900 sm:text-2xl">Dispatch</h2>
                     <p className="mt-1 text-sm text-slate-500">Kurye atamasi bekleyen siparisler</p>
                   </div>
                   <span className="rounded-full bg-[#fff2ee] px-3 py-1 text-xs font-semibold text-[#ff5a34]">{awaitingDispatch.length}</span>
@@ -330,10 +330,10 @@ export default async function DeliveryPage({
               </section>
 
               <section className="rounded-[24px] border border-slate-200 bg-[#f7f8fa] p-4">
-                <div className="flex items-center justify-between gap-3">
+                <div className="flex flex-wrap items-start justify-between gap-3">
                   <div>
                     <p className="text-xs font-bold uppercase tracking-[0.16em] text-slate-500">Asama</p>
-                    <h2 className="mt-2 text-2xl font-semibold tracking-tight text-slate-900">Yolda</h2>
+                    <h2 className="mt-2 text-xl font-semibold tracking-tight text-slate-900 sm:text-2xl">Yolda</h2>
                     <p className="mt-1 text-sm text-slate-500">Kurye tarafinda dagitima cikan siparisler</p>
                   </div>
                   <span className="rounded-full bg-sky-100 px-3 py-1 text-xs font-semibold text-sky-700">{outForDelivery.length}</span>
@@ -360,10 +360,10 @@ export default async function DeliveryPage({
               </section>
 
               <section className="rounded-[24px] border border-slate-200 bg-[#f7f8fa] p-4">
-                <div className="flex items-center justify-between gap-3">
+                <div className="flex flex-wrap items-start justify-between gap-3">
                   <div>
                     <p className="text-xs font-bold uppercase tracking-[0.16em] text-slate-500">Asama</p>
-                    <h2 className="mt-2 text-2xl font-semibold tracking-tight text-slate-900">Tamamlanan</h2>
+                    <h2 className="mt-2 text-xl font-semibold tracking-tight text-slate-900 sm:text-2xl">Tamamlanan</h2>
                     <p className="mt-1 text-sm text-slate-500">Teslimi kapanmis siparisler</p>
                   </div>
                   <span className="rounded-full bg-emerald-100 px-3 py-1 text-xs font-semibold text-emerald-700">{completed.length}</span>
@@ -441,7 +441,7 @@ export default async function DeliveryPage({
                           {!courier.is_active ? "Pasif" : activeOrders > 0 ? "Aktif" : "Musait"}
                         </span>
                       </div>
-                      <div className="mt-3 grid grid-cols-2 gap-2 text-sm">
+                      <div className="mt-3 grid gap-2 text-sm sm:grid-cols-2">
                         <div className="rounded-xl bg-white px-3 py-3">
                           <p className="text-xs font-bold uppercase tracking-[0.16em] text-slate-500">Atanan</p>
                           <p className="mt-1 text-xl font-semibold text-slate-900">{assignedOrders}</p>
@@ -472,12 +472,12 @@ export default async function DeliveryPage({
             <div className="mb-5 flex flex-wrap items-start justify-between gap-4 border-b border-slate-200 pb-5">
               <div>
                 <p className="text-xs font-bold uppercase tracking-[0.16em] text-slate-500">Teslimat Detayi</p>
-                <h2 className="font-display mt-2 text-3xl font-semibold tracking-tight text-slate-900">
+                <h2 className="font-display mt-2 text-2xl font-semibold tracking-tight text-slate-900 sm:text-3xl">
                   Siparis #{selectedOrder.id.slice(0, 8)}
                 </h2>
                 <p className="mt-1 text-sm text-slate-500">Adres, not, urunler ve teslim akisini ayni sayfada yonet.</p>
               </div>
-              <Link href="/delivery" className="rounded-2xl border border-slate-200 bg-white px-4 py-3 text-sm font-semibold text-slate-700">
+              <Link href="/delivery" className="w-full rounded-2xl border border-slate-200 bg-white px-4 py-3 text-center text-sm font-semibold text-slate-700 sm:w-auto">
                 Kapat
               </Link>
             </div>
@@ -508,16 +508,16 @@ export default async function DeliveryPage({
                 <div className="mt-4 space-y-3">
                   {selectedOrder.items.map((item, index) => (
                     <article key={`${selectedOrder.id}-${item.product_id}-${index}`} className="rounded-[22px] border border-slate-200 bg-slate-50 p-4">
-                      <div className="flex items-center justify-between gap-3">
+                      <div className="flex items-start justify-between gap-3">
                         <div>
-                          <p className="text-lg font-semibold text-slate-900">{item.quantity}x {item.name}</p>
+                          <p className="break-words text-lg font-semibold text-slate-900">{item.quantity}x {item.name}</p>
                           {item.modifiers?.length ? (
                             <p className="mt-1 text-sm text-slate-500">
                               {item.modifiers.map((modifier) => `${modifier.group_name}: ${modifier.option_name}`).join(" • ")}
                             </p>
                           ) : null}
                         </div>
-                        <p className="font-display font-numeric text-lg font-semibold text-slate-900">{Number(item.line_total).toFixed(2)} TL</p>
+                        <p className="shrink-0 font-display font-numeric text-lg font-semibold text-slate-900">{Number(item.line_total).toFixed(2)} TL</p>
                       </div>
                     </article>
                   ))}
@@ -527,10 +527,10 @@ export default async function DeliveryPage({
               <section className="space-y-5">
                 <article className="rounded-[28px] border border-slate-200 bg-white p-5">
                   <h3 className="font-display text-2xl font-semibold tracking-tight text-slate-900">Adres ve Not</h3>
-                  <div className="mt-4 rounded-[22px] bg-slate-50 p-4 text-sm text-slate-700">
+                  <div className="mt-4 rounded-[22px] bg-slate-50 p-4 text-sm text-slate-700 break-words">
                     {selectedOrder.delivery_address ?? "Adres belirtilmedi"}
                   </div>
-                  <div className="mt-3 rounded-[22px] bg-slate-50 p-4 text-sm text-slate-700">
+                  <div className="mt-3 rounded-[22px] bg-slate-50 p-4 text-sm text-slate-700 break-words">
                     {selectedOrder.delivery_note ?? "Teslim notu yok"}
                   </div>
                 </article>
@@ -557,10 +557,10 @@ export default async function DeliveryPage({
             <div className="mb-5 flex flex-wrap items-start justify-between gap-4 border-b border-slate-200 pb-5">
               <div>
                 <p className="text-xs font-bold uppercase tracking-[0.16em] text-slate-500">Kurye Detayi</p>
-                <h2 className="font-display mt-2 text-3xl font-semibold tracking-tight text-slate-900">{selectedCourier.full_name}</h2>
+                <h2 className="font-display mt-2 text-2xl font-semibold tracking-tight text-slate-900 sm:text-3xl">{selectedCourier.full_name}</h2>
                 <p className="mt-1 text-sm text-slate-500">{selectedCourier.phone ?? "Telefon yok"}</p>
               </div>
-              <Link href="/delivery" className="rounded-2xl border border-slate-200 bg-white px-4 py-3 text-sm font-semibold text-slate-700">
+              <Link href="/delivery" className="w-full rounded-2xl border border-slate-200 bg-white px-4 py-3 text-center text-sm font-semibold text-slate-700 sm:w-auto">
                 Kapat
               </Link>
             </div>

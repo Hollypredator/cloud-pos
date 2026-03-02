@@ -179,8 +179,8 @@ export default async function CashierSessionPage({
       />
 
       <ContentCard title="Gun Islemleri Gecmisi">
-        <div className="overflow-hidden rounded-[22px] border border-slate-200">
-          <table className="w-full text-left text-sm">
+        <div className="responsive-table-shell rounded-[22px] border border-slate-200">
+          <table className="responsive-table w-full text-left text-sm">
             <thead className="bg-slate-50 text-slate-500">
               <tr>
                 <th className="px-4 py-4 font-semibold">Durum</th>

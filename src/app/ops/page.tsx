@@ -167,8 +167,8 @@ export default async function OpsPage() {
           <SidebarPanel title="Anlik Durum" description="Bugunku operasyon nabzi ve risk odaklari.">
             <div className="rounded-[24px] bg-gradient-to-br from-slate-900 via-slate-800 to-slate-700 p-4 text-white sm:p-5">
               <p className="text-xs font-bold uppercase tracking-[0.18em] text-slate-300">Gunluk Ciro</p>
-              <p className="mt-4 text-3xl font-semibold tracking-tight sm:text-4xl">{formatCurrency(metrics.todayRevenue)}</p>
-              <div className="mt-5 grid grid-cols-2 gap-3">
+              <p className="mt-4 text-2xl font-semibold tracking-tight sm:text-4xl">{formatCurrency(metrics.todayRevenue)}</p>
+              <div className="mt-5 grid gap-3 sm:grid-cols-2">
                 <div className="rounded-2xl bg-white/10 p-3">
                   <p className="text-xs uppercase tracking-[0.16em] text-slate-300">Dolu Masa</p>
                   <p className="mt-2 text-2xl font-semibold">{metrics.occupiedTables}</p>
@@ -185,10 +185,10 @@ export default async function OpsPage() {
                 .filter((item) => (item.label === "Mutfak Gecikmesi" ? canKitchen || canAdmin : item.label === "Kasada Bekleyen" ? canCashier : canWaiterOps))
                 .map((item) => (
                   <div key={item.label} className="rounded-[22px] border border-slate-200 bg-slate-50 p-4">
-                    <div className="flex items-start justify-between gap-3">
+                    <div className="flex flex-col items-start justify-between gap-3 sm:flex-row">
                       <div>
                         <p className="text-xs font-bold uppercase tracking-[0.16em] text-slate-500">{item.label}</p>
-                        <p className="mt-3 text-3xl font-semibold tracking-tight text-slate-900">{item.value}</p>
+                        <p className="mt-3 text-2xl font-semibold tracking-tight text-slate-900 sm:text-3xl">{item.value}</p>
                         <p className="mt-2 text-sm text-slate-500">{item.hint}</p>
                       </div>
                       <span
@@ -253,16 +253,16 @@ export default async function OpsPage() {
       </section>
 
       {showSetupPrompt ? (
-        <section className="rounded-[28px] border border-amber-200 bg-gradient-to-r from-amber-50 to-orange-50 p-6 shadow-[0_10px_20px_rgba(251,191,36,0.12)]">
+        <section className="rounded-[28px] border border-amber-200 bg-gradient-to-r from-amber-50 to-orange-50 p-4 shadow-[0_10px_20px_rgba(251,191,36,0.12)] sm:p-6">
           <div className="flex flex-wrap items-start justify-between gap-6">
             <div className="max-w-3xl">
               <p className="text-xs font-bold uppercase tracking-[0.18em] text-amber-700">Ilk Kurulum</p>
-              <h2 className="mt-2 text-2xl font-semibold tracking-tight text-slate-900">Canli operasyon icin tamamlanmasi gereken adimlar var</h2>
+              <h2 className="mt-2 text-xl font-semibold tracking-tight text-slate-900 sm:text-2xl">Canli operasyon icin tamamlanmasi gereken adimlar var</h2>
               <p className="mt-3 text-sm leading-7 text-slate-600">
                 Urun, masa, ekip ve ilk test siparisi tamamlanmadan sistem tam operasyon hazir sayilmaz. Eksik kalan adimlari bu merkezden bitir.
               </p>
             </div>
-            <div className="rounded-[24px] border border-amber-200 bg-white/80 px-5 py-4">
+            <div className="w-full rounded-[24px] border border-amber-200 bg-white/80 px-5 py-4 sm:w-auto">
               <p className="text-xs font-bold uppercase tracking-[0.16em] text-amber-700">Kurulum Ilerlemesi</p>
               <p className="mt-3 text-4xl font-semibold tracking-tight text-slate-900">
                 {completedSetupSteps}/{setupSteps.length}
@@ -284,7 +284,7 @@ export default async function OpsPage() {
                   </span>
                 </div>
                 <div className="mt-4">
-              <Link href={step.href} className="inline-flex rounded-2xl bg-slate-900 px-4 py-3 text-sm font-semibold text-white transition hover:bg-slate-800">
+              <Link href={step.href} className="inline-flex w-full justify-center rounded-2xl bg-slate-900 px-4 py-3 text-sm font-semibold text-white transition hover:bg-slate-800 sm:w-auto">
                 {step.cta}
               </Link>
                 </div>
@@ -337,7 +337,7 @@ export default async function OpsPage() {
                 <p className="mt-2 text-sm text-emerald-700">Yeni oturum icin hazir masalar</p>
               </div>
             </div>
-            <Link href="/admin/tables" className="mt-4 inline-flex rounded-2xl bg-slate-100 px-4 py-3 text-sm font-semibold text-slate-800 transition hover:bg-slate-200">
+            <Link href="/admin/tables" className="mt-4 inline-flex w-full rounded-2xl bg-slate-100 px-4 py-3 text-center text-sm font-semibold text-slate-800 transition hover:bg-slate-200 sm:w-auto">
               Masa operasyonunu ac
             </Link>
           </ContentCard>
@@ -348,7 +348,7 @@ export default async function OpsPage() {
             ) : (
               <div className="space-y-3">
                 {lowStockProducts.slice(0, 6).map((product) => (
-                  <div key={product.id} className="flex items-center justify-between rounded-[22px] border border-rose-100 bg-rose-50 px-4 py-3">
+                  <div key={product.id} className="flex flex-col items-start justify-between gap-3 rounded-[22px] border border-rose-100 bg-rose-50 px-4 py-3 sm:flex-row sm:items-center">
                     <div>
                       <p className="text-base font-semibold text-slate-900">{product.name}</p>
                       <p className="mt-1 text-sm text-slate-500">Kritik stok seviyesinde</p>
@@ -356,7 +356,7 @@ export default async function OpsPage() {
                     <span className="rounded-2xl bg-white px-3 py-2 text-sm font-semibold text-rose-700">{product.stock_count}</span>
                   </div>
                 ))}
-                <Link href="/admin/stock" className="inline-flex rounded-2xl bg-slate-100 px-4 py-3 text-sm font-semibold text-slate-800 transition hover:bg-slate-200">
+                <Link href="/admin/stock" className="inline-flex w-full rounded-2xl bg-slate-100 px-4 py-3 text-center text-sm font-semibold text-slate-800 transition hover:bg-slate-200 sm:w-auto">
                   Stok ekranina git
                 </Link>
               </div>

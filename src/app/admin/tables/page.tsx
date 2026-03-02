@@ -3,6 +3,7 @@ import { PendingSubmitButton } from "@/components/pending-submit-button";
 import { BackofficePage, EmptyPanel, NoticeBanner, SummaryCard, WorkflowGuide, WorkspaceTabs } from "@/components/backoffice-ui";
 import { requireRole } from "@/lib/auth";
 import { getOrderHistoryByTableId, getTableMap, listLatestOrdersByTableIds } from "@/lib/data";
+import { logServerPerf, measureAsync } from "@/lib/perf";
 import { addTableAction } from "./actions";
 import { buildQrImage, buildQrTarget, orderTone, tableStatusLabel, tableStatusTone } from "./helpers";
 import { TableManagementModal } from "./table-management-modal";
@@ -14,20 +15,26 @@ export default async function AdminTablesPage({
 }) {
   await requireRole(["admin"], "/admin/tables");
   const { feedback, tone, table: selectedTableId } = await searchParams;
-  const { tables, usingDemoData } = await getTableMap();
+  const tableMapResult = await measureAsync("table_map", () => getTableMap());
+  const { tables, usingDemoData } = tableMapResult.value;
 
-  const targets = await Promise.all(
+  const targetResult = await measureAsync("qr_targets", () => Promise.all(
     tables.map(async (table) => ({
       id: table.id,
       target: await buildQrTarget(table.qr_code_identifier),
       image: await buildQrImage(table.qr_code_identifier),
     })),
-  );
-  const targetMap = new Map(targets.map((row) => [row.id, row]));
-  const { ordersByTableId } = await listLatestOrdersByTableIds(tables.map((table) => table.id));
+  ));
+  const targetMap = new Map(targetResult.value.map((row) => [row.id, row]));
+  const latestOrdersResult = await measureAsync("latest_orders_by_table", () => listLatestOrdersByTableIds(tables.map((table) => table.id)));
+  const { ordersByTableId } = latestOrdersResult.value;
   const latestOrderMap = ordersByTableId;
   const selectedTable = selectedTableId ? tables.find((table) => table.id === selectedTableId) ?? null : null;
-  const { orders: selectedTableHistory } = selectedTable ? await getOrderHistoryByTableId(selectedTable.id, 8) : { orders: [] };
+  const selectedHistoryResult = selectedTable
+    ? await measureAsync("selected_table_history", () => getOrderHistoryByTableId(selectedTable.id, 8))
+    : null;
+  const { orders: selectedTableHistory } = selectedHistoryResult?.value ?? { orders: [] };
+  logServerPerf("/admin/tables", [tableMapResult, targetResult, latestOrdersResult, ...(selectedHistoryResult ? [selectedHistoryResult] : [])]);
   const movableTables = selectedTable
     ? tables
         .filter((table) => table.id !== selectedTable.id && table.status === "empty")
@@ -49,12 +56,12 @@ export default async function AdminTablesPage({
       description="Salon yerlesimi, QR hedefleri ve aktif masa listesi"
       actions={
         <form action={addTableAction} className="flex flex-wrap items-center gap-3">
-          <input name="tableNumber" type="number" min={1} required placeholder="Yeni masa no" className="w-36 rounded-2xl border border-slate-200 bg-slate-50 px-4 py-3 text-sm" />
-          <input name="tableName" placeholder="Masa adi" className="w-44 rounded-2xl border border-slate-200 bg-slate-50 px-4 py-3 text-sm" />
+          <input name="tableNumber" type="number" min={1} required placeholder="Yeni masa no" className="w-full rounded-2xl border border-slate-200 bg-slate-50 px-4 py-3 text-sm sm:w-36" />
+          <input name="tableName" placeholder="Masa adi" className="w-full rounded-2xl border border-slate-200 bg-slate-50 px-4 py-3 text-sm sm:w-44" />
           <PendingSubmitButton
             idleLabel="Yeni Masa"
             pendingLabel="Ekleniyor..."
-            className="rounded-2xl bg-gradient-to-r from-[#ff5a34] to-[#f0b14f] px-5 py-3 text-sm font-semibold text-white"
+            className="w-full rounded-2xl bg-gradient-to-r from-[#ff5a34] to-[#f0b14f] px-5 py-3 text-sm font-semibold text-white sm:w-auto"
           />
         </form>
       }
@@ -96,7 +103,7 @@ export default async function AdminTablesPage({
         <div className="mt-6 grid gap-5 xl:grid-cols-[320px_1fr]">
           <section className="rounded-[24px] border border-slate-200 bg-[#f6f7f9] p-4">
             <div className="flex items-center justify-between gap-3">
-              <h2 className="text-2xl font-semibold tracking-tight text-slate-900">Bolgeler</h2>
+              <h2 className="text-xl font-semibold tracking-tight text-slate-900 sm:text-2xl">Bolgeler</h2>
               <span className="inline-flex h-10 min-w-10 items-center justify-center rounded-full bg-[#ff5a34] px-3 text-sm font-bold text-white">1</span>
             </div>
 
@@ -109,7 +116,7 @@ export default async function AdminTablesPage({
           <section className="rounded-[24px] border border-slate-200 bg-[#f6f7f9] p-4">
             <div className="flex items-center justify-between gap-3">
               <div>
-                <h2 className="text-2xl font-semibold tracking-tight text-slate-900">Masalar</h2>
+                <h2 className="text-xl font-semibold tracking-tight text-slate-900 sm:text-2xl">Masalar</h2>
                 <p className="text-sm text-slate-500">Kartlar sadece hizli operasyonu gosterir; tum yonetim popup icindedir.</p>
               </div>
               <span className="inline-flex h-10 min-w-10 items-center justify-center rounded-full bg-[#ff5a34] px-3 text-sm font-bold text-white">
@@ -138,7 +145,7 @@ export default async function AdminTablesPage({
                     >
                       <div className="flex items-start justify-between gap-3">
                         <div>
-                          <p className="text-2xl font-semibold tracking-tight text-slate-900">{table.name || `Masa ${table.table_number}`}</p>
+                          <p className="text-xl font-semibold tracking-tight text-slate-900 sm:text-2xl">{table.name || `Masa ${table.table_number}`}</p>
                           <p className="mt-1 text-xs font-semibold uppercase tracking-[0.14em] text-slate-500">Masa {table.table_number}</p>
                           <p className="mt-1 text-sm text-slate-500">{tableStatusLabel(table.status)}</p>
                         </div>
@@ -173,7 +180,7 @@ export default async function AdminTablesPage({
                           Masa Yonet
                         </Link>
                         {latestOrder ? (
-                          <div className="grid grid-cols-2 gap-2">
+                          <div className="grid gap-2 sm:grid-cols-2">
                             <Link href={`/cashier?order=${latestOrder.id}`} className="rounded-xl border border-slate-200 bg-slate-50 px-3 py-3 text-center text-sm font-semibold text-slate-700">
                               Kasada Ac
                             </Link>

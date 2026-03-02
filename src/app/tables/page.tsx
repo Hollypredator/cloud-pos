@@ -12,16 +12,16 @@ export default async function TablesPage() {
   const { tables, usingDemoData } = await getTableMap();
 
   return (
-    <div className="min-h-screen bg-slate-100 px-4 py-8 md:px-10">
+    <div className="min-h-screen bg-slate-100 px-4 py-6 md:px-10 md:py-8">
       <main className="mx-auto w-full max-w-6xl space-y-6">
         <header className="flex flex-wrap items-center justify-between gap-3">
           <div>
             <p className="text-sm text-slate-500">Takip</p>
-            <h1 className="text-3xl font-semibold text-slate-900">Masa Durumlari</h1>
+            <h1 className="text-2xl font-semibold text-slate-900 sm:text-3xl">Masa Durumlari</h1>
           </div>
-          <div className="flex items-center gap-2">
+          <div className="flex w-full flex-wrap items-center gap-2 sm:w-auto">
             <LiveOpsBridge tables={["tables", "orders"]} />
-            <Link href="/ops" className="rounded-lg bg-slate-900 px-4 py-2 text-sm font-medium text-white">
+            <Link href="/ops" className="w-full rounded-lg bg-slate-900 px-4 py-2 text-center text-sm font-medium text-white sm:w-auto">
               Panele Don
             </Link>
           </div>

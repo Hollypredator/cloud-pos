@@ -167,6 +167,7 @@ export function AppNav({
       const query = searchParams.toString();
       router.replace(query ? `${pathname}?${query}` : pathname);
       router.refresh();
+      window.dispatchEvent(new Event("app-shell:refresh"));
     } finally {
       setIsSwitching(false);
     }
@@ -188,6 +189,7 @@ export function AppNav({
       const query = searchParams.toString();
       router.replace(query ? `${pathname}?${query}` : pathname);
       router.refresh();
+      window.dispatchEvent(new Event("app-shell:refresh"));
     } finally {
       setIsSwitching(false);
     }
@@ -216,33 +218,12 @@ export function AppNav({
     });
   const mobilePrimaryLinks = visibleLinks.slice(0, 4);
 
-  useEffect(() => {
-    const prefetchTargets = Array.from(new Set(visibleLinks.slice(0, 6).map((link) => link.href)));
-    if (prefetchTargets.length === 0) {
-      return;
-    }
-
-    const runPrefetch = () => {
-      for (const href of prefetchTargets) {
-        router.prefetch(href);
-      }
-    };
-
-    if (typeof window !== "undefined" && "requestIdleCallback" in window) {
-      const idleId = window.requestIdleCallback(runPrefetch, { timeout: 1500 });
-      return () => window.cancelIdleCallback(idleId);
-    }
-
-    const timeoutId = setTimeout(runPrefetch, 250);
-    return () => clearTimeout(timeoutId);
-  }, [router, visibleLinks]);
-
   return (
     <>
-      <nav className="sticky top-0 z-30 border-b border-slate-200 bg-white/95 px-4 py-3 backdrop-blur md:hidden">
+      <nav className="sticky top-0 z-30 border-b border-slate-200 bg-white/95 px-3 py-2.5 backdrop-blur md:hidden">
         <div className="flex items-center justify-between gap-3">
           <div className="min-w-0">
-            <p className="text-sm font-semibold text-slate-900">{brandName}</p>
+            <p className="truncate text-sm font-semibold text-slate-900">{brandName}</p>
             <p className="truncate text-xs text-slate-500">
               {roleLabel(role, usingDemoData)} · {businesses.find((item) => item.slug === activeBusinessSlug)?.name ?? activeBusinessSlug}
             </p>
@@ -251,7 +232,7 @@ export function AppNav({
             <button
               type="button"
               onClick={() => setMobileOpen((prev) => !prev)}
-              className="inline-flex h-10 w-10 items-center justify-center rounded-xl border border-slate-200 bg-white text-lg text-slate-700 shadow-sm"
+              className="inline-flex h-9 w-9 items-center justify-center rounded-xl border border-slate-200 bg-white text-base text-slate-700 shadow-sm"
               aria-label="Menüyü aç"
             >
               {mobileOpen ? "×" : "≡"}
@@ -264,7 +245,7 @@ export function AppNav({
       {mobileOpen ? (
         <div className="fixed inset-0 z-40 bg-slate-950/40 md:hidden" onClick={() => setMobileOpen(false)}>
           <div
-            className="absolute inset-x-0 top-[65px] max-h-[calc(100vh-81px)] overflow-y-auto rounded-t-[28px] border-t border-slate-200 bg-white px-4 py-4 shadow-[0_-10px_30px_rgba(15,23,42,0.18)]"
+            className="absolute inset-x-0 top-[58px] max-h-[calc(100vh-72px)] overflow-y-auto rounded-t-[28px] border-t border-slate-200 bg-white px-3 py-3 shadow-[0_-10px_30px_rgba(15,23,42,0.18)]"
             onClick={(event) => event.stopPropagation()}
           >
             <div className="space-y-3">
@@ -316,11 +297,11 @@ export function AppNav({
                     <Link
                       key={link.href}
                       href={link.href}
-                      className={`flex items-center gap-3 rounded-2xl px-4 py-3 text-sm font-semibold ${
+                      className={`flex items-center gap-3 rounded-2xl px-3 py-2.5 text-sm font-semibold ${
                         isActive(link.href) ? "bg-slate-950 text-white" : "border border-slate-200 bg-white text-slate-800"
                       }`}
                     >
-                      <span className="inline-flex h-9 w-9 items-center justify-center rounded-xl bg-slate-100 text-slate-700">
+                      <span className="inline-flex h-8 w-8 items-center justify-center rounded-xl bg-slate-100 text-sm text-slate-700">
                         {link.icon}
                       </span>
                       <span>{link.label}</span>
@@ -334,17 +315,17 @@ export function AppNav({
       ) : null}
 
       {mobilePrimaryLinks.length > 0 ? (
-        <div className="fixed inset-x-0 bottom-0 z-30 border-t border-slate-200 bg-white/95 px-2 py-2 shadow-[0_-10px_24px_rgba(15,23,42,0.08)] backdrop-blur md:hidden">
+        <div className="fixed inset-x-0 bottom-0 z-30 border-t border-slate-200 bg-white/95 px-2 py-1.5 shadow-[0_-10px_24px_rgba(15,23,42,0.08)] backdrop-blur md:hidden">
           <div className="grid grid-cols-4 gap-2">
             {mobilePrimaryLinks.map((link) => (
               <Link
                 key={link.href}
                 href={link.href}
-                className={`flex min-h-[64px] flex-col items-center justify-center rounded-2xl px-2 py-2 text-center text-[11px] font-semibold leading-tight ${
+                className={`flex min-h-[56px] flex-col items-center justify-center rounded-2xl px-2 py-1.5 text-center text-[10px] font-semibold leading-tight ${
                   isActive(link.href) ? "bg-slate-950 text-white" : "bg-slate-100 text-slate-700"
                 }`}
               >
-                <span className="mb-1 text-sm">{link.icon}</span>
+                <span className="mb-1 text-[13px]">{link.icon}</span>
                 <span>{link.label}</span>
               </Link>
             ))}
