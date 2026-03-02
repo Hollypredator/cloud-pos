@@ -1,9 +1,8 @@
 import Link from "next/link";
 import { redirect } from "next/navigation";
-import { LiveOpsBridge } from "@/components/live-ops-bridge";
 import { BackofficePage, ContentCard, EmptyPanel, SidebarPanel, SummaryCard, WorkflowGuide } from "@/components/backoffice-ui";
-import { getCurrentUserWithRole } from "@/lib/auth";
-import { getActiveBusinessSlug } from "@/lib/business-server";
+import { OpsLiveBadge } from "@/components/ops-live-badge";
+import { getCurrentUserIdentity } from "@/lib/auth";
 import { getOpsPageSnapshot } from "@/lib/data";
 import { logServerPerf, measureAsync } from "@/lib/perf";
 
@@ -50,19 +49,8 @@ function checklistTone(done: boolean) {
 }
 
 export default async function OpsPage() {
-  const activeBusinessSlug = await getActiveBusinessSlug();
-  const [opsSnapshotResult, authResult] = await Promise.all([
-    measureAsync("ops_snapshot", () => getOpsPageSnapshot()),
-    measureAsync("current_user", () => getCurrentUserWithRole()),
-  ]);
-  logServerPerf("/ops", [opsSnapshotResult, authResult]);
-  const opsSnapshot = opsSnapshotResult.value;
+  const authResult = await measureAsync("current_user", () => getCurrentUserIdentity());
   const auth = authResult.value;
-  const {
-    dashboard: { metrics, recentOrders, lowStockProducts, usingDemoData },
-    ops,
-    setup,
-  } = opsSnapshot;
 
   if (!auth.usingDemoData && !auth.user) {
     redirect("/login");
@@ -71,6 +59,15 @@ export default async function OpsPage() {
   const role = auth.role;
   const allowAll = auth.usingDemoData;
   const isManagement = role === "owner" || role === "admin";
+  const showInlineSetup = allowAll;
+  const opsSnapshotResult = await measureAsync("ops_snapshot", () => getOpsPageSnapshot({ includeSetup: showInlineSetup }));
+  logServerPerf("/ops", [authResult, opsSnapshotResult]);
+  const opsSnapshot = opsSnapshotResult.value;
+  const {
+    dashboard: { metrics, recentOrders, lowStockProducts, usingDemoData },
+    ops,
+    setup,
+  } = opsSnapshot;
   const canAdmin = allowAll || isManagement;
   const canOwner = allowAll || role === "owner";
   const canKitchen = allowAll || isManagement || role === "kitchen";
@@ -78,6 +75,7 @@ export default async function OpsPage() {
   const canWaiterOps = allowAll || isManagement || role === "waiter" || role === "cashier";
   const roleLabel = allowAll ? "Demo" : role ?? "Guest";
   const showSetupPrompt =
+    showInlineSetup &&
     canAdmin && (setup.counts.businesses === 0 || setup.counts.products === 0 || setup.counts.tables === 0 || setup.counts.staff < 4);
   const setupSteps = [
     {
@@ -154,7 +152,7 @@ export default async function OpsPage() {
               Demo veri acik
             </span>
           ) : null}
-          <LiveOpsBridge tables={["orders", "tables", "products"]} />
+          <OpsLiveBadge />
         </>
       }
       sidebar={

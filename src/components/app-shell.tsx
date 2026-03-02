@@ -1,35 +1,29 @@
 "use client";
 
-import { useEffect, useMemo, useState } from "react";
+import { useEffect, useEffectEvent, useMemo, useState } from "react";
 import { usePathname } from "next/navigation";
 import { AppNav } from "@/components/app-nav";
-import type { ApplicationSettings } from "@/lib/app-settings";
-import type { AppRole, BusinessPlan, StaffAccessScope } from "@/lib/types";
+import type { AppShellPayload } from "@/lib/app-shell";
 
 const shellPrefixes = ["/ops", "/kitchen", "/cashier", "/service-requests", "/tables", "/delivery", "/admin"];
 
-type AppShellPayload = {
-  role: AppRole | null;
-  hasUser: boolean;
-  usingDemoData: boolean;
-  activeBusinessSlug: string;
-  businesses: Array<{ slug: string; name: string }>;
-  activeBranchId: string;
-  branches: Array<{ id: string; name: string }>;
-  currentPlan: BusinessPlan;
-  branchAccessScope: StaffAccessScope;
-  canSwitchBranches: boolean;
-  brandName: string;
-  logoUrl?: string;
-  sidebarTheme: ApplicationSettings["sidebarTheme"];
-  sidebarAccentColor: ApplicationSettings["sidebarAccentColor"];
-  ownerSidebarOrder: ApplicationSettings["ownerSidebarOrder"];
-  adminSidebarOrder: ApplicationSettings["adminSidebarOrder"];
+const APP_SHELL_CACHE_KEY = "app-shell-cache";
+const APP_SHELL_CACHE_TTL_MS = 300_000;
+
+type AppShellCacheEntry = {
+  data: AppShellPayload;
+  updatedAt: number;
 };
 
-export function AppShell({ children }: { children: React.ReactNode }) {
+export function AppShell({
+  children,
+  initialData,
+}: {
+  children: React.ReactNode;
+  initialData?: AppShellPayload | null;
+}) {
   const pathname = usePathname();
-  const [shellData, setShellData] = useState<AppShellPayload | null>(null);
+  const [shellData, setShellData] = useState<AppShellPayload | null>(initialData ?? null);
   const [loading, setLoading] = useState(false);
 
   const showShell = useMemo(
@@ -37,28 +31,7 @@ export function AppShell({ children }: { children: React.ReactNode }) {
     [pathname],
   );
 
-  useEffect(() => {
-    if (!showShell || shellData || loading) {
-      return;
-    }
-
-    void loadShellData();
-  }, [loading, shellData, showShell]);
-
-  useEffect(() => {
-    if (!showShell) {
-      return;
-    }
-
-    function handleRefresh() {
-      void loadShellData(true);
-    }
-
-    window.addEventListener("app-shell:refresh", handleRefresh);
-    return () => window.removeEventListener("app-shell:refresh", handleRefresh);
-  }, [showShell]);
-
-  async function loadShellData(force = false) {
+  const loadShellData = useEffectEvent(async (force = false) => {
     if (!force && loading) {
       return;
     }
@@ -75,10 +48,70 @@ export function AppShell({ children }: { children: React.ReactNode }) {
       }
       const data = (await response.json()) as AppShellPayload;
       setShellData(data);
+      try {
+        const cacheEntry: AppShellCacheEntry = { data, updatedAt: Date.now() };
+        window.sessionStorage.setItem(APP_SHELL_CACHE_KEY, JSON.stringify(cacheEntry));
+      } catch {}
     } finally {
       setLoading(false);
     }
-  }
+  });
+
+  useEffect(() => {
+    if (!initialData) {
+      return;
+    }
+
+    try {
+      const cacheEntry: AppShellCacheEntry = { data: initialData, updatedAt: Date.now() };
+      window.sessionStorage.setItem(APP_SHELL_CACHE_KEY, JSON.stringify(cacheEntry));
+    } catch {}
+  }, [initialData]);
+
+  useEffect(() => {
+    if (!showShell) {
+      setShellData(null);
+      return;
+    }
+
+    try {
+      const cached = window.sessionStorage.getItem(APP_SHELL_CACHE_KEY);
+      if (cached) {
+        const parsed = JSON.parse(cached) as AppShellPayload | AppShellCacheEntry;
+        if ("data" in parsed && "updatedAt" in parsed) {
+          if (Date.now() - parsed.updatedAt < APP_SHELL_CACHE_TTL_MS) {
+            setShellData(parsed.data);
+            return;
+          }
+        } else {
+          setShellData(parsed);
+          return;
+        }
+      }
+    } catch {}
+    setShellData(initialData ?? null);
+  }, [initialData, pathname, showShell]);
+
+  useEffect(() => {
+    if (!showShell || shellData) {
+      return;
+    }
+
+    void loadShellData();
+  }, [pathname, shellData, showShell]);
+
+  useEffect(() => {
+    if (!showShell) {
+      return;
+    }
+
+    function handleRefresh() {
+      void loadShellData(true);
+    }
+
+    window.addEventListener("app-shell:refresh", handleRefresh);
+    return () => window.removeEventListener("app-shell:refresh", handleRefresh);
+  }, [showShell]);
 
   if (!showShell) {
     return <>{children}</>;

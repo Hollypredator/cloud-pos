@@ -1,19 +1,7 @@
 import { redirect } from "next/navigation";
 import { cache } from "react";
-import { DEFAULT_BUSINESS_SLUG } from "@/lib/business";
-import { getActiveBusinessSlug } from "@/lib/business-server";
 import type { AppRole, StaffAccessScope, StudioRole } from "@/lib/types";
-import { getDefaultBusinessScope, getStudioAccessByEmail } from "@/lib/data";
-import { getSupabaseAuthServerClient } from "@/lib/supabase/auth-server";
-
-async function getCurrentRoleFromClient(authClient: NonNullable<Awaited<ReturnType<typeof getSupabaseAuthServerClient>>>) {
-  const { data, error } = await authClient.rpc("current_app_role");
-  if (error) {
-    return null as AppRole | null;
-  }
-
-  return (data as AppRole | null) ?? null;
-}
+import { getRequestAppContext, getStudioAccessByEmail } from "@/lib/data";
 
 export function hasRoleAccess(role: AppRole | null, allowedRoles: AppRole[]) {
   return !!role && (allowedRoles.includes(role) || (role === "owner" && allowedRoles.includes("admin")));
@@ -23,32 +11,45 @@ export function hasExactRoleAccess(role: AppRole | null, allowedRoles: AppRole[]
   return !!role && allowedRoles.includes(role);
 }
 
+export const getCurrentUserIdentity = cache(async () => {
+  const context = await getRequestAppContext();
+  return {
+    user: context.user,
+    role: context.role,
+    usingDemoData: context.usingDemoData,
+  };
+});
+
 export const getCurrentUserWithRole = cache(async () => {
-  const authClient = await getSupabaseAuthServerClient();
-  if (!authClient) {
-    return { user: null, role: null as AppRole | null, usingDemoData: true };
+  const context = await getRequestAppContext();
+  if (context.usingDemoData) {
+    return {
+      user: null,
+      role: null as AppRole | null,
+      accessScope: "business" as StaffAccessScope,
+      primaryBranchId: null as string | null,
+      branchAccessIds: [] as string[],
+      usingDemoData: true,
+    };
   }
 
-  const {
-    data: { user },
-  } = await authClient.auth.getUser();
-  if (!user) {
-    return { user: null, role: null as AppRole | null, usingDemoData: false };
+  if (!context.user) {
+    return {
+      user: null,
+      role: context.role,
+      accessScope: "business" as StaffAccessScope,
+      primaryBranchId: null as string | null,
+      branchAccessIds: [] as string[],
+      usingDemoData: false,
+    };
   }
-
-  const tenantClient = authClient;
-  const [role, scope] = await Promise.all([getCurrentRoleFromClient(tenantClient), getDefaultBusinessScope()]);
-  const accessScope: StaffAccessScope =
-    (scope.accessScope as StaffAccessScope | undefined) ?? (role === "owner" ? "business" : "branch");
-  const primaryBranchId = scope.branchId ?? null;
-  const branchAccessIds = scope.branchAccessIds ?? [];
 
   return {
-    user,
-    role,
-    accessScope,
-    primaryBranchId,
-    branchAccessIds,
+    user: context.user,
+    role: context.role,
+    accessScope: context.accessScope,
+    primaryBranchId: context.primaryBranchId,
+    branchAccessIds: context.branchAccessIds,
     usingDemoData: false,
   };
 });

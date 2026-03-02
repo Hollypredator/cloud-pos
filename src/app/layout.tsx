@@ -1,8 +1,9 @@
 import type { Metadata } from "next";
+import { cookies } from "next/headers";
 import { Sora, Space_Grotesk, Geist_Mono } from "next/font/google";
 import "./globals.css";
 import { AppShell } from "@/components/app-shell";
-import { getGeneralSettings, getSeoSettings } from "@/lib/data";
+import { getAppShellPayload, getGeneralSettings, getSeoSettings } from "@/lib/data";
 
 const sora = Sora({
   variable: "--font-sora",
@@ -56,12 +57,16 @@ export default async function RootLayout({
 }: Readonly<{
   children: React.ReactNode;
 }>) {
+  const cookieStore = await cookies();
+  const hasAuthCookie = cookieStore.getAll().some((cookie) => cookie.name.includes("auth-token"));
+  const initialShellData = hasAuthCookie ? await getAppShellPayload() : null;
+
   return (
     <html lang="tr">
       <body
         className={`${sora.variable} ${spaceGrotesk.variable} ${geistMono.variable} antialiased`}
       >
-        <AppShell>{children}</AppShell>
+        <AppShell initialData={initialShellData}>{children}</AppShell>
       </body>
     </html>
   );
