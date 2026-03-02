@@ -688,8 +688,8 @@ async function getCachedResolvedUserScope(input: {
   const cacheKey = `app-context-scope:${input.userId}:${input.businessId ?? "none"}:${input.activeBranchCookie ?? "none"}:${input.roleHint ?? "none"}`;
   const reader = unstable_cache(
     async () => {
-      const authClient = await getSupabaseAuthServerClient();
-      if (!authClient || !input.businessId) {
+      const supabase = getSupabaseServerClient();
+      if (!supabase || !input.businessId) {
         return {
           role: input.roleHint,
           accessScope: (input.roleHint === "owner" ? "business" : "branch") as StaffAccessScope,
@@ -698,7 +698,7 @@ async function getCachedResolvedUserScope(input: {
         };
       }
 
-      const rpcResult = await authClient.rpc("get_current_app_context", { target_business: input.businessId }).maybeSingle();
+      const rpcResult = await supabase.rpc("get_current_app_context", { target_business: input.businessId }).maybeSingle();
       if (!rpcResult.error && rpcResult.data) {
         const row = rpcResult.data as {
           role: AppRole | null;
@@ -715,15 +715,15 @@ async function getCachedResolvedUserScope(input: {
       }
 
       const [{ data: roleData }, accessResult] = await Promise.all([
-        authClient.rpc("current_app_role"),
-        authClient
+        supabase.from("profiles").select("role").eq("id", input.userId).maybeSingle(),
+        supabase
           .from("staff_branch_access")
           .select("branch_id, access_scope, is_primary")
           .eq("profile_id", input.userId)
           .eq("business_id", input.businessId),
       ]);
 
-      const role = (roleData as AppRole | null) ?? input.roleHint ?? null;
+      const role = ((roleData as { role?: AppRole | null } | null)?.role ?? input.roleHint ?? null) as AppRole | null;
       const accessRows = (accessResult.data ?? []) as Array<Pick<StaffBranchAccess, "branch_id" | "access_scope" | "is_primary">>;
       const accessScope =
         accessRows.length > 0
