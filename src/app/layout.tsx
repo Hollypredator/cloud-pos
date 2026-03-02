@@ -3,7 +3,8 @@ import { cookies } from "next/headers";
 import { Sora, Space_Grotesk, Geist_Mono } from "next/font/google";
 import "./globals.css";
 import { AppShell } from "@/components/app-shell";
-import { getAppShellPayload, getGeneralSettings, getSeoSettings } from "@/lib/data";
+import { getGeneralSettings, getSeoSettings } from "@/lib/data";
+import { getAppShellPayload } from "@/lib/server/app-shell";
 
 const sora = Sora({
   variable: "--font-sora",

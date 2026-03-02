@@ -1,7 +1,8 @@
 import { redirect } from "next/navigation";
 import { cache } from "react";
 import type { AppRole, StaffAccessScope, StudioRole } from "@/lib/types";
-import { getRequestAppContext, getStudioAccessByEmail } from "@/lib/data";
+import { getStudioAccessByEmail } from "@/lib/data";
+import { getRequestAppContext } from "@/lib/server/app-context";
 
 export function hasRoleAccess(role: AppRole | null, allowedRoles: AppRole[]) {
   return !!role && (allowedRoles.includes(role) || (role === "owner" && allowedRoles.includes("admin")));
