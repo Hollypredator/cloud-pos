@@ -1,4 +1,3 @@
-import { revalidatePath } from "next/cache";
 import Image from "next/image";
 import Link from "next/link";
 import { CashierPaymentPanel } from "@/components/cashier-payment-panel";
@@ -16,8 +15,7 @@ import {
   applyOrderFinancials,
   cancelOrder,
   completeOrderPayment,
-  getOrderReceipt,
-  listOrders,
+  getCashierPageSnapshot,
   refundOrder,
 } from "@/lib/data";
 import { logServerPerf, measureAsync } from "@/lib/perf";
@@ -68,8 +66,6 @@ async function applyFinancialsAction(formData: FormData) {
     discountAmount: Number.isFinite(discountAmount) ? discountAmount : 0,
     serviceFee: Number.isFinite(serviceFee) ? serviceFee : 0,
   });
-  revalidatePath("/cashier");
-  revalidatePath("/");
 }
 
 async function completePaymentAction(formData: FormData) {
@@ -90,9 +86,6 @@ async function completePaymentAction(formData: FormData) {
     amount: Number.isFinite(amount) ? amount : undefined,
     note: typeof note === "string" ? note : undefined,
   });
-  revalidatePath("/cashier");
-  revalidatePath("/tables");
-  revalidatePath("/");
 }
 
 async function cancelOrderAction(formData: FormData) {
@@ -106,9 +99,6 @@ async function cancelOrderAction(formData: FormData) {
   }
 
   await cancelOrder(orderId, typeof note === "string" ? note : undefined);
-  revalidatePath("/cashier");
-  revalidatePath("/tables");
-  revalidatePath("/");
 }
 
 async function refundOrderAction(formData: FormData) {
@@ -129,8 +119,6 @@ async function refundOrderAction(formData: FormData) {
     amount: Number.isFinite(amount) ? amount : undefined,
     note: typeof note === "string" ? note : undefined,
   });
-  revalidatePath("/cashier");
-  revalidatePath("/");
 }
 
 function totals(orders: Order[]) {
@@ -152,20 +140,12 @@ export default async function CashierPage({
 }) {
   await requireRole(["admin", "cashier"], "/cashier");
   const { order: selectedOrderId } = await searchParams;
-  const [servedOrdersResult, paidOrdersResult, selectedOrderResult] = await Promise.all([
-    measureAsync("served_orders", () => listOrders(["served"], { includeItems: false })),
-    measureAsync("paid_orders", () => listOrders(["paid"], { includeItems: false, limit: 8, ascending: false })),
-    typeof selectedOrderId === "string"
-      ? measureAsync("selected_order_receipt", () => getOrderReceipt(selectedOrderId))
-      : Promise.resolve({ label: "selected_order_receipt", ms: 0, value: { order: null, usingDemoData: false } }),
-  ]);
-  logServerPerf("/cashier", [servedOrdersResult, paidOrdersResult, selectedOrderResult]);
-  const { orders: servedOrders, usingDemoData } = servedOrdersResult.value;
-  const { orders: paidOrders } = paidOrdersResult.value;
+  const cashierSnapshotResult = await measureAsync("cashier_snapshot", () => getCashierPageSnapshot(selectedOrderId));
+  logServerPerf("/cashier", [cashierSnapshotResult]);
+  const { servedOrders, paidOrders, selectedOrder, usingDemoData } = cashierSnapshotResult.value;
 
   const servedTotals = totals(servedOrders);
   const paidTotals = totals(paidOrders);
-  const selectedOrder = selectedOrderResult.value.order;
 
   return (
     <BackofficePage

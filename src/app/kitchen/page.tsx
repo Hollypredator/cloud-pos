@@ -1,9 +1,8 @@
-import { revalidatePath } from "next/cache";
 import Link from "next/link";
 import { BackofficePage, ContentCard, EmptyPanel, FeatureLockedState, SummaryCard, WorkflowGuide } from "@/components/backoffice-ui";
 import { LiveOpsBridge } from "@/components/live-ops-bridge";
 import { requireRole } from "@/lib/auth";
-import { getKitchenCatalogSnapshot, getKitchenOrdersSnapshot, updateOrderStatus } from "@/lib/data";
+import { getKitchenPageSnapshot, updateOrderStatus } from "@/lib/data";
 import { logServerPerf, measureAsync } from "@/lib/perf";
 import { getFeatureAccess } from "@/lib/plan-access";
 import type { Order, OrderItem } from "@/lib/types";
@@ -19,9 +18,6 @@ async function moveOrder(formData: FormData) {
   }
 
   await updateOrderStatus(orderId, nextStatus as "pending" | "preparing" | "served");
-  revalidatePath("/kitchen");
-  revalidatePath("/cashier");
-  revalidatePath("/ops");
 }
 
 function getDelayLevel(status: string, createdAt: string) {
@@ -121,18 +117,9 @@ export default async function KitchenPage() {
       </BackofficePage>
       );
   }
-  const kitchenOrdersResult = await measureAsync("kitchen_orders", () => getKitchenOrdersSnapshot());
-  const { orders, usingDemoData } = kitchenOrdersResult.value;
-  const kitchenCatalogResult =
-    orders.length > 0
-      ? await measureAsync("kitchen_catalog", () => getKitchenCatalogSnapshot())
-      : {
-          label: "kitchen_catalog",
-          ms: 0,
-          value: { products: [] as Array<{ id: string; category_id: string }>, categories: [] as Array<{ id: string; name: string }> },
-        };
-  const { products, categories } = kitchenCatalogResult.value;
-  logServerPerf("/kitchen", [featureAccessResult, kitchenOrdersResult, kitchenCatalogResult]);
+  const kitchenSnapshotResult = await measureAsync("kitchen_snapshot", () => getKitchenPageSnapshot());
+  logServerPerf("/kitchen", [featureAccessResult, kitchenSnapshotResult]);
+  const { orders, products, categories, usingDemoData } = kitchenSnapshotResult.value;
 
   const delayedCount = orders.filter((order) => getDelayLevel(order.status, order.created_at).delayed).length;
   const criticalCount = orders.filter((order) => getDelayLevel(order.status, order.created_at).critical).length;

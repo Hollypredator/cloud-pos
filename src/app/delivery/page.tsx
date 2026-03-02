@@ -1,4 +1,3 @@
-import { revalidatePath } from "next/cache";
 import Link from "next/link";
 import { redirect } from "next/navigation";
 import { BackofficePage, ContentCard, EmptyPanel, FeatureLockedState, NoticeBanner, SummaryCard, WorkflowGuide } from "@/components/backoffice-ui";
@@ -8,9 +7,7 @@ import {
   assignOrderCourier,
   createCourier,
   deleteCourier,
-  getOrderReceipt,
-  listCouriers,
-  listOrders,
+  getDeliveryPageSnapshot,
   markDeliveryCompleted,
   updateCourier,
 } from "@/lib/data";
@@ -44,7 +41,6 @@ async function createCourierAction(formData: FormData) {
   if (!result.ok) {
     redirect(feedbackHref("error", result.error ?? "Kurye kaydi olusturulamadi."));
   }
-  revalidatePath("/delivery");
   redirect(feedbackHref("success", "Yeni kurye olusturuldu."));
 }
 
@@ -70,9 +66,6 @@ async function assignCourierAction(formData: FormData) {
       courierName,
       courierPhone: courierPhone || null,
     });
-    revalidatePath("/delivery");
-    revalidatePath("/ops");
-    revalidatePath("/kitchen");
     redirect(feedbackHref("success", "Siparis kuryeye atandi."));
   } catch {
     redirect(feedbackHref("error", "Kurye atamasi tamamlanamadi."));
@@ -101,7 +94,6 @@ async function updateCourierAction(formData: FormData) {
     redirect(feedbackHref("error", result.error ?? "Kurye guncellenemedi.", { courier: courierId }));
   }
 
-  revalidatePath("/delivery");
   redirect(feedbackHref("success", "Kurye bilgileri guncellendi.", { courier: courierId }));
 }
 
@@ -119,7 +111,6 @@ async function deleteCourierAction(formData: FormData) {
     redirect(feedbackHref("error", result.error ?? "Kurye silinemedi.", { courier: courierId }));
   }
 
-  revalidatePath("/delivery");
   redirect(feedbackHref("success", "Kurye silindi."));
 }
 
@@ -134,9 +125,6 @@ async function completeDeliveryAction(formData: FormData) {
 
   try {
     await markDeliveryCompleted(orderId);
-    revalidatePath("/delivery");
-    revalidatePath("/cashier");
-    revalidatePath("/ops");
     redirect(feedbackHref("success", "Teslimat tamamlandi olarak isaretlendi."));
   } catch {
     redirect(feedbackHref("error", "Teslimat kapanisi yapilamadi."));
@@ -249,22 +237,12 @@ export default async function DeliveryPage({
     );
   }
   const { feedback, tone, order: selectedOrderId, courier: selectedCourierId } = await searchParams;
-  const [ordersResult, couriersResult, selectedOrderResult] = await Promise.all([
-    measureAsync("delivery_orders", () => listOrders(["pending", "preparing", "served"], { includeItems: false })),
-    measureAsync("couriers", () => listCouriers()),
-    typeof selectedOrderId === "string"
-      ? measureAsync("selected_order_receipt", () => getOrderReceipt(selectedOrderId))
-      : Promise.resolve({ label: "selected_order_receipt", ms: 0, value: { order: null, usingDemoData: false } }),
-  ]);
-  logServerPerf("/delivery", [featureAccessResult, ordersResult, couriersResult, selectedOrderResult]);
-  const { orders, usingDemoData: usingOrdersDemo } = ordersResult.value;
-  const { couriers, usingDemoData: usingCouriersDemo } = couriersResult.value;
-
-  const deliveryOrders = orders.filter((order) => order.channel === "delivery");
+  const deliverySnapshotResult = await measureAsync("delivery_snapshot", () => getDeliveryPageSnapshot(selectedOrderId));
+  logServerPerf("/delivery", [featureAccessResult, deliverySnapshotResult]);
+  const { orders: deliveryOrders, couriers, selectedOrder, usingDemoData } = deliverySnapshotResult.value;
   const awaitingDispatch = deliveryOrders.filter((order) => order.fulfillment_status === "awaiting_dispatch");
   const outForDelivery = deliveryOrders.filter((order) => order.fulfillment_status === "out_for_delivery");
   const completed = deliveryOrders.filter((order) => order.fulfillment_status === "completed");
-  const selectedOrder = selectedOrderResult.value.order;
   const selectedCourier = selectedCourierId ? couriers.find((courier) => courier.id === selectedCourierId) ?? null : null;
 
   return (
@@ -288,7 +266,7 @@ export default async function DeliveryPage({
         />
       ) : null}
 
-      {usingOrdersDemo || usingCouriersDemo ? (
+      {usingDemoData ? (
         <div className="rounded-[24px] border border-amber-200 bg-amber-50 px-5 py-4 text-sm text-amber-900">
           Demo veri modu aktif. Dispatch, kurye atama ve teslim akisini bu board uzerinden test edebilirsin.
         </div>

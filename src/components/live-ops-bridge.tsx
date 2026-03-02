@@ -1,6 +1,6 @@
 "use client";
 
-import { useEffect, useMemo, useRef, useState } from "react";
+import { startTransition, useEffect, useEffectEvent, useMemo, useRef, useState } from "react";
 import { usePathname, useRouter } from "next/navigation";
 import { getSupabaseAuthBrowserClient } from "@/lib/supabase/auth-browser";
 
@@ -9,13 +9,42 @@ type LiveOpsBridgeProps = {
   enableSound?: boolean;
 };
 
+const LIVE_REFRESH_DEBOUNCE_MS = 300;
+const LIVE_REFRESH_MIN_INTERVAL_MS = 1200;
+
 export function LiveOpsBridge({ tables, enableSound = false }: LiveOpsBridgeProps) {
   const router = useRouter();
   const pathname = usePathname();
   const timeoutRef = useRef<ReturnType<typeof setTimeout> | null>(null);
   const isRefreshingRef = useRef(false);
+  const lastRefreshAtRef = useRef(0);
   const [connected, setConnected] = useState(false);
   const channelKey = useMemo(() => [...tables].sort().join("-"), [tables]);
+
+  const queueRefresh = useEffectEvent(() => {
+    const elapsed = Date.now() - lastRefreshAtRef.current;
+    const waitMs = Math.max(LIVE_REFRESH_DEBOUNCE_MS, LIVE_REFRESH_MIN_INTERVAL_MS - elapsed);
+
+    if (timeoutRef.current) {
+      clearTimeout(timeoutRef.current);
+    }
+
+    timeoutRef.current = setTimeout(() => {
+      if (isRefreshingRef.current) {
+        return;
+      }
+
+      isRefreshingRef.current = true;
+      lastRefreshAtRef.current = Date.now();
+      window.dispatchEvent(new CustomEvent("live-ops:update", { detail: { pathname, tables } }));
+      startTransition(() => {
+        router.refresh();
+      });
+      window.setTimeout(() => {
+        isRefreshingRef.current = false;
+      }, 500);
+    }, waitMs);
+  });
 
   useEffect(() => {
     const supabase = getSupabaseAuthBrowserClient();
@@ -35,19 +64,7 @@ export function LiveOpsBridge({ tables, enableSound = false }: LiveOpsBridgeProp
           if (enableSound && table === "orders" && payload.eventType === "INSERT") {
             playAlertTone();
           }
-          if (timeoutRef.current) {
-            clearTimeout(timeoutRef.current);
-          }
-          timeoutRef.current = setTimeout(() => {
-            if (isRefreshingRef.current) {
-              return;
-            }
-            isRefreshingRef.current = true;
-            router.refresh();
-            window.setTimeout(() => {
-              isRefreshingRef.current = false;
-            }, 800);
-          }, 450);
+          queueRefresh();
         },
       );
     }
@@ -62,7 +79,7 @@ export function LiveOpsBridge({ tables, enableSound = false }: LiveOpsBridgeProp
       }
       supabase.removeChannel(channel);
     };
-  }, [channelKey, enableSound, pathname, router, tables]);
+  }, [channelKey, enableSound, pathname, tables]);
 
   return (
     <span

@@ -14,12 +14,13 @@ export async function measureAsync<T>(label: string, fn: () => Promise<T>): Prom
 }
 
 export function logServerPerf(route: string, entries: Array<PerfEntry | (PerfEntry & { value?: unknown })>) {
-  const shouldLogInProduction = process.env.LOG_ADMIN_PERF === "1" || process.env.VERCEL === "1";
-  if (process.env.NODE_ENV === "production" && !shouldLogInProduction) {
-    return;
-  }
-
   const total = Math.round(entries.reduce((sum, entry) => sum + entry.ms, 0) * 100) / 100;
   const summary = entries.map((entry) => `${entry.label}=${entry.ms}ms`).join(" ");
-  console.info(`[admin-perf] route=${route} total=${total}ms ${summary}`);
+  const level = total > 1000 ? "slow" : total > 500 ? "warm" : "fast";
+  const message = `[admin-perf] route=${route} level=${level} total=${total}ms ${summary}`;
+  if (total > 1000) {
+    console.warn(message);
+    return;
+  }
+  console.info(message);
 }

@@ -1,6 +1,6 @@
 "use client";
 
-import { useEffect, useState } from "react";
+import { useEffect, useEffectEvent, useRef, useState } from "react";
 
 type OrderStatus = "pending" | "preparing" | "served" | "paid" | "cancelled" | "refunded";
 
@@ -40,31 +40,61 @@ export function OrderStatusWidget({
 }) {
   const [order, setOrder] = useState<LatestOrder | null>(null);
   const [loading, setLoading] = useState(true);
+  const timerRef = useRef<ReturnType<typeof setTimeout> | null>(null);
+
+  const fetchLatest = useEffectEvent(async () => {
+    try {
+      const response = await fetch(
+        `/api/orders/latest?qr=${encodeURIComponent(qrCodeIdentifier)}${businessSlug ? `&b=${encodeURIComponent(businessSlug)}` : ""}`,
+        {
+          cache: "no-store",
+        },
+      );
+      const data = (await response.json()) as { ok: boolean; order: LatestOrder | null };
+      if (!data.ok) return;
+      setOrder(data.order);
+    } finally {
+      setLoading(false);
+    }
+  });
 
   useEffect(() => {
-    let mounted = true;
+    let active = true;
 
-    async function fetchLatest() {
-      try {
-        const response = await fetch(
-          `/api/orders/latest?qr=${encodeURIComponent(qrCodeIdentifier)}${businessSlug ? `&b=${encodeURIComponent(businessSlug)}` : ""}`,
-          {
-          cache: "no-store",
-          },
-        );
-        const data = (await response.json()) as { ok: boolean; order: LatestOrder | null };
-        if (!mounted || !data.ok) return;
-        setOrder(data.order);
-      } finally {
-        if (mounted) setLoading(false);
+    async function syncLatest() {
+      if (!active) {
+        return;
       }
+      await fetchLatest();
+      if (!active) {
+        return;
+      }
+      if (timerRef.current) {
+        clearTimeout(timerRef.current);
+      }
+      timerRef.current = setTimeout(syncLatest, document.hidden ? 15000 : 8000);
     }
 
-    fetchLatest();
-    const timer = setInterval(fetchLatest, 8000);
+    function handleAttentionRefresh() {
+      if (document.hidden) {
+        return;
+      }
+      void fetchLatest();
+    }
+
+    void syncLatest();
+    window.addEventListener("focus", handleAttentionRefresh);
+    document.addEventListener("visibilitychange", handleAttentionRefresh);
+    window.addEventListener("live-ops:update", handleAttentionRefresh);
+
     return () => {
-      mounted = false;
-      clearInterval(timer);
+      active = false;
+      if (timerRef.current) {
+        clearTimeout(timerRef.current);
+      }
+      window.removeEventListener("focus", handleAttentionRefresh);
+      document.removeEventListener("visibilitychange", handleAttentionRefresh);
+      window.removeEventListener("live-ops:update", handleAttentionRefresh);
     };
   }, [businessSlug, qrCodeIdentifier]);
 
