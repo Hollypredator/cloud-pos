@@ -349,7 +349,7 @@ export const getRequestAppContext = cache(async () => {
       ? primaryBranchId ?? activeBranchCookie ?? null
       : wantsAllBranches
         ? null
-        : activeBranchCookie || null;
+        : activeBranchId || null;
 
   return {
     user,

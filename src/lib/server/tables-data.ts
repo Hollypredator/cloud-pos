@@ -1,7 +1,7 @@
 import { unstable_cache } from "next/cache";
 import { ALL_BRANCHES_VALUE } from "@/lib/business";
 import { getSupabaseServerClient } from "@/lib/supabase/server";
-import type { DiningTable, Order, OrderStatus, OrderItemModifierSelection, StaffAccessScope, TableStatus } from "@/lib/types";
+import type { DiningTable, Order, OrderStatus, TableStatus } from "@/lib/types";
 
 type Scope = {
   businessId: string | null;
@@ -272,7 +272,7 @@ export async function getTableMapImpl(deps: QueryDeps) {
 
   const cached = await reader();
   if (!cached || cached.error) {
-    return { tables: deps.demoTables, usingDemoData: true };
+    return { tables: [] as DiningTable[], usingDemoData: false };
   }
 
   return { tables: (cached.data ?? []) as DiningTable[], usingDemoData: false };

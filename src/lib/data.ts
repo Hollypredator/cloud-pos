@@ -642,7 +642,7 @@ export async function listBranches() {
   const cacheKey = `branches:${scope.businessId ?? "none"}:${scope.branchId ?? "all"}:${scope.canAccessAllBranches ? "all" : scope.branchAccessIds.join(",")}:${scope.useLegacySchema ? "legacy" : "scoped"}`;
   const reader = unstable_cache(
     async () => {
-      const innerSupabase = await getSupabaseAuthServerClient();
+      const innerSupabase = getSupabaseServerClient();
       if (!innerSupabase) {
         return null;
       }
