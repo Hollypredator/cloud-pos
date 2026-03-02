@@ -5,6 +5,7 @@ import { BackofficePage, ContentCard, EmptyPanel, SidebarPanel, SummaryCard, Wor
 import { getCurrentUserWithRole } from "@/lib/auth";
 import { getActiveBusinessSlug } from "@/lib/business-server";
 import { getOpsPageSnapshot } from "@/lib/data";
+import { logServerPerf, measureAsync } from "@/lib/perf";
 
 function statusTone(status: string) {
   if (status === "pending") return "bg-amber-100 text-amber-800";
@@ -50,10 +51,13 @@ function checklistTone(done: boolean) {
 
 export default async function OpsPage() {
   const activeBusinessSlug = await getActiveBusinessSlug();
-  const [opsSnapshot, auth] = await Promise.all([
-    getOpsPageSnapshot(),
-    getCurrentUserWithRole(),
+  const [opsSnapshotResult, authResult] = await Promise.all([
+    measureAsync("ops_snapshot", () => getOpsPageSnapshot()),
+    measureAsync("current_user", () => getCurrentUserWithRole()),
   ]);
+  logServerPerf("/ops", [opsSnapshotResult, authResult]);
+  const opsSnapshot = opsSnapshotResult.value;
+  const auth = authResult.value;
   const {
     dashboard: { metrics, recentOrders, lowStockProducts, usingDemoData },
     ops,

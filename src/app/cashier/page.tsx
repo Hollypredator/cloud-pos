@@ -20,6 +20,7 @@ import {
   listOrders,
   refundOrder,
 } from "@/lib/data";
+import { logServerPerf, measureAsync } from "@/lib/perf";
 import type { Order, OrderItem, PaymentMethod } from "@/lib/types";
 
 function buildReceiptLink(orderId: string) {
@@ -151,15 +152,20 @@ export default async function CashierPage({
 }) {
   await requireRole(["admin", "cashier"], "/cashier");
   const { order: selectedOrderId } = await searchParams;
-  const [{ orders: servedOrders, usingDemoData }, { orders: paidOrders }, selectedOrderResult] = await Promise.all([
-    listOrders(["served"], { includeItems: false }),
-    listOrders(["paid"], { includeItems: false, limit: 8, ascending: false }),
-    typeof selectedOrderId === "string" ? getOrderReceipt(selectedOrderId) : Promise.resolve({ order: null, usingDemoData: false }),
+  const [servedOrdersResult, paidOrdersResult, selectedOrderResult] = await Promise.all([
+    measureAsync("served_orders", () => listOrders(["served"], { includeItems: false })),
+    measureAsync("paid_orders", () => listOrders(["paid"], { includeItems: false, limit: 8, ascending: false })),
+    typeof selectedOrderId === "string"
+      ? measureAsync("selected_order_receipt", () => getOrderReceipt(selectedOrderId))
+      : Promise.resolve({ label: "selected_order_receipt", ms: 0, value: { order: null, usingDemoData: false } }),
   ]);
+  logServerPerf("/cashier", [servedOrdersResult, paidOrdersResult, selectedOrderResult]);
+  const { orders: servedOrders, usingDemoData } = servedOrdersResult.value;
+  const { orders: paidOrders } = paidOrdersResult.value;
 
   const servedTotals = totals(servedOrders);
   const paidTotals = totals(paidOrders);
-  const selectedOrder = selectedOrderResult.order;
+  const selectedOrder = selectedOrderResult.value.order;
 
   return (
     <BackofficePage

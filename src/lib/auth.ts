@@ -3,7 +3,7 @@ import { cache } from "react";
 import { DEFAULT_BUSINESS_SLUG } from "@/lib/business";
 import { getActiveBusinessSlug } from "@/lib/business-server";
 import type { AppRole, StaffAccessScope, StudioRole } from "@/lib/types";
-import { getStudioAccessByEmail } from "@/lib/data";
+import { getDefaultBusinessScope, getStudioAccessByEmail } from "@/lib/data";
 import { getSupabaseAuthServerClient } from "@/lib/supabase/auth-server";
 
 async function getCurrentRoleFromClient(authClient: NonNullable<Awaited<ReturnType<typeof getSupabaseAuthServerClient>>>) {
@@ -37,52 +37,11 @@ export const getCurrentUserWithRole = cache(async () => {
   }
 
   const tenantClient = authClient;
-  const role = await getCurrentRoleFromClient(tenantClient);
-
-  const activeSlug = (await getActiveBusinessSlug()) || DEFAULT_BUSINESS_SLUG;
-  const { data: accessibleBusinesses } = await tenantClient
-    .from("businesses")
-    .select("id, slug")
-    .eq("is_active", true);
-
-  const business =
-    (accessibleBusinesses ?? []).find((item) => item.slug === activeSlug) ??
-    (accessibleBusinesses ?? [])[0] ??
-    null;
-
-  if (!business) {
-    return {
-      user,
-      role,
-      accessScope: role === "owner" ? "business" : "branch",
-      primaryBranchId: null,
-      branchAccessIds: [],
-      usingDemoData: false,
-    };
-  }
-
-  const { data: accessRows } = await tenantClient
-    .from("staff_branch_access")
-    .select("branch_id, access_scope, is_primary")
-    .eq("profile_id", user.id)
-    .eq("business_id", business.id);
-
-  let accessScope: StaffAccessScope =
-    role === "owner" ? "business" : "branch";
-  let primaryBranchId: string | null = null;
-  let branchAccessIds: string[] = [];
-
-  const rows = (accessRows ?? []) as Array<{
-    branch_id: string | null;
-    access_scope: StaffAccessScope;
-    is_primary: boolean;
-  }>;
-
-  if (rows.length > 0) {
-    accessScope = rows.some((row) => row.access_scope === "business") ? "business" : "branch";
-    branchAccessIds = rows.map((row) => row.branch_id).filter((branchId): branchId is string => Boolean(branchId));
-    primaryBranchId = rows.find((row) => row.is_primary && row.branch_id)?.branch_id ?? branchAccessIds[0] ?? null;
-  }
+  const [role, scope] = await Promise.all([getCurrentRoleFromClient(tenantClient), getDefaultBusinessScope()]);
+  const accessScope: StaffAccessScope =
+    (scope.accessScope as StaffAccessScope | undefined) ?? (role === "owner" ? "business" : "branch");
+  const primaryBranchId = scope.branchId ?? null;
+  const branchAccessIds = scope.branchAccessIds ?? [];
 
   return {
     user,

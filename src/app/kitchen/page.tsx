@@ -4,6 +4,7 @@ import { BackofficePage, ContentCard, EmptyPanel, FeatureLockedState, SummaryCar
 import { LiveOpsBridge } from "@/components/live-ops-bridge";
 import { requireRole } from "@/lib/auth";
 import { getKitchenCatalogSnapshot, getKitchenOrdersSnapshot, updateOrderStatus } from "@/lib/data";
+import { logServerPerf, measureAsync } from "@/lib/perf";
 import { getFeatureAccess } from "@/lib/plan-access";
 import type { Order, OrderItem } from "@/lib/types";
 
@@ -105,8 +106,10 @@ function buildStationGroups(order: Order, productCategoryMap: Map<string, string
 
 export default async function KitchenPage() {
   await requireRole(["admin", "kitchen"], "/kitchen");
-  const featureAccess = await getFeatureAccess("kitchen_display");
+  const featureAccessResult = await measureAsync("feature_access", () => getFeatureAccess("kitchen_display"));
+  const featureAccess = featureAccessResult.value;
   if (!featureAccess.enabled) {
+    logServerPerf("/kitchen", [featureAccessResult]);
     return (
       <BackofficePage title="Mutfak" description="Istasyon bazli hazirlama akisi">
         <FeatureLockedState
@@ -116,12 +119,20 @@ export default async function KitchenPage() {
           requiredPlan={featureAccess.requiredPlan}
         />
       </BackofficePage>
-    );
+      );
   }
-  const [{ orders, usingDemoData }, { products, categories }] = await Promise.all([
-    getKitchenOrdersSnapshot(),
-    getKitchenCatalogSnapshot(),
-  ]);
+  const kitchenOrdersResult = await measureAsync("kitchen_orders", () => getKitchenOrdersSnapshot());
+  const { orders, usingDemoData } = kitchenOrdersResult.value;
+  const kitchenCatalogResult =
+    orders.length > 0
+      ? await measureAsync("kitchen_catalog", () => getKitchenCatalogSnapshot())
+      : {
+          label: "kitchen_catalog",
+          ms: 0,
+          value: { products: [] as Array<{ id: string; category_id: string }>, categories: [] as Array<{ id: string; name: string }> },
+        };
+  const { products, categories } = kitchenCatalogResult.value;
+  logServerPerf("/kitchen", [featureAccessResult, kitchenOrdersResult, kitchenCatalogResult]);
 
   const delayedCount = orders.filter((order) => getDelayLevel(order.status, order.created_at).delayed).length;
   const criticalCount = orders.filter((order) => getDelayLevel(order.status, order.created_at).critical).length;

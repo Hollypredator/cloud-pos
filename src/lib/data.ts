@@ -653,7 +653,7 @@ export async function getBusinessContextBySlug(businessSlug?: string) {
   };
 }
 
-const getDefaultBusinessScope = cache(async () => {
+export const getDefaultBusinessScope = cache(async () => {
   const activeSlug = await getActiveBusinessSlug();
   const activeBranchId = await getActiveBranchId();
   const { businesses: accessibleBusinesses, hasUser, useLegacySchema: accessibleLegacy } = await getAccessibleBusinesses();
@@ -2223,8 +2223,8 @@ async function getCachedOrderReceiptRow(input: {
         return { hasError: true as const, order: null as Order | null };
       }
 
-      const paymentSummary = await getOrderPaymentSummaryMap(supabase, [input.orderId]);
-      const [{ data: itemRows }, { data: modifierRows }] = await Promise.all([
+      const [paymentSummary, { data: itemRows }, { data: modifierRows }] = await Promise.all([
+        getOrderPaymentSummaryMap(supabase, [input.orderId]),
         supabase
           .from("order_items")
           .select("product_id, product_name, quantity, unit_price, line_total")
@@ -2323,7 +2323,7 @@ async function getCachedKitchenOrdersSnapshot(input: {
 
       let ordersQuery = supabase
         .from("orders")
-        .select("id, branch_id, table_id, total_price, discount_amount, service_fee, final_price, channel, customer_name, customer_phone, delivery_address, delivery_note, courier_id, courier_name, courier_phone, fulfillment_status, status, created_at, tables(table_number)")
+        .select("id, branch_id, table_id, channel, customer_name, delivery_address, fulfillment_status, status, created_at, tables(table_number)")
         .in("status", ["pending", "preparing", "served"])
         .order("created_at", { ascending: true });
 
@@ -2366,7 +2366,31 @@ async function getCachedKitchenOrdersSnapshot(input: {
       );
 
       return {
-        orders: mapDetailedOrders(orders, groupedItems, new Map()),
+        orders: orders.map((row) => ({
+          id: row.id,
+          branch_id: row.branch_id ?? null,
+          table_id: row.table_id,
+          table_number: getTableNumber(row.tables),
+          channel: row.channel ?? "dine_in",
+          customer_name: row.customer_name ?? null,
+          customer_phone: null,
+          delivery_address: row.delivery_address ?? null,
+          delivery_note: null,
+          courier_id: null,
+          courier_name: null,
+          courier_phone: null,
+          fulfillment_status: row.fulfillment_status ?? "not_applicable",
+          amount_paid: 0,
+          remaining_balance: 0,
+          payment_count: 0,
+          items: groupedItems.get(row.id) ?? [],
+          total_price: 0,
+          discount_amount: 0,
+          service_fee: 0,
+          final_price: 0,
+          status: row.status,
+          created_at: row.created_at,
+        })) as Order[],
         hasError: false,
       };
     },
@@ -2634,16 +2658,17 @@ export async function getOrderReceipt(orderId: string) {
     return { order: null as Order | null, usingDemoData: false };
   }
 
-  const paymentSummary = await getOrderPaymentSummaryMap(supabase, [orderId]);
-
-  const { data: itemRows } = await supabase
-    .from("order_items")
-    .select("product_id, product_name, quantity, unit_price, line_total")
-    .eq("order_id", orderId);
-  const { data: modifierRows } = await supabase
-    .from("order_item_modifiers")
-    .select("product_id, product_name, modifier_group_name, modifier_option_name, price_delta, quantity")
-    .eq("order_id", orderId);
+  const [paymentSummary, { data: itemRows }, { data: modifierRows }] = await Promise.all([
+    getOrderPaymentSummaryMap(supabase, [orderId]),
+    supabase
+      .from("order_items")
+      .select("product_id, product_name, quantity, unit_price, line_total")
+      .eq("order_id", orderId),
+    supabase
+      .from("order_item_modifiers")
+      .select("product_id, product_name, modifier_group_name, modifier_option_name, price_delta, quantity")
+      .eq("order_id", orderId),
+  ]);
 
   const tableInfo = data.tables as { table_number: number } | { table_number: number }[] | null;
   const tableNumber = Array.isArray(tableInfo) ? tableInfo[0]?.table_number : tableInfo?.table_number;

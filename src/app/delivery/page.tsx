@@ -14,6 +14,7 @@ import {
   markDeliveryCompleted,
   updateCourier,
 } from "@/lib/data";
+import { logServerPerf, measureAsync } from "@/lib/perf";
 import { getFeatureAccess } from "@/lib/plan-access";
 import type { Order } from "@/lib/types";
 
@@ -232,8 +233,10 @@ export default async function DeliveryPage({
   searchParams: Promise<{ feedback?: string; tone?: "success" | "error"; order?: string; courier?: string }>;
 }) {
   await requireRole(["admin", "cashier", "waiter"], "/delivery");
-  const featureAccess = await getFeatureAccess("delivery_dispatch");
+  const featureAccessResult = await measureAsync("feature_access", () => getFeatureAccess("delivery_dispatch"));
+  const featureAccess = featureAccessResult.value;
   if (!featureAccess.enabled) {
+    logServerPerf("/delivery", [featureAccessResult]);
     return (
       <BackofficePage title="Teslimat" description="Kurye atama ve dispatch yonetimi">
         <FeatureLockedState
@@ -246,17 +249,22 @@ export default async function DeliveryPage({
     );
   }
   const { feedback, tone, order: selectedOrderId, courier: selectedCourierId } = await searchParams;
-  const [{ orders, usingDemoData: usingOrdersDemo }, { couriers, usingDemoData: usingCouriersDemo }, selectedOrderResult] = await Promise.all([
-    listOrders(["pending", "preparing", "served"], { includeItems: false }),
-    listCouriers(),
-    typeof selectedOrderId === "string" ? getOrderReceipt(selectedOrderId) : Promise.resolve({ order: null, usingDemoData: false }),
+  const [ordersResult, couriersResult, selectedOrderResult] = await Promise.all([
+    measureAsync("delivery_orders", () => listOrders(["pending", "preparing", "served"], { includeItems: false })),
+    measureAsync("couriers", () => listCouriers()),
+    typeof selectedOrderId === "string"
+      ? measureAsync("selected_order_receipt", () => getOrderReceipt(selectedOrderId))
+      : Promise.resolve({ label: "selected_order_receipt", ms: 0, value: { order: null, usingDemoData: false } }),
   ]);
+  logServerPerf("/delivery", [featureAccessResult, ordersResult, couriersResult, selectedOrderResult]);
+  const { orders, usingDemoData: usingOrdersDemo } = ordersResult.value;
+  const { couriers, usingDemoData: usingCouriersDemo } = couriersResult.value;
 
   const deliveryOrders = orders.filter((order) => order.channel === "delivery");
   const awaitingDispatch = deliveryOrders.filter((order) => order.fulfillment_status === "awaiting_dispatch");
   const outForDelivery = deliveryOrders.filter((order) => order.fulfillment_status === "out_for_delivery");
   const completed = deliveryOrders.filter((order) => order.fulfillment_status === "completed");
-  const selectedOrder = selectedOrderResult.order;
+  const selectedOrder = selectedOrderResult.value.order;
   const selectedCourier = selectedCourierId ? couriers.find((courier) => courier.id === selectedCourierId) ?? null : null;
 
   return (
