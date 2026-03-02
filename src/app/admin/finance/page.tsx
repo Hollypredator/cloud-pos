@@ -6,6 +6,8 @@ import { getFinancialInsights, listBranches } from "@/lib/data";
 import { logServerPerf, measureAsync } from "@/lib/perf";
 import { getFeatureAccess } from "@/lib/plan-access";
 
+export const dynamic = "force-dynamic";
+
 function methodLabel(method: string) {
   if (method === "cash") return "Nakit";
   if (method === "card") return "Kart";
@@ -127,31 +129,32 @@ export default async function AdminFinancePage({
 }: {
   searchParams: Promise<{ days?: string }>;
 }) {
-  await requireRole(["admin"], "/admin/finance");
-  const featureAccessResult = await measureAsync("feature_access", () => getFeatureAccess("finance_dashboard"));
-  const featureAccess = featureAccessResult.value;
-  if (!featureAccess.enabled) {
-    logServerPerf("/admin/finance", [featureAccessResult]);
-    return (
-      <BackofficePage title="Gelir/Gider" description="Nakit akis ve finans panosu">
-        <FeatureLockedState
-          title={featureAccess.title}
-          description={featureAccess.description}
-          currentPlan={featureAccess.plan}
-          requiredPlan={featureAccess.requiredPlan}
-        />
-      </BackofficePage>
-    );
-  }
-  const { days: daysParam } = await searchParams;
-  const days = Number.isFinite(Number(daysParam)) ? Number(daysParam) : 7;
-  const [financialResult, branchContextResult] = await Promise.all([
-    measureAsync("financial_insights", () => getFinancialInsights(days)),
-    measureAsync("list_branches", () => listBranches()),
-  ]);
-  const { summary, methodBreakdown, hourlySales, topProducts, recentPayments, usingDemoData } = financialResult.value;
-  const branchContext = branchContextResult.value;
-  logServerPerf("/admin/finance", [featureAccessResult, financialResult, branchContextResult]);
+  try {
+    await requireRole(["admin"], "/admin/finance");
+    const featureAccessResult = await measureAsync("feature_access", () => getFeatureAccess("finance_dashboard"));
+    const featureAccess = featureAccessResult.value;
+    if (!featureAccess.enabled) {
+      logServerPerf("/admin/finance", [featureAccessResult]);
+      return (
+        <BackofficePage title="Gelir/Gider" description="Nakit akis ve finans panosu">
+          <FeatureLockedState
+            title={featureAccess.title}
+            description={featureAccess.description}
+            currentPlan={featureAccess.plan}
+            requiredPlan={featureAccess.requiredPlan}
+          />
+        </BackofficePage>
+      );
+    }
+    const { days: daysParam } = await searchParams;
+    const days = Number.isFinite(Number(daysParam)) ? Number(daysParam) : 7;
+    const [financialResult, branchContextResult] = await Promise.all([
+      measureAsync("financial_insights", () => getFinancialInsights(days)),
+      measureAsync("list_branches", () => listBranches()),
+    ]);
+    const { summary, methodBreakdown, hourlySales, topProducts, recentPayments, usingDemoData } = financialResult.value;
+    const branchContext = branchContextResult.value;
+    logServerPerf("/admin/finance", [featureAccessResult, financialResult, branchContextResult]);
   const branchLabel =
     branchContext.activeBranchId === ALL_BRANCHES_VALUE
       ? "Tum Subeler"
@@ -168,7 +171,7 @@ export default async function AdminFinancePage({
     return best;
   }, null);
 
-  return (
+    return (
     <BackofficePage
       title="Gelir/Gider"
       description="Nakit akis yonetimi ve finans ozetleri"
@@ -579,5 +582,15 @@ export default async function AdminFinancePage({
         </ContentCard>
       </section>
     </BackofficePage>
-  );
+    );
+  } catch (error) {
+    console.error("[admin-finance-page] failed", error);
+    return (
+      <BackofficePage title="Gelir/Gider" description="Nakit akis yonetimi ve finans ozetleri">
+        <div className="rounded-[24px] border border-amber-200 bg-amber-50 px-5 py-4 text-sm text-amber-900">
+          Finans verileri yuklenemedi. Lutfen biraz sonra tekrar deneyin.
+        </div>
+      </BackofficePage>
+    );
+  }
 }

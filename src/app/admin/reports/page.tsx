@@ -15,6 +15,8 @@ import {
 import { logServerPerf, measureAsync } from "@/lib/perf";
 import { getFeatureAccess } from "@/lib/plan-access";
 
+export const dynamic = "force-dynamic";
+
 type ReportTab = "general" | "cari" | "detail" | "staff";
 
 function dayLabel(value: string) {
@@ -134,34 +136,35 @@ export default async function AdminReportsPage({
 }: {
   searchParams: Promise<{ tab?: string; days?: string }>;
 }) {
-  await requireRole(["admin"], "/admin/reports");
-  const featureAccessResult = await measureAsync("feature_access", () => getFeatureAccess("advanced_reports"));
-  const featureAccess = featureAccessResult.value;
-  if (!featureAccess.enabled) {
-    logServerPerf("/admin/reports", [featureAccessResult]);
-    return (
-      <BackofficePage title="Raporlar" description="Satis, cari ve personel performansi">
-        <FeatureLockedState
-          title={featureAccess.title}
-          description={featureAccess.description}
-          currentPlan={featureAccess.plan}
-          requiredPlan={featureAccess.requiredPlan}
-        />
-      </BackofficePage>
-    );
-  }
-  const { tab: tabParam, days: daysParam } = await searchParams;
-  const days = Number.isFinite(Number(daysParam)) ? Number(daysParam) : 7;
-  const activeTab: ReportTab =
-    tabParam === "cari" || tabParam === "detail" || tabParam === "staff" ? tabParam : "general";
-  const shouldLoadFinancial = activeTab === "cari" || activeTab === "detail";
-  const shouldLoadStaff = activeTab === "staff";
+  try {
+    await requireRole(["admin"], "/admin/reports");
+    const featureAccessResult = await measureAsync("feature_access", () => getFeatureAccess("advanced_reports"));
+    const featureAccess = featureAccessResult.value;
+    if (!featureAccess.enabled) {
+      logServerPerf("/admin/reports", [featureAccessResult]);
+      return (
+        <BackofficePage title="Raporlar" description="Satis, cari ve personel performansi">
+          <FeatureLockedState
+            title={featureAccess.title}
+            description={featureAccess.description}
+            currentPlan={featureAccess.plan}
+            requiredPlan={featureAccess.requiredPlan}
+          />
+        </BackofficePage>
+      );
+    }
+    const { tab: tabParam, days: daysParam } = await searchParams;
+    const days = Number.isFinite(Number(daysParam)) ? Number(daysParam) : 7;
+    const activeTab: ReportTab =
+      tabParam === "cari" || tabParam === "detail" || tabParam === "staff" ? tabParam : "general";
+    const shouldLoadFinancial = activeTab === "cari" || activeTab === "detail";
+    const shouldLoadStaff = activeTab === "staff";
 
-  const [salesResult, financialResult, opsResult, profilesResult, branchContextResult] = await Promise.all([
-    measureAsync("sales_report_summary", () => getSalesReportSummary(days)),
-    shouldLoadFinancial
-      ? measureAsync("financial_insights", () => getFinancialInsights(days))
-      : Promise.resolve({
+    const [salesResult, financialResult, opsResult, profilesResult, branchContextResult] = await Promise.all([
+      measureAsync("sales_report_summary", () => getSalesReportSummary(days)),
+      shouldLoadFinancial
+        ? measureAsync("financial_insights", () => getFinancialInsights(days))
+        : Promise.resolve({
           label: "financial_insights",
           ms: 0,
           value: {
@@ -191,9 +194,9 @@ export default async function AdminReportsPage({
             }>,
           },
         }),
-    shouldLoadStaff
-      ? measureAsync("ops_metrics", () => getOpsMetricsSnapshot())
-      : Promise.resolve({
+      shouldLoadStaff
+        ? measureAsync("ops_metrics", () => getOpsMetricsSnapshot())
+        : Promise.resolve({
           label: "ops_metrics",
           ms: 0,
           value: {
@@ -202,9 +205,9 @@ export default async function AdminReportsPage({
             openServiceRequests: 0,
           },
         }),
-    shouldLoadStaff
-      ? measureAsync("list_profiles", () => listProfiles())
-      : Promise.resolve({
+      shouldLoadStaff
+        ? measureAsync("list_profiles", () => listProfiles())
+        : Promise.resolve({
           label: "list_profiles",
           ms: 0,
           value: {
@@ -212,14 +215,14 @@ export default async function AdminReportsPage({
             usingDemoData: false,
           },
         }),
-    measureAsync("list_branches", () => listBranches()),
-  ]);
-  const { rows, usingDemoData } = salesResult.value;
-  const financial = financialResult.value;
-  const ops = opsResult.value;
-  const { profiles } = profilesResult.value;
-  const branchContext = branchContextResult.value;
-  logServerPerf("/admin/reports", [featureAccessResult, salesResult, financialResult, opsResult, profilesResult, branchContextResult]);
+      measureAsync("list_branches", () => listBranches()),
+    ]);
+    const { rows, usingDemoData } = salesResult.value;
+    const financial = financialResult.value;
+    const ops = opsResult.value;
+    const { profiles } = profilesResult.value;
+    const branchContext = branchContextResult.value;
+    logServerPerf("/admin/reports", [featureAccessResult, salesResult, financialResult, opsResult, profilesResult, branchContextResult]);
   const branchLabel =
     branchContext.activeBranchId === ALL_BRANCHES_VALUE
       ? "Tum Subeler"
@@ -239,7 +242,7 @@ export default async function AdminReportsPage({
     waiter: profiles.filter((profile) => profile.role === "waiter").length,
   };
 
-  return (
+    return (
     <BackofficePage
       title="Raporlar"
       description="Satis ritmi, iade etkisi ve net performansi hizli okumak icin tasarlandi"
@@ -634,5 +637,15 @@ export default async function AdminReportsPage({
         </section>
       ) : null}
     </BackofficePage>
-  );
+    );
+  } catch (error) {
+    console.error("[admin-reports-page] failed", error);
+    return (
+      <BackofficePage title="Raporlar" description="Satis, cari ve personel performansi">
+        <div className="rounded-[24px] border border-amber-200 bg-amber-50 px-5 py-4 text-sm text-amber-900">
+          Rapor verileri yuklenemedi. Lutfen biraz sonra tekrar deneyin.
+        </div>
+      </BackofficePage>
+    );
+  }
 }

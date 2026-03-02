@@ -14,7 +14,8 @@ export async function measureAsync<T>(label: string, fn: () => Promise<T>): Prom
 }
 
 export function logServerPerf(route: string, entries: Array<PerfEntry | (PerfEntry & { value?: unknown })>) {
-  if (process.env.NODE_ENV === "production" && process.env.LOG_ADMIN_PERF !== "1") {
+  const shouldLogInProduction = process.env.LOG_ADMIN_PERF === "1" || process.env.VERCEL === "1";
+  if (process.env.NODE_ENV === "production" && !shouldLogInProduction) {
     return;
   }
 

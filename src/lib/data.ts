@@ -570,35 +570,43 @@ const getCachedSeoSettingsRow = unstable_cache(
 
 const resolveBusinessBySlug = cache(async (businessSlug?: string) => {
   const slug = normalizeBusinessSlug(businessSlug);
-  const supabase = getSupabaseServerClient();
-  if (!supabase) {
-    return { business: demoBusiness, usingDemoData: true };
-  }
+  const cacheKey = `business-by-slug:${slug}`;
+  const reader = unstable_cache(
+    async () => {
+      const supabase = getSupabaseServerClient();
+      if (!supabase) {
+        return { business: demoBusiness, usingDemoData: true };
+      }
 
-  const { data, error } = await supabase
-    .from("businesses")
-    .select("id, name, slug, plan, is_active, created_at, updated_at")
-    .eq("slug", slug)
-    .eq("is_active", true)
-    .maybeSingle();
+      const { data, error } = await supabase
+        .from("businesses")
+        .select("id, name, slug, plan, is_active, created_at, updated_at")
+        .eq("slug", slug)
+        .eq("is_active", true)
+        .maybeSingle();
 
-  if (error) {
-    // Migration uygulanmamis ortamlarda legacy tek-tenant sorgulara geri don.
-    if (error.message.toLowerCase().includes("businesses")) {
-      return { business: null as Business | null, usingDemoData: false, useLegacySchema: true };
-    }
-    return { business: null as Business | null, usingDemoData: false, useLegacySchema: false };
-  }
+      if (error) {
+        if (error.message.toLowerCase().includes("businesses")) {
+          return { business: null as Business | null, usingDemoData: false, useLegacySchema: true };
+        }
+        return { business: null as Business | null, usingDemoData: false, useLegacySchema: false };
+      }
 
-  if (!data) {
-    return { business: null as Business | null, usingDemoData: false, useLegacySchema: false };
-  }
+      if (!data) {
+        return { business: null as Business | null, usingDemoData: false, useLegacySchema: false };
+      }
 
-  return {
-    business: data as Business,
-    usingDemoData: false,
-    useLegacySchema: false,
-  };
+      return {
+        business: data as Business,
+        usingDemoData: false,
+        useLegacySchema: false,
+      };
+    },
+    [cacheKey],
+    { revalidate: 60, tags: ["businesses"] },
+  );
+
+  return reader();
 });
 
 const getAccessibleBusinesses = cache(async () => {
@@ -4384,20 +4392,25 @@ export async function getSalesReportSummary(days = 7) {
     return { rows: [] as Array<{ day: string; sales: number; refunds: number; net: number }>, usingDemoData: true };
   }
 
-  const scope = await getDefaultBusinessScope();
-  const safeDays = Math.max(1, Math.min(90, Math.floor(days)));
-  const cached = await getCachedSalesReportSummaryRow({
-    businessId: scope.businessId,
-    branchId: scope.branchId,
-    useLegacySchema: scope.useLegacySchema,
-    days: safeDays,
-  });
+  try {
+    const scope = await getDefaultBusinessScope();
+    const safeDays = Math.max(1, Math.min(90, Math.floor(days)));
+    const cached = await getCachedSalesReportSummaryRow({
+      businessId: scope.businessId,
+      branchId: scope.branchId,
+      useLegacySchema: scope.useLegacySchema,
+      days: safeDays,
+    });
 
-  if (!cached || cached.hasError) {
+    if (!cached || cached.hasError) {
+      return { rows: [] as Array<{ day: string; sales: number; refunds: number; net: number }>, usingDemoData: false };
+    }
+
+    return { rows: cached.rows, usingDemoData: false };
+  } catch (error) {
+    console.error("[sales-report-summary] failed", error);
     return { rows: [] as Array<{ day: string; sales: number; refunds: number; net: number }>, usingDemoData: false };
   }
-
-  return { rows: cached.rows, usingDemoData: false };
 }
 
 async function getCachedFinancialInsightsRow(input: {
@@ -4423,47 +4436,16 @@ async function getCachedFinancialInsightsRow(input: {
         .select("id, order_id, payment_type, method, amount, note, created_at")
         .gte("created_at", start.toISOString())
         .order("created_at", { ascending: false });
-      const paidBase = supabase
-        .from("orders")
-        .select("id, discount_amount, service_fee, final_price, updated_at")
-        .eq("status", "paid")
-        .gte("updated_at", start.toISOString());
-      const servedBase = supabase.from("orders").select("id, final_price").eq("status", "served");
-      const cancelledBase = supabase
-        .from("orders")
-        .select("id")
-        .eq("status", "cancelled")
-        .gte("updated_at", start.toISOString());
 
-      const [
-        { data: payments, error: paymentsError },
-        { data: paidOrders, error: paidOrdersError },
-        { data: servedOrders, error: servedOrdersError },
-        { data: cancelledOrders, error: cancelledOrdersError },
-      ] = await Promise.all([
+      const [{ data: payments, error: paymentsError }] = await Promise.all([
         !input.useLegacySchema && input.businessId
           ? (input.branchId
               ? paymentBase.eq("business_id", input.businessId).eq("branch_id", input.branchId)
               : paymentBase.eq("business_id", input.businessId))
           : paymentBase,
-        !input.useLegacySchema && input.businessId
-          ? (input.branchId
-              ? paidBase.eq("business_id", input.businessId).eq("branch_id", input.branchId)
-              : paidBase.eq("business_id", input.businessId))
-          : paidBase,
-        !input.useLegacySchema && input.businessId
-          ? (input.branchId
-              ? servedBase.eq("business_id", input.businessId).eq("branch_id", input.branchId)
-              : servedBase.eq("business_id", input.businessId))
-          : servedBase,
-        !input.useLegacySchema && input.businessId
-          ? (input.branchId
-              ? cancelledBase.eq("business_id", input.businessId).eq("branch_id", input.branchId)
-              : cancelledBase.eq("business_id", input.businessId))
-          : cancelledBase,
       ]);
 
-      if (paymentsError || paidOrdersError || servedOrdersError || cancelledOrdersError) {
+      if (paymentsError) {
         return {
           hasError: true,
           summary: {
@@ -4529,13 +4511,7 @@ async function getCachedFinancialInsightsRow(input: {
         methodMap.set(row.method, methodBucket);
       }
 
-      const paidOrderRows = (paidOrders ?? []) as Array<{
-        id: string;
-        discount_amount: number;
-        service_fee: number;
-        final_price: number;
-      }>;
-      const paidOrderIds = paidOrderRows.map((row) => row.id);
+      const paidOrderIds = [...new Set(paymentRows.filter((row) => row.payment_type === "sale").map((row) => row.order_id).filter(Boolean))];
 
       let topProducts: Array<{ productName: string; qty: number; revenue: number }> = [];
       if (paidOrderIds.length > 0) {
@@ -4566,19 +4542,8 @@ async function getCachedFinancialInsightsRow(input: {
           .slice(0, 10);
       }
 
-      const discountTotal = paidOrderRows.reduce((sum, row) => sum + Number(row.discount_amount ?? 0), 0);
-      const serviceFeeTotal = paidOrderRows.reduce((sum, row) => sum + Number(row.service_fee ?? 0), 0);
-      const paidOrderCount = paidOrderRows.length;
+      const paidOrderCount = paidOrderIds.length;
       const averageTicket = paidOrderCount > 0 ? grossSales / paidOrderCount : 0;
-      const servedOrderRows = (servedOrders ?? []) as Array<{ id: string; final_price: number }>;
-      const servedPaymentSummary = await getOrderPaymentSummaryMap(
-        supabase,
-        servedOrderRows.map((row) => row.id),
-      );
-      const outstandingReceivables = servedOrderRows.reduce((sum, row) => {
-        const remaining = Number(row.final_price ?? 0) - (servedPaymentSummary.get(row.id)?.net ?? 0);
-        return sum + Math.max(0, remaining);
-      }, 0);
 
       return {
         hasError: false,
@@ -4586,12 +4551,12 @@ async function getCachedFinancialInsightsRow(input: {
           grossSales,
           refunds,
           netSales: grossSales - refunds,
-          discountTotal,
-          serviceFeeTotal,
+          discountTotal: 0,
+          serviceFeeTotal: 0,
           paidOrderCount,
           averageTicket,
-          outstandingReceivables,
-          cancelledCount: (cancelledOrders ?? []).length,
+          outstandingReceivables: 0,
+          cancelledCount: 0,
         },
         methodBreakdown: Array.from(methodMap.entries()).map(([method, values]) => ({
           method,
@@ -4645,16 +4610,55 @@ export async function getFinancialInsights(days = 7) {
     };
   }
 
-  const scope = await getDefaultBusinessScope();
-  const safeDays = Math.max(1, Math.min(90, Math.floor(days)));
-  const cached = await getCachedFinancialInsightsRow({
-    businessId: scope.businessId,
-    branchId: scope.branchId,
-    useLegacySchema: scope.useLegacySchema,
-    days: safeDays,
-  });
+  try {
+    const scope = await getDefaultBusinessScope();
+    const safeDays = Math.max(1, Math.min(90, Math.floor(days)));
+    const cached = await getCachedFinancialInsightsRow({
+      businessId: scope.businessId,
+      branchId: scope.branchId,
+      useLegacySchema: scope.useLegacySchema,
+      days: safeDays,
+    });
 
-  if (!cached || cached.hasError) {
+    if (!cached || cached.hasError) {
+      return {
+        usingDemoData: false,
+        summary: {
+          grossSales: 0,
+          refunds: 0,
+          netSales: 0,
+          discountTotal: 0,
+          serviceFeeTotal: 0,
+          paidOrderCount: 0,
+          averageTicket: 0,
+          outstandingReceivables: 0,
+          cancelledCount: 0,
+        },
+        methodBreakdown: [] as Array<{ method: string; sales: number; refunds: number; net: number }>,
+        hourlySales: [] as Array<{ hour: string; sales: number }>,
+        topProducts: [] as Array<{ productName: string; qty: number; revenue: number }>,
+        recentPayments: [] as Array<{
+          id: string;
+          order_id: string;
+          payment_type: string;
+          method: string;
+          amount: number;
+          note: string | null;
+          created_at: string;
+        }>,
+      };
+    }
+
+    return {
+      usingDemoData: false,
+      summary: cached.summary,
+      methodBreakdown: cached.methodBreakdown,
+      hourlySales: cached.hourlySales,
+      topProducts: cached.topProducts,
+      recentPayments: cached.recentPayments,
+    };
+  } catch (error) {
+    console.error("[financial-insights] failed", error);
     return {
       usingDemoData: false,
       summary: {
@@ -4682,15 +4686,6 @@ export async function getFinancialInsights(days = 7) {
       }>,
     };
   }
-
-  return {
-    usingDemoData: false,
-    summary: cached.summary,
-    methodBreakdown: cached.methodBreakdown,
-    hourlySales: cached.hourlySales,
-    topProducts: cached.topProducts,
-    recentPayments: cached.recentPayments,
-  };
 }
 
 export async function getCurrentCashSession() {
