@@ -70,7 +70,7 @@ export function QrOrderingClient({
         <p className="text-sm text-slate-300">QR Menu</p>
         <h1 className="text-2xl font-semibold">Masa: {qrCodeIdentifier}</h1>
         <p className="mt-3 text-sm text-slate-300">
-          Bu ekranda sadece menu goruntulenir. Siparis ekleme islemi garson tarafindan yapilir.
+          Bu ekranda sadece menu goruntulenir. Siparis ve adisyon islemleri isletme personeli tarafindan yonetilir.
         </p>
       </header>
 
@@ -116,10 +116,10 @@ export function QrOrderingClient({
         <div className="mb-4 flex flex-wrap items-center justify-between gap-3">
           <div>
             <h2 className="text-xl font-semibold text-slate-900">Menu</h2>
-            <p className="text-sm text-slate-500">Urunleri inceleyin, siparisi garsona iletin.</p>
+            <p className="text-sm text-slate-500">Urunleri inceleyin. Siparisiniz personel tarafindan adisyona eklenir.</p>
           </div>
           <div className="rounded-xl border border-amber-200 bg-amber-50 px-4 py-2 text-sm text-amber-900">
-            QR siparis su an kapali
+            QR uzerinden siparis alinmiyor
           </div>
         </div>
         <div className="space-y-6">

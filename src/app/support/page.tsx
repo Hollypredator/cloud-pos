@@ -59,11 +59,22 @@ export default async function SupportHomePage() {
         <article className="rounded-2xl bg-white p-6 shadow-sm">
           <p className="text-sm text-slate-500">Rol</p>
           <h2 className="mt-2 text-2xl font-semibold text-slate-900">{access.supportRole ?? "-"}</h2>
+          <div className="mt-5 grid gap-2">
+            <Link href="/support/tickets?queue=mine" className="rounded-xl border border-slate-200 bg-slate-50 px-4 py-3 text-sm font-semibold text-slate-700">
+              Benim ticketlarim
+            </Link>
+            <Link href="/support/tickets?queue=breached" className="rounded-xl border border-rose-200 bg-rose-50 px-4 py-3 text-sm font-semibold text-rose-700">
+              SLA ihlali kuyrugu
+            </Link>
+            <Link href="/support/tickets?queue=urgent" className="rounded-xl border border-amber-200 bg-amber-50 px-4 py-3 text-sm font-semibold text-amber-800">
+              Acil kuyruk
+            </Link>
+          </div>
           <div className="mt-5 space-y-3">
             {snapshot.recentTickets.map((ticket) => (
               <Link key={ticket.id} href={`/support/tickets/${ticket.id}`} className="block rounded-xl border border-slate-200 bg-slate-50 px-4 py-3">
                 <p className="text-sm font-semibold text-slate-900">{ticket.subject}</p>
-                <p className="mt-1 text-xs text-slate-500">{ticket.business_name || ticket.business_id}</p>
+                <p className="mt-1 text-xs text-slate-500">{ticket.business_name || ticket.business_id} {" - "} {ticket.priority} {" - "} SLA {ticket.sla_status}</p>
               </Link>
             ))}
           </div>
@@ -73,10 +84,10 @@ export default async function SupportHomePage() {
           <p className="text-sm text-slate-500">Son Paket Talepleri</p>
           <div className="mt-4 space-y-3 text-sm text-slate-700">
             {snapshot.recentPlanRequests.map((request) => (
-              <div key={request.id} className="rounded-xl border border-slate-200 bg-slate-50 px-4 py-3">
+              <Link key={request.id} href="/support/plan-requests" className="block rounded-xl border border-slate-200 bg-slate-50 px-4 py-3">
                 <p className="font-semibold text-slate-900">{request.business_name || request.business_id}</p>
                 <p className="mt-1 text-xs text-slate-500">{request.current_plan} {"->"} {request.requested_plan}</p>
-              </div>
+              </Link>
             ))}
           </div>
           {snapshot.usingDemoData ? (
@@ -90,10 +101,10 @@ export default async function SupportHomePage() {
           <p className="text-sm text-slate-500">Son Incidentler</p>
           <div className="mt-4 space-y-3 text-sm text-slate-700">
             {snapshot.recentIncidents.map((incident) => (
-              <div key={incident.id} className="rounded-xl border border-slate-200 bg-slate-50 px-4 py-3">
+              <Link key={incident.id} href={`/support/incidents/${incident.id}`} className="block rounded-xl border border-slate-200 bg-slate-50 px-4 py-3">
                 <p className="font-semibold text-slate-900">{incident.title}</p>
                 <p className="mt-1 text-xs text-slate-500">{incident.business_name || "Global"} · {incident.severity}</p>
-              </div>
+              </Link>
             ))}
           </div>
         </article>

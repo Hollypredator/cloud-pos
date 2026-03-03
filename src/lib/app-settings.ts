@@ -81,7 +81,7 @@ export const defaultSeoSettings: SeoSettings = {
   metaTitle: "Cloud POS | Cafe ve restoran operasyonu",
   metaDescription: "Cloud POS ile masa, siparis, mutfak, kasa ve raporlama akislarini tek panelde yonetin.",
   ogTitle: "Cloud POS",
-  ogDescription: "Cafe ve restoranlar icin yeni nesil operasyon, QR siparis ve raporlama platformu.",
+  ogDescription: "Cafe ve restoranlar icin yeni nesil operasyon, QR menu ve raporlama platformu.",
   ogImageUrl: "",
   twitterHandle: "",
   indexable: true,

@@ -1,4 +1,5 @@
 import { revalidatePath } from "next/cache";
+import Link from "next/link";
 import { notFound } from "next/navigation";
 import { FEATURE_META, getPlanLabel, hasFeature, type FeatureKey } from "@/lib/features";
 import { requireSupportAccess } from "@/lib/auth";
@@ -184,11 +185,33 @@ export default async function SupportTenantDetailPage({
             <p className="text-sm font-semibold text-slate-900">Incidentler</p>
             <div className="mt-4 space-y-3">
               {(tenant.incidents ?? []).map((incident: { id: string; title: string; severity: string; status: string; owner_support_name?: string | null }) => (
-                <div key={incident.id} className="rounded-xl border border-slate-200 bg-slate-50 px-4 py-3">
+                <Link key={incident.id} href={`/support/incidents/${incident.id}`} className="block rounded-xl border border-slate-200 bg-slate-50 px-4 py-3">
                   <p className="text-sm font-semibold text-slate-900">{incident.title}</p>
                   <p className="mt-1 text-xs text-slate-500">{incident.severity} · {incident.status} · {incident.owner_support_name || "Atanmamis"}</p>
-                </div>
+                </Link>
               ))}
+            </div>
+          </article>
+
+          <article className="rounded-2xl bg-white p-6 shadow-sm">
+            <div className="flex items-center justify-between gap-3">
+              <p className="text-sm font-semibold text-slate-900">Son Ticketlar</p>
+              <Link href={`/support/tickets?q=${encodeURIComponent(tenant.name)}`} className="text-xs font-semibold text-slate-500 hover:text-slate-900">
+                Tumunu gor
+              </Link>
+            </div>
+            <div className="mt-4 space-y-3">
+              {(tenant.recent_tickets ?? []).map((ticket: { id: string; subject: string; status: string; priority: string; sla_status?: string; assigned_support_name?: string | null }) => (
+                <Link key={ticket.id} href={`/support/tickets/${ticket.id}`} className="block rounded-xl border border-slate-200 bg-slate-50 px-4 py-3">
+                  <p className="text-sm font-semibold text-slate-900">{ticket.subject}</p>
+                  <p className="mt-1 text-xs text-slate-500">{ticket.priority} {" - "} {ticket.status} {" - "} SLA {ticket.sla_status ?? "on_track"} {" - "} {ticket.assigned_support_name || "Atanmamis"}</p>
+                </Link>
+              ))}
+              {!(tenant.recent_tickets ?? []).length ? (
+                <div className="rounded-xl border border-dashed border-slate-200 bg-slate-50 px-4 py-3 text-sm text-slate-500">
+                  Bu tenant icin support ticketi yok.
+                </div>
+              ) : null}
             </div>
           </article>
 
@@ -196,10 +219,10 @@ export default async function SupportTenantDetailPage({
             <p className="text-sm font-semibold text-slate-900">Son Paket Talepleri</p>
             <div className="mt-4 space-y-3">
               {(tenant.plan_requests ?? []).map((request: { id: string; current_plan: string; requested_plan: string; status: string }) => (
-                <div key={request.id} className="rounded-xl border border-slate-200 bg-slate-50 px-4 py-3">
+                <Link key={request.id} href="/support/plan-requests" className="block rounded-xl border border-slate-200 bg-slate-50 px-4 py-3">
                   <p className="text-sm font-semibold text-slate-900">{request.current_plan} {"->"} {request.requested_plan}</p>
                   <p className="mt-1 text-xs text-slate-500">{request.status}</p>
-                </div>
+                </Link>
               ))}
             </div>
           </article>

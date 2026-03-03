@@ -4,7 +4,7 @@ export default function manifest(): MetadataRoute.Manifest {
   return {
     name: "Cloud POS",
     short_name: "CloudPOS",
-    description: "Web tabanli POS ve QR siparis sistemi",
+    description: "Web tabanli POS, QR menu ve restoran operasyon sistemi",
     start_url: "/",
     display: "standalone",
     background_color: "#f1f5f9",

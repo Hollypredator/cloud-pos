@@ -5758,6 +5758,26 @@ async function getCachedSitePageRow(slug?: string) {
   return cachedReader();
 }
 
+async function readSitePageRow(slug?: string) {
+  const key = buildSitePageKey(slug);
+  const supabase = getSupabaseServerClient();
+  if (!supabase) {
+    return null;
+  }
+
+  const { data, error } = await supabase
+    .from("site_content")
+    .select("id, key, content, created_at, updated_at")
+    .eq("key", key)
+    .maybeSingle();
+
+  if (error) {
+    return { error: true as const, row: null };
+  }
+
+  return { error: false as const, row: (data as SiteContent | null) ?? null };
+}
+
 export async function listSitePages() {
   const cached = await getCachedSitePagesRows();
   if (!cached) {
@@ -5809,7 +5829,11 @@ export async function listSitePages() {
 }
 
 export async function getSitePageContent(slug?: string) {
-  const cached = await getCachedSitePageRow(slug);
+  const normalizedSlug = normalizeSitePageSlug(slug);
+  const cached =
+    normalizedSlug === "home"
+      ? await readSitePageRow(slug)
+      : await getCachedSitePageRow(slug);
   if (!cached) {
     return { content: defaultLandingContent, usingDemoData: true };
   }
@@ -7873,9 +7897,15 @@ export async function getSupportTenantDetail(businessId: string) {
     return { tenant: null, usingDemoData: false };
   }
 
-  const [branchResult, ticketResult, orderResult, paymentResult, planRequestsResult, auditResult, incidentsResult, profileResult, featureFlagsResult] = await Promise.all([
+  const [branchResult, ticketResult, recentTicketsResult, orderResult, paymentResult, planRequestsResult, auditResult, incidentsResult, profileResult, featureFlagsResult] = await Promise.all([
     supabase.from("branches").select("id", { count: "exact", head: true }).eq("business_id", businessId).eq("is_active", true),
     supabase.from("support_tickets").select("id", { count: "exact", head: true }).eq("business_id", businessId).in("status", ["open", "in_progress"]),
+    supabase
+      .from("support_tickets")
+      .select("id, business_id, type, priority, status, subject, description, created_by_profile_id, assigned_to_support_user_id, created_at, updated_at, resolved_at")
+      .eq("business_id", businessId)
+      .order("created_at", { ascending: false })
+      .limit(6),
     supabase.from("orders").select("created_at").eq("business_id", businessId).order("created_at", { ascending: false }).limit(1).maybeSingle(),
     supabase.from("payments").select("created_at").eq("business_id", businessId).order("created_at", { ascending: false }).limit(1).maybeSingle(),
     supabase.from("support_plan_requests").select("id, business_id, current_plan, requested_plan, reason, status, requested_by_profile_id, reviewed_by_support_user_id, created_at, updated_at").eq("business_id", businessId).order("created_at", { ascending: false }).limit(10),
@@ -7885,7 +7915,10 @@ export async function getSupportTenantDetail(businessId: string) {
     supabase.from("support_feature_flag_overrides").select("id, business_id, feature_key, enabled, note, created_at, updated_at").eq("business_id", businessId).order("updated_at", { ascending: false }),
   ]);
 
-  const planRequests = await enrichSupportPlanRequests((planRequestsResult.data ?? []) as SupportPlanRequest[]);
+  const [planRequests, recentTickets] = await Promise.all([
+    enrichSupportPlanRequests((planRequestsResult.data ?? []) as SupportPlanRequest[]),
+    enrichSupportTickets((recentTicketsResult.data ?? []) as SupportTicket[]),
+  ]);
   const auditSupportIds = [...new Set(((auditResult.data ?? []) as Array<{ support_user_id: string | null }>).map((row) => row.support_user_id).filter(Boolean))] as string[];
   const incidentOwnerIds = [...new Set(((incidentsResult.data ?? []) as Array<{ owner_support_user_id: string | null }>).map((row) => row.owner_support_user_id).filter(Boolean))] as string[];
   const allSupportIds = [...new Set([...auditSupportIds, ...incidentOwnerIds])];
@@ -7924,6 +7957,11 @@ export async function getSupportTenantDetail(businessId: string) {
         ...incident,
         business_name: business.name,
         owner_support_name: incident.owner_support_user_id ? supportMap.get(incident.owner_support_user_id) ?? null : null,
+      })),
+      recent_tickets: recentTickets.map((ticket) => ({
+        ...ticket,
+        business_name: business.name,
+        assigned_support_name: ticket.assigned_to_support_user_id ? supportMap.get(ticket.assigned_to_support_user_id) ?? null : null,
       })),
       feature_flags: ((featureFlagsResult.data ?? []) as SupportFeatureFlagOverride[]).map((flag) => ({
         ...flag,

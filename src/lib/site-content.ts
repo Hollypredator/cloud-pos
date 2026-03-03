@@ -111,12 +111,12 @@ export const defaultLandingContent: LandingContent = {
       id: "hero-main",
       style: { paddingTop: 40, paddingBottom: 56, paddingX: 0, radius: 32, containerWidth: "wide", surface: "transparent", border: "none", shadow: "none", textAlign: "left" },
       type: "hero",
-      badge: "Hospitality OS",
-      title: "Siparis, mutfak, kasa ve masa akisini tek merkezden yonet.",
+      badge: "Cloud POS",
+      title: "Cafe ve restoran operasyonunu tek panelden yonetin.",
       body:
-        "Cloud POS; QR menu, canli mutfak sirasi, vardiya takibi ve yonetici raporlarini ayni sistemde birlestirir. Isletmeye hiz kazandirir, ekipler arasi kopuklugu azaltir.",
-      primaryCtaLabel: "Personel Paneline Gir",
-      secondaryCtaLabel: "Operasyon Onizleme",
+        "Cloud POS; masa, adisyon, mutfak, kasa ve yonetsel raporlari ayni sistemde toplar. Musteri menuyu kendi telefonunda gorur, siparis ve operasyon akisi personel tarafindan yonetilir.",
+      primaryCtaLabel: "Panele Giris",
+      secondaryCtaLabel: "Demo Incele",
     },
     {
       id: "feature-grid-main",
@@ -125,16 +125,16 @@ export const defaultLandingContent: LandingContent = {
       eyebrow: "One Cikanlar",
       items: [
         {
-          title: "QR Siparis",
-          body: "Masaya oturan musteri menuyu acsin, siparisi dogrudan sisteme dussun.",
+          title: "QR Menu",
+          body: "Musteri masada menuyu kendi telefonundan gorur, siparis akisi personel tarafindan yonetilir.",
         },
         {
           title: "Canli Operasyon",
-          body: "Mutfak, kasa ve servis ekipleri ayni siparis akisini es zamanli izlesin.",
+          body: "Mutfak, kasa ve servis ekipleri ayni akisi es zamanli izler ve operasyon kopmadan ilerler.",
         },
         {
           title: "Yonetsel Kontrol",
-          body: "Masa, urun, rol ve rapor yonetimini tek panelden yurut.",
+          body: "Masa, urun, roller, finans ve raporlar tek panelden yonetilir.",
         },
       ],
     },
@@ -142,11 +142,11 @@ export const defaultLandingContent: LandingContent = {
       id: "process-main",
       style: { paddingTop: 28, paddingBottom: 28, paddingX: 0, radius: 32, containerWidth: "default", surface: "transparent", border: "none", shadow: "none", textAlign: "left" },
       type: "process_steps",
-      eyebrow: "Hazir Akis",
+      eyebrow: "Nasil Calisir",
       items: [
-        { title: "1. Kurulum", body: "Isletme, masa ve personel yapisini hazirla." },
-        { title: "2. Servis", body: "Siparisleri mutfak ve kasaya canli aktar." },
-        { title: "3. Raporlama", body: "Gun sonu ve yonetsel kararlar icin veriyi kullan." },
+        { title: "1. Kurulum", body: "Isletme, sube, masa ve personel yapisi kisa surede hazirlanir." },
+        { title: "2. Operasyon", body: "Adisyon, mutfak, servis ve kasa akisi ayni sistemde ilerler." },
+        { title: "3. Takip", body: "Gun sonu, finans ve yonetsel raporlar panel uzerinden izlenir." },
       ],
     },
     {
@@ -158,17 +158,17 @@ export const defaultLandingContent: LandingContent = {
         {
           name: "Starter",
           price: "29.900 TL",
-          summary: "Tek sube, QR menu ve temel operasyon paneli ile hizli kurulum.",
+          summary: "Tek sube, QR menu ve temel operasyon modulleriyle hizli baslangic.",
         },
         {
           name: "Growth",
           price: "54.900 TL",
-          summary: "Kasa vardiya, raporlar, stok takibi ve rol bazli ekip yonetimi dahil.",
+          summary: "Kasa, vardiya, rapor, stok ve rol bazli ekip yonetimi dahil.",
         },
         {
           name: "Custom",
           price: "Teklif",
-          summary: "Marka uyarlama, ozel entegrasyonlar ve saha kurulumu ile teslim.",
+          summary: "Marka uyarlama, ozel entegrasyonlar ve kuruma ozel operasyon kurgusu.",
         },
       ],
     },
@@ -176,37 +176,37 @@ export const defaultLandingContent: LandingContent = {
       id: "credibility-main",
       style: { paddingTop: 28, paddingBottom: 28, paddingX: 0, radius: 32, containerWidth: "default", surface: "transparent", border: "none", shadow: "none", textAlign: "left" },
       type: "credibility",
-      eyebrow: "Guven ve Referans",
-      title: "Saha diline yakin, satis sunumuna hazir",
+      eyebrow: "Neden Cloud POS",
+      title: "Operasyonun diline uygun, sahada kullanima hazir",
       body:
-        "Mutfak, kasa ve servis ekranlari rol bazli ayriliyor. Landing, demo ve operasyon paneli tek akista birlestigi icin gorusmede urunu parcali gostermek zorunda kalmazsin.",
+        "Mutfak, kasa, servis ve yonetim ekranlari rol bazli ayrilir. Boylesiyle ekipler kendi is akisini gorur, yonetim ise tum resmi tek panelden takip eder.",
       references: ["Nord Roast", "Atelier Bakehouse", "Mimoza Brasserie", "Kule Kahve"],
     },
     {
       id: "contact-main",
       style: { paddingTop: 28, paddingBottom: 32, paddingX: 0, radius: 32, containerWidth: "default", surface: "transparent", border: "none", shadow: "none", textAlign: "left" },
       type: "contact_cta",
-      eyebrow: "Demo ve Teklif",
-      title: "Musteri gorusmesini buradan kapat",
-      body: "Bilgileri gir, hazir WhatsApp mesaji ile demo talebi gonder. Istersen dogrudan arama baslat.",
+      eyebrow: "Iletisim",
+      title: "Demo ve kurulum sureci icin bizimle iletisime gecin",
+      body: "Bilgilerinizi birakin. Isterseniz dogrudan WhatsApp veya telefon uzerinden de bize ulasabilirsiniz.",
     },
     {
       id: "faq-main",
       style: { paddingTop: 28, paddingBottom: 48, paddingX: 0, radius: 32, containerWidth: "wide", surface: "transparent", border: "none", shadow: "none", textAlign: "left" },
       type: "faq_grid",
-      eyebrow: "Sik Gelen Itirazlar",
+      eyebrow: "Sik Sorulan Sorular",
       items: [
         {
           title: "Kurulum ne kadar surer?",
-          body: "Hazir Supabase yapisi ve panel akisi ile ayni gun demo, kisa surede canliya gecis kurgulanabilir.",
+          body: "Kurulum suresi isletmenin sube, urun ve operasyon yapisina gore planlanir. Pilot kurulumlar kisa surede baslatilabilir.",
         },
         {
           title: "Ekipler farkli ekran mi kullanir?",
-          body: "Evet. Mutfak, kasa, servis ve admin ayni sistemin rol bazli ayrilmis ekranlarini gorur.",
+          body: "Evet. Mutfak, kasa, servis ve yonetim ayni sistemin rol bazli ayri ekranlarini kullanir.",
         },
         {
-          title: "QR siparis zorunlu mu?",
-          body: "Hayir. Masa bazli operasyon QR ile veya personel ekranlari uzerinden birlikte yurutulebilir.",
+          title: "QR ile siparis aliniyor mu?",
+          body: "Hayir. QR tarafi su an sadece menu goruntuleme icin kullanilir; siparis ekleme personel ekranlarindan yapilir.",
         },
       ],
     },
@@ -336,6 +336,93 @@ function sanitizeProcessItems(values: unknown, fallback: LandingProcessItem[]) {
     .filter((item) => item.title || item.body);
 
   return sanitized.length > 0 ? sanitized : fallback;
+}
+
+function modernizeLandingText(value: string) {
+  return value
+    .replace(/Hospitality OS/gi, "Cloud POS")
+    .replace(/QR Siparis/gi, "QR Menu")
+    .replace(/QR siparis/gi, "QR menu")
+    .replace(/QR uzerinden dogrudan siparis kapali\. Lutfen garsona iletin\./gi, "QR uzerinden siparis alinmiyor. Siparisler personel tarafindan yonetilir.")
+    .replace(/Masaya oturan musteri menuyu acsin, siparisi dogrudan sisteme dussun\./gi, "Masaya oturan musteri menuyu kendi telefonunda acsin, siparisi ekip yonetsin.")
+    .replace(/Musteri menuyu acsin, siparisi dogrudan sisteme dussun\./gi, "Musteri menuyu acsin, siparis akisini ekip yonetsin.")
+    .replace(/QR siparis zorunlu mu\?/gi, "QR ile siparis aliniyor mu?")
+    .replace(/Hayir\. Masa bazli operasyon QR ile veya personel ekranlari uzerinden birlikte yurutulebilir\./gi, "Hayir. QR tarafi sadece menu goruntuleme icindir; siparis ekleme personel ekranlarindan yapilir.");
+}
+
+function modernizeLandingSection(section: LandingSection): LandingSection {
+  if (section.type === "hero") {
+    return {
+      ...section,
+      badge: modernizeLandingText(section.badge),
+      title: modernizeLandingText(section.title),
+      body: modernizeLandingText(section.body),
+      primaryCtaLabel: modernizeLandingText(section.primaryCtaLabel),
+      secondaryCtaLabel: modernizeLandingText(section.secondaryCtaLabel),
+    };
+  }
+
+  if (section.type === "feature_grid") {
+    return {
+      ...section,
+      eyebrow: modernizeLandingText(section.eyebrow),
+      items: section.items.map((item) => ({
+        title: modernizeLandingText(item.title),
+        body: modernizeLandingText(item.body),
+      })),
+    };
+  }
+
+  if (section.type === "process_steps") {
+    return {
+      ...section,
+      eyebrow: modernizeLandingText(section.eyebrow),
+      items: section.items.map((item) => ({
+        title: modernizeLandingText(item.title),
+        body: modernizeLandingText(item.body),
+      })),
+    };
+  }
+
+  if (section.type === "pricing_grid") {
+    return {
+      ...section,
+      eyebrow: modernizeLandingText(section.eyebrow),
+      items: section.items.map((item) => ({
+        name: modernizeLandingText(item.name),
+        price: modernizeLandingText(item.price),
+        summary: modernizeLandingText(item.summary),
+      })),
+    };
+  }
+
+  if (section.type === "credibility") {
+    return {
+      ...section,
+      eyebrow: modernizeLandingText(section.eyebrow),
+      title: modernizeLandingText(section.title),
+      body: modernizeLandingText(section.body),
+      references: section.references.map((item) => modernizeLandingText(item)),
+    };
+  }
+
+  if (section.type === "faq_grid") {
+    return {
+      ...section,
+      eyebrow: modernizeLandingText(section.eyebrow),
+      items: section.items.map((item) => ({
+        title: modernizeLandingText(item.title),
+        body: modernizeLandingText(item.body),
+      })),
+    };
+  }
+
+  return {
+    ...section,
+    eyebrow: modernizeLandingText(section.eyebrow),
+    title: modernizeLandingText(section.title),
+    body: modernizeLandingText(section.body),
+  };
 }
 
 function normalizeSection(section: unknown, index: number): LandingSection | null {
@@ -612,6 +699,6 @@ export function normalizeLandingContent(input?: Partial<LandingContent> | (Parti
     topLoginLabel: sanitizeText(merged.topLoginLabel, defaultLandingContent.topLoginLabel),
     topDemoLabel: sanitizeText(merged.topDemoLabel, defaultLandingContent.topDemoLabel),
     businessPhone: sanitizeText(merged.businessPhone, defaultLandingContent.businessPhone),
-    sections: hasExplicitSectionsField ? normalizedSections : normalizedSections.length > 0 ? normalizedSections : defaultLandingContent.sections,
+    sections: (hasExplicitSectionsField ? normalizedSections : normalizedSections.length > 0 ? normalizedSections : defaultLandingContent.sections).map(modernizeLandingSection),
   };
 }

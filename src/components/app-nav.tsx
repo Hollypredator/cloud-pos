@@ -297,6 +297,7 @@ export function AppNav({
                     <Link
                       key={link.href}
                       href={link.href}
+                      prefetch={false}
                       className={`flex items-center gap-3 rounded-2xl px-3 py-2.5 text-sm font-semibold ${
                         isActive(link.href) ? "bg-slate-950 text-white" : "border border-slate-200 bg-white text-slate-800"
                       }`}
@@ -321,6 +322,7 @@ export function AppNav({
               <Link
                 key={link.href}
                 href={link.href}
+                prefetch={false}
                 className={`flex min-h-[56px] flex-col items-center justify-center rounded-2xl px-2 py-1.5 text-center text-[10px] font-semibold leading-tight ${
                   isActive(link.href) ? "bg-slate-950 text-white" : "bg-slate-100 text-slate-700"
                 }`}
@@ -460,6 +462,7 @@ export function AppNav({
                 <Link
                   key={link.href}
                   href={link.href}
+                  prefetch={false}
                   title={collapsed ? link.label : undefined}
                   className={className}
                   style={

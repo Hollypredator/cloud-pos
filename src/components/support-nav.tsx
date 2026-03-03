@@ -30,6 +30,7 @@ export function SupportNav() {
           <Link
             key={link.href}
             href={link.href}
+            prefetch={false}
             className={`rounded-xl px-4 py-2 text-sm font-semibold ${
               active ? "bg-slate-900 text-white" : "border border-slate-200 bg-white text-slate-700"
             }`}

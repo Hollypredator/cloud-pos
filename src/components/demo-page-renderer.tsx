@@ -139,7 +139,7 @@ function renderHeaderActions(content: DemoPageContent, previewMode?: boolean) {
         items={[
           { href: "/", label: "Ana Sayfa" },
           { href: "/blog", label: "Blog" },
-          { href: "/ops", label: content.opsCtaLabel },
+          { href: "/login?next=%2Fops", label: content.opsCtaLabel },
           { href: "/login", label: content.loginCtaLabel },
         ]}
         tone="dark"

@@ -10,9 +10,9 @@ export function LandingContactCard({
   businessPhone,
   leadStatus,
   supportEmail,
-  eyebrow = "Demo ve Teklif",
-  title = "Musteri gorusmesini buradan kapat",
-  body = "Bilgileri gir, hazir WhatsApp mesaji ile demo talebi gonder. Istersen dogrudan arama baslat.",
+  eyebrow = "Iletisim",
+  title = "Demo ve kurulum sureci icin bizimle iletisime gecin",
+  body = "Bilgilerinizi birakin. Isterseniz WhatsApp veya telefon uzerinden de dogrudan ulasabilirsiniz.",
   previewMode = false,
 }: {
   businessPhone: string;
@@ -30,7 +30,7 @@ export function LandingContactCard({
   const whatsappHref = useMemo(() => {
     const phone = normalizePhone(businessPhone || "");
     const message = [
-      "Merhaba, Cloud POS icin demo ve teklif almak istiyorum.",
+      "Merhaba, Cloud POS icin bilgi ve demo talep etmek istiyorum.",
       `Isletme: ${companyName || "-"}`,
       `Yetkili: ${contactName || "-"}`,
       `Sube sayisi: ${branchCount || "-"}`,
@@ -127,7 +127,7 @@ export function LandingContactCard({
           id="note"
           name="note"
           rows={4}
-          placeholder="QR siparis, kasa, rapor veya stok takibi gibi ihtiyaci yazin"
+          placeholder="QR menu, kasa, rapor veya stok takibi gibi ihtiyaci yazin"
           disabled={previewMode}
           className="mt-2 w-full rounded-2xl border border-slate-200 bg-white px-4 py-3 text-sm text-slate-900 outline-none transition focus:border-slate-900 disabled:cursor-not-allowed disabled:bg-slate-100"
         />
@@ -137,7 +137,7 @@ export function LandingContactCard({
           type={previewMode ? "button" : "submit"}
           className="w-full rounded-2xl bg-slate-950 px-4 py-3 text-sm font-semibold text-white"
         >
-          Teklif Talebi Gonder
+          Talep Gonder
         </button>
       </div>
     </>
@@ -151,12 +151,12 @@ export function LandingContactCard({
 
       {leadStatus === "success" ? (
         <p className="mt-4 rounded-2xl border border-emerald-200 bg-emerald-50 px-4 py-3 text-sm text-emerald-800">
-          Teklif talebi kaydedildi. Simdi WhatsApp veya telefonla gorusmeye devam edebilirsin.
+          Talebiniz kaydedildi. Isterseniz WhatsApp veya telefonla iletisime devam edebilirsiniz.
         </p>
       ) : null}
       {leadStatus === "error" ? (
         <p className="mt-4 rounded-2xl border border-rose-200 bg-rose-50 px-4 py-3 text-sm text-rose-700">
-          Talep kaydi olusturulamadi. Formu tekrar dene veya WhatsApp ile ulas.
+          Talep kaydi olusturulamadi. Formu tekrar deneyin veya WhatsApp ile ulasin.
         </p>
       ) : null}
 
@@ -171,9 +171,9 @@ export function LandingContactCard({
 
         <div className="rounded-[1.25rem] bg-slate-950 p-4 text-white sm:rounded-[1.5rem] sm:p-5">
           <p className="text-xs uppercase tracking-[0.24em] text-slate-400">Hizli Iletisim</p>
-          <p className="mt-3 text-xl font-semibold tracking-tight sm:text-2xl">Demo tarihi netlestir</p>
+          <p className="mt-3 text-xl font-semibold tracking-tight sm:text-2xl">WhatsApp veya telefonla ulasin</p>
           <p className="mt-3 text-sm leading-7 text-slate-300">
-            Satista bekleme yaratma. Hazir mesajla iletisime gec, ayni gorusmede sonraki adimi al.
+            Talebinizi hizli iletin, kurulum ve demo sureci icin en uygun adimi birlikte planlayalim.
           </p>
           {supportEmail ? <p className="mt-2 break-words text-sm text-slate-400">{supportEmail}</p> : null}
           <div className="mt-6 flex flex-col gap-3">
@@ -183,13 +183,13 @@ export function LandingContactCard({
               rel="noreferrer"
               className="rounded-2xl bg-emerald-500 px-4 py-3 text-center text-sm font-semibold text-slate-950"
             >
-              WhatsApp ile Teklif Al
+              WhatsApp ile Ulas
             </a>
             <a
               href={callHref}
               className="rounded-2xl border border-white/15 px-4 py-3 text-center text-sm font-semibold text-white"
             >
-              Hemen Ara
+              Telefonla Ara
             </a>
           </div>
         </div>

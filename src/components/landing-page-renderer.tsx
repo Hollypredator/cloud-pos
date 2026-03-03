@@ -1,7 +1,7 @@
 import Link from "next/link";
 import { LandingContactCard } from "@/components/landing-contact-card";
 import type { GeneralSettings } from "@/lib/app-settings";
-import type { LandingContent, LandingSection, LandingSectionStyle } from "@/lib/site-content";
+import { defaultLandingContent, type LandingContent, type LandingSection, type LandingSectionStyle } from "@/lib/site-content";
 
 type LandingRendererEditorOptions = {
   activeSectionId?: string | null;
@@ -169,6 +169,7 @@ function renderHeroActions(section: Extract<LandingSection, { type: "hero" }>, p
 function renderSection(
   section: LandingSection,
   settings: GeneralSettings,
+  content: LandingContent,
   leadStatus?: string,
   businessPhone?: string,
   editor?: LandingRendererEditorOptions,
@@ -177,13 +178,33 @@ function renderSection(
     return wrapEditableSection(
       section,
       <section className="grid flex-1 items-center gap-5 py-4 sm:py-6 lg:grid-cols-[1.05fr_0.95fr] lg:gap-8 lg:py-10">
-        <div className="rounded-[1.5rem] border border-white/70 bg-slate-950 px-5 py-6 text-white shadow-[0_35px_90px_rgba(15,23,42,0.18)] sm:rounded-[2rem] sm:px-8 sm:py-10">
+        <div className="rounded-[1.5rem] border border-[#1d1f2a] bg-[linear-gradient(160deg,#07111f_0%,#121f2f_44%,#231713_100%)] px-5 py-6 text-white shadow-[0_35px_90px_rgba(15,23,42,0.24)] sm:rounded-[2rem] sm:px-8 sm:py-10">
           <p className="inline-flex rounded-full border border-white/15 bg-white/10 px-3 py-1 text-[11px] font-semibold uppercase tracking-[0.28em] text-slate-200">
             {section.badge}
           </p>
           <h2 className="mt-5 max-w-2xl text-3xl font-semibold leading-tight tracking-tight sm:mt-6 sm:text-4xl lg:text-5xl">{section.title}</h2>
           <p className="mt-4 max-w-2xl text-sm leading-7 text-slate-300 sm:mt-5 sm:text-base sm:leading-8">{section.body}</p>
           <div className="mt-6 flex flex-wrap gap-3 sm:mt-8">{renderHeroActions(section, editor?.previewMode)}</div>
+        </div>
+        <div className="grid gap-4">
+          <div className="rounded-[1.5rem] border border-white/70 bg-white/82 p-5 shadow-[0_28px_80px_rgba(15,23,42,0.12)] backdrop-blur sm:p-6">
+            <p className="text-xs uppercase tracking-[0.24em] text-slate-500">Tek Akis</p>
+            <p className="mt-2 text-2xl font-semibold tracking-tight text-slate-950">Mutfak, kasa ve servis ayni operasyon dilinde calisir</p>
+            <div className="mt-5 grid gap-3">
+              <div className="rounded-2xl border border-slate-200 bg-[linear-gradient(135deg,#fff8ee_0%,#f8fbfd_100%)] px-4 py-4">
+                <p className="text-sm font-semibold text-slate-950">Mutfak kuyugu</p>
+                <p className="mt-2 text-sm leading-6 text-slate-600">Siparisler hazirlik durumuna gore ayrilir, ekip neye odaklanacagini aninda gorur.</p>
+              </div>
+              <div className="rounded-2xl border border-slate-200 bg-[linear-gradient(135deg,#fff8ee_0%,#f8fbfd_100%)] px-4 py-4">
+                <p className="text-sm font-semibold text-slate-950">Kasa ve vardiya</p>
+                <p className="mt-2 text-sm leading-6 text-slate-600">Tahsilat, gun sonu ve rol bazli akis ayni panel dilinde ilerler.</p>
+              </div>
+              <div className="rounded-2xl border border-slate-200 bg-[linear-gradient(135deg,#fff8ee_0%,#f8fbfd_100%)] px-4 py-4">
+                <p className="text-sm font-semibold text-slate-950">Masa kontrolu</p>
+                <p className="mt-2 text-sm leading-6 text-slate-600">QR menu, adisyon ve servis durumu birbirinden kopmadan yonetilir.</p>
+              </div>
+            </div>
+          </div>
         </div>
       </section>,
       editor,
@@ -197,9 +218,14 @@ function renderSection(
         {section.items.map((item, index) => (
           <article
             key={`${section.id}-${index}`}
-            className="rounded-[1.25rem] border border-white/70 bg-white/80 p-4 shadow-[0_20px_60px_rgba(15,23,42,0.10)] backdrop-blur sm:rounded-[1.75rem] sm:p-6"
+            className="rounded-[1.25rem] border border-white/70 bg-[linear-gradient(180deg,rgba(255,255,255,0.92)_0%,rgba(248,250,252,0.82)_100%)] p-4 shadow-[0_20px_60px_rgba(15,23,42,0.10)] backdrop-blur sm:rounded-[1.75rem] sm:p-6"
           >
-            <p className="text-xs uppercase tracking-[0.28em] text-slate-500">{section.eyebrow}</p>
+            <div className="flex items-center justify-between gap-3">
+              <p className="text-xs uppercase tracking-[0.28em] text-slate-500">{section.eyebrow}</p>
+              <span className="inline-flex h-10 w-10 items-center justify-center rounded-full bg-slate-950 text-xs font-black text-white">
+                0{index + 1}
+              </span>
+            </div>
             <p className="mt-3 text-xl font-semibold tracking-tight text-slate-900 sm:text-2xl">{item.title}</p>
             <p className="mt-3 text-sm leading-7 text-slate-600">{item.body}</p>
           </article>
@@ -212,12 +238,17 @@ function renderSection(
   if (section.type === "process_steps") {
     return wrapEditableSection(
       section,
-      <section className="rounded-[1.25rem] border border-slate-200 bg-white/85 p-4 shadow-[0_20px_60px_rgba(15,23,42,0.10)] sm:rounded-[1.75rem] sm:p-6">
+      <section className="rounded-[1.25rem] border border-slate-200 bg-white/88 p-4 shadow-[0_20px_60px_rgba(15,23,42,0.10)] sm:rounded-[1.75rem] sm:p-6">
         <p className="text-xs uppercase tracking-[0.28em] text-slate-500">{section.eyebrow}</p>
         <div className="mt-4 grid gap-3 sm:grid-cols-3">
           {section.items.map((item, index) => (
-            <div key={`${section.id}-${index}`} className="rounded-2xl bg-slate-50 p-4">
-              <p className="text-sm font-semibold text-slate-900">{item.title}</p>
+            <div key={`${section.id}-${index}`} className="rounded-2xl border border-slate-200 bg-[linear-gradient(135deg,#fff9f1_0%,#f8fbfd_100%)] p-4">
+              <div className="flex items-center gap-3">
+                <span className="inline-flex h-9 w-9 items-center justify-center rounded-full bg-[linear-gradient(135deg,#ff6a3d_0%,#f2b44f_100%)] text-xs font-black text-white">
+                  {index + 1}
+                </span>
+                <p className="text-sm font-semibold text-slate-900">{item.title}</p>
+              </div>
               <p className="mt-2 text-sm text-slate-600">{item.body}</p>
             </div>
           ))}
@@ -234,11 +265,18 @@ function renderSection(
         {section.items.map((item, index) => (
           <article
             key={`${section.id}-${index}`}
-            className="rounded-[1.25rem] border border-white/70 bg-white/80 p-4 shadow-[0_20px_60px_rgba(15,23,42,0.10)] backdrop-blur sm:rounded-[1.75rem] sm:p-6"
+            className={`rounded-[1.25rem] border p-4 backdrop-blur sm:rounded-[1.75rem] sm:p-6 ${
+              index === 1
+                ? "border-slate-950 bg-slate-950 text-white shadow-[0_30px_80px_rgba(15,23,42,0.22)]"
+                : "border-white/70 bg-white/82 shadow-[0_20px_60px_rgba(15,23,42,0.10)]"
+            }`}
           >
-            <p className="text-xs uppercase tracking-[0.28em] text-slate-500">{item.name}</p>
-            <p className="mt-3 text-2xl font-semibold tracking-tight text-slate-900 sm:text-3xl">{item.price}</p>
-            <p className="mt-3 text-sm leading-7 text-slate-600">{item.summary}</p>
+            <div className="flex items-center justify-between gap-3">
+              <p className={`text-xs uppercase tracking-[0.28em] ${index === 1 ? "text-slate-300" : "text-slate-500"}`}>{item.name}</p>
+              {index === 1 ? <span className="rounded-full bg-white/10 px-3 py-1 text-[11px] font-semibold uppercase tracking-[0.18em] text-white">onerilen</span> : null}
+            </div>
+            <p className={`mt-3 text-2xl font-semibold tracking-tight sm:text-3xl ${index === 1 ? "text-white" : "text-slate-900"}`}>{item.price}</p>
+            <p className={`mt-3 text-sm leading-7 ${index === 1 ? "text-slate-300" : "text-slate-600"}`}>{item.summary}</p>
           </article>
         ))}
       </section>,
@@ -249,16 +287,30 @@ function renderSection(
   if (section.type === "credibility") {
     return wrapEditableSection(
       section,
-      <section className="rounded-[1.5rem] border border-white/70 bg-white/75 p-4 shadow-[0_20px_60px_rgba(15,23,42,0.08)] backdrop-blur sm:rounded-[2rem] sm:p-6">
+      <section className="rounded-[1.5rem] border border-white/70 bg-white/78 p-4 shadow-[0_20px_60px_rgba(15,23,42,0.08)] backdrop-blur sm:rounded-[2rem] sm:p-6">
         <p className="text-xs uppercase tracking-[0.28em] text-slate-500">{section.eyebrow}</p>
         <div className="mt-5 grid gap-4 lg:grid-cols-[0.95fr_1.05fr]">
-          <div>
-            <h3 className="text-2xl font-semibold tracking-tight text-slate-900 sm:text-3xl">{section.title}</h3>
-            <p className="mt-3 max-w-2xl text-sm leading-7 text-slate-600">{section.body}</p>
+          <div className="rounded-[1.5rem] bg-[linear-gradient(155deg,#0f172a_0%,#1f2937_100%)] px-5 py-6 text-white shadow-[0_20px_50px_rgba(15,23,42,0.18)]">
+            <h3 className="text-2xl font-semibold tracking-tight text-white sm:text-3xl">{section.title}</h3>
+            <p className="mt-3 max-w-2xl text-sm leading-7 text-slate-300">{section.body}</p>
+            <div className="mt-6 grid gap-3 sm:grid-cols-3">
+              <div className="rounded-2xl border border-white/10 bg-white/5 px-4 py-4">
+                <p className="text-[11px] uppercase tracking-[0.22em] text-slate-400">Kurulum</p>
+                <p className="mt-2 text-lg font-semibold text-white">Hizli</p>
+              </div>
+              <div className="rounded-2xl border border-white/10 bg-white/5 px-4 py-4">
+                <p className="text-[11px] uppercase tracking-[0.22em] text-slate-400">Operasyon</p>
+                <p className="mt-2 text-lg font-semibold text-white">Canli</p>
+              </div>
+              <div className="rounded-2xl border border-white/10 bg-white/5 px-4 py-4">
+                <p className="text-[11px] uppercase tracking-[0.22em] text-slate-400">Rapor</p>
+                <p className="mt-2 text-lg font-semibold text-white">Hazir</p>
+              </div>
+            </div>
           </div>
           <div className="grid gap-3 sm:grid-cols-2">
             {section.references.map((item, index) => (
-              <div key={`${section.id}-${index}`} className="rounded-2xl border border-slate-200 bg-slate-50 px-4 py-4 text-sm font-semibold text-slate-700">
+              <div key={`${section.id}-${index}`} className="rounded-2xl border border-slate-200 bg-[linear-gradient(135deg,#fff7ed_0%,#f8fafc_100%)] px-4 py-4 text-sm font-semibold text-slate-700">
                 {item}
               </div>
             ))}
@@ -313,32 +365,47 @@ export function LandingPageRenderer({
   leadStatus?: string;
   editor?: LandingRendererEditorOptions;
 }) {
+  const safeContent: LandingContent = {
+    ...defaultLandingContent,
+    ...(content ?? defaultLandingContent),
+    sections: Array.isArray(content?.sections) && content.sections.length > 0 ? content.sections : defaultLandingContent.sections,
+  };
+  const siteName = settings?.siteName || "Cloud POS";
+  const siteTagline = settings?.siteTagline || "Yeni nesil cafe ve restoran operasyonu";
+  const logoUrl = settings?.logoUrl;
+  const footerNote = settings?.footerNote || "Cloud POS";
+  const contactPhone = settings?.contactPhone || "";
+  const supportEmail = settings?.supportEmail || "";
+
   return (
     <div className="relative min-h-screen overflow-hidden bg-[linear-gradient(135deg,#f4efe3_0%,#dbe8f0_46%,#fbfbf8_100%)] text-slate-900">
       <div className="absolute left-[-7rem] top-[-6rem] h-72 w-72 rounded-full bg-amber-300/30 blur-3xl" />
       <div className="absolute bottom-[-7rem] right-[-5rem] h-80 w-80 rounded-full bg-cyan-300/25 blur-3xl" />
+      <div className="absolute inset-x-0 top-0 h-[420px] bg-[radial-gradient(circle_at_top,rgba(255,255,255,0.7),transparent_58%)]" />
 
       <main className="relative mx-auto flex min-h-screen w-full max-w-7xl flex-col px-3 py-4 sm:px-4 sm:py-6 md:px-8 lg:px-10">
-        <header className="flex flex-col gap-4 py-3 sm:py-4 md:flex-row md:items-center md:justify-between">
+        <header className="sticky top-0 z-20 -mx-3 mb-3 border-b border-white/50 bg-white/55 px-3 py-3 backdrop-blur sm:-mx-4 sm:px-4 md:mx-0 md:flex md:items-center md:justify-between md:rounded-[2rem] md:border md:px-6">
           <div className="min-w-0">
-            {settings.logoUrl ? (
-              <img src={settings.logoUrl} alt={settings.siteName} className="mb-3 h-10 max-w-full rounded-lg object-contain" />
+            {logoUrl ? (
+              <img src={logoUrl} alt={siteName} className="mb-3 h-10 max-w-full rounded-lg object-contain" />
             ) : null}
-            <p className="text-xs uppercase tracking-[0.28em] text-slate-500">{settings.siteName}</p>
-            <h1 className="mt-2 text-xl font-semibold tracking-tight sm:text-2xl">{settings.siteTagline}</h1>
+            <div className="flex flex-wrap items-center gap-2">
+              <p className="text-xs uppercase tracking-[0.28em] text-slate-500">{siteName}</p>
+            </div>
+            <h1 className="mt-2 text-xl font-semibold tracking-tight sm:text-2xl">{siteTagline}</h1>
           </div>
           <div className="flex w-full flex-col gap-2 sm:w-auto sm:flex-row sm:flex-wrap sm:items-center sm:gap-3">
-            {renderHeaderActions(content, editor?.previewMode)}
+            {renderHeaderActions(safeContent, editor?.previewMode)}
           </div>
         </header>
 
-        {content.sections.map((section) => renderSection(section, settings, leadStatus, content.businessPhone, editor))}
+        {safeContent.sections.map((section) => renderSection(section, settings, safeContent, leadStatus, safeContent.businessPhone, editor))}
 
-        <footer className="border-t border-white/70 py-5 text-sm text-slate-600 sm:py-6">
+        <footer className="mt-6 rounded-[2rem] border border-white/70 bg-white/70 px-5 py-6 text-sm text-slate-600 shadow-[0_18px_50px_rgba(15,23,42,0.08)] backdrop-blur sm:px-6">
           <div className="flex flex-col gap-2 md:flex-row md:items-center md:justify-between">
-            <p>{settings.footerNote}</p>
+            <p>{footerNote}</p>
             <p className="break-words">
-              {settings.contactPhone} {settings.supportEmail ? `| ${settings.supportEmail}` : ""}
+              {contactPhone} {supportEmail ? `| ${supportEmail}` : ""}
             </p>
           </div>
         </footer>
