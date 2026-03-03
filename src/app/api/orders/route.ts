@@ -1,4 +1,5 @@
 import { NextResponse } from "next/server";
+import { getCurrentUserWithRole, hasRoleAccess } from "@/lib/auth";
 import { createOrder, getBusinessContextBySlug, getTableByQr } from "@/lib/data";
 import type { FulfillmentStatus, OrderChannel } from "@/lib/types";
 
@@ -47,6 +48,16 @@ export async function POST(request: Request) {
 
   if (channel === "dine_in" && !body.qrCodeIdentifier) {
     return NextResponse.json({ ok: false, message: "Masa siparisi icin QR kodu gerekli." }, { status: 400 });
+  }
+
+  if (body.qrCodeIdentifier) {
+    const auth = await getCurrentUserWithRole();
+    if (!auth.user || !hasRoleAccess(auth.role, ["admin", "waiter", "cashier"])) {
+      return NextResponse.json(
+        { ok: false, message: "QR uzerinden dogrudan siparis kapali. Lutfen garsona iletin." },
+        { status: 403 },
+      );
+    }
   }
 
   let table = null;

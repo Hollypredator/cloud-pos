@@ -4,10 +4,11 @@ import { getCurrentUserWithRole, requireExactRole } from "@/lib/auth";
 import {
   clearDemoOperationsData,
   clearBusinessOperationalData,
+  createSupportTicket,
+  createSupportPlanRequest,
   ensureDemoOperationsData,
   getApplicationSettings,
   getGeneralSettings,
-  updateActiveBusinessPlan,
   updateApplicationSettings,
   updateGeneralSettings,
 } from "@/lib/data";
@@ -16,12 +17,44 @@ import { DemoModeToggleForm } from "@/components/demo-mode-toggle-form";
 import { SidebarCustomizer } from "@/components/sidebar-customizer";
 import { FEATURE_META, getPlanLabel, hasFeature } from "@/lib/features";
 import { getActiveBusinessPlanContext } from "@/lib/plan-access";
-import type { BusinessPlan } from "@/lib/types";
 import { sidebarThemeOptions } from "@/lib/app-settings";
 
 function readString(formData: FormData, key: string) {
   const value = formData.get(key);
   return typeof value === "string" ? value.trim() : "";
+}
+
+async function createSupportTicketAction(formData: FormData) {
+  "use server";
+  await requireExactRole(["owner"], "/admin/settings");
+
+  const subject = readString(formData, "subject");
+  const description = readString(formData, "description");
+  await createSupportTicket({
+    type: "support",
+    priority: "normal",
+    subject,
+    description,
+  });
+  revalidatePath("/admin/settings");
+  revalidatePath("/support/tickets");
+  revalidatePath("/support/audit");
+}
+
+async function createPlanRequestAction(formData: FormData) {
+  "use server";
+  await requireExactRole(["owner"], "/admin/settings");
+
+  const requestedPlan = readString(formData, "requestedPlan") as "starter" | "growth" | "custom";
+  const reason = readString(formData, "planReason");
+  await createSupportPlanRequest({
+    requestedPlan,
+    reason,
+  });
+  revalidatePath("/admin/settings");
+  revalidatePath("/support/plan-requests");
+  revalidatePath("/support/tickets");
+  revalidatePath("/support/audit");
 }
 
 async function updateGeneralSettingsAction(formData: FormData) {
@@ -146,33 +179,6 @@ async function resetBusinessOperationalDataAction(formData: FormData) {
   revalidatePath("/admin/finance");
 }
 
-async function updateBusinessPlanAction(formData: FormData) {
-  "use server";
-  await requireExactRole(["owner"], "/admin/settings");
-
-  const plan = formData.get("plan");
-  if (typeof plan !== "string") {
-    return;
-  }
-
-  const result = await updateActiveBusinessPlan(plan as BusinessPlan);
-  if (!result.ok) {
-    return;
-  }
-
-  revalidatePath("/admin/settings");
-  revalidatePath("/ops");
-  revalidatePath("/delivery");
-  revalidatePath("/kitchen");
-  revalidatePath("/cashier/session");
-  revalidatePath("/admin/reports");
-  revalidatePath("/admin/finance");
-  revalidatePath("/admin/audit");
-  revalidatePath("/admin/roles");
-  revalidatePath("/admin/stock");
-  revalidatePath("/admin/businesses");
-}
-
 function Field({
   label,
   name,
@@ -288,48 +294,67 @@ export default async function AdminSettingsPage() {
       ) : null}
 
       <div className="space-y-4">
-        <form action={updateBusinessPlanAction}>
-          <ContentCard title="Paket ve Moduller">
-            <div className="grid gap-4 md:grid-cols-[0.9fr_1.1fr]">
-              <div className="rounded-[24px] border border-slate-200 bg-slate-50 p-5">
-                <p className="text-xs font-bold uppercase tracking-[0.16em] text-slate-500">Aktif Paket</p>
-                <p className="mt-3 text-2xl font-semibold tracking-tight text-slate-900 sm:text-3xl">{getPlanLabel(planContext.plan)}</p>
-                <p className="mt-2 text-sm text-slate-500">{activeFeatureCount} modul acik</p>
-                <select
-                  name="plan"
-                  defaultValue={planContext.plan}
-                  className="mt-4 w-full rounded-2xl border border-slate-200 bg-white px-4 py-3 text-sm text-slate-900"
-                >
+        <ContentCard title="Paket ve Moduller">
+          <div className="grid gap-4 md:grid-cols-[0.9fr_1.1fr]">
+            <div className="rounded-[24px] border border-slate-200 bg-slate-50 p-5">
+              <p className="text-xs font-bold uppercase tracking-[0.16em] text-slate-500">Aktif Paket</p>
+              <p className="mt-3 text-2xl font-semibold tracking-tight text-slate-900 sm:text-3xl">{getPlanLabel(planContext.plan)}</p>
+              <p className="mt-2 text-sm text-slate-500">{activeFeatureCount} modul acik</p>
+              <div className="mt-4 rounded-2xl border border-slate-200 bg-white px-4 py-4 text-sm text-slate-600">
+                Paket degisikligi isletme panelinden yapilamaz. Upgrade veya downgrade islemleri merkez ekip tarafindan yonetilir.
+              </div>
+            </div>
+            <div className="grid gap-3 sm:grid-cols-2">
+              {Object.entries(FEATURE_META).map(([featureKey, meta]) => (
+                <div key={featureKey} className="rounded-[22px] border border-slate-200 bg-white p-4">
+                  <div className="flex items-start justify-between gap-3">
+                    <div>
+                      <p className="text-sm font-semibold text-slate-900">{meta.title}</p>
+                      <p className="mt-1 text-xs text-slate-500">{meta.description}</p>
+                    </div>
+                    <span
+                      className={`rounded-full px-3 py-1 text-[11px] font-semibold uppercase tracking-[0.14em] ${
+                        hasFeature(planContext.plan, featureKey as keyof typeof FEATURE_META)
+                          ? "bg-emerald-100 text-emerald-700"
+                          : "bg-slate-200 text-slate-600"
+                      }`}
+                    >
+                      {hasFeature(planContext.plan, featureKey as keyof typeof FEATURE_META) ? "Acik" : getPlanLabel(meta.requiredPlan)}
+                    </span>
+                  </div>
+                </div>
+              ))}
+            </div>
+          </div>
+        </ContentCard>
+
+        <form action={createPlanRequestAction}>
+          <ContentCard title="Paket Degisikligi Talebi">
+            <div className="space-y-4">
+              <div className="rounded-[24px] border border-slate-200 bg-slate-50 px-5 py-4 text-sm text-slate-600">
+                Upgrade veya downgrade talepleri merkez ekip tarafindan incelenir ve onaylanir.
+              </div>
+              <label className="block">
+                <span className="text-sm font-medium text-slate-700">Talep edilen paket</span>
+                <select name="requestedPlan" defaultValue={planContext.plan} className="mt-2 w-full rounded-2xl border border-slate-200 bg-slate-50 px-4 py-3 text-sm text-slate-900">
                   <option value="starter">Starter</option>
                   <option value="growth">Growth</option>
                   <option value="custom">Custom</option>
                 </select>
-                <div className="mt-4 flex justify-end">
-                  <button type="submit" className="w-full rounded-2xl bg-gradient-to-r from-[#ff5a34] to-[#f0b14f] px-5 py-3 text-sm font-semibold text-white sm:w-auto">
-                    Paketi Guncelle
-                  </button>
-                </div>
-              </div>
-              <div className="grid gap-3 sm:grid-cols-2">
-                {Object.entries(FEATURE_META).map(([featureKey, meta]) => (
-                  <div key={featureKey} className="rounded-[22px] border border-slate-200 bg-white p-4">
-                    <div className="flex items-start justify-between gap-3">
-                      <div>
-                        <p className="text-sm font-semibold text-slate-900">{meta.title}</p>
-                        <p className="mt-1 text-xs text-slate-500">{meta.description}</p>
-                      </div>
-                      <span
-                        className={`rounded-full px-3 py-1 text-[11px] font-semibold uppercase tracking-[0.14em] ${
-                          hasFeature(planContext.plan, featureKey as keyof typeof FEATURE_META)
-                            ? "bg-emerald-100 text-emerald-700"
-                            : "bg-slate-200 text-slate-600"
-                        }`}
-                      >
-                        {hasFeature(planContext.plan, featureKey as keyof typeof FEATURE_META) ? "Acik" : getPlanLabel(meta.requiredPlan)}
-                      </span>
-                    </div>
-                  </div>
-                ))}
+              </label>
+              <label className="block">
+                <span className="text-sm font-medium text-slate-700">Gerekce</span>
+                <textarea
+                  name="planReason"
+                  rows={4}
+                  className="mt-2 w-full rounded-2xl border border-slate-200 bg-slate-50 px-4 py-3 text-sm text-slate-900"
+                  placeholder="Paket degisikligi gerekcesini yazin"
+                />
+              </label>
+              <div className="flex justify-end">
+                <button type="submit" className="w-full rounded-2xl bg-slate-900 px-5 py-3 text-sm font-semibold text-white sm:w-auto">
+                  Paket Talebi Gonder
+                </button>
               </div>
             </div>
           </ContentCard>
@@ -379,6 +404,31 @@ export default async function AdminSettingsPage() {
             </form>
           </div>
         </ContentCard>
+
+        <form action={createSupportTicketAction}>
+          <ContentCard title="Destek Talebi">
+            <div className="space-y-4">
+              <div className="rounded-[24px] border border-slate-200 bg-slate-50 px-5 py-4 text-sm text-slate-600">
+                Paket degisikligi, entegrasyon veya teknik destek ihtiyaciniz icin merkez ekibe talep iletebilirsiniz.
+              </div>
+              <Field label="Konu" name="subject" defaultValue="" />
+              <label className="block">
+                <span className="text-sm font-medium text-slate-700">Aciklama</span>
+                <textarea
+                  name="description"
+                  rows={5}
+                  className="mt-2 w-full rounded-2xl border border-slate-200 bg-slate-50 px-4 py-3 text-sm text-slate-900"
+                  placeholder="Destek ekibine iletmek istediginiz talebi yazin"
+                />
+              </label>
+              <div className="flex justify-end">
+                <button type="submit" className="w-full rounded-2xl bg-slate-900 px-5 py-3 text-sm font-semibold text-white sm:w-auto">
+                  Talep Olustur
+                </button>
+              </div>
+            </div>
+          </ContentCard>
+        </form>
 
         <form action={clearDemoOperationsAction} className="flex justify-end">
           <button type="submit" className="w-full rounded-2xl border border-slate-200 bg-slate-50 px-5 py-3 text-sm font-semibold text-slate-800 sm:w-auto">

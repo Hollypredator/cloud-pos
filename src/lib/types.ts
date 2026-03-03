@@ -16,8 +16,38 @@ export type TableRequestType = "call_waiter" | "request_bill";
 export type TableRequestStatus = "open" | "resolved";
 export type SalesLeadStatus = "new" | "contacted" | "qualified" | "won" | "lost";
 export type StudioRole = "owner" | "editor";
+export type SupportRole = "support_admin" | "support_agent" | "billing_agent" | "read_only";
+export type PlatformRole =
+  | "platform_owner"
+  | "platform_admin"
+  | "support_manager"
+  | "support_agent"
+  | "billing_manager"
+  | "content_manager"
+  | "content_editor"
+  | "observer";
+export type PlatformPermission =
+  | "platform.access.manage"
+  | "platform.audit.read"
+  | "support.read"
+  | "support.write"
+  | "support.assign"
+  | "support.billing"
+  | "support.access.manage"
+  | "studio.read"
+  | "studio.write"
+  | "studio.publish";
+export type SupportTicketType = "support" | "plan_change" | "billing" | "onboarding" | "incident";
+export type SupportTicketPriority = "low" | "normal" | "high" | "urgent";
+export type SupportTicketStatus = "open" | "in_progress" | "resolved" | "closed";
+export type SupportPlanRequestStatus = "open" | "approved" | "rejected" | "cancelled";
 export type BusinessPlan = "starter" | "growth" | "custom";
 export type StaffAccessScope = "business" | "branch";
+export type TenantLifecycleStage = "lead" | "demo" | "onboarding" | "active" | "at_risk" | "churned" | "archived";
+export type SupportBillingStatus = "healthy" | "attention" | "overdue";
+export type SupportRiskLevel = "low" | "medium" | "high";
+export type SupportIncidentSeverity = "minor" | "major" | "critical";
+export type SupportIncidentStatus = "open" | "monitoring" | "resolved" | "closed";
 
 export type Category = {
   id: string;
@@ -301,4 +331,184 @@ export type StudioAccessUser = {
   role: StudioRole;
   is_active: boolean;
   created_at: string;
+};
+
+export type PlatformAccessUser = {
+  id: string;
+  email: string;
+  full_name: string | null;
+  role: PlatformRole;
+  permissions: PlatformPermission[];
+  is_active: boolean;
+  created_at: string;
+};
+
+export type SupportAccessUser = {
+  id: string;
+  email: string;
+  full_name: string | null;
+  role: SupportRole;
+  is_active: boolean;
+  created_at: string;
+};
+
+export type SupportTicket = {
+  id: string;
+  business_id: string;
+  business_name?: string;
+  type: SupportTicketType;
+  priority: SupportTicketPriority;
+  status: SupportTicketStatus;
+  subject: string;
+  description: string;
+  created_by_profile_id: string | null;
+  assigned_to_support_user_id: string | null;
+  assigned_support_name?: string | null;
+  created_at: string;
+  updated_at: string;
+  resolved_at: string | null;
+  sla_due_at?: string | null;
+  sla_status?: "on_track" | "due_soon" | "breached";
+};
+
+export type SupportTicketMessage = {
+  id: string;
+  ticket_id: string;
+  author_type: "tenant" | "support" | "system";
+  author_support_user_id: string | null;
+  author_profile_id: string | null;
+  message: string;
+  is_internal_note: boolean;
+  created_at: string;
+  author_name?: string | null;
+};
+
+export type SupportAuditLogEntry = {
+  id: string;
+  support_user_id: string | null;
+  business_id: string | null;
+  action: string;
+  entity_type: string;
+  entity_id: string | null;
+  details: Record<string, unknown>;
+  created_at: string;
+  actor_name?: string | null;
+  business_name?: string | null;
+};
+
+export type SupportTenantProfile = {
+  business_id: string;
+  lifecycle_stage: TenantLifecycleStage;
+  owner_name: string | null;
+  owner_email: string | null;
+  account_manager_name: string | null;
+  renewal_date: string | null;
+  billing_status: SupportBillingStatus;
+  risk_level: SupportRiskLevel;
+  account_notes: string | null;
+  created_at: string;
+  updated_at: string;
+};
+
+export type SupportIncident = {
+  id: string;
+  business_id: string | null;
+  business_name?: string | null;
+  title: string;
+  summary: string;
+  severity: SupportIncidentSeverity;
+  status: SupportIncidentStatus;
+  owner_support_user_id: string | null;
+  owner_support_name?: string | null;
+  started_at: string;
+  resolved_at: string | null;
+  created_at: string;
+  updated_at: string;
+};
+
+export type SupportIncidentUpdate = {
+  id: string;
+  incident_id: string;
+  author_support_user_id: string | null;
+  message: string;
+  status: SupportIncidentStatus | null;
+  created_at: string;
+  author_name?: string | null;
+};
+
+export type SupportFeatureFlagOverride = {
+  id: string;
+  business_id: string;
+  business_name?: string;
+  feature_key: string;
+  enabled: boolean;
+  note: string | null;
+  created_at: string;
+  updated_at: string;
+};
+
+export type SupportTeamMemberSummary = {
+  id: string;
+  email: string;
+  full_name: string | null;
+  role: PlatformRole;
+  is_active: boolean;
+  open_ticket_count: number;
+  open_incident_count: number;
+  created_at: string;
+};
+
+export type SupportKnowledgeArticle = {
+  id: string;
+  title: string;
+  category: string;
+  summary: string;
+  body: string;
+  created_at: string;
+  updated_at: string;
+};
+
+export type SupportTenantSummary = {
+  business_id: string;
+  business_name: string;
+  business_slug: string;
+  plan: BusinessPlan;
+  is_active: boolean;
+  branch_count: number;
+  support_ticket_count: number;
+};
+
+export type SupportHealthSummary = {
+  business_id: string;
+  business_name: string;
+  plan: BusinessPlan;
+  health_status: "healthy" | "warning" | "critical";
+  last_order_at: string | null;
+  last_payment_at: string | null;
+  open_ticket_count: number;
+};
+
+export type SupportOnboardingSummary = {
+  business_id: string;
+  business_name: string;
+  products: number;
+  tables: number;
+  staff: number;
+  branches: number;
+  completion_score: number;
+};
+
+export type SupportPlanRequest = {
+  id: string;
+  business_id: string;
+  business_name?: string;
+  current_plan: BusinessPlan;
+  requested_plan: BusinessPlan;
+  reason: string | null;
+  status: SupportPlanRequestStatus;
+  requested_by_profile_id: string | null;
+  reviewed_by_support_user_id: string | null;
+  reviewed_by_support_name?: string | null;
+  created_at: string;
+  updated_at: string;
 };

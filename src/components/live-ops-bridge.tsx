@@ -11,6 +11,22 @@ type LiveOpsBridgeProps = {
 
 const LIVE_REFRESH_DEBOUNCE_MS = 300;
 const LIVE_REFRESH_MIN_INTERVAL_MS = 1200;
+const OPS_REFRESH_DEBOUNCE_MS = 700;
+const OPS_REFRESH_MIN_INTERVAL_MS = 3500;
+
+function getRefreshProfile(pathname: string | null) {
+  if (pathname === "/ops") {
+    return {
+      debounceMs: OPS_REFRESH_DEBOUNCE_MS,
+      minIntervalMs: OPS_REFRESH_MIN_INTERVAL_MS,
+    };
+  }
+
+  return {
+    debounceMs: LIVE_REFRESH_DEBOUNCE_MS,
+    minIntervalMs: LIVE_REFRESH_MIN_INTERVAL_MS,
+  };
+}
 
 export function LiveOpsBridge({ tables, enableSound = false }: LiveOpsBridgeProps) {
   const router = useRouter();
@@ -20,10 +36,11 @@ export function LiveOpsBridge({ tables, enableSound = false }: LiveOpsBridgeProp
   const lastRefreshAtRef = useRef(0);
   const [connected, setConnected] = useState(false);
   const channelKey = useMemo(() => [...tables].sort().join("-"), [tables]);
+  const refreshProfile = useMemo(() => getRefreshProfile(pathname), [pathname]);
 
   const queueRefresh = useEffectEvent(() => {
     const elapsed = Date.now() - lastRefreshAtRef.current;
-    const waitMs = Math.max(LIVE_REFRESH_DEBOUNCE_MS, LIVE_REFRESH_MIN_INTERVAL_MS - elapsed);
+    const waitMs = Math.max(refreshProfile.debounceMs, refreshProfile.minIntervalMs - elapsed);
 
     if (timeoutRef.current) {
       clearTimeout(timeoutRef.current);
@@ -61,6 +78,9 @@ export function LiveOpsBridge({ tables, enableSound = false }: LiveOpsBridgeProp
           if (typeof document !== "undefined" && document.hidden) {
             return;
           }
+          if (pathname === "/ops" && table === "products" && payload.eventType !== "INSERT" && payload.eventType !== "DELETE") {
+            return;
+          }
           if (enableSound && table === "orders" && payload.eventType === "INSERT") {
             playAlertTone();
           }
@@ -79,7 +99,7 @@ export function LiveOpsBridge({ tables, enableSound = false }: LiveOpsBridgeProp
       }
       supabase.removeChannel(channel);
     };
-  }, [channelKey, enableSound, pathname, tables]);
+  }, [channelKey, enableSound, pathname, refreshProfile, tables]);
 
   return (
     <span

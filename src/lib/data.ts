@@ -24,6 +24,7 @@ import { getActiveBusinessSlug } from "@/lib/business-server";
 import { demoStaffAccounts } from "@/lib/demo";
 import {
   getBusinessScopeContext as getDefaultBusinessScope,
+  getRequestAppContext,
 } from "@/lib/server/app-context";
 import {
   defaultApplicationSettings,
@@ -41,6 +42,7 @@ import {
 } from "@/lib/app-settings";
 import { defaultDemoPageContent, normalizeDemoPageContent, type DemoPageContent } from "@/lib/demo";
 import { defaultLandingContent, emptyLandingContent, normalizeLandingContent, type LandingContent } from "@/lib/site-content";
+import { type FeatureKey } from "@/lib/features";
 import type {
   AlertDispatch,
   AppRole,
@@ -59,6 +61,9 @@ import type {
   OrderChannel,
   OrderItem,
   OrderStatus,
+  PlatformAccessUser,
+  PlatformPermission,
+  PlatformRole,
   PaymentMethod,
   Product,
   ProductModifierGroup,
@@ -70,12 +75,36 @@ import type {
   BusinessPlan,
   SiteContent,
   StockMovement,
+  SupportAccessUser,
+  SupportAuditLogEntry,
+  SupportHealthSummary,
+  SupportIncident,
+  SupportIncidentUpdate,
+  SupportIncidentSeverity,
+  SupportIncidentStatus,
+  SupportKnowledgeArticle,
+  SupportOnboardingSummary,
+  SupportPlanRequest,
+  SupportPlanRequestStatus,
+  SupportRole,
+  SupportBillingStatus,
+  SupportFeatureFlagOverride,
+  SupportRiskLevel,
+  SupportTenantSummary,
+  SupportTenantProfile,
+  SupportTicket,
+  SupportTicketMessage,
+  SupportTicketPriority,
+  SupportTicketStatus,
+  SupportTicketType,
+  SupportTeamMemberSummary,
   StudioAccessUser,
   StudioRole,
   StaffAccessScope,
   TableRequest,
   TableRequestType,
   TableStatus,
+  TenantLifecycleStage,
   FulfillmentStatus,
   OrderItemModifierSelection,
 } from "@/lib/types";
@@ -83,6 +112,98 @@ import type {
 type AuthServerClient = NonNullable<Awaited<ReturnType<typeof getSupabaseAuthServerClient>>>;
 type ServiceServerClient = NonNullable<ReturnType<typeof getSupabaseServerClient>>;
 type TenantSupabaseClient = AuthServerClient | ServiceServerClient;
+
+const PLATFORM_OWNER_EMAILS = ["msamedcbn@gmail.com"] as const;
+
+function getPrivilegedEmails(envValue?: string | null) {
+  return new Set(
+    [...PLATFORM_OWNER_EMAILS, ...((envValue ?? "").split(",").map((item) => item.trim().toLowerCase()).filter(Boolean))],
+  );
+}
+
+const platformRolePermissions: Record<PlatformRole, PlatformPermission[]> = {
+  platform_owner: [
+    "platform.access.manage",
+    "platform.audit.read",
+    "support.read",
+    "support.write",
+    "support.assign",
+    "support.billing",
+    "support.access.manage",
+    "studio.read",
+    "studio.write",
+    "studio.publish",
+  ],
+  platform_admin: [
+    "platform.access.manage",
+    "platform.audit.read",
+    "support.read",
+    "support.write",
+    "support.assign",
+    "support.billing",
+    "support.access.manage",
+    "studio.read",
+    "studio.write",
+    "studio.publish",
+  ],
+  support_manager: [
+    "platform.audit.read",
+    "support.read",
+    "support.write",
+    "support.assign",
+    "support.billing",
+    "support.access.manage",
+  ],
+  support_agent: ["platform.audit.read", "support.read", "support.write", "support.assign"],
+  billing_manager: ["platform.audit.read", "support.read", "support.billing"],
+  content_manager: ["studio.read", "studio.write", "studio.publish"],
+  content_editor: ["studio.read", "studio.write"],
+  observer: ["support.read", "studio.read"],
+};
+
+function normalizePlatformPermissions(role: PlatformRole, permissions?: string[] | null) {
+  return Array.from(new Set([...(platformRolePermissions[role] ?? []), ...((permissions ?? []) as PlatformPermission[])])) as PlatformPermission[];
+}
+
+export function hasPlatformPermission(
+  access: { role: PlatformRole | null; permissions?: PlatformPermission[] | null } | null | undefined,
+  permission: PlatformPermission,
+) {
+  if (!access?.role) {
+    return false;
+  }
+
+  const permissions = normalizePlatformPermissions(access.role, access.permissions ?? []);
+  return permissions.includes(permission);
+}
+
+function getSupportTicketSlaHours(priority: SupportTicketPriority) {
+  switch (priority) {
+    case "urgent":
+      return 2;
+    case "high":
+      return 8;
+    case "normal":
+      return 24;
+    case "low":
+    default:
+      return 48;
+  }
+}
+
+function enrichTicketSla<T extends SupportTicket>(ticket: T): T {
+  const dueAt = new Date(new Date(ticket.created_at).getTime() + getSupportTicketSlaHours(ticket.priority) * 60 * 60 * 1000);
+  const now = Date.now();
+  const remainingMs = dueAt.getTime() - now;
+  const sla_status =
+    remainingMs <= 0 ? "breached" : remainingMs <= 4 * 60 * 60 * 1000 ? "due_soon" : "on_track";
+
+  return {
+    ...ticket,
+    sla_due_at: dueAt.toISOString(),
+    sla_status,
+  };
+}
 
 function minutesAgo(minutes: number) {
   return new Date(Date.now() - minutes * 60_000).toISOString();
@@ -4843,7 +4964,7 @@ export async function getOpsMetricsSnapshot() {
   }
 
   const [dashboard, scope] = await Promise.all([getDashboardData(), getDefaultBusinessScope()]);
-  const cached = await getCachedDashboardDataRow({
+  const cached = await getCachedOpsPageRow({
     businessId: scope.businessId,
     branchId: scope.branchId,
     useLegacySchema: scope.useLegacySchema,
@@ -4913,7 +5034,7 @@ export async function getOpsPageSnapshot(options?: { includeSetup?: boolean }) {
         }),
   ]);
 
-  const cached = await getCachedDashboardDataRow({
+  const cached = await getCachedOpsPageRow({
     businessId: scope.businessId,
     branchId: scope.branchId,
     useLegacySchema: scope.useLegacySchema,
@@ -4954,11 +5075,6 @@ export async function getOpsPageSnapshot(options?: { includeSetup?: boolean }) {
       table_number: getTableNumber(row.tables),
       channel: row.channel ?? "dine_in",
       customer_name: row.customer_name ?? null,
-      customer_phone: row.customer_phone ?? null,
-      delivery_address: row.delivery_address ?? null,
-      courier_id: row.courier_id ?? null,
-      courier_name: row.courier_name ?? null,
-      fulfillment_status: row.fulfillment_status ?? "not_applicable",
       total_price: Number(row.total_price),
       final_price: Number(row.final_price ?? row.total_price),
       status: row.status,
@@ -5401,22 +5517,22 @@ async function getCachedDashboardDataRow(input: {
           ? (input.branchId
               ? supabase
                   .from("orders")
-                  .select("id, table_id, total_price, final_price, channel, customer_name, customer_phone, delivery_address, courier_id, courier_name, fulfillment_status, status, created_at, tables(table_number)")
+                  .select("id, table_id, total_price, final_price, channel, customer_name, status, created_at, tables(table_number)")
                   .eq("business_id", input.businessId)
                   .eq("branch_id", input.branchId)
                   .order("created_at", { ascending: false })
-                  .limit(8)
+                  .limit(4)
               : supabase
                   .from("orders")
-                  .select("id, table_id, total_price, final_price, channel, customer_name, customer_phone, delivery_address, courier_id, courier_name, fulfillment_status, status, created_at, tables(table_number)")
+                  .select("id, table_id, total_price, final_price, channel, customer_name, status, created_at, tables(table_number)")
                   .eq("business_id", input.businessId)
                   .order("created_at", { ascending: false })
-                  .limit(8))
+                  .limit(4))
           : supabase
               .from("orders")
-              .select("id, table_id, total_price, final_price, channel, customer_name, customer_phone, delivery_address, courier_id, courier_name, fulfillment_status, status, created_at, tables(table_number)")
+              .select("id, table_id, total_price, final_price, channel, customer_name, status, created_at, tables(table_number)")
               .order("created_at", { ascending: false })
-              .limit(8),
+              .limit(4),
         !input.useLegacySchema && input.businessId
           ? supabase
               .from("products")
@@ -5424,8 +5540,109 @@ async function getCachedDashboardDataRow(input: {
               .eq("business_id", input.businessId)
               .lte("stock_count", 10)
               .order("stock_count", { ascending: true })
-              .limit(8)
-          : supabase.from("products").select("id, name, stock_count").lte("stock_count", 10).order("stock_count", { ascending: true }).limit(8),
+              .limit(4)
+          : supabase.from("products").select("id, name, stock_count").lte("stock_count", 10).order("stock_count", { ascending: true }).limit(4),
+        !input.useLegacySchema && input.businessId
+          ? (input.branchId
+              ? supabase
+                  .from("table_requests")
+                  .select("id", { count: "exact", head: true })
+                  .eq("business_id", input.businessId)
+                  .eq("branch_id", input.branchId)
+                  .eq("status", "open")
+              : supabase.from("table_requests").select("id", { count: "exact", head: true }).eq("business_id", input.businessId).eq("status", "open"))
+          : supabase.from("table_requests").select("id", { count: "exact", head: true }).eq("status", "open"),
+      ]);
+
+      return {
+        openRows: (openRows ?? []) as Array<{ status?: OrderStatus; created_at: string }>,
+        paymentRows: (paymentRows ?? []) as Array<{ amount: number; payment_type: "sale" | "refund" }>,
+        tablesRows: (tablesRows ?? []) as Array<{ id: string; status?: TableStatus }>,
+        recentOrderRows: (recentOrderRows ?? []) as Array<OrderRow>,
+        lowStockRows: (lowStockRows ?? []) as Array<Pick<Product, "id" | "name" | "stock_count">>,
+        openServiceRequests: openServiceRequests ?? 0,
+      };
+    },
+    [cacheKey],
+    { revalidate: 10, tags: ["dashboard-snapshot"] },
+  );
+
+  return reader();
+}
+
+async function getCachedOpsPageRow(input: {
+  businessId: string | null;
+  branchId: string | null;
+  useLegacySchema: boolean;
+}) {
+  const cacheKey = `ops-page:${input.businessId ?? "none"}:${input.branchId ?? "all"}:${input.useLegacySchema ? "legacy" : "scoped"}`;
+  const reader = unstable_cache(
+    async () => {
+      const supabase = getSupabaseServerClient();
+      if (!supabase) {
+        return null;
+      }
+
+      const todayStart = new Date();
+      todayStart.setHours(0, 0, 0, 0);
+
+      const [
+        { data: openRows },
+        { data: paymentRows },
+        { data: tablesRows },
+        { data: recentOrderRows },
+        { data: lowStockRows },
+        { count: openServiceRequests },
+      ] = await Promise.all([
+        !input.useLegacySchema && input.businessId
+          ? (input.branchId
+              ? supabase
+                  .from("orders")
+                  .select("status, created_at")
+                  .eq("business_id", input.businessId)
+                  .eq("branch_id", input.branchId)
+                  .in("status", ["pending", "preparing", "served"])
+              : supabase.from("orders").select("status, created_at").eq("business_id", input.businessId).in("status", ["pending", "preparing", "served"]))
+          : supabase.from("orders").select("status, created_at").in("status", ["pending", "preparing", "served"]),
+        !input.useLegacySchema && input.businessId
+          ? (input.branchId
+              ? supabase.from("payments").select("amount, payment_type").eq("business_id", input.businessId).eq("branch_id", input.branchId).gte("created_at", todayStart.toISOString())
+              : supabase.from("payments").select("amount, payment_type").eq("business_id", input.businessId).gte("created_at", todayStart.toISOString()))
+          : supabase.from("payments").select("amount, payment_type").gte("created_at", todayStart.toISOString()),
+        !input.useLegacySchema && input.businessId
+          ? (input.branchId
+              ? supabase.from("tables").select("id, status").eq("business_id", input.businessId).eq("branch_id", input.branchId)
+              : supabase.from("tables").select("id, status").eq("business_id", input.businessId))
+          : supabase.from("tables").select("id, status"),
+        !input.useLegacySchema && input.businessId
+          ? (input.branchId
+              ? supabase
+                  .from("orders")
+                  .select("id, table_id, total_price, final_price, channel, customer_name, status, created_at, tables(table_number)")
+                  .eq("business_id", input.businessId)
+                  .eq("branch_id", input.branchId)
+                  .order("created_at", { ascending: false })
+                  .limit(5)
+              : supabase
+                  .from("orders")
+                  .select("id, table_id, total_price, final_price, channel, customer_name, status, created_at, tables(table_number)")
+                  .eq("business_id", input.businessId)
+                  .order("created_at", { ascending: false })
+                  .limit(5))
+          : supabase
+              .from("orders")
+              .select("id, table_id, total_price, final_price, channel, customer_name, status, created_at, tables(table_number)")
+              .order("created_at", { ascending: false })
+              .limit(5),
+        !input.useLegacySchema && input.businessId
+          ? supabase
+              .from("products")
+              .select("id, name, stock_count")
+              .eq("business_id", input.businessId)
+              .lte("stock_count", 10)
+              .order("stock_count", { ascending: true })
+              .limit(4)
+          : supabase.from("products").select("id, name, stock_count").lte("stock_count", 10).order("stock_count", { ascending: true }).limit(4),
         !input.useLegacySchema && input.businessId
           ? (input.branchId
               ? supabase
@@ -6679,11 +6896,8 @@ export async function getStudioAccessByEmail(email: string) {
     return { hasAccess: false as const, role: null as StudioRole | null };
   }
 
-  const envAllowed = (process.env.STUDIO_ADMIN_EMAILS ?? "")
-    .split(",")
-    .map((item) => item.trim().toLowerCase())
-    .filter(Boolean);
-  if (envAllowed.includes(normalizedEmail)) {
+  const privilegedEmails = getPrivilegedEmails(process.env.STUDIO_ADMIN_EMAILS);
+  if (privilegedEmails.has(normalizedEmail)) {
     return { hasAccess: true as const, role: "owner" as StudioRole };
   }
 
@@ -6703,6 +6917,160 @@ export async function getStudioAccessByEmail(email: string) {
     hasAccess: Boolean(data),
     role: (data?.role as StudioRole | undefined) ?? null,
   };
+}
+
+export async function getPlatformAccessByEmail(email: string) {
+  const normalizedEmail = email.trim().toLowerCase();
+  if (!normalizedEmail) {
+    return {
+      hasAccess: false as const,
+      role: null as PlatformRole | null,
+      permissions: [] as PlatformPermission[],
+    };
+  }
+
+  const privilegedEmails = getPrivilegedEmails(process.env.PLATFORM_OWNER_EMAILS);
+  if (privilegedEmails.has(normalizedEmail)) {
+    return {
+      hasAccess: true as const,
+      role: "platform_owner" as PlatformRole,
+      permissions: normalizePlatformPermissions("platform_owner"),
+    };
+  }
+
+  const supabase = getSupabaseServerClient();
+  if (!supabase) {
+    return {
+      hasAccess: false as const,
+      role: null as PlatformRole | null,
+      permissions: [] as PlatformPermission[],
+    };
+  }
+
+  const { data } = await supabase
+    .from("platform_access_users")
+    .select("email, role, permissions, is_active")
+    .eq("email", normalizedEmail)
+    .eq("is_active", true)
+    .maybeSingle();
+
+  const role = (data?.role as PlatformRole | undefined) ?? null;
+  return {
+    hasAccess: Boolean(data),
+    role,
+    permissions: role ? normalizePlatformPermissions(role, (data?.permissions as string[] | undefined) ?? []) : [],
+  };
+}
+
+export async function listPlatformAccessUsers() {
+  const supabase = getSupabaseServerClient();
+  if (!supabase) {
+    return { users: [] as PlatformAccessUser[], usingDemoData: true };
+  }
+
+  const { data, error } = await supabase
+    .from("platform_access_users")
+    .select("id, email, full_name, role, permissions, is_active, created_at")
+    .order("created_at", { ascending: false });
+
+  if (error) {
+    return { users: [] as PlatformAccessUser[], usingDemoData: false };
+  }
+
+  return {
+    users: ((data ?? []) as Array<Omit<PlatformAccessUser, "permissions"> & { permissions: string[] | null }>).map((user) => ({
+      ...user,
+      permissions: normalizePlatformPermissions(user.role, user.permissions ?? []),
+    })),
+    usingDemoData: false,
+  };
+}
+
+export async function upsertPlatformAccessUser(input: {
+  email: string;
+  fullName?: string;
+  role?: PlatformRole;
+  permissions?: PlatformPermission[];
+  isActive?: boolean;
+}) {
+  const supabase = getSupabaseServerClient();
+  if (!supabase) {
+    return { ok: false, error: "Demo modda platform kullanicisi eklenemez." };
+  }
+
+  const email = input.email.trim().toLowerCase();
+  const role = input.role ?? "observer";
+  if (!email) {
+    return { ok: false, error: "E-posta gerekli." };
+  }
+
+  const permissions = normalizePlatformPermissions(role, input.permissions ?? []);
+  const { error } = await supabase.from("platform_access_users").upsert(
+    {
+      email,
+      full_name: input.fullName?.trim() || null,
+      role,
+      permissions,
+      is_active: input.isActive ?? true,
+    },
+    { onConflict: "email" },
+  );
+
+  if (error) {
+    return { ok: false, error: error.message };
+  }
+
+  await writeSupportAuditLog({
+    action: "platform_access.upserted",
+    entityType: "platform_access_user",
+    entityId: email,
+    details: { role, permissions, isActive: input.isActive ?? true },
+  });
+
+  return { ok: true };
+}
+
+export async function setPlatformAccessUserStatus(id: string, isActive: boolean) {
+  const supabase = getSupabaseServerClient();
+  if (!supabase) {
+    return { ok: false, error: "Demo modda platform kullanicisi guncellenemez." };
+  }
+
+  const { error } = await supabase.from("platform_access_users").update({ is_active: isActive }).eq("id", id);
+  if (error) {
+    return { ok: false, error: error.message };
+  }
+
+  await writeSupportAuditLog({
+    action: "platform_access.status_updated",
+    entityType: "platform_access_user",
+    entityId: id,
+    details: { isActive },
+  });
+
+  return { ok: true };
+}
+
+export async function setPlatformAccessUserRole(id: string, role: PlatformRole) {
+  const supabase = getSupabaseServerClient();
+  if (!supabase) {
+    return { ok: false, error: "Demo modda platform kullanicisi guncellenemez." };
+  }
+
+  const permissions = normalizePlatformPermissions(role);
+  const { error } = await supabase.from("platform_access_users").update({ role, permissions }).eq("id", id);
+  if (error) {
+    return { ok: false, error: error.message };
+  }
+
+  await writeSupportAuditLog({
+    action: "platform_access.role_updated",
+    entityType: "platform_access_user",
+    entityId: id,
+    details: { role, permissions },
+  });
+
+  return { ok: true };
 }
 
 export async function listStudioAccessUsers() {
@@ -6788,4 +7156,1493 @@ export async function setStudioAccessUserRole(id: string, role: StudioRole) {
   }
 
   return { ok: true };
+}
+
+export async function getSupportAccessByEmail(email: string) {
+  const normalizedEmail = email.trim().toLowerCase();
+  if (!normalizedEmail) {
+    return { hasAccess: false as const, role: null as SupportRole | null };
+  }
+
+  const privilegedEmails = getPrivilegedEmails(process.env.SUPPORT_ADMIN_EMAILS);
+  if (privilegedEmails.has(normalizedEmail)) {
+    return { hasAccess: true as const, role: "support_admin" as SupportRole };
+  }
+
+  const supabase = getSupabaseServerClient();
+  if (!supabase) {
+    return { hasAccess: false as const, role: null as SupportRole | null };
+  }
+
+  const { data } = await supabase
+    .from("support_access_users")
+    .select("email, role, is_active")
+    .eq("email", normalizedEmail)
+    .eq("is_active", true)
+    .maybeSingle();
+
+  return {
+    hasAccess: Boolean(data),
+    role: (data?.role as SupportRole | undefined) ?? null,
+  };
+}
+
+export async function listSupportAccessUsers() {
+  const supabase = getSupabaseServerClient();
+  if (!supabase) {
+    return { users: [] as SupportAccessUser[], usingDemoData: true };
+  }
+
+  const { data, error } = await supabase
+    .from("support_access_users")
+    .select("id, email, full_name, role, is_active, created_at")
+    .order("created_at", { ascending: false });
+
+  if (error) {
+    return { users: [] as SupportAccessUser[], usingDemoData: false };
+  }
+
+  return {
+    users: (data ?? []) as SupportAccessUser[],
+    usingDemoData: false,
+  };
+}
+
+export async function upsertSupportAccessUser(input: { email: string; fullName?: string; role?: SupportRole; isActive?: boolean }) {
+  const supabase = getSupabaseServerClient();
+  if (!supabase) {
+    return { ok: false, error: "Demo modda support kullanicisi eklenemez." };
+  }
+
+  const email = input.email.trim().toLowerCase();
+  if (!email) {
+    return { ok: false, error: "E-posta gerekli." };
+  }
+
+  const { error } = await supabase.from("support_access_users").upsert(
+    {
+      email,
+      full_name: input.fullName?.trim() || null,
+      role: input.role ?? "support_agent",
+      is_active: input.isActive ?? true,
+    },
+    { onConflict: "email" },
+  );
+
+  if (error) {
+    return { ok: false, error: error.message };
+  }
+
+  await writeSupportAuditLog({
+    action: "support_access.upserted",
+    entityType: "support_access_user",
+    entityId: email,
+    details: {
+      role: input.role ?? "support_agent",
+      isActive: input.isActive ?? true,
+    },
+  });
+
+  return { ok: true };
+}
+
+export async function setSupportAccessUserStatus(id: string, isActive: boolean) {
+  const supabase = getSupabaseServerClient();
+  if (!supabase) {
+    return { ok: false, error: "Demo modda support kullanicisi guncellenemez." };
+  }
+
+  const { error } = await supabase
+    .from("support_access_users")
+    .update({ is_active: isActive })
+    .eq("id", id);
+
+  if (error) {
+    return { ok: false, error: error.message };
+  }
+
+  await writeSupportAuditLog({
+    action: "support_access.status_updated",
+    entityType: "support_access_user",
+    entityId: id,
+    details: { isActive },
+  });
+
+  return { ok: true };
+}
+
+export async function setSupportAccessUserRole(id: string, role: SupportRole) {
+  const supabase = getSupabaseServerClient();
+  if (!supabase) {
+    return { ok: false, error: "Demo modda support rol guncellenemez." };
+  }
+
+  const { error } = await supabase
+    .from("support_access_users")
+    .update({ role })
+    .eq("id", id);
+
+  if (error) {
+    return { ok: false, error: error.message };
+  }
+
+  await writeSupportAuditLog({
+    action: "support_access.role_updated",
+    entityType: "support_access_user",
+    entityId: id,
+    details: { role },
+  });
+
+  return { ok: true };
+}
+
+async function getCurrentSupportActor() {
+  const supabase = getSupabaseServerClient();
+  const context = await getRequestAppContext();
+  const email = context.user?.email?.trim().toLowerCase() ?? "";
+  const privilegedEmails = getPrivilegedEmails(process.env.SUPPORT_ADMIN_EMAILS);
+
+  if (!supabase || !email) {
+    return {
+      id: null as string | null,
+      email,
+      full_name: context.user?.email ?? null,
+      role: (privilegedEmails.has(email) ? "support_admin" : null) as SupportRole | null,
+      profile_id: context.user?.id ?? null,
+    };
+  }
+
+  const { data } = await supabase
+    .from("support_access_users")
+    .select("id, email, full_name, role")
+    .eq("email", email)
+    .maybeSingle();
+
+  if (data) {
+    return {
+      id: String(data.id),
+      email: String(data.email),
+      full_name: (data.full_name as string | null | undefined) ?? null,
+      role: (data.role as SupportRole | undefined) ?? null,
+      profile_id: context.user?.id ?? null,
+    };
+  }
+
+  return {
+    id: null as string | null,
+    email,
+    full_name: context.user?.email ?? null,
+    role: (privilegedEmails.has(email) ? "support_admin" : null) as SupportRole | null,
+    profile_id: context.user?.id ?? null,
+  };
+}
+
+async function writeSupportAuditLog(input: {
+  action: string;
+  entityType: string;
+  entityId?: string | null;
+  businessId?: string | null;
+  details?: Record<string, unknown>;
+}) {
+  const supabase = getSupabaseServerClient();
+  if (!supabase) {
+    return;
+  }
+
+  const actor = await getCurrentSupportActor();
+  await supabase.from("support_audit_logs").insert({
+    support_user_id: actor.id,
+    business_id: input.businessId ?? null,
+    action: input.action,
+    entity_type: input.entityType,
+    entity_id: input.entityId ?? null,
+    details: input.details ?? {},
+  });
+}
+
+async function enrichSupportTickets(tickets: SupportTicket[]) {
+  if (!tickets.length) {
+    return tickets;
+  }
+
+  const supabase = getSupabaseServerClient();
+  if (!supabase) {
+    return tickets;
+  }
+
+  const businessIds = [...new Set(tickets.map((ticket) => ticket.business_id).filter(Boolean))];
+  const supportUserIds = [...new Set(tickets.map((ticket) => ticket.assigned_to_support_user_id).filter(Boolean))] as string[];
+
+  const [businessesResult, supportUsersResult] = await Promise.all([
+    businessIds.length
+      ? supabase.from("businesses").select("id, name").in("id", businessIds)
+      : Promise.resolve({ data: [], error: null }),
+    supportUserIds.length
+      ? supabase.from("support_access_users").select("id, email, full_name").in("id", supportUserIds)
+      : Promise.resolve({ data: [], error: null }),
+  ]);
+
+  const businessMap = new Map(
+    ((businessesResult.data ?? []) as Array<{ id: string; name: string }>).map((business) => [business.id, business.name]),
+  );
+  const supportMap = new Map(
+    ((supportUsersResult.data ?? []) as Array<{ id: string; email: string; full_name: string | null }>).map((user) => [
+      user.id,
+      user.full_name || user.email,
+    ]),
+  );
+
+  return tickets.map((ticket) => enrichTicketSla({
+    ...ticket,
+    business_name: businessMap.get(ticket.business_id) ?? ticket.business_name,
+    assigned_support_name:
+      (ticket.assigned_to_support_user_id ? supportMap.get(ticket.assigned_to_support_user_id) : null) ?? ticket.assigned_support_name ?? null,
+  }));
+}
+
+async function enrichSupportPlanRequests(requests: SupportPlanRequest[]) {
+  if (!requests.length) {
+    return requests;
+  }
+
+  const supabase = getSupabaseServerClient();
+  if (!supabase) {
+    return requests;
+  }
+
+  const businessIds = [...new Set(requests.map((request) => request.business_id).filter(Boolean))];
+  const reviewerIds = [...new Set(requests.map((request) => request.reviewed_by_support_user_id).filter(Boolean))] as string[];
+
+  const [businessesResult, reviewersResult] = await Promise.all([
+    businessIds.length
+      ? supabase.from("businesses").select("id, name").in("id", businessIds)
+      : Promise.resolve({ data: [], error: null }),
+    reviewerIds.length
+      ? supabase.from("support_access_users").select("id, email, full_name").in("id", reviewerIds)
+      : Promise.resolve({ data: [], error: null }),
+  ]);
+
+  const businessMap = new Map(
+    ((businessesResult.data ?? []) as Array<{ id: string; name: string }>).map((business) => [business.id, business.name]),
+  );
+  const reviewerMap = new Map(
+    ((reviewersResult.data ?? []) as Array<{ id: string; email: string; full_name: string | null }>).map((user) => [
+      user.id,
+      user.full_name || user.email,
+    ]),
+  );
+
+  return requests.map((request) => ({
+    ...request,
+    business_name: businessMap.get(request.business_id) ?? request.business_name,
+    reviewed_by_support_name:
+      (request.reviewed_by_support_user_id ? reviewerMap.get(request.reviewed_by_support_user_id) : null) ?? request.reviewed_by_support_name ?? null,
+  }));
+}
+
+export async function createSupportTicket(input: {
+  type?: SupportTicketType;
+  priority?: SupportTicketPriority;
+  subject: string;
+  description: string;
+}) {
+  const supabase = getSupabaseServerClient();
+  if (!supabase) {
+    return { ok: false, error: "Demo modda destek talebi olusturulamaz." };
+  }
+
+  const context = await getRequestAppContext();
+  if (!context.businessId) {
+    return { ok: false, error: "Aktif isletme bulunamadi." };
+  }
+
+  const subject = input.subject.trim();
+  const description = input.description.trim();
+  if (!subject || !description) {
+    return { ok: false, error: "Konu ve aciklama zorunlu." };
+  }
+
+  const { data, error } = await supabase
+    .from("support_tickets")
+    .insert({
+      business_id: context.businessId,
+      type: input.type ?? "support",
+      priority: input.priority ?? "normal",
+      status: "open",
+      subject,
+      description,
+      created_by_profile_id: context.user?.id ?? null,
+    })
+    .select("id")
+    .single();
+
+  if (error) {
+    return { ok: false, error: error.message };
+  }
+
+  await supabase.from("support_ticket_messages").insert({
+    ticket_id: data.id,
+    author_type: "tenant",
+    author_profile_id: context.user?.id ?? null,
+    message: description,
+    is_internal_note: false,
+  });
+
+  await writeSupportAuditLog({
+    action: "ticket.created",
+    entityType: "support_ticket",
+    entityId: String(data?.id ?? ""),
+    businessId: context.businessId,
+    details: {
+      type: input.type ?? "support",
+      priority: input.priority ?? "normal",
+    },
+  });
+
+  return { ok: true, id: String(data?.id ?? "") };
+}
+
+export async function listSupportTickets(status?: SupportTicketStatus) {
+  const supabase = getSupabaseServerClient();
+  if (!supabase) {
+    return { tickets: [] as SupportTicket[], usingDemoData: true };
+  }
+
+  let query = supabase
+    .from("support_tickets")
+    .select("id, business_id, type, priority, status, subject, description, created_by_profile_id, assigned_to_support_user_id, created_at, updated_at, resolved_at")
+    .order("created_at", { ascending: false });
+
+  if (status) {
+    query = query.eq("status", status);
+  }
+
+  const { data, error } = await query;
+  if (error) {
+    return { tickets: [] as SupportTicket[], usingDemoData: false };
+  }
+
+  const tickets = await enrichSupportTickets((data ?? []) as SupportTicket[]);
+  return {
+    tickets,
+    usingDemoData: false,
+  };
+}
+
+export async function getSupportTicketDetail(ticketId: string) {
+  const supabase = getSupabaseServerClient();
+  if (!supabase) {
+    return {
+      ticket: null as SupportTicket | null,
+      messages: [] as SupportTicketMessage[],
+      auditLogs: [] as SupportAuditLogEntry[],
+      usingDemoData: true,
+    };
+  }
+
+  const { data: ticketRow, error } = await supabase
+    .from("support_tickets")
+    .select("id, business_id, type, priority, status, subject, description, created_by_profile_id, assigned_to_support_user_id, created_at, updated_at, resolved_at")
+    .eq("id", ticketId)
+    .maybeSingle();
+
+  if (error || !ticketRow) {
+    return {
+      ticket: null as SupportTicket | null,
+      messages: [] as SupportTicketMessage[],
+      auditLogs: [] as SupportAuditLogEntry[],
+      usingDemoData: false,
+    };
+  }
+
+  const [messagesResult, auditResult] = await Promise.all([
+    supabase
+      .from("support_ticket_messages")
+      .select("id, ticket_id, author_type, author_support_user_id, author_profile_id, message, is_internal_note, created_at")
+      .eq("ticket_id", ticketId)
+      .order("created_at", { ascending: true }),
+    supabase
+      .from("support_audit_logs")
+      .select("id, support_user_id, business_id, action, entity_type, entity_id, details, created_at")
+      .eq("entity_type", "support_ticket")
+      .eq("entity_id", ticketId)
+      .order("created_at", { ascending: false })
+      .limit(20),
+  ]);
+
+  const ticket = (await enrichSupportTickets([ticketRow as SupportTicket]))[0] ?? null;
+
+  const supportIds = [...new Set(((messagesResult.data ?? []) as Array<{ author_support_user_id: string | null }>).map((row) => row.author_support_user_id).filter(Boolean))] as string[];
+  const profileIds = [...new Set(((messagesResult.data ?? []) as Array<{ author_profile_id: string | null }>).map((row) => row.author_profile_id).filter(Boolean))] as string[];
+  const auditSupportIds = [...new Set(((auditResult.data ?? []) as Array<{ support_user_id: string | null }>).map((row) => row.support_user_id).filter(Boolean))] as string[];
+  const allSupportIds = [...new Set([...supportIds, ...auditSupportIds])];
+
+  const [supportUsersResult, profilesResult, businessesResult] = await Promise.all([
+    allSupportIds.length
+      ? supabase.from("support_access_users").select("id, email, full_name").in("id", allSupportIds)
+      : Promise.resolve({ data: [], error: null }),
+    profileIds.length
+      ? supabase.from("profiles").select("id, full_name").in("id", profileIds)
+      : Promise.resolve({ data: [], error: null }),
+    ticket?.business_id
+      ? supabase.from("businesses").select("id, name").eq("id", ticket.business_id).maybeSingle()
+      : Promise.resolve({ data: null, error: null }),
+  ]);
+
+  const supportMap = new Map(
+    ((supportUsersResult.data ?? []) as Array<{ id: string; email: string; full_name: string | null }>).map((user) => [
+      user.id,
+      user.full_name || user.email,
+    ]),
+  );
+  const profileMap = new Map(
+    ((profilesResult.data ?? []) as Array<{ id: string; full_name: string | null }>).map((profile) => [profile.id, profile.full_name || "Tenant kullanicisi"]),
+  );
+
+  const messages = ((messagesResult.data ?? []) as SupportTicketMessage[]).map((message) => ({
+    ...message,
+    author_name:
+      message.author_type === "support"
+        ? (message.author_support_user_id ? supportMap.get(message.author_support_user_id) : null) ?? "Support"
+        : message.author_type === "tenant"
+          ? (message.author_profile_id ? profileMap.get(message.author_profile_id) : null) ?? "Tenant"
+          : "Sistem",
+  }));
+
+  const businessName = (businessesResult.data as { id: string; name: string } | null)?.name ?? ticket?.business_name ?? null;
+  const auditLogs = ((auditResult.data ?? []) as SupportAuditLogEntry[]).map((entry) => ({
+    ...entry,
+    actor_name: entry.support_user_id ? supportMap.get(entry.support_user_id) ?? "Support" : "Sistem",
+    business_name: businessName,
+  }));
+
+  return {
+    ticket,
+    messages,
+    auditLogs,
+    usingDemoData: false,
+  };
+}
+
+export async function createSupportTicketMessage(input: {
+  ticketId: string;
+  message: string;
+  isInternalNote?: boolean;
+}) {
+  const supabase = getSupabaseServerClient();
+  if (!supabase) {
+    return { ok: false, error: "Demo modda ticket notu eklenemez." };
+  }
+
+  const actor = await getCurrentSupportActor();
+  const message = input.message.trim();
+  if (!message) {
+    return { ok: false, error: "Mesaj bos olamaz." };
+  }
+
+  const { data: ticket } = await supabase
+    .from("support_tickets")
+    .select("id, business_id")
+    .eq("id", input.ticketId)
+    .maybeSingle();
+
+  if (!ticket) {
+    return { ok: false, error: "Ticket bulunamadi." };
+  }
+
+  const { error } = await supabase.from("support_ticket_messages").insert({
+    ticket_id: input.ticketId,
+    author_type: "support",
+    author_support_user_id: actor.id,
+    author_profile_id: actor.profile_id,
+    message,
+    is_internal_note: input.isInternalNote ?? true,
+  });
+
+  if (error) {
+    return { ok: false, error: error.message };
+  }
+
+  await writeSupportAuditLog({
+    action: input.isInternalNote ? "ticket.internal_note_added" : "ticket.reply_added",
+    entityType: "support_ticket",
+    entityId: input.ticketId,
+    businessId: String(ticket.business_id),
+    details: { isInternalNote: input.isInternalNote ?? true },
+  });
+
+  return { ok: true };
+}
+
+export async function setSupportTicketStatus(id: string, status: SupportTicketStatus) {
+  const supabase = getSupabaseServerClient();
+  if (!supabase) {
+    return { ok: false, error: "Demo modda destek talebi guncellenemez." };
+  }
+
+  const payload = {
+    status,
+    resolved_at: status === "resolved" || status === "closed" ? new Date().toISOString() : null,
+  };
+  const { error } = await supabase.from("support_tickets").update(payload).eq("id", id);
+  if (error) {
+    return { ok: false, error: error.message };
+  }
+
+  await writeSupportAuditLog({
+    action: "ticket.status_updated",
+    entityType: "support_ticket",
+    entityId: id,
+    details: { status },
+  });
+
+  return { ok: true };
+}
+
+export async function assignSupportTicket(id: string, supportUserId: string | null) {
+  const supabase = getSupabaseServerClient();
+  if (!supabase) {
+    return { ok: false, error: "Demo modda destek talebi atanamaz." };
+  }
+
+  const { error } = await supabase
+    .from("support_tickets")
+    .update({
+      assigned_to_support_user_id: supportUserId,
+      status: supportUserId ? "in_progress" : "open",
+    })
+    .eq("id", id);
+
+  if (error) {
+    return { ok: false, error: error.message };
+  }
+
+  await writeSupportAuditLog({
+    action: "ticket.assigned",
+    entityType: "support_ticket",
+    entityId: id,
+    details: { supportUserId },
+  });
+
+  return { ok: true };
+}
+
+export async function listSupportTenantSummaries() {
+  const supabase = getSupabaseServerClient();
+  if (!supabase) {
+    return { tenants: [] as SupportTenantSummary[], usingDemoData: true };
+  }
+
+  const { data: businesses, error } = await supabase
+    .from("businesses")
+    .select("id, name, slug, plan, is_active")
+    .order("name", { ascending: true });
+
+  if (error) {
+    return { tenants: [] as SupportTenantSummary[], usingDemoData: false };
+  }
+
+  const tenants = await Promise.all(
+    ((businesses ?? []) as Array<{ id: string; name: string; slug: string; plan: BusinessPlan; is_active: boolean }>).map(async (business) => {
+      const [branchResult, ticketResult] = await Promise.all([
+        supabase.from("branches").select("id", { count: "exact", head: true }).eq("business_id", business.id).eq("is_active", true),
+        supabase.from("support_tickets").select("id", { count: "exact", head: true }).eq("business_id", business.id).neq("status", "closed"),
+      ]);
+
+      return {
+        business_id: business.id,
+        business_name: business.name,
+        business_slug: business.slug,
+        plan: business.plan,
+        is_active: business.is_active,
+        branch_count: branchResult.count ?? 0,
+        support_ticket_count: ticketResult.count ?? 0,
+      } satisfies SupportTenantSummary;
+    }),
+  );
+
+  return { tenants, usingDemoData: false };
+}
+
+export async function listSupportHealthSummaries() {
+  const supabase = getSupabaseServerClient();
+  if (!supabase) {
+    return { health: [] as SupportHealthSummary[], usingDemoData: true };
+  }
+
+  const { data: businesses, error } = await supabase
+    .from("businesses")
+    .select("id, name, plan")
+    .eq("is_active", true)
+    .order("name", { ascending: true });
+
+  if (error) {
+    return { health: [] as SupportHealthSummary[], usingDemoData: false };
+  }
+
+  const health = await Promise.all(
+    ((businesses ?? []) as Array<{ id: string; name: string; plan: BusinessPlan }>).map(async (business) => {
+      const [orderResult, paymentResult, ticketResult] = await Promise.all([
+        supabase.from("orders").select("created_at").eq("business_id", business.id).order("created_at", { ascending: false }).limit(1).maybeSingle(),
+        supabase.from("payments").select("created_at").eq("business_id", business.id).order("created_at", { ascending: false }).limit(1).maybeSingle(),
+        supabase.from("support_tickets").select("id", { count: "exact", head: true }).eq("business_id", business.id).in("status", ["open", "in_progress"]),
+      ]);
+
+      const lastOrderAt = (orderResult.data?.created_at as string | undefined) ?? null;
+      const lastPaymentAt = (paymentResult.data?.created_at as string | undefined) ?? null;
+      const openTicketCount = ticketResult.count ?? 0;
+      const reference = lastOrderAt || lastPaymentAt;
+      const daysSinceActivity = reference ? Math.floor((Date.now() - new Date(reference).getTime()) / 86400000) : 999;
+      const health_status =
+        openTicketCount >= 3 || daysSinceActivity > 14 ? "critical" : openTicketCount > 0 || daysSinceActivity > 7 ? "warning" : "healthy";
+
+      return {
+        business_id: business.id,
+        business_name: business.name,
+        plan: business.plan,
+        health_status,
+        last_order_at: lastOrderAt,
+        last_payment_at: lastPaymentAt,
+        open_ticket_count: openTicketCount,
+      } satisfies SupportHealthSummary;
+    }),
+  );
+
+  return { health, usingDemoData: false };
+}
+
+export async function listSupportOnboardingSummaries() {
+  const supabase = getSupabaseServerClient();
+  if (!supabase) {
+    return { tenants: [] as SupportOnboardingSummary[], usingDemoData: true };
+  }
+
+  const { data: businesses, error } = await supabase
+    .from("businesses")
+    .select("id, name")
+    .eq("is_active", true)
+    .order("name", { ascending: true });
+
+  if (error) {
+    return { tenants: [] as SupportOnboardingSummary[], usingDemoData: false };
+  }
+
+  const tenants = await Promise.all(
+    ((businesses ?? []) as Array<{ id: string; name: string }>).map(async (business) => {
+      const [productsResult, tablesResult, staffResult, branchesResult] = await Promise.all([
+        supabase.from("products").select("id", { count: "exact", head: true }).eq("business_id", business.id),
+        supabase.from("tables").select("id", { count: "exact", head: true }).eq("business_id", business.id),
+        supabase.from("staff_branch_access").select("profile_id", { count: "exact", head: true }).eq("business_id", business.id),
+        supabase.from("branches").select("id", { count: "exact", head: true }).eq("business_id", business.id).eq("is_active", true),
+      ]);
+
+      const products = productsResult.count ?? 0;
+      const tables = tablesResult.count ?? 0;
+      const staff = staffResult.count ?? 0;
+      const branches = branchesResult.count ?? 0;
+      const score = [products > 0, tables > 0, staff > 0, branches > 0].filter(Boolean).length;
+
+      return {
+        business_id: business.id,
+        business_name: business.name,
+        products,
+        tables,
+        staff,
+        branches,
+        completion_score: Math.round((score / 4) * 100),
+      } satisfies SupportOnboardingSummary;
+    }),
+  );
+
+  return { tenants, usingDemoData: false };
+}
+
+export async function getSupportTenantDetail(businessId: string) {
+  const supabase = getSupabaseServerClient();
+  if (!supabase) {
+    return { tenant: null, usingDemoData: true };
+  }
+
+  const { data: business, error } = await supabase
+    .from("businesses")
+    .select("id, name, slug, plan, is_active, created_at, updated_at")
+    .eq("id", businessId)
+    .maybeSingle();
+
+  if (error || !business) {
+    return { tenant: null, usingDemoData: false };
+  }
+
+  const [branchResult, ticketResult, orderResult, paymentResult, planRequestsResult, auditResult, incidentsResult, profileResult, featureFlagsResult] = await Promise.all([
+    supabase.from("branches").select("id", { count: "exact", head: true }).eq("business_id", businessId).eq("is_active", true),
+    supabase.from("support_tickets").select("id", { count: "exact", head: true }).eq("business_id", businessId).in("status", ["open", "in_progress"]),
+    supabase.from("orders").select("created_at").eq("business_id", businessId).order("created_at", { ascending: false }).limit(1).maybeSingle(),
+    supabase.from("payments").select("created_at").eq("business_id", businessId).order("created_at", { ascending: false }).limit(1).maybeSingle(),
+    supabase.from("support_plan_requests").select("id, business_id, current_plan, requested_plan, reason, status, requested_by_profile_id, reviewed_by_support_user_id, created_at, updated_at").eq("business_id", businessId).order("created_at", { ascending: false }).limit(10),
+    supabase.from("support_audit_logs").select("id, support_user_id, business_id, action, entity_type, entity_id, details, created_at").eq("business_id", businessId).order("created_at", { ascending: false }).limit(10),
+    supabase.from("support_incidents").select("id, business_id, title, summary, severity, status, owner_support_user_id, started_at, resolved_at, created_at, updated_at").eq("business_id", businessId).order("started_at", { ascending: false }).limit(10),
+    supabase.from("support_tenant_profiles").select("business_id, lifecycle_stage, owner_name, owner_email, account_manager_name, renewal_date, billing_status, risk_level, account_notes, created_at, updated_at").eq("business_id", businessId).maybeSingle(),
+    supabase.from("support_feature_flag_overrides").select("id, business_id, feature_key, enabled, note, created_at, updated_at").eq("business_id", businessId).order("updated_at", { ascending: false }),
+  ]);
+
+  const planRequests = await enrichSupportPlanRequests((planRequestsResult.data ?? []) as SupportPlanRequest[]);
+  const auditSupportIds = [...new Set(((auditResult.data ?? []) as Array<{ support_user_id: string | null }>).map((row) => row.support_user_id).filter(Boolean))] as string[];
+  const incidentOwnerIds = [...new Set(((incidentsResult.data ?? []) as Array<{ owner_support_user_id: string | null }>).map((row) => row.owner_support_user_id).filter(Boolean))] as string[];
+  const allSupportIds = [...new Set([...auditSupportIds, ...incidentOwnerIds])];
+  const supportUsersResult = allSupportIds.length
+    ? await supabase.from("support_access_users").select("id, email, full_name").in("id", allSupportIds)
+    : { data: [], error: null };
+  const supportMap = new Map(
+    ((supportUsersResult.data ?? []) as Array<{ id: string; email: string; full_name: string | null }>).map((user) => [
+      user.id,
+      user.full_name || user.email,
+    ]),
+  );
+
+  return {
+    tenant: {
+      ...(business as Business),
+      branch_count: branchResult.count ?? 0,
+      open_ticket_count: ticketResult.count ?? 0,
+      last_order_at: (orderResult.data?.created_at as string | undefined) ?? null,
+      last_payment_at: (paymentResult.data?.created_at as string | undefined) ?? null,
+      profile: profileResult.data ?? {
+        business_id: businessId,
+        lifecycle_stage: "active",
+        owner_name: null,
+        owner_email: null,
+        account_manager_name: null,
+        renewal_date: null,
+        billing_status: "healthy",
+        risk_level: "low",
+        account_notes: null,
+        created_at: new Date().toISOString(),
+        updated_at: new Date().toISOString(),
+      },
+      plan_requests: planRequests,
+      incidents: ((incidentsResult.data ?? []) as SupportIncident[]).map((incident) => ({
+        ...incident,
+        business_name: business.name,
+        owner_support_name: incident.owner_support_user_id ? supportMap.get(incident.owner_support_user_id) ?? null : null,
+      })),
+      feature_flags: ((featureFlagsResult.data ?? []) as SupportFeatureFlagOverride[]).map((flag) => ({
+        ...flag,
+        business_name: business.name,
+      })),
+      diagnostics: {
+        last_order_at: (orderResult.data?.created_at as string | undefined) ?? null,
+        last_payment_at: (paymentResult.data?.created_at as string | undefined) ?? null,
+        branch_count: branchResult.count ?? 0,
+        open_ticket_count: ticketResult.count ?? 0,
+        feature_flag_count: (featureFlagsResult.data ?? []).length,
+        open_incident_count: ((incidentsResult.data ?? []) as SupportIncident[]).filter((incident) => incident.status === "open" || incident.status === "monitoring").length,
+      },
+      recent_audit_logs: ((auditResult.data ?? []) as SupportAuditLogEntry[]).map((entry) => ({
+        ...entry,
+        actor_name: entry.support_user_id ? supportMap.get(entry.support_user_id) ?? "Support" : "Sistem",
+        business_name: business.name,
+      })),
+    },
+    usingDemoData: false,
+  };
+}
+
+export async function createSupportPlanRequest(input: {
+  requestedPlan: BusinessPlan;
+  reason?: string;
+}) {
+  const supabase = getSupabaseServerClient();
+  if (!supabase) {
+    return { ok: false, error: "Demo modda paket talebi olusturulamaz." };
+  }
+
+  const context = await getRequestAppContext();
+  if (!context.businessId || !context.activeBusiness?.plan) {
+    return { ok: false, error: "Aktif isletme bulunamadi." };
+  }
+
+  const { data, error } = await supabase
+    .from("support_plan_requests")
+    .insert({
+      business_id: context.businessId,
+      current_plan: context.activeBusiness.plan,
+      requested_plan: input.requestedPlan,
+      reason: input.reason?.trim() || null,
+      status: "open",
+      requested_by_profile_id: context.user?.id ?? null,
+    })
+    .select("id")
+    .single();
+
+  if (error) {
+    return { ok: false, error: error.message };
+  }
+
+  await writeSupportAuditLog({
+    action: "plan_request.created",
+    entityType: "support_plan_request",
+    entityId: String(data?.id ?? ""),
+    businessId: context.businessId,
+    details: {
+      currentPlan: context.activeBusiness.plan,
+      requestedPlan: input.requestedPlan,
+    },
+  });
+
+  await createSupportTicket({
+    type: "plan_change",
+    priority: "normal",
+    subject: `Paket degisikligi talebi: ${context.activeBusiness.plan} -> ${input.requestedPlan}`,
+    description: input.reason?.trim() || "Tenant paket degisikligi talebi olusturdu.",
+  });
+
+  return { ok: true, id: String(data?.id ?? "") };
+}
+
+export async function listSupportPlanRequests(status?: SupportPlanRequestStatus) {
+  const supabase = getSupabaseServerClient();
+  if (!supabase) {
+    return { requests: [] as SupportPlanRequest[], usingDemoData: true };
+  }
+
+  let query = supabase
+    .from("support_plan_requests")
+    .select("id, business_id, current_plan, requested_plan, reason, status, requested_by_profile_id, reviewed_by_support_user_id, created_at, updated_at")
+    .order("created_at", { ascending: false });
+
+  if (status) {
+    query = query.eq("status", status);
+  }
+
+  const { data, error } = await query;
+  if (error) {
+    return { requests: [] as SupportPlanRequest[], usingDemoData: false };
+  }
+
+  const requests = await enrichSupportPlanRequests((data ?? []) as SupportPlanRequest[]);
+  return {
+    requests,
+    usingDemoData: false,
+  };
+}
+
+export async function setSupportPlanRequestStatus(id: string, status: SupportPlanRequestStatus) {
+  const supabase = getSupabaseServerClient();
+  if (!supabase) {
+    return { ok: false, error: "Demo modda paket talebi guncellenemez." };
+  }
+
+  const actor = await getCurrentSupportActor();
+  const { data: requestRow, error: requestError } = await supabase
+    .from("support_plan_requests")
+    .select("business_id")
+    .eq("id", id)
+    .maybeSingle();
+
+  if (requestError || !requestRow) {
+    return { ok: false, error: requestError?.message ?? "Paket talebi bulunamadi." };
+  }
+
+  const { error } = await supabase
+    .from("support_plan_requests")
+    .update({ status, reviewed_by_support_user_id: actor.id })
+    .eq("id", id);
+
+  if (error) {
+    return { ok: false, error: error.message };
+  }
+
+  await writeSupportAuditLog({
+    action: "plan_request.status_updated",
+    entityType: "support_plan_request",
+    entityId: id,
+    businessId: String(requestRow.business_id),
+    details: { status },
+  });
+
+  return { ok: true };
+}
+
+export async function listSupportAuditLogs(input?: { businessId?: string; limit?: number }) {
+  const supabase = getSupabaseServerClient();
+  if (!supabase) {
+    return { logs: [] as SupportAuditLogEntry[], usingDemoData: true };
+  }
+
+  let query = supabase
+    .from("support_audit_logs")
+    .select("id, support_user_id, business_id, action, entity_type, entity_id, details, created_at")
+    .order("created_at", { ascending: false })
+    .limit(input?.limit ?? 50);
+
+  if (input?.businessId) {
+    query = query.eq("business_id", input.businessId);
+  }
+
+  const { data, error } = await query;
+  if (error) {
+    return { logs: [] as SupportAuditLogEntry[], usingDemoData: false };
+  }
+
+  const logs = (data ?? []) as SupportAuditLogEntry[];
+  if (!logs.length) {
+    return { logs, usingDemoData: false };
+  }
+
+  const supportIds = [...new Set(logs.map((log) => log.support_user_id).filter(Boolean))] as string[];
+  const businessIds = [...new Set(logs.map((log) => log.business_id).filter(Boolean))] as string[];
+  const [supportUsersResult, businessesResult] = await Promise.all([
+    supportIds.length
+      ? supabase.from("support_access_users").select("id, email, full_name").in("id", supportIds)
+      : Promise.resolve({ data: [], error: null }),
+    businessIds.length
+      ? supabase.from("businesses").select("id, name").in("id", businessIds)
+      : Promise.resolve({ data: [], error: null }),
+  ]);
+
+  const supportMap = new Map(
+    ((supportUsersResult.data ?? []) as Array<{ id: string; email: string; full_name: string | null }>).map((user) => [
+      user.id,
+      user.full_name || user.email,
+    ]),
+  );
+  const businessMap = new Map(
+    ((businessesResult.data ?? []) as Array<{ id: string; name: string }>).map((business) => [business.id, business.name]),
+  );
+
+  return {
+    logs: logs.map((log) => ({
+      ...log,
+      actor_name: log.support_user_id ? supportMap.get(log.support_user_id) ?? "Support" : "Sistem",
+      business_name: log.business_id ? businessMap.get(log.business_id) ?? null : null,
+    })),
+    usingDemoData: false,
+  };
+}
+
+async function ensureSupportTenantProfile(businessId: string) {
+  const supabase = getSupabaseServerClient();
+  if (!supabase) {
+    return null;
+  }
+
+  const { data } = await supabase
+    .from("support_tenant_profiles")
+    .upsert({ business_id: businessId }, { onConflict: "business_id" })
+    .select("business_id, lifecycle_stage, owner_name, owner_email, account_manager_name, renewal_date, billing_status, risk_level, account_notes, created_at, updated_at")
+    .single();
+
+  return (data ?? null) as SupportTenantProfile | null;
+}
+
+export async function listSupportBillingSummaries() {
+  const supabase = getSupabaseServerClient();
+  if (!supabase) {
+    return { tenants: [] as Array<SupportTenantProfile & { business_name: string; plan: BusinessPlan }>, usingDemoData: true };
+  }
+
+  const { data: businesses, error } = await supabase
+    .from("businesses")
+    .select("id, name, plan")
+    .eq("is_active", true)
+    .order("name", { ascending: true });
+
+  if (error) {
+    return { tenants: [] as Array<SupportTenantProfile & { business_name: string; plan: BusinessPlan }>, usingDemoData: false };
+  }
+
+  const profiles = await Promise.all(
+    ((businesses ?? []) as Array<{ id: string; name: string; plan: BusinessPlan }>).map(async (business) => {
+      const profile = (await ensureSupportTenantProfile(business.id)) ?? {
+        business_id: business.id,
+        lifecycle_stage: "active" as TenantLifecycleStage,
+        owner_name: null,
+        owner_email: null,
+        account_manager_name: null,
+        renewal_date: null,
+        billing_status: "healthy" as SupportBillingStatus,
+        risk_level: "low" as SupportRiskLevel,
+        account_notes: null,
+        created_at: new Date().toISOString(),
+        updated_at: new Date().toISOString(),
+      };
+
+      return {
+        ...profile,
+        business_name: business.name,
+        plan: business.plan,
+      };
+    }),
+  );
+
+  return { tenants: profiles, usingDemoData: false };
+}
+
+export async function updateSupportTenantProfile(input: {
+  businessId: string;
+  lifecycleStage: TenantLifecycleStage;
+  ownerName?: string;
+  ownerEmail?: string;
+  accountManagerName?: string;
+  renewalDate?: string;
+  billingStatus: SupportBillingStatus;
+  riskLevel: SupportRiskLevel;
+  accountNotes?: string;
+}) {
+  const supabase = getSupabaseServerClient();
+  if (!supabase) {
+    return { ok: false, error: "Demo modda tenant profili guncellenemez." };
+  }
+
+  const { error } = await supabase.from("support_tenant_profiles").upsert(
+    {
+      business_id: input.businessId,
+      lifecycle_stage: input.lifecycleStage,
+      owner_name: input.ownerName?.trim() || null,
+      owner_email: input.ownerEmail?.trim().toLowerCase() || null,
+      account_manager_name: input.accountManagerName?.trim() || null,
+      renewal_date: input.renewalDate || null,
+      billing_status: input.billingStatus,
+      risk_level: input.riskLevel,
+      account_notes: input.accountNotes?.trim() || null,
+    },
+    { onConflict: "business_id" },
+  );
+
+  if (error) {
+    return { ok: false, error: error.message };
+  }
+
+  await writeSupportAuditLog({
+    action: "tenant_profile.updated",
+    entityType: "support_tenant_profile",
+    entityId: input.businessId,
+    businessId: input.businessId,
+    details: {
+      lifecycleStage: input.lifecycleStage,
+      billingStatus: input.billingStatus,
+      riskLevel: input.riskLevel,
+    },
+  });
+
+  return { ok: true };
+}
+
+export async function listSupportIncidents(status?: SupportIncidentStatus) {
+  const supabase = getSupabaseServerClient();
+  if (!supabase) {
+    return { incidents: [] as SupportIncident[], usingDemoData: true };
+  }
+
+  let query = supabase
+    .from("support_incidents")
+    .select("id, business_id, title, summary, severity, status, owner_support_user_id, started_at, resolved_at, created_at, updated_at")
+    .order("started_at", { ascending: false });
+  if (status) {
+    query = query.eq("status", status);
+  }
+
+  const { data, error } = await query;
+  if (error) {
+    return { incidents: [] as SupportIncident[], usingDemoData: false };
+  }
+
+  const incidents = (data ?? []) as SupportIncident[];
+  if (!incidents.length) {
+    return { incidents, usingDemoData: false };
+  }
+
+  const businessIds = [...new Set(incidents.map((incident) => incident.business_id).filter(Boolean))] as string[];
+  const ownerIds = [...new Set(incidents.map((incident) => incident.owner_support_user_id).filter(Boolean))] as string[];
+  const [businessesResult, ownersResult] = await Promise.all([
+    businessIds.length ? supabase.from("businesses").select("id, name").in("id", businessIds) : Promise.resolve({ data: [], error: null }),
+    ownerIds.length ? supabase.from("support_access_users").select("id, email, full_name").in("id", ownerIds) : Promise.resolve({ data: [], error: null }),
+  ]);
+
+  const businessMap = new Map(((businessesResult.data ?? []) as Array<{ id: string; name: string }>).map((row) => [row.id, row.name]));
+  const ownerMap = new Map(((ownersResult.data ?? []) as Array<{ id: string; email: string; full_name: string | null }>).map((row) => [row.id, row.full_name || row.email]));
+
+  return {
+    incidents: incidents.map((incident) => ({
+      ...incident,
+      business_name: incident.business_id ? businessMap.get(incident.business_id) ?? null : null,
+      owner_support_name: incident.owner_support_user_id ? ownerMap.get(incident.owner_support_user_id) ?? null : null,
+    })),
+    usingDemoData: false,
+  };
+}
+
+export async function createSupportIncident(input: {
+  businessId?: string | null;
+  title: string;
+  summary: string;
+  severity: SupportIncidentSeverity;
+}) {
+  const supabase = getSupabaseServerClient();
+  if (!supabase) {
+    return { ok: false, error: "Demo modda incident olusturulamaz." };
+  }
+
+  const actor = await getCurrentSupportActor();
+  const { data, error } = await supabase
+    .from("support_incidents")
+    .insert({
+      business_id: input.businessId ?? null,
+      title: input.title.trim(),
+      summary: input.summary.trim(),
+      severity: input.severity,
+      status: "open",
+      owner_support_user_id: actor.id,
+    })
+    .select("id")
+    .single();
+
+  if (error) {
+    return { ok: false, error: error.message };
+  }
+
+  await writeSupportAuditLog({
+    action: "incident.created",
+    entityType: "support_incident",
+    entityId: String(data?.id ?? ""),
+    businessId: input.businessId ?? null,
+    details: { severity: input.severity },
+  });
+
+  return { ok: true, id: String(data?.id ?? "") };
+}
+
+export async function setSupportIncidentStatus(id: string, status: SupportIncidentStatus) {
+  const supabase = getSupabaseServerClient();
+  if (!supabase) {
+    return { ok: false, error: "Demo modda incident guncellenemez." };
+  }
+
+  const { data: incident } = await supabase.from("support_incidents").select("business_id").eq("id", id).maybeSingle();
+  const { error } = await supabase
+    .from("support_incidents")
+    .update({ status, resolved_at: status === "resolved" || status === "closed" ? new Date().toISOString() : null })
+    .eq("id", id);
+
+  if (error) {
+    return { ok: false, error: error.message };
+  }
+
+  await writeSupportAuditLog({
+    action: "incident.status_updated",
+    entityType: "support_incident",
+    entityId: id,
+    businessId: (incident?.business_id as string | null | undefined) ?? null,
+    details: { status },
+  });
+
+  return { ok: true };
+}
+
+export async function getSupportIncidentDetail(incidentId: string) {
+  const supabase = getSupabaseServerClient();
+  if (!supabase) {
+    return {
+      incident: null as SupportIncident | null,
+      updates: [] as SupportIncidentUpdate[],
+      usingDemoData: true,
+    };
+  }
+
+  const { data: incidentRow, error } = await supabase
+    .from("support_incidents")
+    .select("id, business_id, title, summary, severity, status, owner_support_user_id, started_at, resolved_at, created_at, updated_at")
+    .eq("id", incidentId)
+    .maybeSingle();
+
+  if (error || !incidentRow) {
+    return { incident: null as SupportIncident | null, updates: [] as SupportIncidentUpdate[], usingDemoData: false };
+  }
+
+  const { incidents } = await listSupportIncidents();
+  const incident = incidents.find((item) => item.id === incidentId) ?? (incidentRow as SupportIncident);
+
+  const { data: updatesData } = await supabase
+    .from("support_incident_updates")
+    .select("id, incident_id, author_support_user_id, message, status, created_at")
+    .eq("incident_id", incidentId)
+    .order("created_at", { ascending: true });
+
+  const supportIds = [...new Set(((updatesData ?? []) as Array<{ author_support_user_id: string | null }>).map((row) => row.author_support_user_id).filter(Boolean))] as string[];
+  const supportUsersResult = supportIds.length
+    ? await supabase.from("support_access_users").select("id, email, full_name").in("id", supportIds)
+    : { data: [], error: null };
+  const supportMap = new Map(((supportUsersResult.data ?? []) as Array<{ id: string; email: string; full_name: string | null }>).map((user) => [user.id, user.full_name || user.email]));
+
+  return {
+    incident,
+    updates: ((updatesData ?? []) as SupportIncidentUpdate[]).map((update) => ({
+      ...update,
+      author_name: update.author_support_user_id ? supportMap.get(update.author_support_user_id) ?? "Support" : "Sistem",
+    })),
+    usingDemoData: false,
+  };
+}
+
+export async function createSupportIncidentUpdate(input: {
+  incidentId: string;
+  message: string;
+  status?: SupportIncidentStatus;
+}) {
+  const supabase = getSupabaseServerClient();
+  if (!supabase) {
+    return { ok: false, error: "Demo modda incident guncellenemez." };
+  }
+
+  const actor = await getCurrentSupportActor();
+  const message = input.message.trim();
+  if (!message) {
+    return { ok: false, error: "Mesaj gerekli." };
+  }
+
+  const { data: incident } = await supabase.from("support_incidents").select("business_id").eq("id", input.incidentId).maybeSingle();
+  const { error } = await supabase.from("support_incident_updates").insert({
+    incident_id: input.incidentId,
+    author_support_user_id: actor.id,
+    message,
+    status: input.status ?? null,
+  });
+
+  if (error) {
+    return { ok: false, error: error.message };
+  }
+
+  if (input.status) {
+    await supabase
+      .from("support_incidents")
+      .update({ status: input.status, resolved_at: input.status === "resolved" || input.status === "closed" ? new Date().toISOString() : null })
+      .eq("id", input.incidentId);
+  }
+
+  await writeSupportAuditLog({
+    action: "incident.update_added",
+    entityType: "support_incident",
+    entityId: input.incidentId,
+    businessId: (incident?.business_id as string | null | undefined) ?? null,
+    details: { status: input.status ?? null },
+  });
+
+  return { ok: true };
+}
+
+export async function listSupportFeatureFlagOverrides() {
+  const supabase = getSupabaseServerClient();
+  if (!supabase) {
+    return { overrides: [] as SupportFeatureFlagOverride[], usingDemoData: true };
+  }
+
+  const { data, error } = await supabase
+    .from("support_feature_flag_overrides")
+    .select("id, business_id, feature_key, enabled, note, created_at, updated_at")
+    .order("updated_at", { ascending: false });
+
+  if (error) {
+    return { overrides: [] as SupportFeatureFlagOverride[], usingDemoData: false };
+  }
+
+  const overrides = (data ?? []) as SupportFeatureFlagOverride[];
+  const businessIds = [...new Set(overrides.map((item) => item.business_id).filter(Boolean))];
+  const businessResult = businessIds.length
+    ? await supabase.from("businesses").select("id, name").in("id", businessIds)
+    : { data: [], error: null };
+  const businessMap = new Map(((businessResult.data ?? []) as Array<{ id: string; name: string }>).map((row) => [row.id, row.name]));
+
+  return {
+    overrides: overrides.map((override) => ({
+      ...override,
+      business_name: businessMap.get(override.business_id) ?? override.business_name,
+    })),
+    usingDemoData: false,
+  };
+}
+
+export async function upsertSupportFeatureFlagOverride(input: {
+  businessId: string;
+  featureKey: FeatureKey;
+  enabled: boolean;
+  note?: string;
+}) {
+  const supabase = getSupabaseServerClient();
+  if (!supabase) {
+    return { ok: false, error: "Demo modda feature flag guncellenemez." };
+  }
+
+  const { error } = await supabase.from("support_feature_flag_overrides").upsert(
+    {
+      business_id: input.businessId,
+      feature_key: input.featureKey,
+      enabled: input.enabled,
+      note: input.note?.trim() || null,
+    },
+    { onConflict: "business_id,feature_key" },
+  );
+
+  if (error) {
+    return { ok: false, error: error.message };
+  }
+
+  await writeSupportAuditLog({
+    action: "feature_flag.updated",
+    entityType: "support_feature_flag_override",
+    entityId: `${input.businessId}:${input.featureKey}`,
+    businessId: input.businessId,
+    details: { featureKey: input.featureKey, enabled: input.enabled },
+  });
+
+  return { ok: true };
+}
+
+export async function listSupportTeamSummaries() {
+  const [platformResult, ticketsResult, incidentsResult] = await Promise.all([
+    listPlatformAccessUsers(),
+    listSupportTickets(),
+    listSupportIncidents(),
+  ]);
+
+  const openTicketCounts = new Map<string, number>();
+  const openIncidentCounts = new Map<string, number>();
+
+  for (const ticket of ticketsResult.tickets.filter((item) => item.status === "open" || item.status === "in_progress")) {
+    if (ticket.assigned_to_support_user_id) {
+      openTicketCounts.set(ticket.assigned_to_support_user_id, (openTicketCounts.get(ticket.assigned_to_support_user_id) ?? 0) + 1);
+    }
+  }
+
+  for (const incident of incidentsResult.incidents.filter((item) => item.status === "open" || item.status === "monitoring")) {
+    if (incident.owner_support_user_id) {
+      openIncidentCounts.set(incident.owner_support_user_id, (openIncidentCounts.get(incident.owner_support_user_id) ?? 0) + 1);
+    }
+  }
+
+  return {
+    members: platformResult.users.map((user) => ({
+      id: user.id,
+      email: user.email,
+      full_name: user.full_name,
+      role: user.role,
+      is_active: user.is_active,
+      open_ticket_count: openTicketCounts.get(user.id) ?? 0,
+      open_incident_count: openIncidentCounts.get(user.id) ?? 0,
+      created_at: user.created_at,
+    })) as SupportTeamMemberSummary[],
+    usingDemoData: platformResult.usingDemoData,
+  };
+}
+
+export async function listSupportKnowledgeArticles() {
+  const supabase = getSupabaseServerClient();
+  if (!supabase) {
+    return { articles: [] as SupportKnowledgeArticle[], usingDemoData: true };
+  }
+
+  const { data, error } = await supabase
+    .from("support_knowledge_articles")
+    .select("id, title, category, summary, body, created_at, updated_at")
+    .order("updated_at", { ascending: false });
+
+  if (error) {
+    return { articles: [] as SupportKnowledgeArticle[], usingDemoData: false };
+  }
+
+  return {
+    articles: (data ?? []) as SupportKnowledgeArticle[],
+    usingDemoData: false,
+  };
+}
+
+export async function upsertSupportKnowledgeArticle(input: {
+  id?: string;
+  title: string;
+  category: string;
+  summary: string;
+  body: string;
+}) {
+  const supabase = getSupabaseServerClient();
+  if (!supabase) {
+    return { ok: false, error: "Demo modda knowledge kaydi guncellenemez." };
+  }
+
+  const payload = {
+    id: input.id ?? undefined,
+    title: input.title.trim(),
+    category: input.category.trim() || "general",
+    summary: input.summary.trim(),
+    body: input.body.trim(),
+  };
+
+  const { error } = await supabase.from("support_knowledge_articles").upsert(payload, input.id ? { onConflict: "id" } : undefined);
+  if (error) {
+    return { ok: false, error: error.message };
+  }
+
+  await writeSupportAuditLog({
+    action: input.id ? "knowledge.updated" : "knowledge.created",
+    entityType: "support_knowledge_article",
+    entityId: input.id ?? null,
+    details: { category: payload.category },
+  });
+
+  return { ok: true };
+}
+
+export async function getSupportDashboardSnapshot() {
+  const supabase = getSupabaseServerClient();
+  if (!supabase) {
+    return {
+      metrics: {
+        activeBusinesses: 0,
+        activeSupportUsers: 0,
+        openTickets: 0,
+        openPlanRequests: 0,
+        criticalTenants: 0,
+        openIncidents: 0,
+        atRiskTenants: 0,
+        overdueBilling: 0,
+        myOpenTickets: 0,
+        breachedTickets: 0,
+        urgentTickets: 0,
+      },
+      recentTickets: [] as SupportTicket[],
+      recentPlanRequests: [] as SupportPlanRequest[],
+      recentIncidents: [] as SupportIncident[],
+      usingDemoData: true,
+    };
+  }
+
+  const [businessesResult, usersResult, ticketsResult, requestsResult, healthResult, incidentsResult, billingResult] = await Promise.all([
+    supabase.from("businesses").select("id", { count: "exact", head: true }).eq("is_active", true),
+    supabase.from("platform_access_users").select("id", { count: "exact", head: true }).eq("is_active", true),
+    listSupportTickets(),
+    listSupportPlanRequests("open"),
+    listSupportHealthSummaries(),
+    listSupportIncidents(),
+    listSupportBillingSummaries(),
+  ]);
+  const actor = await getCurrentSupportActor();
+  const activeTickets = ticketsResult.tickets.filter((ticket) => ticket.status === "open" || ticket.status === "in_progress");
+
+  return {
+    metrics: {
+      activeBusinesses: businessesResult.count ?? 0,
+      activeSupportUsers: usersResult.count ?? 0,
+      openTickets: activeTickets.length,
+      openPlanRequests: requestsResult.requests.length,
+      criticalTenants: healthResult.health.filter((item) => item.health_status === "critical").length,
+      openIncidents: incidentsResult.incidents.filter((incident) => incident.status === "open" || incident.status === "monitoring").length,
+      atRiskTenants: billingResult.tenants.filter((tenant) => tenant.risk_level === "high" || tenant.lifecycle_stage === "at_risk").length,
+      overdueBilling: billingResult.tenants.filter((tenant) => tenant.billing_status === "overdue").length,
+      myOpenTickets: actor.id ? activeTickets.filter((ticket) => ticket.assigned_to_support_user_id === actor.id).length : 0,
+      breachedTickets: activeTickets.filter((ticket) => ticket.sla_status === "breached").length,
+      urgentTickets: activeTickets.filter((ticket) => ticket.priority === "urgent" || ticket.sla_status === "due_soon").length,
+    },
+    recentTickets: ticketsResult.tickets.slice(0, 6),
+    recentPlanRequests: requestsResult.requests.slice(0, 6),
+    recentIncidents: incidentsResult.incidents.slice(0, 6),
+    usingDemoData: false,
+  };
 }
