@@ -1,6 +1,7 @@
 import { notFound } from "next/navigation";
 import { LandingPageRenderer } from "@/components/landing-page-renderer";
 import { getGeneralSettings, getSitePageContent } from "@/lib/data";
+import { getCurrentLocale } from "@/lib/i18n-server";
 
 export default async function ManagedSitePage({
   params,
@@ -8,11 +9,11 @@ export default async function ManagedSitePage({
   params: Promise<{ slug: string }>;
 }) {
   const { slug } = await params;
-  const [{ content, found }, { settings }] = await Promise.all([getSitePageContent(slug), getGeneralSettings()]);
+  const [locale, { content, found }, { settings }] = await Promise.all([getCurrentLocale(), getSitePageContent(slug), getGeneralSettings()]);
 
   if (!found) {
     notFound();
   }
 
-  return <LandingPageRenderer content={content} settings={settings} />;
+  return <LandingPageRenderer content={content} settings={settings} locale={locale} />;
 }

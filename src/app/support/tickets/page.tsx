@@ -2,6 +2,8 @@ import { revalidatePath } from "next/cache";
 import Link from "next/link";
 import { requireSupportAccess } from "@/lib/auth";
 import { assignSupportTicket, getPlatformAccessByEmail, listSupportAccessUsers, listSupportTickets, setSupportTicketStatus } from "@/lib/data";
+import { getCurrentLocale } from "@/lib/i18n-server";
+import { translateUiText } from "@/lib/i18n";
 import type { SupportTicketStatus } from "@/lib/types";
 
 async function updateTicketStatusAction(formData: FormData) {
@@ -27,6 +29,7 @@ export default async function SupportTicketsPage({
 }: {
   searchParams?: Promise<{ q?: string; status?: string; type?: string; queue?: string }>;
 }) {
+  const locale = await getCurrentLocale();
   const access = await requireSupportAccess("/support/tickets");
   const [{ tickets }, { users }, platformAccess] = await Promise.all([
     listSupportTickets(),
@@ -61,26 +64,26 @@ export default async function SupportTicketsPage({
   return (
     <main className="mx-auto w-full max-w-7xl space-y-6 px-4 py-8 md:px-8">
       <header>
-        <p className="text-sm text-slate-500">Support Tickets</p>
-        <h1 className="text-3xl font-semibold text-slate-900">Destek ve paket talepleri</h1>
+        <p className="text-sm text-slate-500">{translateUiText("Support Tickets", locale)}</p>
+        <h1 className="text-3xl font-semibold text-slate-900">{translateUiText("Destek ve paket talepleri", locale)}</h1>
       </header>
 
       <form className="grid gap-3 rounded-2xl bg-white p-4 shadow-sm md:grid-cols-[1fr_160px_160px_160px_120px]">
         <input
           name="q"
           defaultValue={filters.q ?? ""}
-          placeholder="Konu, aciklama veya tenant ara"
+          placeholder={translateUiText("Konu, aciklama veya tenant ara", locale)}
           className="rounded-xl border border-slate-300 px-4 py-3 text-sm"
         />
         <select name="status" defaultValue={statusFilter || "all"} className="rounded-xl border border-slate-300 px-4 py-3 text-sm">
-          <option value="all">Tum durumlar</option>
+          <option value="all">{translateUiText("Tum durumlar", locale)}</option>
           <option value="open">Open</option>
           <option value="in_progress">In Progress</option>
           <option value="resolved">Resolved</option>
           <option value="closed">Closed</option>
         </select>
         <select name="type" defaultValue={typeFilter || "all"} className="rounded-xl border border-slate-300 px-4 py-3 text-sm">
-          <option value="all">Tum tipler</option>
+          <option value="all">{translateUiText("Tum tipler", locale)}</option>
           <option value="support">Support</option>
           <option value="plan_change">Plan Change</option>
           <option value="billing">Billing</option>
@@ -88,13 +91,13 @@ export default async function SupportTicketsPage({
           <option value="incident">Incident</option>
         </select>
         <select name="queue" defaultValue={queueFilter || "all"} className="rounded-xl border border-slate-300 px-4 py-3 text-sm">
-          <option value="all">Tum kuyruklar</option>
-          <option value="mine">Benim ticketlarim</option>
-          <option value="breached">SLA ihlali</option>
-          <option value="urgent">Acil kuyruk</option>
-          <option value="unassigned">Atanmamis</option>
+          <option value="all">{translateUiText("Tum kuyruklar", locale)}</option>
+          <option value="mine">{translateUiText("Benim ticketlarim", locale)}</option>
+          <option value="breached">{translateUiText("SLA ihlali", locale)}</option>
+          <option value="urgent">{translateUiText("Acil kuyruk", locale)}</option>
+          <option value="unassigned">{translateUiText("Atanmamis", locale)}</option>
         </select>
-        <button type="submit" className="rounded-xl bg-slate-900 px-4 py-3 text-sm font-semibold text-white">Filtrele</button>
+        <button type="submit" className="rounded-xl bg-slate-900 px-4 py-3 text-sm font-semibold text-white">{translateUiText("Filtrele", locale)}</button>
       </form>
 
       <section className="space-y-4">
@@ -129,12 +132,12 @@ export default async function SupportTicketsPage({
               <form action={assignTicketAction} className="flex items-center gap-2">
                 <input type="hidden" name="id" value={ticket.id} />
                 <select name="supportUserId" defaultValue={ticket.assigned_to_support_user_id ?? ""} className="w-full rounded-xl border border-slate-300 px-3 py-2 text-sm">
-                  <option value="">Atanmamis</option>
+                  <option value="">{translateUiText("Atanmamis", locale)}</option>
                   {users.filter((user) => user.is_active).map((user) => (
                     <option key={user.id} value={user.id}>{user.full_name || user.email}</option>
                   ))}
                 </select>
-                <button type="submit" className="rounded-xl border border-slate-300 px-4 py-2 text-sm font-semibold text-slate-700">Ata</button>
+                <button type="submit" className="rounded-xl border border-slate-300 px-4 py-2 text-sm font-semibold text-slate-700">{translateUiText("Ata", locale)}</button>
               </form>
               <form action={updateTicketStatusAction} className="flex items-center gap-2">
                 <input type="hidden" name="id" value={ticket.id} />
@@ -144,14 +147,14 @@ export default async function SupportTicketsPage({
                   <option value="resolved">Resolved</option>
                   <option value="closed">Closed</option>
                 </select>
-                <button type="submit" className="rounded-xl border border-slate-300 px-4 py-2 text-sm font-semibold text-slate-700">Guncelle</button>
+                <button type="submit" className="rounded-xl border border-slate-300 px-4 py-2 text-sm font-semibold text-slate-700">{translateUiText("Guncelle", locale)}</button>
               </form>
             </div>
           </article>
         ))}
         {filteredTickets.length === 0 ? (
           <div className="rounded-2xl border border-dashed border-slate-300 bg-white px-6 py-10 text-sm text-slate-500">
-            Filtreye uygun ticket bulunamadi.
+            {translateUiText("Filtreye uygun ticket bulunamadi.", locale)}
           </div>
         ) : null}
       </section>

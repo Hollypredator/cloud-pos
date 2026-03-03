@@ -1,8 +1,10 @@
 "use client";
 
 import Link from "next/link";
+import { LanguageSwitcher } from "@/components/language-switcher";
 import { PublicTopNav } from "@/components/public-top-nav";
 import type { DemoPageContent, DemoSectionStyle } from "@/lib/demo";
+import { getPublicCopy, type AppLocale } from "@/lib/i18n";
 
 type DemoRendererEditorOptions = {
   activeSectionId?: string | null;
@@ -113,15 +115,16 @@ function wrapEditableSection(
   );
 }
 
-function renderHeaderActions(content: DemoPageContent, previewMode?: boolean) {
+function renderHeaderActions(content: DemoPageContent, locale: AppLocale, previewMode?: boolean) {
+  const copy = getPublicCopy(locale);
   if (previewMode) {
     return (
       <>
         <span className="rounded-2xl border border-white/20 px-4 py-2 text-sm font-semibold text-white">
-          Ana Sayfa
+          {copy.nav.home}
         </span>
         <span className="rounded-2xl border border-white/20 px-4 py-2 text-sm font-semibold text-white">
-          Blog
+          {copy.nav.blog}
         </span>
         <span className="rounded-2xl border border-white/20 px-4 py-2 text-sm font-semibold text-white">
           {content.opsCtaLabel}
@@ -137,12 +140,13 @@ function renderHeaderActions(content: DemoPageContent, previewMode?: boolean) {
     <>
       <PublicTopNav
         items={[
-          { href: "/", label: "Ana Sayfa" },
-          { href: "/blog", label: "Blog" },
+          { href: "/", label: copy.nav.home },
+          { href: "/blog", label: copy.nav.blog },
           { href: "/login?next=%2Fops", label: content.opsCtaLabel },
           { href: "/login", label: content.loginCtaLabel },
         ]}
         tone="dark"
+        locale={locale}
       />
     </>
   );
@@ -151,10 +155,13 @@ function renderHeaderActions(content: DemoPageContent, previewMode?: boolean) {
 export function DemoPageRenderer({
   content,
   editor,
+  locale = "tr",
 }: {
   content: DemoPageContent;
   editor?: DemoRendererEditorOptions;
+  locale?: AppLocale;
 }) {
+  const copy = getPublicCopy(locale);
   const hasFlowColumn = content.showPresentationFlow;
   const hasAccountsColumn = content.showStaffAccounts;
   const presentationGridClass =
@@ -182,7 +189,8 @@ export function DemoPageRenderer({
                 <span className="inline-flex rounded-full bg-amber-200 px-3 py-1 text-xs font-semibold text-amber-900">
                   {content.previewBadge}
                 </span>
-                {renderHeaderActions(content, editor?.previewMode)}
+                <LanguageSwitcher locale={locale} label={copy.localeSwitcher.label} compact />
+                {renderHeaderActions(content, locale, editor?.previewMode)}
               </div>
             </div>
           </header>,

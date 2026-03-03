@@ -21,6 +21,8 @@ import {
 import { requireRole } from "@/lib/auth";
 import { BackofficePage, ContentCard, EmptyPanel, SummaryCard, WorkspaceTabs } from "@/components/backoffice-ui";
 import { CategorySortManager } from "@/components/category-sort-manager";
+import { translateUiText } from "@/lib/i18n";
+import { getCurrentLocale } from "@/lib/i18n-server";
 import { logServerPerf, measureAsync } from "@/lib/perf";
 
 async function addCategoryAction(formData: FormData) {
@@ -254,6 +256,7 @@ export default async function AdminProductsPage({
 }: {
   searchParams: Promise<{ tab?: string; categoryId?: string }>;
 }) {
+  const locale = await getCurrentLocale();
   await requireRole(["admin"], "/admin/products");
   const { tab: tabParam, categoryId: categoryIdParam } = await searchParams;
   const activeTab = ["catalog", "menu", "categories", "bulk", "features"].includes(tabParam ?? "")
@@ -312,10 +315,10 @@ export default async function AdminProductsPage({
 
   return (
     <BackofficePage
-      title="Urun ve Kategori Yonetimi"
-      description="Katalog, modifier, recete ve stok temel ayarlari"
+      title={translateUiText("Urun ve Kategori Yonetimi", locale)}
+      description={translateUiText("Katalog, modifier, recete ve stok temel ayarlari", locale)}
       actions={
-        <form action={addProductAction} className="flex flex-wrap items-center gap-3">
+        <form action={addProductAction} className="flex flex-wrap items-stretch gap-3">
           <select name="categoryId" required defaultValue={selectedCategoryId} className="w-full rounded-2xl border border-slate-200 bg-slate-50 px-4 py-3 text-sm text-slate-700 sm:w-auto">
             {orderedCategories.map((category) => (
               <option key={category.id} value={category.id}>
@@ -323,11 +326,11 @@ export default async function AdminProductsPage({
               </option>
             ))}
           </select>
-          <input name="name" required placeholder="Yeni urun" className="w-full rounded-2xl border border-slate-200 bg-slate-50 px-4 py-3 text-sm sm:flex-1" />
+          <input name="name" required placeholder={translateUiText("Yeni Urun", locale)} className="w-full min-w-0 rounded-2xl border border-slate-200 bg-slate-50 px-4 py-3 text-sm sm:flex-1" />
           <input name="price" type="number" min="0" step="0.01" required placeholder="Fiyat" className="w-full rounded-2xl border border-slate-200 bg-slate-50 px-4 py-3 text-sm sm:w-28" />
           <input name="stockCount" type="number" min="0" required placeholder="Stok" className="w-full rounded-2xl border border-slate-200 bg-slate-50 px-4 py-3 text-sm sm:w-28" />
           <button type="submit" className="w-full rounded-2xl bg-gradient-to-r from-[#ff5a34] to-[#f0b14f] px-5 py-3 text-sm font-semibold text-white sm:w-auto">
-            Yeni Urun
+            {translateUiText("Yeni Urun", locale)}
           </button>
         </form>
       }
@@ -335,8 +338,8 @@ export default async function AdminProductsPage({
       <div className="rounded-[28px] border border-slate-200 bg-white p-4 shadow-[0_10px_20px_rgba(15,23,42,0.04)]">
         <WorkspaceTabs
           tabs={[
-            { label: "Urun & Kategori Yonetimi", active: activeTab === "catalog", href: "/admin/products?tab=catalog" },
-            { label: "Menu Yonetimi", active: activeTab === "menu", href: "/admin/products?tab=menu" },
+            { label: translateUiText("Urun & Kategori Yonetimi", locale), active: activeTab === "catalog", href: "/admin/products?tab=catalog" },
+            { label: translateUiText("Menu Yonetimi", locale), active: activeTab === "menu", href: "/admin/products?tab=menu" },
             { label: "Ana Kategoriler", active: activeTab === "categories", href: "/admin/products?tab=categories" },
             { label: "Toplu Islemler", active: activeTab === "bulk", href: "/admin/products?tab=bulk" },
             { label: "Urun Ozellikleri", active: activeTab === "features", href: "/admin/products?tab=features" },
@@ -345,21 +348,21 @@ export default async function AdminProductsPage({
 
         {usingDemoData ? (
           <div className="mt-4 rounded-2xl border border-amber-200 bg-amber-50 px-4 py-3 text-sm text-amber-900">
-            Demo veride kalici urun ve kategori aksiyonlari sinirlidir.
+            {translateUiText("Demo veride kalici urun ve kategori aksiyonlari sinirlidir.", locale)}
           </div>
         ) : null}
 
         <div className="mt-6 grid gap-4 md:grid-cols-2 xl:grid-cols-4">
-          <SummaryCard label="Kategori" value={String(orderedCategories.length)} hint="Toplam ana kategori" tone="accent" />
-          <SummaryCard label="Urun" value={String(products.length)} hint="Tum kayitli urunler" />
-          <SummaryCard label="Satista" value={String(availableProducts)} hint="Aktif ve gorunen urunler" tone="success" />
-          <SummaryCard label="Kritik Stok" value={String(lowStockProducts)} hint="10 ve alti stoklu urun" tone={lowStockProducts > 0 ? "danger" : "neutral"} />
+          <SummaryCard label={translateUiText("Kategori", locale)} value={String(orderedCategories.length)} hint={translateUiText("Toplam ana kategori", locale)} tone="accent" />
+          <SummaryCard label={translateUiText("Urun", locale)} value={String(products.length)} hint={translateUiText("Tum kayitli urunler", locale)} />
+          <SummaryCard label={translateUiText("Satista", locale)} value={String(availableProducts)} hint={translateUiText("Aktif ve gorunen urunler", locale)} tone="success" />
+          <SummaryCard label={translateUiText("Kritik Stok", locale)} value={String(lowStockProducts)} hint={translateUiText("10 ve alti stoklu urun", locale)} tone={lowStockProducts > 0 ? "danger" : "neutral"} />
         </div>
 
         {activeTab === "catalog" ? (
         <div className="mt-6 grid gap-5 xl:grid-cols-[320px_1fr]">
           <section className="rounded-[24px] border border-slate-200 bg-[#f6f7f9] p-4">
-            <div className="flex items-center justify-between gap-3">
+            <div className="flex flex-wrap items-center justify-between gap-3">
               <h2 className="text-xl font-semibold tracking-tight text-slate-900 sm:text-2xl">Kategoriler</h2>
               <span className="inline-flex h-10 min-w-10 items-center justify-center rounded-full bg-[#ff5a34] px-3 text-sm font-bold text-white">
                 {orderedCategories.length}
@@ -395,11 +398,11 @@ export default async function AdminProductsPage({
           <section className="space-y-5">
             <div className="rounded-[24px] border border-slate-200 bg-[#f6f7f9] p-4">
               <div className="flex flex-wrap items-center justify-between gap-3">
-                <div>
+                <div className="min-w-0">
                   <h2 className="text-xl font-semibold tracking-tight text-slate-900 sm:text-2xl">Urunler</h2>
                   <p className="text-sm text-slate-500">Secili kategori: {selectedCategory?.name ?? "Kategori yok"}</p>
                 </div>
-                <form action={bulkPriceAction} className="flex flex-wrap items-center gap-3">
+                <form action={bulkPriceAction} className="flex w-full flex-wrap items-stretch gap-3 lg:w-auto">
                   <select name="categoryId" required defaultValue={selectedCategoryId} className="w-full rounded-2xl border border-slate-200 bg-white px-4 py-3 text-sm sm:w-auto">
                     {orderedCategories.map((category) => (
                       <option key={category.id} value={category.id}>
@@ -440,18 +443,18 @@ export default async function AdminProductsPage({
               ) : (
                 <div className="mt-4 grid gap-4 lg:grid-cols-2 2xl:grid-cols-3">
                   {visibleProducts.map((product) => (
-                    <article key={product.id} className="rounded-[22px] border border-slate-200 bg-white p-4">
-                      <div className="flex items-start justify-between gap-3">
-                        <div>
+                    <article key={product.id} className="min-w-0 rounded-[22px] border border-slate-200 bg-white p-4">
+                      <div className="flex flex-col items-start justify-between gap-3 sm:flex-row">
+                        <div className="min-w-0">
                           <p className="text-xs font-bold uppercase tracking-[0.14em] text-slate-500">
                             {orderedCategories.find((category) => category.id === product.category_id)?.name ?? "Kategori"}
                           </p>
                           <h3 className="mt-2 text-xl font-semibold tracking-tight text-slate-900 sm:text-2xl">{product.name}</h3>
                           <p className="mt-2 text-sm text-slate-500">{product.description ?? "Aciklama girilmedi."}</p>
                         </div>
-                        <form action={deleteProductAction}>
+                        <form action={deleteProductAction} className="w-full sm:w-auto">
                           <input type="hidden" name="productId" value={product.id} />
-                          <button type="submit" className="rounded-xl border border-rose-200 bg-rose-50 px-3 py-2 text-xs font-semibold text-rose-700">
+                          <button type="submit" className="w-full rounded-xl border border-rose-200 bg-rose-50 px-3 py-2 text-xs font-semibold text-rose-700 sm:w-auto">
                             Sil
                           </button>
                         </form>
@@ -477,7 +480,7 @@ export default async function AdminProductsPage({
                           <input name="isAvailable" type="checkbox" defaultChecked={product.is_available} />
                           Satisa acik
                         </label>
-                        <button type="submit" className="rounded-2xl bg-[#ff5a34] px-4 py-3 text-sm font-semibold text-white">
+                        <button type="submit" className="w-full rounded-2xl bg-[#ff5a34] px-4 py-3 text-sm font-semibold text-white sm:w-auto">
                           Kaydet
                         </button>
                       </form>
@@ -486,14 +489,14 @@ export default async function AdminProductsPage({
                         <p className="text-sm font-semibold text-slate-900">Recete</p>
                         {(ingredientsByProduct.get(product.id) ?? []).length === 0 ? <p className="text-sm text-slate-500">Malzeme baglanmamis.</p> : null}
                         {(ingredientsByProduct.get(product.id) ?? []).map((item) => (
-                          <div key={`${product.id}-${item.ingredient_id}`} className="flex items-center justify-between gap-3 rounded-xl border border-slate-200 bg-white px-3 py-2 text-sm">
-                            <span className="text-slate-700">
+                          <div key={`${product.id}-${item.ingredient_id}`} className="flex flex-col items-start justify-between gap-3 rounded-xl border border-slate-200 bg-white px-3 py-2 text-sm sm:flex-row sm:items-center">
+                            <span className="min-w-0 break-words text-slate-700">
                               {item.ingredientName} - {item.quantity} {item.unit}
                             </span>
-                            <form action={detachIngredientAction}>
+                            <form action={detachIngredientAction} className="w-full sm:w-auto">
                               <input type="hidden" name="productId" value={product.id} />
                               <input type="hidden" name="ingredientId" value={item.ingredient_id} />
-                              <button type="submit" className="text-xs font-semibold text-rose-700">
+                              <button type="submit" className="w-full text-left text-xs font-semibold text-rose-700 sm:w-auto sm:text-right">
                                 Cikar
                               </button>
                             </form>
@@ -522,29 +525,29 @@ export default async function AdminProductsPage({
                         <p className="text-sm font-semibold text-slate-900">Modifier Gruplari</p>
                         {(groupsByProduct.get(product.id) ?? []).map((group) => (
                           <div key={group.id} className="rounded-xl border border-slate-200 bg-white p-3">
-                            <div className="flex items-start justify-between gap-3">
-                              <div>
+                            <div className="flex flex-col items-start justify-between gap-3 sm:flex-row">
+                              <div className="min-w-0">
                                 <p className="font-semibold text-slate-900">{group.name}</p>
                                 <p className="text-xs text-slate-500">
                                   min {group.min_select} / max {group.max_select} {group.is_required ? "- zorunlu" : ""}
                                 </p>
                               </div>
-                              <form action={deleteModifierGroupAction}>
+                              <form action={deleteModifierGroupAction} className="w-full sm:w-auto">
                                 <input type="hidden" name="groupId" value={group.id} />
-                                <button type="submit" className="text-xs font-semibold text-rose-700">
+                                <button type="submit" className="w-full text-left text-xs font-semibold text-rose-700 sm:w-auto sm:text-right">
                                   Sil
                                 </button>
                               </form>
                             </div>
                             <div className="mt-3 space-y-2">
                               {(optionsByGroup.get(group.id) ?? []).map((option) => (
-                                <div key={option.id} className="flex items-center justify-between rounded-xl border border-slate-200 bg-slate-50 px-3 py-2 text-sm">
-                                  <span>
+                                <div key={option.id} className="flex flex-col items-start justify-between gap-3 rounded-xl border border-slate-200 bg-slate-50 px-3 py-2 text-sm sm:flex-row sm:items-center">
+                                  <span className="min-w-0 break-words">
                                     {option.name} {Number(option.price_delta) > 0 ? `(+${Number(option.price_delta).toFixed(2)} TL)` : ""}
                                   </span>
-                                  <form action={deleteModifierOptionAction}>
+                                  <form action={deleteModifierOptionAction} className="w-full sm:w-auto">
                                     <input type="hidden" name="optionId" value={option.id} />
-                                    <button type="submit" className="text-xs font-semibold text-rose-700">
+                                    <button type="submit" className="w-full text-left text-xs font-semibold text-rose-700 sm:w-auto sm:text-right">
                                       Sil
                                     </button>
                                   </form>
@@ -561,7 +564,7 @@ export default async function AdminProductsPage({
                                   Varsayilan
                                 </label>
                               </div>
-                              <button type="submit" className="rounded-xl border border-slate-200 bg-white px-3 py-2 text-sm font-semibold text-slate-800">
+                              <button type="submit" className="w-full rounded-xl border border-slate-200 bg-white px-3 py-2 text-sm font-semibold text-slate-800 sm:w-auto">
                                 Opsiyon Ekle
                               </button>
                             </form>
@@ -578,7 +581,7 @@ export default async function AdminProductsPage({
                               Zorunlu
                             </label>
                           </div>
-                          <button type="submit" className="rounded-xl border border-slate-200 bg-white px-3 py-2 text-sm font-semibold text-slate-800">
+                          <button type="submit" className="w-full rounded-xl border border-slate-200 bg-white px-3 py-2 text-sm font-semibold text-slate-800 sm:w-auto">
                             Grup Ekle
                           </button>
                         </form>
@@ -591,7 +594,7 @@ export default async function AdminProductsPage({
 
             <div className="grid gap-5 xl:grid-cols-2">
               <ContentCard title="Malzeme Kutuphanesi">
-                <form action={addIngredientAction} className="grid gap-3 md:grid-cols-[1fr_160px_auto]">
+                <form action={addIngredientAction} className="grid gap-3 md:grid-cols-[minmax(0,1fr)_160px_auto]">
                   <input name="name" required placeholder="Yeni malzeme" className="rounded-2xl border border-slate-200 bg-slate-50 px-4 py-3 text-sm" />
                   <input name="unit" required placeholder="Birim" className="rounded-2xl border border-slate-200 bg-slate-50 px-4 py-3 text-sm" />
                   <button type="submit" className="rounded-2xl bg-[#ff5a34] px-4 py-3 text-sm font-semibold text-white">
@@ -600,14 +603,14 @@ export default async function AdminProductsPage({
                 </form>
                 <div className="mt-4 space-y-2">
                   {ingredients.map((ingredient) => (
-                    <div key={ingredient.id} className="flex items-center justify-between rounded-2xl border border-slate-200 bg-slate-50 px-4 py-3">
-                      <div>
+                    <div key={ingredient.id} className="flex flex-col items-start justify-between gap-3 rounded-2xl border border-slate-200 bg-slate-50 px-4 py-3 sm:flex-row sm:items-center">
+                      <div className="min-w-0">
                         <p className="font-semibold text-slate-900">{ingredient.name}</p>
                         <p className="text-sm text-slate-500">{ingredient.unit}</p>
                       </div>
-                      <form action={deleteIngredientAction}>
+                      <form action={deleteIngredientAction} className="w-full sm:w-auto">
                         <input type="hidden" name="ingredientId" value={ingredient.id} />
-                        <button type="submit" className="rounded-xl border border-rose-200 bg-rose-50 px-3 py-2 text-xs font-semibold text-rose-700">
+                        <button type="submit" className="w-full rounded-xl border border-rose-200 bg-rose-50 px-3 py-2 text-xs font-semibold text-rose-700 sm:w-auto">
                           Sil
                         </button>
                       </form>
@@ -675,15 +678,15 @@ export default async function AdminProductsPage({
               </div>
               <div className="mt-4 grid gap-4 lg:grid-cols-2 2xl:grid-cols-3">
                 {visibleProducts.map((product) => (
-                  <article key={product.id} className="rounded-[22px] border border-slate-200 bg-white p-4">
+                  <article key={product.id} className="min-w-0 rounded-[22px] border border-slate-200 bg-white p-4">
                     <p className="text-xs font-bold uppercase tracking-[0.14em] text-slate-500">
                       {orderedCategories.find((category) => category.id === product.category_id)?.name ?? "Kategori"}
                     </p>
                     <p className="mt-2 text-xl font-semibold text-slate-900">{product.name}</p>
                     <p className="mt-2 text-sm text-slate-500">{product.description ?? "Aciklama girilmedi."}</p>
-                    <div className="mt-4 flex items-center justify-between text-sm">
+                    <div className="mt-4 flex flex-col items-start justify-between gap-3 text-sm sm:flex-row sm:items-center">
                       <span className="font-semibold text-slate-900">{Number(product.price).toFixed(2)} TL</span>
-                      <span className={`rounded-full px-3 py-1 text-xs font-semibold ${product.is_available ? "bg-emerald-100 text-emerald-700" : "bg-slate-100 text-slate-600"}`}>
+                      <span className={`inline-flex w-full justify-center rounded-full px-3 py-1 text-xs font-semibold sm:w-auto ${product.is_available ? "bg-emerald-100 text-emerald-700" : "bg-slate-100 text-slate-600"}`}>
                         {product.is_available ? "Aktif" : "Pasif"}
                       </span>
                     </div>
@@ -757,21 +760,21 @@ export default async function AdminProductsPage({
         {activeTab === "features" ? (
           <div className="mt-6 grid gap-5 xl:grid-cols-2">
             <ContentCard title="Malzeme Kutuphanesi">
-              <form action={addIngredientAction} className="grid gap-3 md:grid-cols-[1fr_160px_auto]">
+              <form action={addIngredientAction} className="grid gap-3 md:grid-cols-[minmax(0,1fr)_160px_auto]">
                 <input name="name" required placeholder="Yeni malzeme" className="rounded-2xl border border-slate-200 bg-slate-50 px-4 py-3 text-sm" />
                 <input name="unit" required placeholder="Birim" className="rounded-2xl border border-slate-200 bg-slate-50 px-4 py-3 text-sm" />
                 <button type="submit" className="rounded-2xl bg-[#ff5a34] px-4 py-3 text-sm font-semibold text-white">Ekle</button>
               </form>
               <div className="mt-4 space-y-2">
                 {ingredients.map((ingredient) => (
-                  <div key={ingredient.id} className="flex items-center justify-between rounded-2xl border border-slate-200 bg-slate-50 px-4 py-3">
-                    <div>
+                  <div key={ingredient.id} className="flex flex-col items-start justify-between gap-3 rounded-2xl border border-slate-200 bg-slate-50 px-4 py-3 sm:flex-row sm:items-center">
+                    <div className="min-w-0">
                       <p className="font-semibold text-slate-900">{ingredient.name}</p>
                       <p className="text-sm text-slate-500">{ingredient.unit}</p>
                     </div>
-                    <form action={deleteIngredientAction}>
+                    <form action={deleteIngredientAction} className="w-full sm:w-auto">
                       <input type="hidden" name="ingredientId" value={ingredient.id} />
-                      <button type="submit" className="rounded-xl border border-rose-200 bg-rose-50 px-3 py-2 text-xs font-semibold text-rose-700">Sil</button>
+                      <button type="submit" className="w-full rounded-xl border border-rose-200 bg-rose-50 px-3 py-2 text-xs font-semibold text-rose-700 sm:w-auto">Sil</button>
                     </form>
                   </div>
                 ))}

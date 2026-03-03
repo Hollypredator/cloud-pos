@@ -2,6 +2,7 @@
 
 import Link from "next/link";
 import { usePathname } from "next/navigation";
+import { normalizeLocale, translateUiText } from "@/lib/i18n";
 
 const links = [
   { href: "/support", label: "Genel Bakis" },
@@ -21,6 +22,7 @@ const links = [
 
 export function SupportNav() {
   const pathname = usePathname();
+  const locale = typeof document === "undefined" ? "tr" : normalizeLocale(document.documentElement.lang || "tr");
 
   return (
     <nav className="flex flex-wrap gap-3">
@@ -35,7 +37,7 @@ export function SupportNav() {
               active ? "bg-slate-900 text-white" : "border border-slate-200 bg-white text-slate-700"
             }`}
           >
-            {link.label}
+            {translateUiText(link.label, locale)}
           </Link>
         );
       })}

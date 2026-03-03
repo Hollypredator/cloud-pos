@@ -5,7 +5,9 @@ import dynamic from "next/dynamic";
 const LiveOpsBridge = dynamic(() => import("@/components/live-ops-bridge").then((mod) => mod.LiveOpsBridge), {
   ssr: false,
   loading: () => (
-    <span className="inline-flex rounded-full bg-slate-200 px-2 py-1 text-xs font-semibold text-slate-600">Realtime Yukleniyor</span>
+    <span className="inline-flex w-full justify-center rounded-full bg-slate-200 px-3 py-2 text-xs font-semibold text-slate-600 sm:w-auto">
+      Realtime Yukleniyor
+    </span>
   ),
 });
 

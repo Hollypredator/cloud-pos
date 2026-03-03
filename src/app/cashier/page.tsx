@@ -211,14 +211,14 @@ export default async function CashierPage({
                         {order.table_number ? `Masa ${order.table_number}` : order.customer_name ?? "Adisyon"}
                       </p>
                     </div>
-                    <span className={`rounded-full px-3 py-1 text-xs font-semibold uppercase ${statusTone(order.status)}`}>Acik</span>
+                    <span className={`inline-flex w-full justify-center rounded-full px-3 py-1 text-xs font-semibold uppercase sm:w-auto ${statusTone(order.status)}`}>Acik</span>
                   </div>
                   <div className="mt-4 flex flex-col items-start gap-3 sm:flex-row sm:items-end sm:justify-between">
                     <div>
                       <p className="text-xs uppercase tracking-[0.16em] text-slate-500">Kalan</p>
                       <p className="font-display font-numeric mt-1 text-2xl font-semibold text-emerald-700">{remaining.toFixed(2)} TL</p>
                     </div>
-                    <span className="rounded-2xl bg-white px-3 py-2 text-xs font-semibold text-slate-700">Popup Ac</span>
+                      <span className="inline-flex w-full justify-center rounded-2xl bg-white px-3 py-2 text-xs font-semibold text-slate-700 sm:w-auto">Popup Ac</span>
                   </div>
                 </Link>
               );
@@ -248,13 +248,13 @@ export default async function CashierPage({
                         {order.delivery_address ? <p className="mt-1 break-words text-sm text-slate-500">{order.delivery_address}</p> : null}
                       </div>
                       <div className="flex w-full flex-col items-start gap-2 sm:w-auto sm:items-end">
-                        <span className={`rounded-full px-3 py-1 text-xs font-semibold uppercase ${statusTone(order.status)}`}>{order.status}</span>
+                        <span className={`inline-flex w-full justify-center rounded-full px-3 py-1 text-xs font-semibold uppercase sm:w-auto ${statusTone(order.status)}`}>{order.status}</span>
                         <p className="text-2xl font-semibold tracking-tight text-emerald-700">{remaining.toFixed(2)} TL</p>
                         <p className="text-xs text-slate-500">Kalan bakiye</p>
                       </div>
                     </div>
 
-                    <div className="mt-4 flex flex-wrap items-center gap-2">
+                    <div className="mt-4 flex flex-wrap items-stretch gap-2">
                       <Link
                         href={`/cashier?order=${order.id}`}
                         className="w-full rounded-2xl bg-gradient-to-r from-[#ff6a3d] to-[#f2b44f] px-4 py-3 text-center text-sm font-semibold text-white shadow-[0_12px_24px_rgba(255,106,61,0.22)] sm:w-auto"
@@ -288,7 +288,7 @@ export default async function CashierPage({
                       <h3 className="mt-2 text-xl font-semibold tracking-tight text-slate-900">Siparis #{order.id.slice(0, 8)}</h3>
                       <p className="mt-1 text-sm text-slate-500">{new Date(order.created_at).toLocaleTimeString("tr-TR")}</p>
                     </div>
-                    <span className={`rounded-full px-3 py-1 text-xs font-semibold uppercase ${statusTone(order.status)}`}>{order.status}</span>
+                    <span className={`inline-flex w-full justify-center rounded-full px-3 py-1 text-xs font-semibold uppercase sm:w-auto ${statusTone(order.status)}`}>{order.status}</span>
                   </div>
 
                   <div className="mt-4 grid gap-3">

@@ -199,7 +199,7 @@ export default async function KitchenPage() {
                       {board.pending} bekleyen - {board.preparing} hazirlanan - {board.served} hazir
                     </p>
                   </div>
-                  <span className={`rounded-full px-3 py-1 text-xs font-semibold ${board.tone}`}>{board.orders.length} siparis</span>
+                  <span className={`inline-flex w-full justify-center rounded-full px-3 py-1 text-xs font-semibold sm:w-auto ${board.tone}`}>{board.orders.length} siparis</span>
                 </div>
 
                 <div className="mt-4 space-y-4">
@@ -231,8 +231,8 @@ export default async function KitchenPage() {
                               <p className="mt-1 text-sm text-slate-500">{new Date(order.created_at).toLocaleTimeString("tr-TR")}</p>
                             </div>
                             <div className="flex w-full flex-col items-start gap-2 sm:w-auto sm:items-end">
-                              <span className={`rounded-full px-3 py-1 text-xs font-semibold uppercase ${statusTone(order.status)}`}>{statusLabel(order.status)}</span>
-                              <span className={`rounded-full px-3 py-1 text-xs font-semibold ${board.tone}`}>{board.label}</span>
+                              <span className={`inline-flex w-full justify-center rounded-full px-3 py-1 text-xs font-semibold uppercase sm:w-auto ${statusTone(order.status)}`}>{statusLabel(order.status)}</span>
+                              <span className={`inline-flex w-full justify-center rounded-full px-3 py-1 text-xs font-semibold sm:w-auto ${board.tone}`}>{board.label}</span>
                             </div>
                           </div>
 
@@ -312,7 +312,7 @@ export default async function KitchenPage() {
                                 <p className="font-semibold text-emerald-900">Siparis tampon alanda tutuluyor</p>
                                 <p className="mt-1 text-emerald-700">Yanlis basim veya son dakika duzeltmesi icin mutfaktan geri alinabilir.</p>
                               </div>
-                              <Link href="/cashier" className="rounded-xl border border-emerald-200 bg-white px-3 py-2 font-semibold text-emerald-800">
+                              <Link href="/cashier" className="w-full rounded-xl border border-emerald-200 bg-white px-3 py-2 text-center font-semibold text-emerald-800 sm:w-auto">
                                 Kasaya Git
                               </Link>
                             </div>

@@ -2,6 +2,7 @@
 
 import Link from "next/link";
 import { usePathname } from "next/navigation";
+import { getPublicCopy, type AppLocale } from "@/lib/i18n";
 
 function linkClass(active: boolean, tone: "light" | "dark") {
   if (tone === "dark") {
@@ -19,17 +20,20 @@ export function PublicTopNav({
   items,
   className = "",
   tone = "light",
+  locale = "tr",
 }: {
   items?: Array<{ href: string; label: string }>;
   className?: string;
   tone?: "light" | "dark";
+  locale?: AppLocale;
 }) {
   const pathname = usePathname();
+  const copy = getPublicCopy(locale);
   const navItems = items ?? [
-    { href: "/", label: "Ana Sayfa" },
-    { href: "/blog", label: "Blog" },
-    { href: "/demo", label: "Demo" },
-    { href: "/login", label: "Personel Girisi" },
+    { href: "/", label: copy.nav.home },
+    { href: "/blog", label: copy.nav.blog },
+    { href: "/demo", label: copy.nav.demo },
+    { href: "/login", label: copy.nav.staffLogin },
   ];
 
   return (

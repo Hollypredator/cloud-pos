@@ -1,6 +1,8 @@
 import { revalidatePath } from "next/cache";
 import { notFound } from "next/navigation";
 import { requireSupportAccess } from "@/lib/auth";
+import { translateUiText } from "@/lib/i18n";
+import { getCurrentLocale } from "@/lib/i18n-server";
 import {
   assignSupportTicket,
   createSupportTicketMessage,
@@ -48,6 +50,7 @@ export default async function SupportTicketDetailPage({
   params: Promise<{ ticketId: string }>;
 }) {
   const { ticketId } = await params;
+  const locale = await getCurrentLocale();
   await requireSupportAccess(`/support/tickets/${ticketId}`);
 
   const [{ ticket, messages, auditLogs }, { users }] = await Promise.all([
@@ -62,7 +65,7 @@ export default async function SupportTicketDetailPage({
   const assignedSupportName =
     users.find((user) => user.id === ticket.assigned_to_support_user_id)?.full_name ||
     users.find((user) => user.id === ticket.assigned_to_support_user_id)?.email ||
-    "Atanmamis";
+    translateUiText("Atanmamis", locale);
 
   return (
     <main className="mx-auto w-full max-w-7xl space-y-6 px-4 py-8 md:px-8">
@@ -90,7 +93,7 @@ export default async function SupportTicketDetailPage({
       <section className="grid gap-6 xl:grid-cols-[1.05fr_0.95fr]">
         <div className="space-y-4">
           <article className="rounded-2xl bg-white p-6 shadow-sm">
-            <p className="text-sm font-semibold text-slate-900">Iletisim ve Notlar</p>
+            <p className="text-sm font-semibold text-slate-900">{translateUiText("Iletisim ve Notlar", locale)}</p>
             <div className="mt-4 space-y-3">
               {messages.map((message) => (
                 <div key={message.id} className="rounded-xl border border-slate-200 bg-slate-50 px-4 py-3">
@@ -109,16 +112,16 @@ export default async function SupportTicketDetailPage({
 
           <form action={addInternalNoteAction} className="rounded-2xl bg-white p-6 shadow-sm">
             <input type="hidden" name="ticketId" value={ticket.id} />
-            <p className="text-sm font-semibold text-slate-900">Ic Not Ekle</p>
+            <p className="text-sm font-semibold text-slate-900">{translateUiText("Ic Not Ekle", locale)}</p>
             <textarea
               name="message"
               rows={5}
               className="mt-4 w-full rounded-2xl border border-slate-200 bg-slate-50 px-4 py-3 text-sm text-slate-900"
-              placeholder="Support ici not ekleyin"
+              placeholder={translateUiText("Support ici not ekleyin", locale)}
             />
             <div className="mt-4 flex justify-end">
               <button type="submit" className="rounded-2xl bg-slate-900 px-5 py-3 text-sm font-semibold text-white">
-                Ic Not Kaydet
+                {translateUiText("Ic Not Kaydet", locale)}
               </button>
             </div>
           </form>
@@ -126,46 +129,46 @@ export default async function SupportTicketDetailPage({
 
         <div className="space-y-4">
           <article className="rounded-2xl bg-white p-6 shadow-sm">
-            <p className="text-sm font-semibold text-slate-900">Ticket Yonetimi</p>
+            <p className="text-sm font-semibold text-slate-900">{translateUiText("Ticket Yonetimi", locale)}</p>
             <div className="mt-4 grid gap-3 md:grid-cols-2">
               <div className="rounded-xl border border-slate-200 bg-slate-50 px-4 py-3">
-                <p className="text-xs uppercase tracking-[0.18em] text-slate-500">Atanan kisi</p>
+                <p className="text-xs uppercase tracking-[0.18em] text-slate-500">{translateUiText("Atanan kisi", locale)}</p>
                 <p className="mt-2 text-sm font-semibold text-slate-900">{assignedSupportName}</p>
               </div>
               <div className="rounded-xl border border-slate-200 bg-slate-50 px-4 py-3">
-                <p className="text-xs uppercase tracking-[0.18em] text-slate-500">Olusturulma</p>
+                <p className="text-xs uppercase tracking-[0.18em] text-slate-500">{translateUiText("Olusturulma", locale)}</p>
                 <p className="mt-2 text-sm font-semibold text-slate-900">{new Date(ticket.created_at).toLocaleString("tr-TR")}</p>
               </div>
             </div>
             <div className="mt-4 grid gap-3">
               <form action={assignTicketAction} className="space-y-2">
                 <input type="hidden" name="ticketId" value={ticket.id} />
-                <label className="block text-sm font-medium text-slate-700">Atanan support kullanicisi</label>
+                <label className="block text-sm font-medium text-slate-700">{translateUiText("Atanan support kullanicisi", locale)}</label>
                 <select name="supportUserId" defaultValue={ticket.assigned_to_support_user_id ?? ""} className="w-full rounded-xl border border-slate-300 px-3 py-2 text-sm">
-                  <option value="">Atanmamis</option>
+                  <option value="">{translateUiText("Atanmamis", locale)}</option>
                   {users.filter((user) => user.is_active).map((user) => (
                     <option key={user.id} value={user.id}>{user.full_name || user.email}</option>
                   ))}
                 </select>
-                <button type="submit" className="rounded-xl border border-slate-300 px-4 py-2 text-sm font-semibold text-slate-700">Ata</button>
+                <button type="submit" className="rounded-xl border border-slate-300 px-4 py-2 text-sm font-semibold text-slate-700">{translateUiText("Ata", locale)}</button>
               </form>
 
               <form action={updateTicketStatusAction} className="space-y-2">
                 <input type="hidden" name="ticketId" value={ticket.id} />
-                <label className="block text-sm font-medium text-slate-700">Durum</label>
+                <label className="block text-sm font-medium text-slate-700">{translateUiText("Durum", locale)}</label>
                 <select name="status" defaultValue={ticket.status} className="w-full rounded-xl border border-slate-300 px-3 py-2 text-sm">
                   <option value="open">Open</option>
                   <option value="in_progress">In Progress</option>
                   <option value="resolved">Resolved</option>
                   <option value="closed">Closed</option>
                 </select>
-                <button type="submit" className="rounded-xl border border-slate-300 px-4 py-2 text-sm font-semibold text-slate-700">Durumu Guncelle</button>
+                <button type="submit" className="rounded-xl border border-slate-300 px-4 py-2 text-sm font-semibold text-slate-700">{translateUiText("Durumu Guncelle", locale)}</button>
               </form>
             </div>
           </article>
 
           <article className="rounded-2xl bg-white p-6 shadow-sm">
-            <p className="text-sm font-semibold text-slate-900">Audit</p>
+            <p className="text-sm font-semibold text-slate-900">{translateUiText("Audit", locale)}</p>
             <div className="mt-4 space-y-3">
               {auditLogs.map((log) => (
                 <div key={log.id} className="rounded-xl border border-slate-200 bg-slate-50 px-4 py-3">

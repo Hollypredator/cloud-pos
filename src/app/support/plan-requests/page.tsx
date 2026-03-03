@@ -1,6 +1,8 @@
 import { revalidatePath } from "next/cache";
 import { requireSupportAccess } from "@/lib/auth";
 import { listSupportPlanRequests, setSupportPlanRequestStatus } from "@/lib/data";
+import { translateUiText } from "@/lib/i18n";
+import { getCurrentLocale } from "@/lib/i18n-server";
 import type { SupportPlanRequestStatus } from "@/lib/types";
 
 async function updatePlanRequestStatusAction(formData: FormData) {
@@ -17,6 +19,7 @@ export default async function SupportPlanRequestsPage({
 }: {
   searchParams?: Promise<{ q?: string; status?: string }>;
 }) {
+  const locale = await getCurrentLocale();
   await requireSupportAccess("/support/plan-requests");
   const { requests } = await listSupportPlanRequests();
   const filters = (await searchParams) ?? {};
@@ -36,25 +39,25 @@ export default async function SupportPlanRequestsPage({
   return (
     <main className="mx-auto w-full max-w-7xl space-y-6 px-4 py-8 md:px-8">
       <header>
-        <p className="text-sm text-slate-500">Plan Requests</p>
-        <h1 className="text-3xl font-semibold text-slate-900">Paket degisikligi talepleri</h1>
+        <p className="text-sm text-slate-500">{translateUiText("Plan Requests", locale)}</p>
+        <h1 className="text-3xl font-semibold text-slate-900">{translateUiText("Paket degisikligi talepleri", locale)}</h1>
       </header>
 
       <form className="grid gap-3 rounded-2xl bg-white p-4 shadow-sm md:grid-cols-[1fr_180px_120px]">
         <input
           name="q"
           defaultValue={filters.q ?? ""}
-          placeholder="Tenant, paket veya gerekce ara"
+          placeholder={translateUiText("Tenant, paket veya gerekce ara", locale)}
           className="rounded-xl border border-slate-300 px-4 py-3 text-sm"
         />
         <select name="status" defaultValue={statusFilter || "all"} className="rounded-xl border border-slate-300 px-4 py-3 text-sm">
-          <option value="all">Tum durumlar</option>
-          <option value="open">Open</option>
-          <option value="approved">Approved</option>
-          <option value="rejected">Rejected</option>
-          <option value="cancelled">Cancelled</option>
+          <option value="all">{translateUiText("Tum durumlar", locale)}</option>
+          <option value="open">{translateUiText("Open", locale)}</option>
+          <option value="approved">{translateUiText("Approved", locale)}</option>
+          <option value="rejected">{translateUiText("Rejected", locale)}</option>
+          <option value="cancelled">{translateUiText("Cancelled", locale)}</option>
         </select>
-        <button type="submit" className="rounded-xl bg-slate-900 px-4 py-3 text-sm font-semibold text-white">Filtrele</button>
+        <button type="submit" className="rounded-xl bg-slate-900 px-4 py-3 text-sm font-semibold text-white">{translateUiText("Filtrele", locale)}</button>
       </form>
 
       <section className="space-y-4">
@@ -64,25 +67,25 @@ export default async function SupportPlanRequestsPage({
               <div>
                 <p className="text-xs uppercase tracking-[0.24em] text-slate-500">{request.current_plan} {"->"} {request.requested_plan}</p>
                 <h2 className="mt-2 text-xl font-semibold text-slate-900">{request.business_name || request.business_id}</h2>
-                <p className="mt-2 text-sm text-slate-600">{request.reason || "Aciklama girilmedi."}</p>
+                <p className="mt-2 text-sm text-slate-600">{request.reason || translateUiText("Aciklama girilmedi.", locale)}</p>
               </div>
-              <span className="rounded-full bg-slate-100 px-3 py-1 text-xs font-semibold text-slate-700">{request.status}</span>
+              <span className="rounded-full bg-slate-100 px-3 py-1 text-xs font-semibold text-slate-700">{translateUiText(request.status, locale)}</span>
             </div>
             <form action={updatePlanRequestStatusAction} className="mt-4 flex items-center gap-2">
               <input type="hidden" name="id" value={request.id} />
               <select name="status" defaultValue={request.status} className="w-full rounded-xl border border-slate-300 px-3 py-2 text-sm md:max-w-xs">
-                <option value="open">Open</option>
-                <option value="approved">Approved</option>
-                <option value="rejected">Rejected</option>
-                <option value="cancelled">Cancelled</option>
+                <option value="open">{translateUiText("Open", locale)}</option>
+                <option value="approved">{translateUiText("Approved", locale)}</option>
+                <option value="rejected">{translateUiText("Rejected", locale)}</option>
+                <option value="cancelled">{translateUiText("Cancelled", locale)}</option>
               </select>
-              <button type="submit" className="rounded-xl border border-slate-300 px-4 py-2 text-sm font-semibold text-slate-700">Guncelle</button>
+              <button type="submit" className="rounded-xl border border-slate-300 px-4 py-2 text-sm font-semibold text-slate-700">{translateUiText("Guncelle", locale)}</button>
             </form>
           </article>
         ))}
         {filteredRequests.length === 0 ? (
           <div className="rounded-2xl border border-dashed border-slate-300 bg-white px-6 py-10 text-sm text-slate-500">
-            Filtreye uygun paket talebi bulunamadi.
+            {translateUiText("Filtreye uygun paket talebi bulunamadi.", locale)}
           </div>
         ) : null}
       </section>

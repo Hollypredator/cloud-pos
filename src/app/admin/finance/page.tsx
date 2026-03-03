@@ -3,6 +3,8 @@ import { BackofficePage, ContentCard, EmptyPanel, FeatureLockedState, SidebarPan
 import { ALL_BRANCHES_VALUE } from "@/lib/business";
 import { requireRole } from "@/lib/auth";
 import { getFinancialInsights, listBranches } from "@/lib/data";
+import { translateUiText } from "@/lib/i18n";
+import { getCurrentLocale } from "@/lib/i18n-server";
 import { logServerPerf, measureAsync } from "@/lib/perf";
 import { getFeatureAccess } from "@/lib/plan-access";
 
@@ -131,12 +133,13 @@ export default async function AdminFinancePage({
 }) {
   try {
     await requireRole(["admin"], "/admin/finance");
+    const locale = await getCurrentLocale();
     const featureAccessResult = await measureAsync("feature_access", () => getFeatureAccess("finance_dashboard"));
     const featureAccess = featureAccessResult.value;
     if (!featureAccess.enabled) {
       logServerPerf("/admin/finance", [featureAccessResult]);
       return (
-        <BackofficePage title="Gelir/Gider" description="Nakit akis ve finans panosu">
+        <BackofficePage title={translateUiText("Gelir/Gider", locale)} description={translateUiText("Nakit akis yonetimi ve finans ozetleri", locale)}>
           <FeatureLockedState
             title={featureAccess.title}
             description={featureAccess.description}
@@ -157,8 +160,8 @@ export default async function AdminFinancePage({
     logServerPerf("/admin/finance", [featureAccessResult, financialResult, branchContextResult]);
   const branchLabel =
     branchContext.activeBranchId === ALL_BRANCHES_VALUE
-      ? "Tum Subeler"
-      : branchContext.branches.find((branch) => branch.id === branchContext.activeBranchId)?.name ?? "Aktif Sube";
+      ? translateUiText("Tum Subeler", locale)
+      : branchContext.branches.find((branch) => branch.id === branchContext.activeBranchId)?.name ?? translateUiText("Aktif Sube", locale);
 
   const maxHourly = Math.max(1, ...hourlySales.map((row) => row.sales));
   const averageTicket = summary.paidOrderCount > 0 ? summary.grossSales / summary.paidOrderCount : 0;
@@ -173,62 +176,62 @@ export default async function AdminFinancePage({
 
     return (
     <BackofficePage
-      title="Gelir/Gider"
-      description="Nakit akis yonetimi ve finans ozetleri"
+      title={translateUiText("Gelir/Gider", locale)}
+      description={translateUiText("Nakit akis yonetimi ve finans ozetleri", locale)}
       sidebar={
-        <SidebarPanel title="Filtreler">
+        <SidebarPanel title={translateUiText("Filtreler", locale)}>
           <form method="get" className="space-y-4">
             <div className="grid gap-2 sm:grid-cols-2">
               <button type="button" className="rounded-2xl border border-slate-200 bg-slate-50 px-4 py-3 text-sm font-semibold text-slate-700">
-                Donem Bazli
+                {translateUiText("Donem Bazli", locale)}
               </button>
               <button type="button" className="rounded-2xl bg-gradient-to-r from-[#ff5a34] to-[#f0b14f] px-4 py-3 text-sm font-semibold text-white">
-                Tarih Bazli
+                {translateUiText("Tarih Bazli", locale)}
               </button>
             </div>
             <div>
-              <p className="mb-2 text-sm font-semibold text-slate-800">Donem</p>
+              <p className="mb-2 text-sm font-semibold text-slate-800">{translateUiText("Donem", locale)}</p>
               <select name="days" defaultValue={String(days)} className="w-full rounded-2xl border border-slate-200 bg-slate-50 px-4 py-3 text-sm">
-                <option value="1">Bugun</option>
-                <option value="7">Son 7 gun</option>
-                <option value="14">Son 14 gun</option>
-                <option value="30">Son 30 gun</option>
-                <option value="90">Son 90 gun</option>
+                <option value="1">{translateUiText("Bugun", locale)}</option>
+                <option value="7">{translateUiText("Son 7 gun", locale)}</option>
+                <option value="14">{translateUiText("Son 14 gun", locale)}</option>
+                <option value="30">{translateUiText("Son 30 gun", locale)}</option>
+                <option value="90">{translateUiText("Son 90 gun", locale)}</option>
               </select>
             </div>
             <button type="submit" className="w-full rounded-2xl bg-gradient-to-r from-[#ff5a34] to-[#f0b14f] px-4 py-3 text-sm font-semibold text-white">
-              Verileri Yenile
+              {translateUiText("Verileri Yenile", locale)}
             </button>
           </form>
           <div className="grid gap-2 sm:grid-cols-2">
             <Link href="/admin/finance?days=1" className={`rounded-2xl px-4 py-3 text-center text-sm font-semibold ${days === 1 ? "bg-[#ff5a34] text-white" : "border border-slate-200 bg-slate-50 text-slate-700"}`}>
-              Bugun
+              {translateUiText("Bugun", locale)}
             </Link>
             <Link href="/admin/finance?days=7" className={`rounded-2xl px-4 py-3 text-center text-sm font-semibold ${days === 7 ? "bg-[#ff5a34] text-white" : "border border-slate-200 bg-slate-50 text-slate-700"}`}>
-              7 Gun
+              {translateUiText("7 Gun", locale)}
             </Link>
             <Link href="/admin/finance?days=30" className={`rounded-2xl px-4 py-3 text-center text-sm font-semibold ${days === 30 ? "bg-[#ff5a34] text-white" : "border border-slate-200 bg-slate-50 text-slate-700"}`}>
-              30 Gun
+              {translateUiText("30 Gun", locale)}
             </Link>
             <Link href="/admin/finance?days=90" className={`rounded-2xl px-4 py-3 text-center text-sm font-semibold ${days === 90 ? "bg-[#ff5a34] text-white" : "border border-slate-200 bg-slate-50 text-slate-700"}`}>
-              90 Gun
+              {translateUiText("90 Gun", locale)}
             </Link>
           </div>
           <div className="space-y-3 rounded-[24px] border border-slate-200 bg-slate-50 p-4">
-            <p className="text-xs font-bold uppercase tracking-[0.16em] text-slate-500">Hizli Okuma</p>
+            <p className="text-xs font-bold uppercase tracking-[0.16em] text-slate-500">{translateUiText("Hizli Okuma", locale)}</p>
             <div>
-              <p className="text-sm text-slate-500">Ortalama fis</p>
+              <p className="text-sm text-slate-500">{translateUiText("Ortalama fis", locale)}</p>
               <p className="font-display font-numeric mt-1 text-2xl font-semibold tracking-tight text-slate-900">{averageTicket.toFixed(2)} TL</p>
             </div>
             <div>
-              <p className="text-sm text-slate-500">Iade orani</p>
+              <p className="text-sm text-slate-500">{translateUiText("Iade orani", locale)}</p>
               <p className={`font-display font-numeric mt-1 text-2xl font-semibold tracking-tight ${refundRate > 10 ? "text-rose-700" : "text-slate-900"}`}>
                 %{refundRate.toFixed(1)}
               </p>
             </div>
             <div>
-              <p className="text-sm text-slate-500">En guclu yontem</p>
-              <p className="font-display mt-1 text-lg font-semibold text-slate-900">{topMethod ? methodLabel(topMethod.method) : "Veri yok"}</p>
+              <p className="text-sm text-slate-500">{translateUiText("En guclu yontem", locale)}</p>
+              <p className="font-display mt-1 text-lg font-semibold text-slate-900">{topMethod ? methodLabel(topMethod.method) : translateUiText("Veri yok", locale)}</p>
             </div>
           </div>
         </SidebarPanel>
@@ -236,34 +239,34 @@ export default async function AdminFinancePage({
       actions={
         <>
           <a href={`/api/reports/sales.csv?days=${days}`} className="w-full rounded-2xl border border-slate-200 bg-white px-5 py-3 text-center text-sm font-semibold text-slate-800 sm:w-auto">
-            Excel
+            {translateUiText("Excel", locale)}
           </a>
           <span className="w-full rounded-2xl border border-slate-200 bg-slate-50 px-5 py-3 text-center text-sm font-semibold text-slate-700 sm:w-auto">
             {branchLabel}
           </span>
           <a href={`/admin/reports?days=${days}`} className="w-full rounded-2xl border border-slate-200 bg-white px-5 py-3 text-center text-sm font-semibold text-slate-800 sm:w-auto">
-            Raporlara Git
+            {translateUiText("Raporlara Git", locale)}
           </a>
         </>
       }
     >
       {usingDemoData ? (
         <div className="rounded-[24px] border border-amber-200 bg-amber-50 px-5 py-4 text-sm text-amber-900">
-          Demo modda finans verisi sinirlidir.
+          {translateUiText("Demo modda finans verisi sinirlidir.", locale)}
         </div>
       ) : null}
 
       <section className="grid gap-4 xl:grid-cols-4">
-        <SummaryCard label="Gelir" value={`${summary.grossSales.toFixed(2)} TL`} hint="Brut satis" tone="success" />
-        <SummaryCard label="Gider" value={`${summary.refunds.toFixed(2)} TL`} hint="Iade / cikis" tone="danger" />
-        <SummaryCard label="Net" value={`${summary.netSales.toFixed(2)} TL`} hint="Kalan bakiye" tone="accent" />
-        <SummaryCard label="Toplam" value={`${summary.paidOrderCount}`} hint="Tamamlanan odeme" />
+        <SummaryCard label={translateUiText("Gelir", locale)} value={`${summary.grossSales.toFixed(2)} TL`} hint={translateUiText("Brut satis", locale)} tone="success" />
+        <SummaryCard label={translateUiText("Gider", locale)} value={`${summary.refunds.toFixed(2)} TL`} hint={translateUiText("Iade / cikis", locale)} tone="danger" />
+        <SummaryCard label={translateUiText("Net", locale)} value={`${summary.netSales.toFixed(2)} TL`} hint={translateUiText("Kalan bakiye", locale)} tone="accent" />
+        <SummaryCard label={translateUiText("Toplam", locale)} value={`${summary.paidOrderCount}`} hint={translateUiText("Tamamlanan odeme", locale)} />
       </section>
 
       <section className="grid gap-5 xl:grid-cols-[1.15fr_0.85fr]">
-        <ContentCard title="Grafik Panorama">
+        <ContentCard title={translateUiText("Grafik Panorama", locale)}>
           {hourlySales.length === 0 ? (
-            <EmptyPanel title="Grafik Verisi Yok" description="Secilen filtrelerde cizilecek finans akisi yok." />
+            <EmptyPanel title={translateUiText("Grafik Verisi Yok", locale)} description={translateUiText("Secilen filtrelerde cizilecek finans akisi yok.", locale)} />
           ) : (
             <div className="grid gap-4 xl:grid-cols-[1fr_280px]">
               <div className="rounded-[24px] border border-slate-200 bg-slate-50 p-5">
@@ -326,11 +329,11 @@ export default async function AdminFinancePage({
           )}
         </ContentCard>
 
-        <ContentCard title="Iade / Tahsilat Dengesi">
+        <ContentCard title={translateUiText("Iade / Tahsilat Dengesi", locale)}>
           <div className="space-y-4">
             <div className="rounded-[24px] border border-slate-200 bg-slate-50 p-4">
               <div className="flex items-center justify-between gap-3">
-                <span className="text-sm font-semibold text-slate-900">Tahsilat</span>
+                <span className="text-sm font-semibold text-slate-900">{translateUiText("Tahsilat", locale)}</span>
                 <span className="font-display font-numeric text-lg font-semibold text-emerald-700">{summary.grossSales.toFixed(2)} TL</span>
               </div>
               <div className="mt-4 h-3 overflow-hidden rounded-full bg-white">
@@ -339,7 +342,7 @@ export default async function AdminFinancePage({
             </div>
             <div className="rounded-[24px] border border-slate-200 bg-slate-50 p-4">
               <div className="flex items-center justify-between gap-3">
-                <span className="text-sm font-semibold text-slate-900">Iade</span>
+                <span className="text-sm font-semibold text-slate-900">{translateUiText("Iade", locale)}</span>
                 <span className="font-display font-numeric text-lg font-semibold text-rose-700">{summary.refunds.toFixed(2)} TL</span>
               </div>
               <div className="mt-4 h-3 overflow-hidden rounded-full bg-white">
@@ -354,48 +357,48 @@ export default async function AdminFinancePage({
       </section>
 
       <section className="grid gap-5 xl:grid-cols-3">
-        <ContentCard title="Finans Yorumu">
+        <ContentCard title={translateUiText("Finans Yorumu", locale)}>
           <div className="grid gap-3">
             <div className="panel-hover rounded-[22px] border border-slate-200 bg-slate-50 p-4">
-              <p className="text-xs font-bold uppercase tracking-[0.16em] text-slate-500">Net Durum</p>
+              <p className="text-xs font-bold uppercase tracking-[0.16em] text-slate-500">{translateUiText("Net Durum", locale)}</p>
               <p className="font-display font-numeric mt-3 text-2xl font-semibold tracking-tight text-slate-900 sm:text-3xl">{summary.netSales.toFixed(2)} TL</p>
-              <p className="mt-2 text-sm text-slate-500">Secili aralikta gelir ve iade etkisinin net sonucu.</p>
+              <p className="mt-2 text-sm text-slate-500">{translateUiText("Secili aralikta gelir ve iade etkisinin net sonucu.", locale)}</p>
             </div>
             <div className="panel-hover rounded-[22px] border border-slate-200 bg-slate-50 p-4">
-              <p className="text-xs font-bold uppercase tracking-[0.16em] text-slate-500">Ortalama Fis</p>
+              <p className="text-xs font-bold uppercase tracking-[0.16em] text-slate-500">{translateUiText("Ortalama Fis", locale)}</p>
               <p className="font-display font-numeric mt-3 text-2xl font-semibold tracking-tight text-slate-900 sm:text-3xl">{averageTicket.toFixed(2)} TL</p>
-              <p className="mt-2 text-sm text-slate-500">Tamamlanmis odeme basina ortalama tahsilat.</p>
+              <p className="mt-2 text-sm text-slate-500">{translateUiText("Tamamlanmis odeme basina ortalama tahsilat.", locale)}</p>
             </div>
             <div className="panel-hover rounded-[22px] border border-slate-200 bg-slate-50 p-4">
-              <p className="text-xs font-bold uppercase tracking-[0.16em] text-slate-500">Guclu Kanal</p>
+              <p className="text-xs font-bold uppercase tracking-[0.16em] text-slate-500">{translateUiText("Guclu Kanal", locale)}</p>
               <p className="font-display mt-3 text-2xl font-semibold tracking-tight text-slate-900 sm:text-3xl">{topMethod ? methodLabel(topMethod.method) : "-"}</p>
-              <p className="mt-2 text-sm text-slate-500">Net tahsilatta one cikan odeme yontemi.</p>
+              <p className="mt-2 text-sm text-slate-500">{translateUiText("Net tahsilatta one cikan odeme yontemi.", locale)}</p>
             </div>
           </div>
         </ContentCard>
 
-        <ContentCard title="Risk Gostergeleri">
+        <ContentCard title={translateUiText("Risk Gostergeleri", locale)}>
           <div className="space-y-3">
             <div className="rounded-[22px] border border-slate-200 bg-slate-50 p-4">
               <div className="flex items-center justify-between gap-3">
-                <span className="text-sm font-semibold text-slate-900">Iade Baskisi</span>
+                <span className="text-sm font-semibold text-slate-900">{translateUiText("Iade Baskisi", locale)}</span>
                 <span className={`rounded-full px-3 py-1 text-xs font-semibold ${refundRate > 10 ? "bg-rose-100 text-rose-700" : "bg-emerald-100 text-emerald-700"}`}>
                   %{refundRate.toFixed(1)}
                 </span>
               </div>
-              <p className="mt-3 text-sm text-slate-500">Yuksek iade orani marji daraltir. Bu aralikta iade etkisini izle.</p>
+              <p className="mt-3 text-sm text-slate-500">{translateUiText("Yuksek iade orani marji daraltir. Bu aralikta iade etkisini izle.", locale)}</p>
             </div>
             <div className="rounded-[22px] border border-slate-200 bg-slate-50 p-4">
               <div className="flex items-center justify-between gap-3">
-                <span className="text-sm font-semibold text-slate-900">Son Hareket Yogunlugu</span>
+                <span className="text-sm font-semibold text-slate-900">{translateUiText("Son Hareket Yogunlugu", locale)}</span>
                 <span className="rounded-full bg-slate-200 px-3 py-1 text-xs font-semibold text-slate-700">{recentPayments.length}</span>
               </div>
-              <p className="mt-3 text-sm text-slate-500">Secili aralikta listelenen son odeme ve iade hareketleri.</p>
+              <p className="mt-3 text-sm text-slate-500">{translateUiText("Secili aralikta listelenen son odeme ve iade hareketleri.", locale)}</p>
             </div>
           </div>
         </ContentCard>
 
-        <ContentCard title="Saatlik Momentum">
+        <ContentCard title={translateUiText("Saatlik Momentum", locale)}>
           <div className="space-y-3">
             {hourlySales
               .slice()
@@ -412,9 +415,9 @@ export default async function AdminFinancePage({
       </section>
 
       <section className="grid gap-5 xl:grid-cols-2">
-        <ContentCard title="Odeme Dagilimi">
+        <ContentCard title={translateUiText("Odeme Dagilimi", locale)}>
           {methodBreakdown.length === 0 ? (
-            <EmptyPanel title="Dagilim Yok" description="Odeme yontemi dagilimini gosterecek veri bulunmuyor." />
+            <EmptyPanel title={translateUiText("Dagilim Yok", locale)} description={translateUiText("Odeme yontemi dagilimini gosterecek veri bulunmuyor.", locale)} />
           ) : (
             <div className="grid gap-5 xl:grid-cols-[320px_1fr]">
               <DonutChart
@@ -434,7 +437,7 @@ export default async function AdminFinancePage({
                       <div className="flex items-center justify-between gap-3">
                         <div>
                           <p className="font-display text-lg font-semibold text-slate-900">{methodLabel(row.method)}</p>
-                          <p className="mt-1 text-sm text-slate-500">Net tahsilat ve iade dengesi</p>
+                          <p className="mt-1 text-sm text-slate-500">{translateUiText("Net tahsilat ve iade dengesi", locale)}</p>
                         </div>
                         <p className="font-display font-numeric text-xl font-semibold text-slate-900">{row.net.toFixed(2)} TL</p>
                       </div>
@@ -442,9 +445,9 @@ export default async function AdminFinancePage({
                         <div className={`h-3 rounded-full bg-gradient-to-r ${methodAccent(index)}`} style={{ width: `${share}%` }} />
                       </div>
                       <div className="mt-3 grid grid-cols-3 gap-2 text-xs text-slate-500">
-                        <span>Gelir: <span className="font-numeric font-semibold text-emerald-700">{row.sales.toFixed(2)}</span></span>
-                        <span>Iade: <span className="font-numeric font-semibold text-rose-700">{row.refunds.toFixed(2)}</span></span>
-                        <span>Pay: <span className="font-numeric font-semibold text-slate-900">%{((Math.max(0, row.net) / totalMethodNet) * 100).toFixed(1)}</span></span>
+                        <span>{translateUiText("Gelir", locale)}: <span className="font-numeric font-semibold text-emerald-700">{row.sales.toFixed(2)}</span></span>
+                        <span>{translateUiText("Iade", locale)}: <span className="font-numeric font-semibold text-rose-700">{row.refunds.toFixed(2)}</span></span>
+                        <span>{translateUiText("Pay", locale)}: <span className="font-numeric font-semibold text-slate-900">%{((Math.max(0, row.net) / totalMethodNet) * 100).toFixed(1)}</span></span>
                       </div>
                     </div>
                   );
@@ -454,18 +457,18 @@ export default async function AdminFinancePage({
           )}
         </ContentCard>
 
-        <ContentCard title="Odeme Tipi">
+        <ContentCard title={translateUiText("Odeme Tipi", locale)}>
           {methodBreakdown.length === 0 ? (
-            <EmptyPanel title="Kayit Bulunamadi" description="Secili filtrelere uygun odeme kaydi yok." />
+            <EmptyPanel title={translateUiText("Kayit Bulunamadi", locale)} description={translateUiText("Secili filtrelere uygun odeme kaydi yok.", locale)} />
           ) : (
             <div className="responsive-table-shell rounded-[22px] border border-slate-200">
               <table className="responsive-table w-full text-left text-sm">
                 <thead className="bg-slate-50 text-slate-500">
                   <tr>
-                    <th className="px-4 py-4 font-semibold">Tip</th>
-                    <th className="px-4 py-4 font-semibold">Gelir</th>
-                    <th className="px-4 py-4 font-semibold">Gider</th>
-                    <th className="px-4 py-4 font-semibold">Kalan</th>
+                    <th className="px-4 py-4 font-semibold">{translateUiText("Tip", locale)}</th>
+                    <th className="px-4 py-4 font-semibold">{translateUiText("Gelir", locale)}</th>
+                    <th className="px-4 py-4 font-semibold">{translateUiText("Gider", locale)}</th>
+                    <th className="px-4 py-4 font-semibold">{translateUiText("Kalan", locale)}</th>
                   </tr>
                 </thead>
                 <tbody>
@@ -483,7 +486,7 @@ export default async function AdminFinancePage({
           )}
         </ContentCard>
 
-        <ContentCard title="Saatlik Satis">
+        <ContentCard title={translateUiText("Saatlik Satis", locale)}>
           <div className="grid gap-3">
             {hourlySales.map((row) => (
               <div key={row.hour} className="panel-hover grid grid-cols-[56px_1fr_96px] items-center gap-3 rounded-[20px] border border-slate-200 bg-slate-50 px-3 py-3 text-sm">
@@ -503,7 +506,7 @@ export default async function AdminFinancePage({
       </section>
 
       <section className="grid gap-5 xl:grid-cols-2">
-        <ContentCard title="Saatlik Isı Haritasi">
+        <ContentCard title={translateUiText("Saatlik Isi Haritasi", locale)}>
           <div className="grid grid-cols-4 gap-3 md:grid-cols-6 xl:grid-cols-8">
             {hourlySales.map((row) => {
               const intensity = row.sales / maxHourly;
@@ -524,9 +527,9 @@ export default async function AdminFinancePage({
           </div>
         </ContentCard>
 
-        <ContentCard title="En Cok Satan Urunler">
+        <ContentCard title={translateUiText("En Cok Satan Urunler", locale)}>
           {topProducts.length === 0 ? (
-            <EmptyPanel title="Kayit Bulunamadi" description="Secili filtrelerde urun satis verisi yok." />
+            <EmptyPanel title={translateUiText("Kayit Bulunamadi", locale)} description={translateUiText("Secili filtrelerde urun satis verisi yok.", locale)} />
           ) : (
             <div className="space-y-3">
               {topProducts.map((row, index) => {
@@ -536,7 +539,7 @@ export default async function AdminFinancePage({
                     <div className="flex items-center justify-between gap-3">
                       <div>
                         <p className="font-display text-lg font-semibold text-slate-900">{row.productName}</p>
-                        <p className="mt-1 text-sm text-slate-500">{row.qty} adet satis</p>
+                        <p className="mt-1 text-sm text-slate-500">{row.qty} {translateUiText("adet satis", locale)}</p>
                       </div>
                       <p className="font-display font-numeric text-lg font-semibold text-emerald-700">{row.revenue.toFixed(2)} TL</p>
                     </div>
@@ -550,18 +553,18 @@ export default async function AdminFinancePage({
           )}
         </ContentCard>
 
-        <ContentCard title="Son Hareketler">
+        <ContentCard title={translateUiText("Son Hareketler", locale)}>
           {recentPayments.length === 0 ? (
-            <EmptyPanel title="Kayit Bulunamadi" description="Secili filtrelere uygun hareket yok." />
+            <EmptyPanel title={translateUiText("Kayit Bulunamadi", locale)} description={translateUiText("Secili filtrelere uygun hareket yok.", locale)} />
           ) : (
             <div className="responsive-table-shell max-h-[420px] overflow-y-auto rounded-[22px] border border-slate-200">
               <table className="responsive-table w-full text-left text-sm">
                 <thead className="sticky top-0 bg-slate-50 text-slate-500">
                   <tr>
-                    <th className="px-4 py-4 font-semibold">Saat</th>
-                    <th className="px-4 py-4 font-semibold">Tip</th>
-                    <th className="px-4 py-4 font-semibold">Yontem</th>
-                    <th className="px-4 py-4 font-semibold">Tutar</th>
+                    <th className="px-4 py-4 font-semibold">{translateUiText("Saat", locale)}</th>
+                    <th className="px-4 py-4 font-semibold">{translateUiText("Tip", locale)}</th>
+                    <th className="px-4 py-4 font-semibold">{translateUiText("Yontem", locale)}</th>
+                    <th className="px-4 py-4 font-semibold">{translateUiText("Tutar", locale)}</th>
                   </tr>
                 </thead>
                 <tbody>
@@ -588,7 +591,7 @@ export default async function AdminFinancePage({
     return (
       <BackofficePage title="Gelir/Gider" description="Nakit akis yonetimi ve finans ozetleri">
         <div className="rounded-[24px] border border-amber-200 bg-amber-50 px-5 py-4 text-sm text-amber-900">
-          Finans verileri yuklenemedi. Lutfen biraz sonra tekrar deneyin.
+          {translateUiText("Finans verileri yuklenemedi. Lutfen biraz sonra tekrar deneyin.", "tr")}
         </div>
       </BackofficePage>
     );

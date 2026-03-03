@@ -1,6 +1,7 @@
 "use client";
 
 import { useMemo, useState } from "react";
+import { getPublicCopy, type AppLocale } from "@/lib/i18n";
 
 function normalizePhone(value: string) {
   return value.replace(/\D/g, "");
@@ -10,10 +11,11 @@ export function LandingContactCard({
   businessPhone,
   leadStatus,
   supportEmail,
-  eyebrow = "Iletisim",
-  title = "Demo ve kurulum sureci icin bizimle iletisime gecin",
-  body = "Bilgilerinizi birakin. Isterseniz WhatsApp veya telefon uzerinden de dogrudan ulasabilirsiniz.",
+  eyebrow = "Demo Talebi",
+  title = "Isletmeniz icin uygun kurulumu birlikte planlayalim",
+  body = "Bilgilerinizi birakin. Isterseniz WhatsApp veya telefon uzerinden de dogrudan bize ulasabilirsiniz.",
   previewMode = false,
+  locale = "tr",
 }: {
   businessPhone: string;
   leadStatus?: string;
@@ -22,26 +24,43 @@ export function LandingContactCard({
   title?: string;
   body?: string;
   previewMode?: boolean;
+  locale?: AppLocale;
 }) {
+  const copy = getPublicCopy(locale);
   const [companyName, setCompanyName] = useState("");
   const [contactName, setContactName] = useState("");
   const [branchCount, setBranchCount] = useState("1");
 
   const whatsappHref = useMemo(() => {
     const phone = normalizePhone(businessPhone || "");
-    const message = [
-      "Merhaba, Cloud POS icin bilgi ve demo talep etmek istiyorum.",
-      `Isletme: ${companyName || "-"}`,
-      `Yetkili: ${contactName || "-"}`,
-      `Sube sayisi: ${branchCount || "-"}`,
-    ].join("\n");
+    const message =
+      locale === "fr"
+        ? [
+            "Bonjour, je souhaite obtenir des informations et une demo pour Cloud POS.",
+            `Entreprise: ${companyName || "-"}`,
+            `Contact: ${contactName || "-"}`,
+            `Nombre de succursales: ${branchCount || "-"}`,
+          ].join("\n")
+        : locale === "en"
+          ? [
+              "Hello, I would like information and a demo for Cloud POS.",
+              `Business: ${companyName || "-"}`,
+              `Contact: ${contactName || "-"}`,
+              `Branch count: ${branchCount || "-"}`,
+            ].join("\n")
+          : [
+              "Merhaba, Cloud POS icin bilgi ve demo talep etmek istiyorum.",
+              `Isletme: ${companyName || "-"}`,
+              `Yetkili: ${contactName || "-"}`,
+              `Sube sayisi: ${branchCount || "-"}`,
+            ].join("\n");
 
     if (!phone) {
       return "#";
     }
 
     return `https://wa.me/${phone}?text=${encodeURIComponent(message)}`;
-  }, [branchCount, businessPhone, companyName, contactName]);
+  }, [branchCount, businessPhone, companyName, contactName, locale]);
 
   const callHref = useMemo(() => {
     const phone = normalizePhone(businessPhone || "");
@@ -52,14 +71,14 @@ export function LandingContactCard({
     <>
       <div className="sm:col-span-2">
         <label htmlFor="companyName" className="text-sm font-medium text-slate-700">
-          Isletme adi
+          {copy.contact.companyName}
         </label>
         <input
           id="companyName"
           name="companyName"
           value={companyName}
           onChange={(event) => setCompanyName(event.target.value)}
-          placeholder="Ornek: Mavi Fincan Cafe"
+          placeholder={copy.contact.companyPlaceholder}
           required
           disabled={previewMode}
           className="mt-2 w-full rounded-2xl border border-slate-200 bg-white px-4 py-3 text-sm text-slate-900 outline-none transition focus:border-slate-900 disabled:cursor-not-allowed disabled:bg-slate-100"
@@ -67,14 +86,14 @@ export function LandingContactCard({
       </div>
       <div>
         <label htmlFor="contactName" className="text-sm font-medium text-slate-700">
-          Yetkili kisi
+          {copy.contact.contactName}
         </label>
         <input
           id="contactName"
           name="contactName"
           value={contactName}
           onChange={(event) => setContactName(event.target.value)}
-          placeholder="Ad Soyad"
+          placeholder={copy.contact.contactPlaceholder}
           required
           disabled={previewMode}
           className="mt-2 w-full rounded-2xl border border-slate-200 bg-white px-4 py-3 text-sm text-slate-900 outline-none transition focus:border-slate-900 disabled:cursor-not-allowed disabled:bg-slate-100"
@@ -82,7 +101,7 @@ export function LandingContactCard({
       </div>
       <div>
         <label htmlFor="branchCount" className="text-sm font-medium text-slate-700">
-          Sube sayisi
+          {copy.contact.branchCount}
         </label>
         <input
           id="branchCount"
@@ -96,7 +115,7 @@ export function LandingContactCard({
       </div>
       <div>
         <label htmlFor="phone" className="text-sm font-medium text-slate-700">
-          Telefon
+          {copy.contact.phone}
         </label>
         <input
           id="phone"
@@ -108,26 +127,26 @@ export function LandingContactCard({
       </div>
       <div>
         <label htmlFor="email" className="text-sm font-medium text-slate-700">
-          E-posta
+          {copy.contact.email}
         </label>
         <input
           id="email"
           name="email"
           type="email"
-          placeholder="yetkili@isletme.com"
+          placeholder={copy.contact.emailPlaceholder}
           disabled={previewMode}
           className="mt-2 w-full rounded-2xl border border-slate-200 bg-white px-4 py-3 text-sm text-slate-900 outline-none transition focus:border-slate-900 disabled:cursor-not-allowed disabled:bg-slate-100"
         />
       </div>
       <div className="sm:col-span-2">
         <label htmlFor="note" className="text-sm font-medium text-slate-700">
-          Not
+          {copy.contact.note}
         </label>
         <textarea
           id="note"
           name="note"
           rows={4}
-          placeholder="QR menu, kasa, rapor veya stok takibi gibi ihtiyaci yazin"
+          placeholder={copy.contact.notePlaceholder}
           disabled={previewMode}
           className="mt-2 w-full rounded-2xl border border-slate-200 bg-white px-4 py-3 text-sm text-slate-900 outline-none transition focus:border-slate-900 disabled:cursor-not-allowed disabled:bg-slate-100"
         />
@@ -137,7 +156,7 @@ export function LandingContactCard({
           type={previewMode ? "button" : "submit"}
           className="w-full rounded-2xl bg-slate-950 px-4 py-3 text-sm font-semibold text-white"
         >
-          Talep Gonder
+          {copy.contact.submit}
         </button>
       </div>
     </>
@@ -151,12 +170,12 @@ export function LandingContactCard({
 
       {leadStatus === "success" ? (
         <p className="mt-4 rounded-2xl border border-emerald-200 bg-emerald-50 px-4 py-3 text-sm text-emerald-800">
-          Talebiniz kaydedildi. Isterseniz WhatsApp veya telefonla iletisime devam edebilirsiniz.
+          {copy.contact.success}
         </p>
       ) : null}
       {leadStatus === "error" ? (
         <p className="mt-4 rounded-2xl border border-rose-200 bg-rose-50 px-4 py-3 text-sm text-rose-700">
-          Talep kaydi olusturulamadi. Formu tekrar deneyin veya WhatsApp ile ulasin.
+          {copy.contact.error}
         </p>
       ) : null}
 
@@ -170,10 +189,10 @@ export function LandingContactCard({
         )}
 
         <div className="rounded-[1.25rem] bg-slate-950 p-4 text-white sm:rounded-[1.5rem] sm:p-5">
-          <p className="text-xs uppercase tracking-[0.24em] text-slate-400">Hizli Iletisim</p>
-          <p className="mt-3 text-xl font-semibold tracking-tight sm:text-2xl">WhatsApp veya telefonla ulasin</p>
+          <p className="text-xs uppercase tracking-[0.24em] text-slate-400">{copy.contact.directEyebrow}</p>
+          <p className="mt-3 text-xl font-semibold tracking-tight sm:text-2xl">{copy.contact.directTitle}</p>
           <p className="mt-3 text-sm leading-7 text-slate-300">
-            Talebinizi hizli iletin, kurulum ve demo sureci icin en uygun adimi birlikte planlayalim.
+            {copy.contact.directBody}
           </p>
           {supportEmail ? <p className="mt-2 break-words text-sm text-slate-400">{supportEmail}</p> : null}
           <div className="mt-6 flex flex-col gap-3">
@@ -183,13 +202,13 @@ export function LandingContactCard({
               rel="noreferrer"
               className="rounded-2xl bg-emerald-500 px-4 py-3 text-center text-sm font-semibold text-slate-950"
             >
-              WhatsApp ile Ulas
+              {copy.contact.whatsapp}
             </a>
             <a
               href={callHref}
               className="rounded-2xl border border-white/15 px-4 py-3 text-center text-sm font-semibold text-white"
             >
-              Telefonla Ara
+              {copy.contact.call}
             </a>
           </div>
         </div>

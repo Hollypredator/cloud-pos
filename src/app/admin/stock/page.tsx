@@ -2,14 +2,17 @@ import Link from "next/link";
 import { BackofficePage, FeatureLockedState } from "@/components/backoffice-ui";
 import { requireRole } from "@/lib/auth";
 import { listStockMovements } from "@/lib/data";
+import { translateUiText } from "@/lib/i18n";
+import { getCurrentLocale } from "@/lib/i18n-server";
 import { getFeatureAccess } from "@/lib/plan-access";
 
 export default async function AdminStockPage() {
+  const locale = await getCurrentLocale();
   await requireRole(["admin"], "/admin/stock");
   const featureAccess = await getFeatureAccess("inventory_management");
   if (!featureAccess.enabled) {
     return (
-      <BackofficePage title="Stok Hareketleri" description="Stok ve recete izleme">
+      <BackofficePage title={translateUiText("Stok Hareketleri", locale)} description={translateUiText("Stok ve recete izleme", locale)}>
         <FeatureLockedState
           title={featureAccess.title}
           description={featureAccess.description}
@@ -27,16 +30,16 @@ export default async function AdminStockPage() {
         <header className="flex flex-wrap items-center justify-between gap-3">
           <div>
             <p className="text-sm text-slate-500">Admin</p>
-            <h1 className="text-2xl font-semibold text-slate-900 sm:text-3xl">Stok Hareketleri</h1>
+            <h1 className="text-2xl font-semibold text-slate-900 sm:text-3xl">{translateUiText("Stok Hareketleri", locale)}</h1>
           </div>
           <Link href="/ops" className="w-full rounded-lg bg-slate-900 px-4 py-2 text-center text-sm font-medium text-white sm:w-auto">
-            Panele Don
+            {translateUiText("Panele Don", locale)}
           </Link>
         </header>
 
         {usingDemoData ? (
           <p className="rounded-lg bg-amber-100 px-3 py-2 text-sm text-amber-900">
-            Demo modda stok hareket gecmisi yok.
+            {translateUiText("Demo modda stok hareket gecmisi yok.", locale)}
           </p>
         ) : null}
 
@@ -44,12 +47,12 @@ export default async function AdminStockPage() {
           <table className="responsive-table w-full min-w-[760px] text-left text-sm">
             <thead>
               <tr className="border-b border-slate-200 text-slate-500">
-                <th className="py-2">Tarih</th>
-                <th className="py-2">Urun</th>
-                <th className="py-2">Degisim</th>
-                <th className="py-2">Onceki</th>
-                <th className="py-2">Yeni</th>
-                <th className="py-2">Neden</th>
+                <th className="py-2">{translateUiText("Tarih", locale)}</th>
+                <th className="py-2">{translateUiText("Urun", locale)}</th>
+                <th className="py-2">{translateUiText("Degisim", locale)}</th>
+                <th className="py-2">{translateUiText("Onceki", locale)}</th>
+                <th className="py-2">{translateUiText("Yeni", locale)}</th>
+                <th className="py-2">{translateUiText("Neden", locale)}</th>
               </tr>
             </thead>
             <tbody>
@@ -74,7 +77,7 @@ export default async function AdminStockPage() {
               {movements.length === 0 ? (
                 <tr>
                   <td colSpan={6} className="py-6 text-center text-slate-500">
-                    Kayit bulunamadi.
+                    {translateUiText("Kayit bulunamadi.", locale)}
                   </td>
                 </tr>
               ) : null}

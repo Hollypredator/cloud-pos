@@ -3,10 +3,15 @@
 import Link from "next/link";
 import { usePathname } from "next/navigation";
 import { getPlanLabel } from "@/lib/features";
+import { normalizeLocale, translateUiText } from "@/lib/i18n";
 import type { BusinessPlan } from "@/lib/types";
 
 function cn(...parts: Array<string | false | null | undefined>) {
   return parts.filter(Boolean).join(" ");
+}
+
+function getLocale() {
+  return normalizeLocale(typeof document !== "undefined" ? document.documentElement.lang : "tr");
 }
 
 export function BackofficePage({
@@ -22,6 +27,7 @@ export function BackofficePage({
   children: React.ReactNode;
   actions?: React.ReactNode;
 }) {
+  const locale = getLocale();
   return (
     <div className="min-h-screen overflow-x-clip bg-[#e9eaee] px-3 py-4 md:px-6">
       <main className="mx-auto flex w-full max-w-[1600px] flex-col gap-5 xl:flex-row">
@@ -30,8 +36,8 @@ export function BackofficePage({
           <div className="panel-surface mesh-accent rounded-[24px] px-4 py-4 sm:px-6 sm:py-5">
             <div className="flex flex-wrap items-center justify-between gap-4">
               <div>
-                <p className="text-sm font-medium text-slate-500">{description}</p>
-                <h1 className="font-display mt-1 text-2xl font-semibold tracking-tight text-slate-900 sm:text-3xl">{title}</h1>
+                <p className="text-sm font-medium text-slate-500">{description ? translateUiText(description, locale) : description}</p>
+                <h1 className="font-display mt-1 text-2xl font-semibold tracking-tight text-slate-900 sm:text-3xl">{translateUiText(title, locale)}</h1>
               </div>
               {actions ? <div className="flex w-full flex-wrap items-center gap-2 sm:w-auto sm:gap-3">{actions}</div> : null}
             </div>
@@ -52,11 +58,12 @@ export function SidebarPanel({
   description?: string;
   children: React.ReactNode;
 }) {
+  const locale = getLocale();
   return (
     <section className="panel-surface panel-hover rounded-[28px] p-5">
       <div className="border-b border-slate-200 pb-4">
-        <h2 className="font-display text-[1.45rem] font-semibold tracking-tight text-slate-900">{title}</h2>
-        {description ? <p className="mt-2 text-sm text-slate-500">{description}</p> : null}
+        <h2 className="font-display text-[1.45rem] font-semibold tracking-tight text-slate-900">{translateUiText(title, locale)}</h2>
+        {description ? <p className="mt-2 text-sm text-slate-500">{translateUiText(description, locale)}</p> : null}
       </div>
       <div className="space-y-4 pt-4">{children}</div>
     </section>
@@ -96,6 +103,7 @@ export function SummaryCard({
   hint?: string;
   tone?: "neutral" | "success" | "danger" | "accent";
 }) {
+  const locale = getLocale();
   const toneStyles = {
     neutral: "bg-slate-100 text-slate-700",
     success: "bg-emerald-100 text-emerald-700",
@@ -107,12 +115,12 @@ export function SummaryCard({
     <article className="panel-surface panel-hover mesh-accent rounded-[24px] p-5">
       <div className="flex items-start justify-between gap-3">
         <div>
-          <p className="text-xs font-bold uppercase tracking-[0.16em] text-slate-500">{label}</p>
+          <p className="text-xs font-bold uppercase tracking-[0.16em] text-slate-500">{translateUiText(label, locale)}</p>
           <p className="font-display font-numeric mt-4 text-[1.8rem] font-semibold tracking-tight text-slate-900 sm:mt-5 sm:text-[2rem]">{value}</p>
-          {hint ? <p className="mt-2 text-sm text-slate-500">{hint}</p> : null}
+          {hint ? <p className="mt-2 text-sm text-slate-500">{translateUiText(hint, locale)}</p> : null}
         </div>
         <span className={cn("inline-flex h-12 w-12 items-center justify-center rounded-2xl text-sm font-bold", toneStyles[tone])}>
-          {label.slice(0, 2).toUpperCase()}
+          {translateUiText(label, locale).slice(0, 2).toUpperCase()}
         </span>
       </div>
     </article>
@@ -124,6 +132,7 @@ export function SegmentedTabs({
 }: {
   tabs: Array<{ href?: string; label: string; active?: boolean }>;
 }) {
+  const locale = getLocale();
   return (
     <div className="flex snap-x gap-3 overflow-x-auto rounded-[28px] border border-slate-200 bg-white p-3 shadow-[0_10px_20px_rgba(15,23,42,0.04)] md:grid md:grid-cols-4 md:overflow-visible">
       {tabs.map((tab) => {
@@ -136,11 +145,11 @@ export function SegmentedTabs({
 
         return tab.href ? (
           <Link key={tab.label} href={tab.href} className={className}>
-            {tab.label}
+            {translateUiText(tab.label, locale)}
           </Link>
         ) : (
           <div key={tab.label} className={className}>
-            {tab.label}
+            {translateUiText(tab.label, locale)}
           </div>
         );
       })}
@@ -155,10 +164,11 @@ export function ContentCard({
   title: string;
   children: React.ReactNode;
 }) {
+  const locale = getLocale();
   return (
     <section className="panel-surface panel-hover rounded-[28px] p-5">
       <div className="border-b border-slate-200 pb-4">
-        <h3 className="font-display text-2xl font-semibold tracking-tight text-slate-900">{title}</h3>
+        <h3 className="font-display text-2xl font-semibold tracking-tight text-slate-900">{translateUiText(title, locale)}</h3>
       </div>
       <div className="pt-4">{children}</div>
     </section>
@@ -174,6 +184,7 @@ export function NoticeBanner({
   title: string;
   description?: string;
 }) {
+  const locale = getLocale();
   const toneStyles = {
     info: "border-sky-200 bg-sky-50 text-sky-950",
     success: "border-emerald-200 bg-emerald-50 text-emerald-950",
@@ -183,8 +194,8 @@ export function NoticeBanner({
 
   return (
     <div className={cn("rounded-[24px] border px-5 py-4 shadow-[0_8px_18px_rgba(15,23,42,0.04)]", toneStyles[tone])}>
-      <p className="text-base font-semibold tracking-tight">{title}</p>
-      {description ? <p className="mt-1 text-sm opacity-80">{description}</p> : null}
+      <p className="text-base font-semibold tracking-tight">{translateUiText(title, locale)}</p>
+      {description ? <p className="mt-1 text-sm opacity-80">{translateUiText(description, locale)}</p> : null}
     </div>
   );
 }
@@ -202,29 +213,30 @@ export function FeatureLockedState({
   requiredPlan: BusinessPlan;
   actionHref?: string;
 }) {
+  const locale = getLocale();
   return (
-    <ContentCard title={`${title} Kilitli`}>
+    <ContentCard title={`${translateUiText(title, locale)} ${translateUiText("Kilitli", locale)}`}>
       <div className="space-y-4">
         <NoticeBanner
           tone="warning"
-          title={`${getPlanLabel(requiredPlan)} paket gerekiyor`}
+          title={`${getPlanLabel(requiredPlan)} ${translateUiText("paket gerekiyor", locale)}`}
           description={description}
         />
         <div className="rounded-[24px] border border-slate-200 bg-slate-50 px-5 py-5 text-sm text-slate-600">
-          Mevcut paket: <span className="font-semibold text-slate-900">{getPlanLabel(currentPlan)}</span>
+          {translateUiText("Mevcut paket:", locale)} <span className="font-semibold text-slate-900">{getPlanLabel(currentPlan)}</span>
         </div>
         <div className="flex flex-wrap gap-3">
           <Link
             href={actionHref}
             className="rounded-2xl bg-gradient-to-r from-[#ff5a34] to-[#f0b14f] px-5 py-3 text-sm font-semibold text-white"
           >
-            Paket Bilgisini Gor
+            {translateUiText("Paket Bilgisini Gor", locale)}
           </Link>
           <Link
             href="/ops"
             className="rounded-2xl border border-slate-200 bg-white px-5 py-3 text-sm font-semibold text-slate-800"
           >
-            Operasyona Don
+            {translateUiText("Operasyona Don", locale)}
           </Link>
         </div>
       </div>
@@ -241,11 +253,12 @@ export function WorkflowGuide({
   description?: string;
   steps: Array<{ title: string; description: string }>;
 }) {
+  const locale = getLocale();
   return (
     <section className="panel-surface panel-hover rounded-[28px] p-5">
       <div className="border-b border-slate-200 pb-4">
-        <h3 className="font-display text-2xl font-semibold tracking-tight text-slate-900">{title}</h3>
-        {description ? <p className="mt-2 text-sm text-slate-500">{description}</p> : null}
+        <h3 className="font-display text-2xl font-semibold tracking-tight text-slate-900">{translateUiText(title, locale)}</h3>
+        {description ? <p className="mt-2 text-sm text-slate-500">{translateUiText(description, locale)}</p> : null}
       </div>
       <div className="space-y-3 pt-4">
         {steps.map((step, index) => (
@@ -255,8 +268,8 @@ export function WorkflowGuide({
                 {index + 1}
               </span>
               <div>
-                <p className="text-base font-semibold text-slate-900">{step.title}</p>
-                <p className="mt-1 text-sm text-slate-500">{step.description}</p>
+                <p className="text-base font-semibold text-slate-900">{translateUiText(step.title, locale)}</p>
+                <p className="mt-1 text-sm text-slate-500">{translateUiText(step.description, locale)}</p>
               </div>
             </div>
           </div>
@@ -273,13 +286,14 @@ export function EmptyPanel({
   title: string;
   description: string;
 }) {
+  const locale = getLocale();
   return (
     <div className="flex min-h-[220px] flex-col items-center justify-center rounded-[24px] border border-dashed border-slate-200 bg-slate-50 px-6 py-10 text-center">
       <div className="mb-5 inline-flex h-16 w-16 items-center justify-center rounded-full bg-slate-200 text-lg font-bold text-slate-600">
         --
       </div>
-      <p className="text-3xl font-semibold tracking-tight text-slate-900">{title}</p>
-      <p className="mt-3 max-w-xl text-base text-slate-500">{description}</p>
+      <p className="text-3xl font-semibold tracking-tight text-slate-900">{translateUiText(title, locale)}</p>
+      <p className="mt-3 max-w-xl text-base text-slate-500">{translateUiText(description, locale)}</p>
     </div>
   );
 }
@@ -289,6 +303,7 @@ export function WorkspaceTabs({
 }: {
   tabs: Array<{ href?: string; label: string; active?: boolean }>;
 }) {
+  const locale = getLocale();
   return (
     <div className="flex gap-4 overflow-x-auto border-b border-slate-200 px-2 sm:gap-6">
       {tabs.map((tab) => {
@@ -299,11 +314,11 @@ export function WorkspaceTabs({
 
         return tab.href ? (
           <Link key={tab.label} href={tab.href} className={className}>
-            {tab.label}
+            {translateUiText(tab.label, locale)}
           </Link>
         ) : (
           <div key={tab.label} className={className}>
-            {tab.label}
+            {translateUiText(tab.label, locale)}
           </div>
         );
       })}
@@ -313,6 +328,7 @@ export function WorkspaceTabs({
 
 export function AppShellHeader() {
   const pathname = usePathname();
+  const locale = getLocale();
 
   return (
     <div className="flex items-center gap-3 rounded-[24px] border border-slate-200 bg-white px-5 py-4 shadow-[0_10px_20px_rgba(15,23,42,0.04)]">
@@ -321,7 +337,7 @@ export function AppShellHeader() {
       </span>
       <div className="min-w-0">
         <p className="truncate text-sm font-medium text-slate-500">{pathname}</p>
-        <p className="text-lg font-semibold tracking-tight text-slate-900">Operasyon paneli</p>
+        <p className="text-lg font-semibold tracking-tight text-slate-900">{translateUiText("Operasyon Paneli", locale)}</p>
       </div>
     </div>
   );

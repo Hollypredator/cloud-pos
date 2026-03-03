@@ -2,6 +2,8 @@ import Link from "next/link";
 import { LandingContactCard } from "@/components/landing-contact-card";
 import type { GeneralSettings } from "@/lib/app-settings";
 import { defaultLandingContent, type LandingContent, type LandingSection, type LandingSectionStyle } from "@/lib/site-content";
+import { getPublicCopy, translateLandingTextForLocale, type AppLocale } from "@/lib/i18n";
+import { LanguageSwitcher } from "@/components/language-switcher";
 
 type LandingRendererEditorOptions = {
   activeSectionId?: string | null;
@@ -140,6 +142,63 @@ function renderHeaderActions(content: LandingContent, previewMode?: boolean) {
   );
 }
 
+function localizeLandingSection(section: LandingSection, locale: AppLocale): LandingSection {
+  if (locale === "tr") {
+    return section;
+  }
+
+  if (section.type === "hero") {
+    return {
+      ...section,
+      badge: translateLandingTextForLocale(section.badge, locale),
+      title: translateLandingTextForLocale(section.title, locale),
+      body: translateLandingTextForLocale(section.body, locale),
+      primaryCtaLabel: translateLandingTextForLocale(section.primaryCtaLabel, locale),
+      secondaryCtaLabel: translateLandingTextForLocale(section.secondaryCtaLabel, locale),
+    };
+  }
+
+  if (section.type === "feature_grid" || section.type === "process_steps" || section.type === "faq_grid") {
+    return {
+      ...section,
+      eyebrow: translateLandingTextForLocale(section.eyebrow, locale),
+      items: section.items.map((item) => ({
+        title: translateLandingTextForLocale(item.title, locale),
+        body: translateLandingTextForLocale(item.body, locale),
+      })),
+    };
+  }
+
+  if (section.type === "pricing_grid") {
+    return {
+      ...section,
+      eyebrow: translateLandingTextForLocale(section.eyebrow, locale),
+      items: section.items.map((item) => ({
+        name: translateLandingTextForLocale(item.name, locale),
+        price: translateLandingTextForLocale(item.price, locale),
+        summary: translateLandingTextForLocale(item.summary, locale),
+      })),
+    };
+  }
+
+  if (section.type === "credibility") {
+    return {
+      ...section,
+      eyebrow: translateLandingTextForLocale(section.eyebrow, locale),
+      title: translateLandingTextForLocale(section.title, locale),
+      body: translateLandingTextForLocale(section.body, locale),
+      references: section.references.map((item) => translateLandingTextForLocale(item, locale)),
+    };
+  }
+
+  return {
+    ...section,
+    eyebrow: translateLandingTextForLocale(section.eyebrow, locale),
+    title: translateLandingTextForLocale(section.title, locale),
+    body: translateLandingTextForLocale(section.body, locale),
+  };
+}
+
 function renderHeroActions(section: Extract<LandingSection, { type: "hero" }>, previewMode?: boolean) {
   if (previewMode) {
     return (
@@ -172,8 +231,10 @@ function renderSection(
   content: LandingContent,
   leadStatus?: string,
   businessPhone?: string,
+  locale: AppLocale = "tr",
   editor?: LandingRendererEditorOptions,
 ) {
+  const copy = getPublicCopy(locale);
   if (section.type === "hero") {
     return wrapEditableSection(
       section,
@@ -188,20 +249,18 @@ function renderSection(
         </div>
         <div className="grid gap-4">
           <div className="rounded-[1.5rem] border border-white/70 bg-white/82 p-5 shadow-[0_28px_80px_rgba(15,23,42,0.12)] backdrop-blur sm:p-6">
-            <p className="text-xs uppercase tracking-[0.24em] text-slate-500">Tek Akis</p>
-            <p className="mt-2 text-2xl font-semibold tracking-tight text-slate-950">Mutfak, kasa ve servis ayni operasyon dilinde calisir</p>
-            <div className="mt-5 grid gap-3">
+            <p className="text-2xl font-semibold tracking-tight text-slate-950">{copy.landing.heroAsideTitle}</p>
+            <p className="mt-3 text-sm leading-7 text-slate-600">
+              {copy.landing.heroAsideBody}
+            </p>
+            <div className="mt-5 space-y-3">
               <div className="rounded-2xl border border-slate-200 bg-[linear-gradient(135deg,#fff8ee_0%,#f8fbfd_100%)] px-4 py-4">
-                <p className="text-sm font-semibold text-slate-950">Mutfak kuyugu</p>
-                <p className="mt-2 text-sm leading-6 text-slate-600">Siparisler hazirlik durumuna gore ayrilir, ekip neye odaklanacagini aninda gorur.</p>
+                <p className="text-sm font-semibold text-slate-950">{copy.landing.heroAsidePointA}</p>
+                <p className="mt-2 text-sm leading-6 text-slate-600">{copy.landing.heroAsidePointABody}</p>
               </div>
               <div className="rounded-2xl border border-slate-200 bg-[linear-gradient(135deg,#fff8ee_0%,#f8fbfd_100%)] px-4 py-4">
-                <p className="text-sm font-semibold text-slate-950">Kasa ve vardiya</p>
-                <p className="mt-2 text-sm leading-6 text-slate-600">Tahsilat, gun sonu ve rol bazli akis ayni panel dilinde ilerler.</p>
-              </div>
-              <div className="rounded-2xl border border-slate-200 bg-[linear-gradient(135deg,#fff8ee_0%,#f8fbfd_100%)] px-4 py-4">
-                <p className="text-sm font-semibold text-slate-950">Masa kontrolu</p>
-                <p className="mt-2 text-sm leading-6 text-slate-600">QR menu, adisyon ve servis durumu birbirinden kopmadan yonetilir.</p>
+                <p className="text-sm font-semibold text-slate-950">{copy.landing.heroAsidePointB}</p>
+                <p className="mt-2 text-sm leading-6 text-slate-600">{copy.landing.heroAsidePointBBody}</p>
               </div>
             </div>
           </div>
@@ -273,7 +332,7 @@ function renderSection(
           >
             <div className="flex items-center justify-between gap-3">
               <p className={`text-xs uppercase tracking-[0.28em] ${index === 1 ? "text-slate-300" : "text-slate-500"}`}>{item.name}</p>
-              {index === 1 ? <span className="rounded-full bg-white/10 px-3 py-1 text-[11px] font-semibold uppercase tracking-[0.18em] text-white">onerilen</span> : null}
+              {index === 1 ? <span className="rounded-full bg-white/10 px-3 py-1 text-[11px] font-semibold uppercase tracking-[0.18em] text-white">{copy.landing.recommendedPlan}</span> : null}
             </div>
             <p className={`mt-3 text-2xl font-semibold tracking-tight sm:text-3xl ${index === 1 ? "text-white" : "text-slate-900"}`}>{item.price}</p>
             <p className={`mt-3 text-sm leading-7 ${index === 1 ? "text-slate-300" : "text-slate-600"}`}>{item.summary}</p>
@@ -293,20 +352,6 @@ function renderSection(
           <div className="rounded-[1.5rem] bg-[linear-gradient(155deg,#0f172a_0%,#1f2937_100%)] px-5 py-6 text-white shadow-[0_20px_50px_rgba(15,23,42,0.18)]">
             <h3 className="text-2xl font-semibold tracking-tight text-white sm:text-3xl">{section.title}</h3>
             <p className="mt-3 max-w-2xl text-sm leading-7 text-slate-300">{section.body}</p>
-            <div className="mt-6 grid gap-3 sm:grid-cols-3">
-              <div className="rounded-2xl border border-white/10 bg-white/5 px-4 py-4">
-                <p className="text-[11px] uppercase tracking-[0.22em] text-slate-400">Kurulum</p>
-                <p className="mt-2 text-lg font-semibold text-white">Hizli</p>
-              </div>
-              <div className="rounded-2xl border border-white/10 bg-white/5 px-4 py-4">
-                <p className="text-[11px] uppercase tracking-[0.22em] text-slate-400">Operasyon</p>
-                <p className="mt-2 text-lg font-semibold text-white">Canli</p>
-              </div>
-              <div className="rounded-2xl border border-white/10 bg-white/5 px-4 py-4">
-                <p className="text-[11px] uppercase tracking-[0.22em] text-slate-400">Rapor</p>
-                <p className="mt-2 text-lg font-semibold text-white">Hazir</p>
-              </div>
-            </div>
           </div>
           <div className="grid gap-3 sm:grid-cols-2">
             {section.references.map((item, index) => (
@@ -349,6 +394,7 @@ function renderSection(
       title={section.title}
       body={section.body}
       previewMode={editor?.previewMode}
+      locale={locale}
     />,
     editor,
   );
@@ -359,21 +405,28 @@ export function LandingPageRenderer({
   settings,
   leadStatus,
   editor,
+  locale = "tr",
 }: {
   content: LandingContent;
   settings: GeneralSettings;
   leadStatus?: string;
   editor?: LandingRendererEditorOptions;
+  locale?: AppLocale;
 }) {
+  const copy = getPublicCopy(locale);
   const safeContent: LandingContent = {
     ...defaultLandingContent,
     ...(content ?? defaultLandingContent),
-    sections: Array.isArray(content?.sections) && content.sections.length > 0 ? content.sections : defaultLandingContent.sections,
+    topLoginLabel: locale === "tr" ? (content?.topLoginLabel ?? defaultLandingContent.topLoginLabel) : copy.nav.staffLogin,
+    topDemoLabel: locale === "tr" ? (content?.topDemoLabel ?? defaultLandingContent.topDemoLabel) : copy.nav.demo,
+    sections: (Array.isArray(content?.sections) && content.sections.length > 0 ? content.sections : defaultLandingContent.sections).map((section) =>
+      localizeLandingSection(section, locale),
+    ),
   };
   const siteName = settings?.siteName || "Cloud POS";
-  const siteTagline = settings?.siteTagline || "Yeni nesil cafe ve restoran operasyonu";
+  const siteTagline = locale === "tr" ? settings?.siteTagline || "Yeni nesil cafe ve restoran operasyonu" : copy.landing.siteTagline;
   const logoUrl = settings?.logoUrl;
-  const footerNote = settings?.footerNote || "Cloud POS";
+  const footerNote = locale === "tr" ? settings?.footerNote || "Cloud POS" : copy.landing.footerFallback;
   const contactPhone = settings?.contactPhone || "";
   const supportEmail = settings?.supportEmail || "";
 
@@ -395,11 +448,12 @@ export function LandingPageRenderer({
             <h1 className="mt-2 text-xl font-semibold tracking-tight sm:text-2xl">{siteTagline}</h1>
           </div>
           <div className="flex w-full flex-col gap-2 sm:w-auto sm:flex-row sm:flex-wrap sm:items-center sm:gap-3">
+            <LanguageSwitcher locale={locale} label={copy.localeSwitcher.label} compact />
             {renderHeaderActions(safeContent, editor?.previewMode)}
           </div>
         </header>
 
-        {safeContent.sections.map((section) => renderSection(section, settings, safeContent, leadStatus, safeContent.businessPhone, editor))}
+        {safeContent.sections.map((section) => renderSection(section, settings, safeContent, leadStatus, safeContent.businessPhone, locale, editor))}
 
         <footer className="mt-6 rounded-[2rem] border border-white/70 bg-white/70 px-5 py-6 text-sm text-slate-600 shadow-[0_18px_50px_rgba(15,23,42,0.08)] backdrop-blur sm:px-6">
           <div className="flex flex-col gap-2 md:flex-row md:items-center md:justify-between">

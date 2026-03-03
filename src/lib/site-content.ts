@@ -341,8 +341,16 @@ function sanitizeProcessItems(values: unknown, fallback: LandingProcessItem[]) {
 function modernizeLandingText(value: string) {
   return value
     .replace(/Hospitality OS/gi, "Cloud POS")
+    .replace(/Hospitality Control System/gi, "Cloud POS")
     .replace(/QR Siparis/gi, "QR Menu")
     .replace(/QR siparis/gi, "QR menu")
+    .replace(/Demo ve Teklif/gi, "Demo Talebi")
+    .replace(/Musteri gorusmesini buradan kapat/gi, "Isletmeniz icin uygun kurulumu birlikte planlayalim")
+    .replace(/Demo tarihi netlestir/gi, "WhatsApp veya telefonla bize ulasin")
+    .replace(/Hizli Iletisim/gi, "Dogrudan Iletisim")
+    .replace(/Teklif Talebi Gonder/gi, "Talep Gonder")
+    .replace(/WhatsApp ile Teklif Al/gi, "WhatsApp ile Ulas")
+    .replace(/Hemen Ara/gi, "Telefonla Ara")
     .replace(/QR uzerinden dogrudan siparis kapali\. Lutfen garsona iletin\./gi, "QR uzerinden siparis alinmiyor. Siparisler personel tarafindan yonetilir.")
     .replace(/Masaya oturan musteri menuyu acsin, siparisi dogrudan sisteme dussun\./gi, "Masaya oturan musteri menuyu kendi telefonunda acsin, siparisi ekip yonetsin.")
     .replace(/Musteri menuyu acsin, siparisi dogrudan sisteme dussun\./gi, "Musteri menuyu acsin, siparis akisini ekip yonetsin.")

@@ -4,6 +4,8 @@ import { notFound } from "next/navigation";
 import { FEATURE_META, getPlanLabel, hasFeature, type FeatureKey } from "@/lib/features";
 import { requireSupportAccess } from "@/lib/auth";
 import { getSupportTenantDetail, updateSupportTenantProfile, upsertSupportFeatureFlagOverride } from "@/lib/data";
+import { translateUiText } from "@/lib/i18n";
+import { getCurrentLocale } from "@/lib/i18n-server";
 import type { SupportBillingStatus, SupportRiskLevel, TenantLifecycleStage } from "@/lib/types";
 
 async function updateTenantProfileAction(formData: FormData) {
@@ -45,6 +47,7 @@ export default async function SupportTenantDetailPage({
 }: {
   params: Promise<{ businessId: string }>;
 }) {
+  const locale = await getCurrentLocale();
   await requireSupportAccess("/support/tenants");
   const { businessId } = await params;
   const { tenant } = await getSupportTenantDetail(businessId);
@@ -56,27 +59,27 @@ export default async function SupportTenantDetailPage({
   return (
     <main className="mx-auto w-full max-w-7xl space-y-6 px-4 py-8 md:px-8">
       <header>
-        <p className="text-sm text-slate-500">Tenant Cockpit</p>
+        <p className="text-sm text-slate-500">{translateUiText("Tenant Cockpit", locale)}</p>
         <h1 className="text-3xl font-semibold text-slate-900">{tenant.name}</h1>
         <p className="mt-2 text-sm text-slate-500">/{tenant.slug}</p>
       </header>
 
       <section className="grid gap-4 md:grid-cols-2 xl:grid-cols-6">
-        <div className="rounded-2xl bg-white p-6 shadow-sm"><p className="text-xs uppercase tracking-[0.24em] text-slate-500">Paket</p><p className="mt-3 text-2xl font-semibold text-slate-900">{getPlanLabel(tenant.plan)}</p></div>
-        <div className="rounded-2xl bg-white p-6 shadow-sm"><p className="text-xs uppercase tracking-[0.24em] text-slate-500">Sube</p><p className="mt-3 text-2xl font-semibold text-slate-900">{tenant.branch_count}</p></div>
-        <div className="rounded-2xl bg-white p-6 shadow-sm"><p className="text-xs uppercase tracking-[0.24em] text-slate-500">Acik Ticket</p><p className="mt-3 text-2xl font-semibold text-slate-900">{tenant.open_ticket_count}</p></div>
-        <div className="rounded-2xl bg-white p-6 shadow-sm"><p className="text-xs uppercase tracking-[0.24em] text-slate-500">Durum</p><p className="mt-3 text-2xl font-semibold text-slate-900">{tenant.is_active ? "Aktif" : "Pasif"}</p></div>
-        <div className="rounded-2xl bg-white p-6 shadow-sm"><p className="text-xs uppercase tracking-[0.24em] text-slate-500">Lifecycle</p><p className="mt-3 text-2xl font-semibold text-slate-900">{tenant.profile.lifecycle_stage}</p></div>
-        <div className="rounded-2xl bg-white p-6 shadow-sm"><p className="text-xs uppercase tracking-[0.24em] text-slate-500">Billing</p><p className="mt-3 text-2xl font-semibold text-slate-900">{tenant.profile.billing_status}</p></div>
+        <div className="rounded-2xl bg-white p-6 shadow-sm"><p className="text-xs uppercase tracking-[0.24em] text-slate-500">{translateUiText("Paket", locale)}</p><p className="mt-3 text-2xl font-semibold text-slate-900">{getPlanLabel(tenant.plan)}</p></div>
+        <div className="rounded-2xl bg-white p-6 shadow-sm"><p className="text-xs uppercase tracking-[0.24em] text-slate-500">{translateUiText("Sube", locale)}</p><p className="mt-3 text-2xl font-semibold text-slate-900">{tenant.branch_count}</p></div>
+        <div className="rounded-2xl bg-white p-6 shadow-sm"><p className="text-xs uppercase tracking-[0.24em] text-slate-500">{translateUiText("Acik Ticket", locale)}</p><p className="mt-3 text-2xl font-semibold text-slate-900">{tenant.open_ticket_count}</p></div>
+        <div className="rounded-2xl bg-white p-6 shadow-sm"><p className="text-xs uppercase tracking-[0.24em] text-slate-500">{translateUiText("Durum", locale)}</p><p className="mt-3 text-2xl font-semibold text-slate-900">{tenant.is_active ? translateUiText("Aktif", locale) : translateUiText("Pasif", locale)}</p></div>
+        <div className="rounded-2xl bg-white p-6 shadow-sm"><p className="text-xs uppercase tracking-[0.24em] text-slate-500">{translateUiText("Lifecycle", locale)}</p><p className="mt-3 text-2xl font-semibold text-slate-900">{tenant.profile.lifecycle_stage}</p></div>
+        <div className="rounded-2xl bg-white p-6 shadow-sm"><p className="text-xs uppercase tracking-[0.24em] text-slate-500">{translateUiText("Billing", locale)}</p><p className="mt-3 text-2xl font-semibold text-slate-900">{tenant.profile.billing_status}</p></div>
       </section>
 
       <section className="grid gap-6 xl:grid-cols-[1.1fr_0.9fr]">
         <form action={updateTenantProfileAction} className="rounded-2xl bg-white p-6 shadow-sm">
           <input type="hidden" name="businessId" value={businessId} />
-          <p className="text-sm font-semibold text-slate-900">Account Management</p>
+          <p className="text-sm font-semibold text-slate-900">{translateUiText("Account Management", locale)}</p>
           <div className="mt-4 grid gap-4 md:grid-cols-2">
             <label className="block">
-              <span className="text-sm font-medium text-slate-700">Lifecycle</span>
+              <span className="text-sm font-medium text-slate-700">{translateUiText("Lifecycle", locale)}</span>
               <select name="lifecycleStage" defaultValue={tenant.profile.lifecycle_stage} className="mt-2 w-full rounded-xl border border-slate-300 px-3 py-2 text-sm">
                 <option value="lead">Lead</option>
                 <option value="demo">Demo</option>
@@ -88,7 +91,7 @@ export default async function SupportTenantDetailPage({
               </select>
             </label>
             <label className="block">
-              <span className="text-sm font-medium text-slate-700">Billing status</span>
+              <span className="text-sm font-medium text-slate-700">{translateUiText("Billing status", locale)}</span>
               <select name="billingStatus" defaultValue={tenant.profile.billing_status} className="mt-2 w-full rounded-xl border border-slate-300 px-3 py-2 text-sm">
                 <option value="healthy">Healthy</option>
                 <option value="attention">Attention</option>
@@ -96,7 +99,7 @@ export default async function SupportTenantDetailPage({
               </select>
             </label>
             <label className="block">
-              <span className="text-sm font-medium text-slate-700">Risk level</span>
+              <span className="text-sm font-medium text-slate-700">{translateUiText("Risk level", locale)}</span>
               <select name="riskLevel" defaultValue={tenant.profile.risk_level} className="mt-2 w-full rounded-xl border border-slate-300 px-3 py-2 text-sm">
                 <option value="low">Low</option>
                 <option value="medium">Medium</option>
@@ -104,34 +107,34 @@ export default async function SupportTenantDetailPage({
               </select>
             </label>
             <label className="block">
-              <span className="text-sm font-medium text-slate-700">Renewal date</span>
+              <span className="text-sm font-medium text-slate-700">{translateUiText("Renewal date", locale)}</span>
               <input type="date" name="renewalDate" defaultValue={tenant.profile.renewal_date ?? ""} className="mt-2 w-full rounded-xl border border-slate-300 px-3 py-2 text-sm" />
             </label>
             <label className="block">
-              <span className="text-sm font-medium text-slate-700">Owner name</span>
+              <span className="text-sm font-medium text-slate-700">{translateUiText("Owner name", locale)}</span>
               <input name="ownerName" defaultValue={tenant.profile.owner_name ?? ""} className="mt-2 w-full rounded-xl border border-slate-300 px-3 py-2 text-sm" />
             </label>
             <label className="block">
-              <span className="text-sm font-medium text-slate-700">Owner email</span>
+              <span className="text-sm font-medium text-slate-700">{translateUiText("Owner email", locale)}</span>
               <input name="ownerEmail" defaultValue={tenant.profile.owner_email ?? ""} className="mt-2 w-full rounded-xl border border-slate-300 px-3 py-2 text-sm" />
             </label>
             <label className="block md:col-span-2">
-              <span className="text-sm font-medium text-slate-700">Account manager</span>
+              <span className="text-sm font-medium text-slate-700">{translateUiText("Account manager", locale)}</span>
               <input name="accountManagerName" defaultValue={tenant.profile.account_manager_name ?? ""} className="mt-2 w-full rounded-xl border border-slate-300 px-3 py-2 text-sm" />
             </label>
             <label className="block md:col-span-2">
-              <span className="text-sm font-medium text-slate-700">Account notes</span>
+              <span className="text-sm font-medium text-slate-700">{translateUiText("Account notes", locale)}</span>
               <textarea name="accountNotes" rows={5} defaultValue={tenant.profile.account_notes ?? ""} className="mt-2 w-full rounded-xl border border-slate-300 px-3 py-2 text-sm" />
             </label>
           </div>
           <div className="mt-4 flex justify-end">
-            <button type="submit" className="rounded-xl bg-slate-900 px-5 py-3 text-sm font-semibold text-white">Tenant Profilini Kaydet</button>
+            <button type="submit" className="rounded-xl bg-slate-900 px-5 py-3 text-sm font-semibold text-white">{translateUiText("Tenant Profilini Kaydet", locale)}</button>
           </div>
         </form>
 
         <div className="space-y-4">
           <article className="rounded-2xl bg-white p-6 shadow-sm">
-            <p className="text-sm font-semibold text-slate-900">Safe Diagnostics</p>
+            <p className="text-sm font-semibold text-slate-900">{translateUiText("Safe Diagnostics", locale)}</p>
             <div className="mt-4 space-y-2 text-sm text-slate-600">
               <p>Son siparis: {tenant.diagnostics.last_order_at ? new Date(tenant.diagnostics.last_order_at).toLocaleString("tr-TR") : "-"}</p>
               <p>Son odeme: {tenant.diagnostics.last_payment_at ? new Date(tenant.diagnostics.last_payment_at).toLocaleString("tr-TR") : "-"}</p>
@@ -141,7 +144,7 @@ export default async function SupportTenantDetailPage({
             </div>
           </article>
           <article className="rounded-2xl bg-white p-6 shadow-sm">
-            <p className="text-sm font-semibold text-slate-900">Sinirlar</p>
+            <p className="text-sm font-semibold text-slate-900">{translateUiText("Sinirlar", locale)}</p>
             <p className="mt-4 text-sm text-slate-600">
               Bu cockpit tenant metadata, lifecycle, billing, support ve feature governance icindir. Siparis satiri, musteri verisi ve odeme detay icerigi acilmaz.
             </p>
@@ -151,7 +154,7 @@ export default async function SupportTenantDetailPage({
 
       <section className="grid gap-6 xl:grid-cols-2">
         <article className="rounded-2xl bg-white p-6 shadow-sm">
-          <p className="text-sm font-semibold text-slate-900">Feature Governance</p>
+          <p className="text-sm font-semibold text-slate-900">{translateUiText("Feature Governance", locale)}</p>
           <div className="mt-4 space-y-3">
             {Object.entries(FEATURE_META).map(([featureKey, meta]) => {
               const override = (tenant.feature_flags ?? []).find((item: { feature_key: string }) => item.feature_key === featureKey);
@@ -163,16 +166,16 @@ export default async function SupportTenantDetailPage({
                     <div>
                       <p className="text-sm font-semibold text-slate-900">{meta.title}</p>
                       <p className="mt-1 text-xs text-slate-500">{meta.description}</p>
-                      <p className="mt-1 text-xs text-slate-400">Plan default: {hasFeature(tenant.plan, featureKey as FeatureKey) ? "Acik" : getPlanLabel(meta.requiredPlan)}</p>
+                      <p className="mt-1 text-xs text-slate-400">{translateUiText("Plan default:", locale)} {hasFeature(tenant.plan, featureKey as FeatureKey) ? translateUiText("Acik", locale) : getPlanLabel(meta.requiredPlan)}</p>
                     </div>
                     <select name="enabled" defaultValue={String(override?.enabled ?? hasFeature(tenant.plan, featureKey as FeatureKey))} className="rounded-lg border border-slate-300 px-3 py-2 text-sm">
-                      <option value="true">Acik</option>
-                      <option value="false">Kapali</option>
+                      <option value="true">{translateUiText("Acik", locale)}</option>
+                      <option value="false">{translateUiText("Kapali", locale)}</option>
                     </select>
                   </div>
-                  <input name="note" defaultValue={override?.note ?? ""} placeholder="Override notu" className="mt-3 w-full rounded-lg border border-slate-300 px-3 py-2 text-sm" />
+                  <input name="note" defaultValue={override?.note ?? ""} placeholder={translateUiText("Override notu", locale)} className="mt-3 w-full rounded-lg border border-slate-300 px-3 py-2 text-sm" />
                   <div className="mt-3 flex justify-end">
-                    <button type="submit" className="rounded-lg border border-slate-300 px-4 py-2 text-sm font-semibold text-slate-700">Flag Guncelle</button>
+                    <button type="submit" className="rounded-lg border border-slate-300 px-4 py-2 text-sm font-semibold text-slate-700">{translateUiText("Flag Guncelle", locale)}</button>
                   </div>
                 </form>
               );
@@ -182,7 +185,7 @@ export default async function SupportTenantDetailPage({
 
         <div className="space-y-6">
           <article className="rounded-2xl bg-white p-6 shadow-sm">
-            <p className="text-sm font-semibold text-slate-900">Incidentler</p>
+            <p className="text-sm font-semibold text-slate-900">{translateUiText("Incidentler", locale)}</p>
             <div className="mt-4 space-y-3">
               {(tenant.incidents ?? []).map((incident: { id: string; title: string; severity: string; status: string; owner_support_name?: string | null }) => (
                 <Link key={incident.id} href={`/support/incidents/${incident.id}`} className="block rounded-xl border border-slate-200 bg-slate-50 px-4 py-3">
@@ -195,9 +198,9 @@ export default async function SupportTenantDetailPage({
 
           <article className="rounded-2xl bg-white p-6 shadow-sm">
             <div className="flex items-center justify-between gap-3">
-              <p className="text-sm font-semibold text-slate-900">Son Ticketlar</p>
+              <p className="text-sm font-semibold text-slate-900">{translateUiText("Son Ticketlar", locale)}</p>
               <Link href={`/support/tickets?q=${encodeURIComponent(tenant.name)}`} className="text-xs font-semibold text-slate-500 hover:text-slate-900">
-                Tumunu gor
+                {translateUiText("Tumunu gor", locale)}
               </Link>
             </div>
             <div className="mt-4 space-y-3">
@@ -209,14 +212,14 @@ export default async function SupportTenantDetailPage({
               ))}
               {!(tenant.recent_tickets ?? []).length ? (
                 <div className="rounded-xl border border-dashed border-slate-200 bg-slate-50 px-4 py-3 text-sm text-slate-500">
-                  Bu tenant icin support ticketi yok.
+                  {translateUiText("Bu tenant icin support ticketi yok.", locale)}
                 </div>
               ) : null}
             </div>
           </article>
 
           <article className="rounded-2xl bg-white p-6 shadow-sm">
-            <p className="text-sm font-semibold text-slate-900">Son Paket Talepleri</p>
+            <p className="text-sm font-semibold text-slate-900">{translateUiText("Son Paket Talepleri", locale)}</p>
             <div className="mt-4 space-y-3">
               {(tenant.plan_requests ?? []).map((request: { id: string; current_plan: string; requested_plan: string; status: string }) => (
                 <Link key={request.id} href="/support/plan-requests" className="block rounded-xl border border-slate-200 bg-slate-50 px-4 py-3">
@@ -228,7 +231,7 @@ export default async function SupportTenantDetailPage({
           </article>
 
           <article className="rounded-2xl bg-white p-6 shadow-sm">
-            <p className="text-sm font-semibold text-slate-900">Son Support Islemleri</p>
+            <p className="text-sm font-semibold text-slate-900">{translateUiText("Son Support Islemleri", locale)}</p>
             <div className="mt-4 space-y-3">
               {(tenant.recent_audit_logs ?? []).map((log: { id: string; action: string; actor_name?: string | null; created_at: string }) => (
                 <div key={log.id} className="rounded-xl border border-slate-200 bg-slate-50 px-4 py-3">

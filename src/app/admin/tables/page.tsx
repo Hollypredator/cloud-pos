@@ -3,6 +3,8 @@ import { PendingSubmitButton } from "@/components/pending-submit-button";
 import { BackofficePage, EmptyPanel, NoticeBanner, SummaryCard, WorkflowGuide, WorkspaceTabs } from "@/components/backoffice-ui";
 import { requireRole } from "@/lib/auth";
 import { getOrderHistoryByTableId, getTableMap, listLatestOrdersByTableIds } from "@/lib/data";
+import { translateUiText } from "@/lib/i18n";
+import { getCurrentLocale } from "@/lib/i18n-server";
 import { logServerPerf, measureAsync } from "@/lib/perf";
 import { addTableAction } from "./actions";
 import { buildQrImage, buildQrTarget, orderTone, tableStatusLabel, tableStatusTone } from "./helpers";
@@ -13,6 +15,7 @@ export default async function AdminTablesPage({
 }: {
   searchParams: Promise<{ feedback?: string; tone?: "success" | "error"; table?: string }>;
 }) {
+  const locale = await getCurrentLocale();
   await requireRole(["admin"], "/admin/tables");
   const { feedback, tone, table: selectedTableId } = await searchParams;
   const tableMapResult = await measureAsync("table_map", () => getTableMap());
@@ -52,14 +55,14 @@ export default async function AdminTablesPage({
 
   return (
     <BackofficePage
-      title="Bolge ve Masa Yonetimi"
-      description="Salon yerlesimi, QR hedefleri ve aktif masa listesi"
+      title={translateUiText("Bolge ve Masa Yonetimi", locale)}
+      description={translateUiText("Salon yerlesimi, QR hedefleri ve aktif masa listesi", locale)}
       actions={
         <form action={addTableAction} className="flex flex-wrap items-center gap-3">
-          <input name="tableNumber" type="number" min={1} required placeholder="Yeni masa no" className="w-full rounded-2xl border border-slate-200 bg-slate-50 px-4 py-3 text-sm sm:w-36" />
-          <input name="tableName" placeholder="Masa adi" className="w-full rounded-2xl border border-slate-200 bg-slate-50 px-4 py-3 text-sm sm:w-44" />
+          <input name="tableNumber" type="number" min={1} required placeholder={translateUiText("Yeni masa no", locale)} className="w-full rounded-2xl border border-slate-200 bg-slate-50 px-4 py-3 text-sm sm:w-36" />
+          <input name="tableName" placeholder={translateUiText("Masa adi", locale)} className="w-full rounded-2xl border border-slate-200 bg-slate-50 px-4 py-3 text-sm sm:w-44" />
           <PendingSubmitButton
-            idleLabel="Yeni Masa"
+            idleLabel={translateUiText("Yeni Masa", locale)}
             pendingLabel="Ekleniyor..."
             className="w-full rounded-2xl bg-gradient-to-r from-[#ff5a34] to-[#f0b14f] px-5 py-3 text-sm font-semibold text-white sm:w-auto"
           />
@@ -75,24 +78,24 @@ export default async function AdminTablesPage({
       ) : null}
 
       <section className="grid gap-4 xl:grid-cols-4">
-        <SummaryCard label="Toplam Masa" value={String(tables.length)} hint="Salon kapasitesi" tone="accent" />
-        <SummaryCard label="Dolu Masa" value={String(occupiedCount)} hint="Aktif servis alan masa" tone="danger" />
-        <SummaryCard label="Bos Masa" value={String(emptyCount)} hint="Yeni musteri icin hazir" tone="success" />
-        <SummaryCard label="Acik Adisyon" value={String(activeOrderCount)} hint="Masaya bagli operasyon" />
+        <SummaryCard label={translateUiText("Toplam Masa", locale)} value={String(tables.length)} hint="Salon kapasitesi" tone="accent" />
+        <SummaryCard label={translateUiText("Dolu Masa", locale)} value={String(occupiedCount)} hint={translateUiText("Aktif servis alan masa", locale)} tone="danger" />
+        <SummaryCard label={translateUiText("Bos Masa", locale)} value={String(emptyCount)} hint={translateUiText("Yeni musteri icin hazir", locale)} tone="success" />
+        <SummaryCard label={translateUiText("Acik Adisyon", locale)} value={String(activeOrderCount)} hint={translateUiText("Masaya bagli operasyon", locale)} />
       </section>
 
       <WorkflowGuide
-        title="Masalari 3 Adimda Hazirla"
-        description="Salon kurulumu ilk kez yapilsa bile masa akisi kolay anlasilsin."
+        title={translateUiText("Masalari 3 Adimda Hazirla", locale)}
+        description={translateUiText("Salon kurulumu ilk kez yapilsa bile masa akisi kolay anlasilsin.", locale)}
         steps={[
-          { title: "Masayi olustur ve isim ver", description: "Yeni masa numarasini ve gorunur masa adini kaydet; ekip bu isimle calisir." },
-          { title: "QR'i kontrol et", description: "QR ve yazdirma islerini Masa Yonet popup'i icinden tamamla." },
-          { title: "Aktif siparisi buradan izle", description: "Her kartta son adisyon ozetini gor; detayli gecmisi popup icinden ac." },
+          { title: translateUiText("Masayi olustur ve isim ver", locale), description: translateUiText("Yeni masa numarasini ve gorunur masa adini kaydet; ekip bu isimle calisir.", locale) },
+          { title: translateUiText("QR'i kontrol et", locale), description: translateUiText("QR ve yazdirma islerini Masa Yonet popup'i icinden tamamla.", locale) },
+          { title: translateUiText("Aktif siparisi buradan izle", locale), description: translateUiText("Her kartta son adisyon ozetini gor; detayli gecmisi popup icinden ac.", locale) },
         ]}
       />
 
       <div className="rounded-[28px] border border-slate-200 bg-white p-4 shadow-[0_10px_20px_rgba(15,23,42,0.04)]">
-        <WorkspaceTabs tabs={[{ label: "Isletmeler" }, { label: "Bolge & Masa Yonetimi", active: true }]} />
+        <WorkspaceTabs tabs={[{ label: translateUiText("Isletmeler", locale) }, { label: translateUiText("Bolge ve Masa Yonetimi", locale), active: true }]} />
 
         {usingDemoData ? (
           <div className="mt-4 rounded-2xl border border-amber-200 bg-amber-50 px-4 py-3 text-sm text-amber-900">
