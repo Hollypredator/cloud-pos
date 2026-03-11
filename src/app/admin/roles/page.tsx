@@ -152,9 +152,13 @@ export default async function AdminRolesPage({
   searchParams: Promise<{ staff?: string; feedback?: string; tone?: "success" | "error" }>;
 }) {
   await requireExactRole(["owner"], "/admin/roles");
-  const featureAccessResult = await measureAsync("feature_access", () => getFeatureAccess("staff_management"));
+  const featureAccessPromise = measureAsync("feature_access", () => getFeatureAccess("staff_management"));
+  const profilesPromise = measureAsync("list_profiles", () => listProfiles());
+  const branchesPromise = measureAsync("list_branches", () => listBranches());
+  const featureAccessResult = await featureAccessPromise;
   const featureAccess = featureAccessResult.value;
   if (!featureAccess.enabled) {
+    await Promise.allSettled([profilesPromise, branchesPromise]);
     logServerPerf("/admin/roles", [featureAccessResult]);
     return (
       <BackofficePage title="Personel" description="Ekip ve rol yonetimi">
@@ -168,10 +172,35 @@ export default async function AdminRolesPage({
     );
   }
   const { staff: selectedStaffId, feedback, tone } = await searchParams;
-  const [profilesResult, branchesResult] = await Promise.all([
-    measureAsync("list_profiles", () => listProfiles()),
-    measureAsync("list_branches", () => listBranches()),
-  ]);
+  let fetchFeedback: string | null = null;
+  let fetchFeedbackTone: "success" | "error" | null = null;
+  let profilesResult: Awaited<ReturnType<typeof measureAsync<Awaited<ReturnType<typeof listProfiles>>>>>;
+  let branchesResult: Awaited<ReturnType<typeof measureAsync<Awaited<ReturnType<typeof listBranches>>>>>;
+
+  try {
+    [profilesResult, branchesResult] = await Promise.all([profilesPromise, branchesPromise]);
+  } catch (error) {
+    console.error("[admin/roles] data fetch failed", error);
+    fetchFeedback = "Personel verileri gecici olarak yuklenemedi. Lutfen sayfayi yenileyin.";
+    fetchFeedbackTone = "error";
+    profilesResult = {
+      label: "list_profiles",
+      ms: 0,
+      value: {
+        profiles: [],
+        usingDemoData: false,
+      },
+    };
+    branchesResult = {
+      label: "list_branches",
+      ms: 0,
+      value: {
+        branches: [],
+        activeBranchId: "",
+        usingDemoData: false,
+      },
+    };
+  }
   const { profiles, usingDemoData } = profilesResult.value;
   const { branches } = branchesResult.value;
   logServerPerf("/admin/roles", [featureAccessResult, profilesResult, branchesResult]);
@@ -216,9 +245,11 @@ export default async function AdminRolesPage({
         </Link>
       }
     >
-      {feedback ? (
-        <div className={`rounded-[24px] border px-5 py-4 text-sm ${tone === "error" ? "border-rose-200 bg-rose-50 text-rose-900" : "border-emerald-200 bg-emerald-50 text-emerald-900"}`}>
-          {feedback}
+      {feedback || fetchFeedback ? (
+        <div
+          className={`rounded-[24px] border px-5 py-4 text-sm ${(fetchFeedbackTone ?? tone) === "error" ? "border-rose-200 bg-rose-50 text-rose-900" : "border-emerald-200 bg-emerald-50 text-emerald-900"}`}
+        >
+          {feedback ?? fetchFeedback}
         </div>
       ) : null}
 

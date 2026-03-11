@@ -15,6 +15,7 @@
 
 # next.js
 /.next/
+/.next-webpack-dev/
 /out/
 
 # production

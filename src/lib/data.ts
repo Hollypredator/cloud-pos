@@ -3850,27 +3850,28 @@ export async function detachIngredientFromProduct(productId: string, ingredientI
 }
 
 export async function listProfiles() {
-  const authClient = await getSupabaseAuthServerClient();
-  const serviceClient = getSupabaseServerClient();
-  if (!authClient) {
-    return {
-      profiles: [] as Array<{
-        id: string;
-        full_name: string | null;
-        role: AppRole;
-        email?: string | null;
-        access_scope?: StaffAccessScope;
-        primary_branch_id?: string | null;
-        primary_branch_name?: string | null;
-      }>,
-      usingDemoData: true,
-    };
-  }
+  try {
+    const authClient = await getSupabaseAuthServerClient();
+    const serviceClient = getSupabaseServerClient();
+    if (!authClient) {
+      return {
+        profiles: [] as Array<{
+          id: string;
+          full_name: string | null;
+          role: AppRole;
+          email?: string | null;
+          access_scope?: StaffAccessScope;
+          primary_branch_id?: string | null;
+          primary_branch_name?: string | null;
+        }>,
+        usingDemoData: true,
+      };
+    }
 
-  const scope = await getDefaultBusinessScope();
-  if (!scope.businessId) {
-    return { profiles: [] as Array<{ id: string; full_name: string | null; role: AppRole }>, usingDemoData: false };
-  }
+    const scope = await getDefaultBusinessScope();
+    if (!scope.businessId) {
+      return { profiles: [] as Array<{ id: string; full_name: string | null; role: AppRole }>, usingDemoData: false };
+    }
 
   const cacheKey = `profiles:${scope.businessId}:${scope.useLegacySchema ? "legacy" : "scoped"}`;
   const reader = unstable_cache(
@@ -3959,16 +3960,20 @@ export async function listProfiles() {
     ]),
   );
 
-  return {
-    profiles: cached.profiles.map((profile) => ({
-      ...profile,
-      email: emailById.get(profile.id) ?? null,
-      access_scope: accessByProfile.get(profile.id)?.access_scope ?? (profile.role === "owner" ? "business" : "branch"),
-      primary_branch_id: accessByProfile.get(profile.id)?.primary_branch_id ?? null,
-      primary_branch_name: accessByProfile.get(profile.id)?.primary_branch_name ?? null,
-    })),
-    usingDemoData: false,
-  };
+    return {
+      profiles: cached.profiles.map((profile) => ({
+        ...profile,
+        email: emailById.get(profile.id) ?? null,
+        access_scope: accessByProfile.get(profile.id)?.access_scope ?? (profile.role === "owner" ? "business" : "branch"),
+        primary_branch_id: accessByProfile.get(profile.id)?.primary_branch_id ?? null,
+        primary_branch_name: accessByProfile.get(profile.id)?.primary_branch_name ?? null,
+      })),
+      usingDemoData: false,
+    };
+  } catch (error) {
+    console.error("[listProfiles] unexpected failure", error);
+    return { profiles: [] as Array<{ id: string; full_name: string | null; role: AppRole }>, usingDemoData: false };
+  }
 }
 
 export async function listProfileRoleCounts() {
