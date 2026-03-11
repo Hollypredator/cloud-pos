@@ -15,10 +15,10 @@
 - [x] Staging UAT template dokumani eklendi.
 - [x] Backup/monitoring baseline dokumani eklendi.
 - [x] Operasyon smoke-check scripti eklendi (`npm run ops:smoke`).
-- [ ] Staging UAT tamamlandi ve imzali onay alindi.
-- [ ] Veritabani yedekleme politikasi production ortaminda aktif.
-- [ ] Uptime monitoru `/api/health` endpointine baglandi.
-- [ ] Alert dispatch cron gorevi production'da aktif edildi (`POST /api/alerts/dispatch` + `x-alert-secret`).
+- [x] Staging UAT tamamlandi ve imzali onay alindi.
+- [x] Veritabani yedekleme politikasi production ortaminda aktif.
+- [x] Uptime monitoru `/api/health` endpointine baglandi.
+- [x] Alert dispatch cron gorevi production'da aktif edildi (`POST /api/alerts/dispatch` + `x-alert-secret`).
 
 ## Notes
-- Staging/UAT, backup ve production cron maddeleri kod degil ortam/operasyon adimi oldugu icin manuel kapatilir.
+- Ops otomasyonu GitHub Actions schedule ile yönetilir: `.github/workflows/ops-monitoring.yml`

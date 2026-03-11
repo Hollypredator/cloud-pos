@@ -5,6 +5,11 @@
 - RPO hedefi: <= 24 saat.
 - RTO hedefi: <= 2 saat.
 - Her ay en az 1 restore testi yap.
+- Aktivasyon kaydi:
+  - Ortam: `production`
+  - Durum: `active`
+  - Son dogrulama: `2026-03-11`
+  - Sorumlu: `Cloud POS Engineering`
 
 ## Monitoring
 - Uptime monitor:
@@ -17,9 +22,12 @@
   - interval: 5 dakika
 - Lokal smoke:
   - `npm run ops:smoke`
+- Otomasyon:
+  - GitHub Actions workflow: `.github/workflows/ops-monitoring.yml`
+  - Health check: `*/5 * * * *`
+  - Alert dispatch trigger: `*/5 * * * *`
 
 ## Incident Escalation
 - `sev-1`: aninda telefon/war-room
 - `sev-2`: 15 dakika icinde owner bilgilendirme
 - `sev-3`: mesai icinde backlog
-

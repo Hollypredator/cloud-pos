@@ -1,0 +1,37 @@
+name: Ops Monitoring
+
+on:
+  schedule:
+    - cron: "*/5 * * * *"
+  workflow_dispatch:
+
+jobs:
+  health-check:
+    runs-on: ubuntu-latest
+    timeout-minutes: 5
+    if: ${{ secrets.PRODUCTION_APP_URL != '' }}
+    steps:
+      - name: Health endpoint check
+        env:
+          APP_URL: ${{ secrets.PRODUCTION_APP_URL }}
+        run: |
+          set -euo pipefail
+          URL="${APP_URL%/}/api/health"
+          BODY="$(curl -fsS "$URL")"
+          echo "health_response=$BODY"
+          echo "$BODY" | node -e "const fs=require('fs');const raw=fs.readFileSync(0,'utf8');const json=JSON.parse(raw);if(!json.ok){process.exit(1)}"
+
+  alert-dispatch:
+    runs-on: ubuntu-latest
+    timeout-minutes: 5
+    if: ${{ secrets.PRODUCTION_APP_URL != '' && secrets.ALERT_DISPATCH_SECRET != '' }}
+    steps:
+      - name: Trigger ops alert dispatch
+        env:
+          APP_URL: ${{ secrets.PRODUCTION_APP_URL }}
+          ALERT_DISPATCH_SECRET: ${{ secrets.ALERT_DISPATCH_SECRET }}
+        run: |
+          set -euo pipefail
+          URL="${APP_URL%/}/api/alerts/dispatch"
+          BODY="$(curl -fsS -X POST -H "x-alert-secret: ${ALERT_DISPATCH_SECRET}" "$URL")"
+          echo "alert_dispatch_response=$BODY"
