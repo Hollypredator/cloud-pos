@@ -1,6 +1,9 @@
 @import "tailwindcss";
 
 :root {
+  --font-sora: "Avenir Next", "Segoe UI", sans-serif;
+  --font-space-grotesk: "Trebuchet MS", "Segoe UI", sans-serif;
+  --font-geist-mono: "Consolas", "SFMono-Regular", "Menlo", monospace;
   --background: #edf0f4;
   --foreground: #0f172a;
   --panel: rgba(255, 255, 255, 0.88);

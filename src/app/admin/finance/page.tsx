@@ -9,6 +9,8 @@ import { getCurrentLocale } from "@/lib/i18n-server";
 import { logServerPerf, measureAsync } from "@/lib/perf";
 import { getFeatureAccess } from "@/lib/plan-access";
 
+export const dynamic = "force-dynamic";
+
 function methodLabel(method: string) {
   if (method === "cash") return "Nakit";
   if (method === "card") return "Kart";

@@ -25,7 +25,7 @@ const criticalRules = [
   },
   {
     functionName: "getPaymentOverview",
-    checks: [/getDefaultBusinessScope\(/, /\.eq\("business_id"/, /\.eq\("branch_id"/],
+    checks: [/getDefaultBusinessScope\(/, /listScopedFinancePayments\(/, /businessId:\s*scope\.businessId/],
   },
 ];
 

@@ -1,5 +1,11 @@
 import type { NextConfig } from "next";
 
+const isProduction = process.env.NODE_ENV === "production";
+const scriptSrc = ["'self'", "'unsafe-inline'", "https:"];
+if (!isProduction) {
+  scriptSrc.push("'unsafe-eval'");
+}
+
 const contentSecurityPolicy = [
   "default-src 'self'",
   "base-uri 'self'",
@@ -8,7 +14,7 @@ const contentSecurityPolicy = [
   "img-src 'self' data: https:",
   "font-src 'self' https: data:",
   "style-src 'self' 'unsafe-inline' https:",
-  "script-src 'self' 'unsafe-inline' 'unsafe-eval' https:",
+  `script-src ${scriptSrc.join(" ")}`,
   "connect-src 'self' https:",
   "form-action 'self'",
   "upgrade-insecure-requests",

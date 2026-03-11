@@ -187,6 +187,8 @@ Detayli checklist ve incident proseduru:
 - `docs/phases/phase-7-staging-uat-and-pilot-prep.md`
 - `docs/phases/phase-8-posless-pilot-go-live.md`
 - `docs/finance-uat-checklist.md`
+- `docs/commercial-product-pack.md`
+- `docs/presentation-cloud-pos.md`
 
 - Tum migration dosyalarini sirayla uygulayin.
 - `branches`, `staff_branch_access`, `owner` role ve core RLS migrationlarini atlamayin.

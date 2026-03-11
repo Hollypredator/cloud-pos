@@ -18,6 +18,8 @@ import { getCurrentLocale } from "@/lib/i18n-server";
 import { logServerPerf, measureAsync } from "@/lib/perf";
 import { getFeatureAccess } from "@/lib/plan-access";
 
+export const dynamic = "force-dynamic";
+
 type ReportTab = "general" | "cari" | "detail" | "staff";
 
 function dayLabel(value: string) {

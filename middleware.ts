@@ -8,6 +8,9 @@ type RateLimitRule = {
 };
 
 type RateLimitStore = Map<string, number[]>;
+type RateLimitMeta = {
+  requestCount: number;
+};
 
 const RATE_LIMIT_RULES: RateLimitRule[] = [
   { prefix: "/api/orders", windowMs: 60_000, max: 40 },
@@ -16,6 +19,8 @@ const RATE_LIMIT_RULES: RateLimitRule[] = [
   { prefix: "/api/table-requests", windowMs: 60_000, max: 30 },
   { prefix: "/api/alerts/dispatch", windowMs: 60_000, max: 12 },
 ];
+const MAX_RATE_LIMIT_WINDOW_MS = Math.max(...RATE_LIMIT_RULES.map((rule) => rule.windowMs));
+const RATE_LIMIT_SWEEP_INTERVAL = 200;
 
 function applySecurityHeaders(response: NextResponse) {
   response.headers.set("X-Frame-Options", "DENY");
@@ -31,11 +36,31 @@ function withSecurityAndCorrelation(response: NextResponse, correlationId: strin
 }
 
 function getRateLimitStore() {
-  const scope = globalThis as typeof globalThis & { __posRateLimitStore?: RateLimitStore };
+  const scope = globalThis as typeof globalThis & {
+    __posRateLimitStore?: RateLimitStore;
+    __posRateLimitMeta?: RateLimitMeta;
+  };
   if (!scope.__posRateLimitStore) {
     scope.__posRateLimitStore = new Map<string, number[]>();
   }
-  return scope.__posRateLimitStore;
+  if (!scope.__posRateLimitMeta) {
+    scope.__posRateLimitMeta = { requestCount: 0 };
+  }
+  return { store: scope.__posRateLimitStore, meta: scope.__posRateLimitMeta };
+}
+
+function sweepRateLimitStore(store: RateLimitStore, now: number) {
+  const keepAfter = now - MAX_RATE_LIMIT_WINDOW_MS;
+  for (const [key, hits] of store.entries()) {
+    const kept = hits.filter((timestamp) => timestamp >= keepAfter);
+    if (kept.length === 0) {
+      store.delete(key);
+      continue;
+    }
+    if (kept.length !== hits.length) {
+      store.set(key, kept);
+    }
+  }
 }
 
 function getClientIp(request: NextRequest) {
@@ -56,7 +81,11 @@ function checkRateLimit(request: NextRequest, correlationId: string) {
   const now = Date.now();
   const windowStart = now - matchedRule.windowMs;
   const key = `${matchedRule.prefix}:${getClientIp(request)}`;
-  const store = getRateLimitStore();
+  const { store, meta } = getRateLimitStore();
+  meta.requestCount += 1;
+  if (meta.requestCount % RATE_LIMIT_SWEEP_INTERVAL === 0) {
+    sweepRateLimitStore(store, now);
+  }
   const existingHits = store.get(key) ?? [];
   const validHits = existingHits.filter((timestamp) => timestamp >= windowStart);
   validHits.push(now);
