@@ -17,7 +17,9 @@
     "phase3:runtime": "node scripts/phase3-finance-integrity-check.mjs",
     "phase4:reconciliation": "node scripts/phase4-reconciliation-check.mjs",
     "phase5:consistency": "node scripts/phase5-order-status-consistency-check.mjs",
-    "phase6:observability": "node scripts/phase6-observability-check.mjs"
+    "phase6:observability": "node scripts/phase6-observability-check.mjs",
+    "phase7:uat": "node scripts/phase7-uat-gate-check.mjs",
+    "phase8:pilot": "node scripts/phase8-pilot-readiness-check.mjs"
   },
   "dependencies": {
     "@supabase/ssr": "^0.8.0",

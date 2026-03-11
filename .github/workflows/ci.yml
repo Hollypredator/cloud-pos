@@ -37,6 +37,12 @@ jobs:
       - name: Phase 6 Observability Checks
         run: npm run phase6:observability
 
+      - name: Phase 7 UAT Gate Checks
+        run: npm run phase7:uat
+
+      - name: Phase 8 Pilot Readiness Checks
+        run: npm run phase8:pilot
+
       - name: Build
         run: npm run build
 

@@ -154,7 +154,8 @@ npm run dev
 - Faz 4 (tamamlandi): Finans dogrulugu ve mutabakat.
 - Faz 5 (tamamlandi): Dayaniklilik ve hata yonetimi.
 - Faz 6 (tamamlandi): Operasyonel gozlemlenebilirlik ve support.
-- Faz 7 (devam ediyor): Staging UAT ve pilot hazirlik.
+- Faz 7 (tamamlandi): Staging UAT ve pilot hazirlik.
+- Faz 8 (tamamlandi - engineering): POS'suz pilot canliya gecis release gate.
 
 ## Operasyon Notlari
 
@@ -183,6 +184,8 @@ Detayli checklist ve incident proseduru:
 - `docs/phases/phase-4-financial-reconciliation.md`
 - `docs/phases/phase-5-resilience-and-error-management.md`
 - `docs/phases/phase-6-observability-and-support.md`
+- `docs/phases/phase-7-staging-uat-and-pilot-prep.md`
+- `docs/phases/phase-8-posless-pilot-go-live.md`
 - `docs/finance-uat-checklist.md`
 
 - Tum migration dosyalarini sirayla uygulayin.
@@ -213,4 +216,6 @@ Detayli checklist ve incident proseduru:
 - Faz 4 mutabakat kontrolu: `npm run phase4:reconciliation` (Supabase env gerekli)
 - Faz 5 durum tutarlilik kontrolu: `npm run phase5:consistency` (Supabase env gerekli)
 - Faz 6 observability kontrolu: `npm run phase6:observability`
+- Faz 7 UAT gate kontrolu: `npm run phase7:uat`
+- Faz 8 pilot readiness kontrolu: `npm run phase8:pilot`
 - QR public API korumasi icin `.env.local` icinde `QR_ACCESS_SECRET` tanimli olmali.
