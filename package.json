@@ -16,7 +16,8 @@
     "phase2:checks": "npm run phase2:guards && npm run phase2:isolation",
     "phase3:runtime": "node scripts/phase3-finance-integrity-check.mjs",
     "phase4:reconciliation": "node scripts/phase4-reconciliation-check.mjs",
-    "phase5:consistency": "node scripts/phase5-order-status-consistency-check.mjs"
+    "phase5:consistency": "node scripts/phase5-order-status-consistency-check.mjs",
+    "phase6:observability": "node scripts/phase6-observability-check.mjs"
   },
   "dependencies": {
     "@supabase/ssr": "^0.8.0",

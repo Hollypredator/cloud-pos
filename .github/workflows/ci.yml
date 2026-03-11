@@ -34,6 +34,9 @@ jobs:
       - name: Phase 2 Security Checks
         run: npm run phase2:checks
 
+      - name: Phase 6 Observability Checks
+        run: npm run phase6:observability
+
       - name: Build
         run: npm run build
 

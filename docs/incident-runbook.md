@@ -11,6 +11,7 @@
 - `/api/health` cevabini kontrol et.
 - Son deploy ve migration kaydini kontrol et.
 - Hata kapsaminda auth, db, webhook, rate limit etkisini ayristir.
+- API cevabindaki `x-correlation-id` degerini kaydet ve log taramasini bu id ile yap.
 
 ## 3. Koruma
 - Gerekirse etkilenen aksiyonu gecici kapat:
@@ -24,6 +25,9 @@
   - schema/migration
   - entegrasyon/webhook
   - performans/zaman asimi
+- Log inceleme:
+  - `event` bazli filtreleme yap (`orders.create.*`, `table_requests.create.*`, `alerts.dispatch.*`, `metrics.ops.*`).
+  - Ayni `correlationId` ile request zincirini uc noktaya kadar takip et.
 - Fix branch ac, `typecheck + lint + build` gecmeden production'a alma.
 
 ## 5. Geri Donus / Onay

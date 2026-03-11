@@ -144,7 +144,7 @@ export function SegmentedTabs({
         );
 
         return tab.href ? (
-          <Link key={tab.label} href={tab.href} className={className}>
+          <Link key={tab.label} href={tab.href} prefetch scroll={false} className={className}>
             {translateUiText(tab.label, locale)}
           </Link>
         ) : (
@@ -313,7 +313,7 @@ export function WorkspaceTabs({
         );
 
         return tab.href ? (
-          <Link key={tab.label} href={tab.href} className={className}>
+          <Link key={tab.label} href={tab.href} prefetch scroll={false} className={className}>
             {translateUiText(tab.label, locale)}
           </Link>
         ) : (

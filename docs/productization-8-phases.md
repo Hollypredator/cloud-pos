@@ -1,6 +1,6 @@
 # Productization Plan (8 Faz)
 
-Durum: `Faz 5 tamamlandi, Faz 6 basladi (in_progress)`  
+Durum: `Faz 6 tamamlandi, Faz 7 basladi (in_progress)`  
 Not: Fiziksel POS, e-Fatura ve e-Arsiv entegrasyonlari son fazlara saklanmistir.
 
 ## Faz Ozeti

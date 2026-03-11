@@ -3928,11 +3928,20 @@ export async function listProfiles() {
       if (!serviceClient) {
         return [] as Array<{ id: string; email: string | null }>;
       }
-      const { data } = await serviceClient.auth.admin.listUsers();
-      return (data?.users ?? []).map((user) => ({
-        id: user.id,
-        email: user.email ?? null,
-      }));
+      try {
+        const { data, error } = await serviceClient.auth.admin.listUsers();
+        if (error) {
+          console.error("[listProfiles] auth.admin.listUsers failed", error.message);
+          return [] as Array<{ id: string; email: string | null }>;
+        }
+        return (data?.users ?? []).map((user) => ({
+          id: user.id,
+          email: user.email ?? null,
+        }));
+      } catch (error) {
+        console.error("[listProfiles] auth.admin.listUsers threw", error);
+        return [] as Array<{ id: string; email: string | null }>;
+      }
     },
     ["auth-users:emails"],
     { revalidate: 60, tags: ["profiles"] },
@@ -3960,6 +3969,79 @@ export async function listProfiles() {
     })),
     usingDemoData: false,
   };
+}
+
+export async function listProfileRoleCounts() {
+  const authClient = await getSupabaseAuthServerClient();
+  if (!authClient) {
+    return {
+      counts: { owner: 0, admin: 0, cashier: 0, kitchen: 0, waiter: 0 },
+      usingDemoData: true,
+    };
+  }
+
+  const scope = await getDefaultBusinessScope();
+  if (!scope.businessId) {
+    return {
+      counts: { owner: 0, admin: 0, cashier: 0, kitchen: 0, waiter: 0 },
+      usingDemoData: false,
+    };
+  }
+
+  const cacheKey = `profile-role-counts:${scope.businessId}:${scope.useLegacySchema ? "legacy" : "scoped"}`;
+  const reader = unstable_cache(
+    async () => {
+      const innerAuthClient = await getSupabaseAuthServerClient();
+      if (!innerAuthClient) {
+        return null;
+      }
+
+      const { data: accessRows, error: accessError } = await innerAuthClient
+        .from("staff_branch_access")
+        .select("profile_id")
+        .eq("business_id", scope.businessId);
+
+      if (accessError) {
+        return { hasError: true as const, counts: { owner: 0, admin: 0, cashier: 0, kitchen: 0, waiter: 0 } };
+      }
+
+      const profileIds = [...new Set(((accessRows ?? []) as Array<{ profile_id: string }>).map((row) => row.profile_id))];
+      if (profileIds.length === 0) {
+        return { hasError: false as const, counts: { owner: 0, admin: 0, cashier: 0, kitchen: 0, waiter: 0 } };
+      }
+
+      const { data: profiles, error: profilesError } = await innerAuthClient
+        .from("profiles")
+        .select("role")
+        .in("id", profileIds);
+      if (profilesError) {
+        return { hasError: true as const, counts: { owner: 0, admin: 0, cashier: 0, kitchen: 0, waiter: 0 } };
+      }
+
+      const counts = { owner: 0, admin: 0, cashier: 0, kitchen: 0, waiter: 0 };
+      for (const row of (profiles ?? []) as Array<{ role: AppRole }>) {
+        if (row.role === "owner") counts.owner += 1;
+        else if (row.role === "admin") counts.admin += 1;
+        else if (row.role === "cashier") counts.cashier += 1;
+        else if (row.role === "kitchen") counts.kitchen += 1;
+        else if (row.role === "waiter") counts.waiter += 1;
+      }
+
+      return { hasError: false as const, counts };
+    },
+    [cacheKey],
+    { revalidate: 30, tags: ["profiles", "staff-access"] },
+  );
+
+  const cached = await reader();
+  if (!cached || cached.hasError) {
+    return {
+      counts: { owner: 0, admin: 0, cashier: 0, kitchen: 0, waiter: 0 },
+      usingDemoData: false,
+    };
+  }
+
+  return { counts: cached.counts, usingDemoData: false };
 }
 
 export async function updateProfileRole(profileId: string, role: AppRole) {

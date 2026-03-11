@@ -1,4 +1,5 @@
 import { NextResponse, type NextRequest } from "next/server";
+import { withCorrelationId } from "@/lib/observability";
 
 type RateLimitRule = {
   prefix: string;
@@ -16,6 +17,19 @@ const RATE_LIMIT_RULES: RateLimitRule[] = [
   { prefix: "/api/alerts/dispatch", windowMs: 60_000, max: 12 },
 ];
 
+function applySecurityHeaders(response: NextResponse) {
+  response.headers.set("X-Frame-Options", "DENY");
+  response.headers.set("X-Content-Type-Options", "nosniff");
+  response.headers.set("Referrer-Policy", "strict-origin-when-cross-origin");
+  response.headers.set("Permissions-Policy", "camera=(), microphone=(), geolocation=()");
+  response.headers.set("X-DNS-Prefetch-Control", "off");
+  return response;
+}
+
+function withSecurityAndCorrelation(response: NextResponse, correlationId: string) {
+  return withCorrelationId(applySecurityHeaders(response), correlationId);
+}
+
 function getRateLimitStore() {
   const scope = globalThis as typeof globalThis & { __posRateLimitStore?: RateLimitStore };
   if (!scope.__posRateLimitStore) {
@@ -32,7 +46,7 @@ function getClientIp(request: NextRequest) {
   return request.headers.get("x-real-ip") ?? "unknown";
 }
 
-function checkRateLimit(request: NextRequest) {
+function checkRateLimit(request: NextRequest, correlationId: string) {
   const pathname = request.nextUrl.pathname;
   const matchedRule = RATE_LIMIT_RULES.find((rule) => pathname === rule.prefix || pathname.startsWith(`${rule.prefix}/`));
   if (!matchedRule) {
@@ -52,9 +66,12 @@ function checkRateLimit(request: NextRequest) {
     return null;
   }
 
-  return NextResponse.json(
-    { ok: false, message: "Cok fazla istek gonderildi. Lutfen kisa bir sure sonra tekrar deneyin." },
-    { status: 429 },
+  return withSecurityAndCorrelation(
+    NextResponse.json(
+      { ok: false, message: "Cok fazla istek gonderildi. Lutfen kisa bir sure sonra tekrar deneyin." },
+      { status: 429 },
+    ),
+    correlationId,
   );
 }
 
@@ -62,7 +79,7 @@ function normalizeHost(host: string | null) {
   return (host ?? "").toLowerCase().split(":")[0];
 }
 
-function withHostRouting(request: NextRequest) {
+function withHostRouting(request: NextRequest, correlationId: string) {
   const studioHost = normalizeHost(process.env.STUDIO_HOST ?? null);
   const appHost = normalizeHost(process.env.APP_HOST ?? null);
   const currentHost = normalizeHost(request.headers.get("host"));
@@ -70,16 +87,16 @@ function withHostRouting(request: NextRequest) {
 
   if (studioHost && currentHost === studioHost) {
     if (pathname === "/") {
-      return NextResponse.redirect(new URL("/studio", request.url));
+      return withSecurityAndCorrelation(NextResponse.redirect(new URL("/studio", request.url)), correlationId);
     }
     if (pathname === "/login") {
-      return NextResponse.redirect(new URL("/studio/login", request.url));
+      return withSecurityAndCorrelation(NextResponse.redirect(new URL("/studio/login", request.url)), correlationId);
     }
   }
 
   if (appHost && currentHost === appHost) {
     if (pathname === "/studio") {
-      return NextResponse.redirect(new URL("/", request.url));
+      return withSecurityAndCorrelation(NextResponse.redirect(new URL("/", request.url)), correlationId);
     }
   }
 
@@ -87,16 +104,28 @@ function withHostRouting(request: NextRequest) {
 }
 
 export async function middleware(request: NextRequest) {
-  const rateLimitResponse = checkRateLimit(request);
+  const requestHeaders = new Headers(request.headers);
+  const correlationId =
+    requestHeaders.get("x-correlation-id") ?? requestHeaders.get("x-request-id") ?? crypto.randomUUID();
+  requestHeaders.set("x-correlation-id", correlationId);
+
+  const rateLimitResponse = checkRateLimit(request, correlationId);
   if (rateLimitResponse) {
     return rateLimitResponse;
   }
 
-  const hostResponse = withHostRouting(request);
+  const hostResponse = withHostRouting(request, correlationId);
   if (hostResponse) {
     return hostResponse;
   }
-  return NextResponse.next();
+  return withSecurityAndCorrelation(
+    NextResponse.next({
+      request: {
+        headers: requestHeaders,
+      },
+    }),
+    correlationId,
+  );
 }
 
 export const config = {

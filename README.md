@@ -148,11 +148,13 @@ npm run dev
 
 ## Fazlar
 
-- Faz 1 (tamamlandi): Temel POS akisi, masa durumu, masa yonetimi (ekle/sil), role/profile schema baslangici.
-- Faz 2 (tamamlandi): Supabase Auth login + role-based sayfa/aksiyon yetkisi + rol yonetimi.
-- Faz 3 (devam ediyor): Urun-kategori-stok admin CRUD (guncelleme dahil) + urun malzeme yonetimi + stok hareket logu.
-- Faz 4 (tamamlandi): Realtime operasyon (panel, mutfak, kasa, masa ekranlarinda canli guncelleme + mutfakta yeni siparis sesi).
-- Faz 5 (devam ediyor): Odeme akisi (nakit/kart/karma), indirim-servis ucreti, siparis iptal/iade, kasa acilis-kapanis.
+- Faz 1 (tamamlandi): Stabilization ve kapsam dondurma.
+- Faz 2 (tamamlandi): Yetki ve veri guvenligi sertlestirme.
+- Faz 3 (tamamlandi): POS'suz odeme akisi saglamlastirma.
+- Faz 4 (tamamlandi): Finans dogrulugu ve mutabakat.
+- Faz 5 (tamamlandi): Dayaniklilik ve hata yonetimi.
+- Faz 6 (tamamlandi): Operasyonel gozlemlenebilirlik ve support.
+- Faz 7 (devam ediyor): Staging UAT ve pilot hazirlik.
 
 ## Operasyon Notlari
 
@@ -180,6 +182,7 @@ Detayli checklist ve incident proseduru:
 - `docs/phases/phase-3-payment-hardening.md`
 - `docs/phases/phase-4-financial-reconciliation.md`
 - `docs/phases/phase-5-resilience-and-error-management.md`
+- `docs/phases/phase-6-observability-and-support.md`
 - `docs/finance-uat-checklist.md`
 
 - Tum migration dosyalarini sirayla uygulayin.
@@ -209,4 +212,5 @@ Detayli checklist ve incident proseduru:
 - Faz 3 finans runtime kontrolu: `npm run phase3:runtime` (Supabase env gerekli)
 - Faz 4 mutabakat kontrolu: `npm run phase4:reconciliation` (Supabase env gerekli)
 - Faz 5 durum tutarlilik kontrolu: `npm run phase5:consistency` (Supabase env gerekli)
+- Faz 6 observability kontrolu: `npm run phase6:observability`
 - QR public API korumasi icin `.env.local` icinde `QR_ACCESS_SECRET` tanimli olmali.

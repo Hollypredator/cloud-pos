@@ -1,7 +1,7 @@
 import Link from "next/link";
 import { requireRole } from "@/lib/auth";
 import { getFinancialInsights, getOpsMetricsSnapshot, getSalesReportSummary } from "@/lib/domains/finance";
-import { listBranches, listProfiles } from "@/lib/data";
+import { listBranches, listProfileRoleCounts } from "@/lib/data";
 import { ALL_BRANCHES_VALUE } from "@/lib/business";
 import {
   BackofficePage,
@@ -17,8 +17,6 @@ import { translateUiText } from "@/lib/i18n";
 import { getCurrentLocale } from "@/lib/i18n-server";
 import { logServerPerf, measureAsync } from "@/lib/perf";
 import { getFeatureAccess } from "@/lib/plan-access";
-
-export const dynamic = "force-dynamic";
 
 type ReportTab = "general" | "cari" | "detail" | "staff";
 
@@ -164,7 +162,51 @@ export default async function AdminReportsPage({
     const shouldLoadFinancial = activeTab === "cari" || activeTab === "detail";
     const shouldLoadStaff = activeTab === "staff";
 
-    const [salesResult, financialResult, opsResult, profilesResult, branchContextResult] = await Promise.all([
+    const safeOpsPromise = shouldLoadStaff
+      ? measureAsync("ops_metrics", () => getOpsMetricsSnapshot()).catch((error) => {
+          console.error("[admin-reports-page] ops_metrics failed", error);
+          return {
+            label: "ops_metrics",
+            ms: 0,
+            value: {
+              pendingOrders: 0,
+              servedOrders: 0,
+              openServiceRequests: 0,
+            },
+          };
+        })
+      : Promise.resolve({
+          label: "ops_metrics",
+          ms: 0,
+          value: {
+            pendingOrders: 0,
+            servedOrders: 0,
+            openServiceRequests: 0,
+          },
+        });
+
+    const safeRoleCountsPromise = shouldLoadStaff
+      ? measureAsync("profile_role_counts", () => listProfileRoleCounts()).catch((error) => {
+          console.error("[admin-reports-page] profile_role_counts failed", error);
+          return {
+            label: "profile_role_counts",
+            ms: 0,
+            value: {
+              counts: { owner: 0, admin: 0, cashier: 0, kitchen: 0, waiter: 0 },
+              usingDemoData: false,
+            },
+          };
+        })
+      : Promise.resolve({
+          label: "profile_role_counts",
+          ms: 0,
+          value: {
+            counts: { owner: 0, admin: 0, cashier: 0, kitchen: 0, waiter: 0 },
+            usingDemoData: false,
+          },
+        });
+
+    const [salesResult, financialResult, opsResult, roleCountsResult, branchContextResult] = await Promise.all([
       measureAsync("sales_report_summary", () => getSalesReportSummary(days)),
       shouldLoadFinancial
         ? measureAsync("financial_insights", () => getFinancialInsights(days))
@@ -198,35 +240,16 @@ export default async function AdminReportsPage({
             }>,
           },
         }),
-      shouldLoadStaff
-        ? measureAsync("ops_metrics", () => getOpsMetricsSnapshot())
-        : Promise.resolve({
-          label: "ops_metrics",
-          ms: 0,
-          value: {
-            pendingOrders: 0,
-            servedOrders: 0,
-            openServiceRequests: 0,
-          },
-        }),
-      shouldLoadStaff
-        ? measureAsync("list_profiles", () => listProfiles())
-        : Promise.resolve({
-          label: "list_profiles",
-          ms: 0,
-          value: {
-            profiles: [] as Array<{ role: string }>,
-            usingDemoData: false,
-          },
-        }),
+      safeOpsPromise,
+      safeRoleCountsPromise,
       measureAsync("list_branches", () => listBranches()),
     ]);
     const { rows, usingDemoData } = salesResult.value;
     const financial = financialResult.value;
     const ops = opsResult.value;
-    const { profiles } = profilesResult.value;
+    const { counts: roleCounts } = roleCountsResult.value;
     const branchContext = branchContextResult.value;
-    logServerPerf("/admin/reports", [featureAccessResult, salesResult, financialResult, opsResult, profilesResult, branchContextResult]);
+    logServerPerf("/admin/reports", [featureAccessResult, salesResult, financialResult, opsResult, roleCountsResult, branchContextResult]);
   const branchLabel =
     branchContext.activeBranchId === ALL_BRANCHES_VALUE
       ? translateUiText("Tum Subeler", locale)
@@ -238,14 +261,6 @@ export default async function AdminReportsPage({
   const average = rows.length > 0 ? net / rows.length : 0;
   const bestDay = rows.reduce((best, row) => (row.net > (best?.net ?? -Infinity) ? row : best), rows[0]);
   const maxNet = Math.max(1, ...rows.map((row) => row.net));
-  const roleCounts = {
-    owner: profiles.filter((profile) => profile.role === "owner").length,
-    admin: profiles.filter((profile) => profile.role === "admin").length,
-    cashier: profiles.filter((profile) => profile.role === "cashier").length,
-    kitchen: profiles.filter((profile) => profile.role === "kitchen").length,
-    waiter: profiles.filter((profile) => profile.role === "waiter").length,
-  };
-
     return (
     <BackofficePage
       title={translateUiText("Raporlar", locale)}
