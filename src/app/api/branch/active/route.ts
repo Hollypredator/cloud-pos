@@ -16,6 +16,9 @@ export async function POST(request: Request) {
 
   const branchId = normalizeBranchId(body.branchId);
   const auth = await getCurrentUserWithRole();
+  if (!auth.user) {
+    return NextResponse.json({ ok: false, message: "Yetkisiz" }, { status: 401 });
+  }
   if (auth.accessScope === "branch") {
     if (!auth.primaryBranchId || (branchId && branchId !== auth.primaryBranchId)) {
       return NextResponse.json({ ok: false, message: "Bu kullanici yalnizca atanmis subeyi gorebilir." }, { status: 403 });

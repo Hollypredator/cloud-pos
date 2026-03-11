@@ -1,6 +1,6 @@
 import { NextResponse } from "next/server";
 import { getCurrentUserWithRole, hasRoleAccess } from "@/lib/auth";
-import { getOpsMetricsSnapshot } from "@/lib/data";
+import { getOpsMetricsSnapshot } from "@/lib/domains/finance";
 
 export async function GET() {
   const auth = await getCurrentUserWithRole();

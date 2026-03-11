@@ -1,7 +1,7 @@
 import Link from "next/link";
 import { revalidatePath } from "next/cache";
 import { requireSupportAccess } from "@/lib/auth";
-import { createSupportIncident, listSupportIncidents, listSupportTenantSummaries, setSupportIncidentStatus } from "@/lib/data";
+import { createSupportIncident, listSupportIncidents, listSupportTenantSummaries, setSupportIncidentStatus } from "@/lib/domains/support";
 import { translateUiText } from "@/lib/i18n";
 import { getCurrentLocale } from "@/lib/i18n-server";
 import type { SupportIncidentSeverity, SupportIncidentStatus } from "@/lib/types";
@@ -93,3 +93,4 @@ export default async function SupportIncidentsPage() {
     </main>
   );
 }
+

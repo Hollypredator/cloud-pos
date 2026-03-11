@@ -26,6 +26,7 @@ import {
   getBusinessScopeContext as getDefaultBusinessScope,
   getRequestAppContext,
 } from "@/lib/server/app-context";
+import { getDirectPlatformOwnerEmails } from "@/lib/platform-owner";
 import {
   defaultApplicationSettings,
   defaultGeneralSettings,
@@ -113,12 +114,11 @@ type AuthServerClient = NonNullable<Awaited<ReturnType<typeof getSupabaseAuthSer
 type ServiceServerClient = NonNullable<ReturnType<typeof getSupabaseServerClient>>;
 type TenantSupabaseClient = AuthServerClient | ServiceServerClient;
 
-const PLATFORM_OWNER_EMAILS = ["msamedcbn@gmail.com"] as const;
-
 function getPrivilegedEmails(envValue?: string | null) {
-  return new Set(
-    [...PLATFORM_OWNER_EMAILS, ...((envValue ?? "").split(",").map((item) => item.trim().toLowerCase()).filter(Boolean))],
-  );
+  return new Set([
+    ...getDirectPlatformOwnerEmails(),
+    ...((envValue ?? "").split(",").map((item) => item.trim().toLowerCase()).filter(Boolean)),
+  ]);
 }
 
 const platformRolePermissions: Record<PlatformRole, PlatformPermission[]> = {
@@ -216,6 +216,46 @@ async function withQueryTimeout<T>(promise: PromiseLike<T>, ms = 8000): Promise<
       setTimeout(() => reject(new Error("Query timeout")), ms);
     }),
   ]);
+}
+
+function isRetryableMutationError(message?: string | null) {
+  const normalized = (message ?? "").toLowerCase();
+  return (
+    normalized.includes("timeout") ||
+    normalized.includes("deadlock") ||
+    normalized.includes("connection") ||
+    normalized.includes("network") ||
+    normalized.includes("temporarily unavailable") ||
+    normalized.includes("too many requests")
+  );
+}
+
+async function retryMutation<T>(
+  operation: () => Promise<{ data?: T | null; error?: { message: string } | null }>,
+  maxAttempts = 3,
+) {
+  let attempt = 0;
+  let lastResult: { data?: T | null; error?: { message: string } | null } | null = null;
+  while (attempt < maxAttempts) {
+    attempt += 1;
+    const result = await operation();
+    lastResult = result;
+    if (!result.error || !isRetryableMutationError(result.error.message)) {
+      return result;
+    }
+    await new Promise((resolve) => setTimeout(resolve, 120 * attempt));
+  }
+  return lastResult ?? { error: { message: "Retry failed" } };
+}
+
+function resolveOrderSettlementStatus(targetAmount: number, netAmount: number, allowRefunded: boolean) {
+  if (netAmount >= targetAmount) {
+    return "paid" as OrderStatus;
+  }
+  if (allowRefunded && netAmount <= 0) {
+    return "refunded" as OrderStatus;
+  }
+  return "served" as OrderStatus;
 }
 
 async function getTenantDataClient(): Promise<TenantSupabaseClient | null> {
@@ -1907,6 +1947,107 @@ async function getOrderPaymentSummaryMap(supabase: TenantSupabaseClient | null, 
   return map;
 }
 
+type FinancePaymentRow = {
+  id: string;
+  order_id: string;
+  payment_type: "sale" | "refund";
+  method: "cash" | "card" | "mixed";
+  amount: number;
+  note: string | null;
+  created_at: string;
+};
+
+async function listScopedFinancePayments(input: {
+  supabase: TenantSupabaseClient;
+  startIso: string;
+  endIso?: string;
+  businessId: string | null;
+  branchId: string | null;
+  useLegacySchema: boolean;
+}) {
+  let query = input.supabase
+    .from("payments")
+    .select("id, order_id, payment_type, method, amount, note, created_at")
+    .gte("created_at", input.startIso)
+    .order("created_at", { ascending: false });
+
+  if (input.endIso) {
+    query = query.lt("created_at", input.endIso);
+  }
+
+  if (!input.useLegacySchema && input.businessId) {
+    query = query.eq("business_id", input.businessId);
+  }
+  if (input.branchId) {
+    query = query.eq("branch_id", input.branchId);
+  }
+
+  const { data, error } = await query;
+  return {
+    rows: ((data ?? []) as FinancePaymentRow[]).map((row) => ({
+      ...row,
+      amount: Number(row.amount),
+    })),
+    error,
+  };
+}
+
+function aggregateFinancePayments(rows: FinancePaymentRow[]) {
+  let grossSales = 0;
+  let refunds = 0;
+  const methodMap = new Map<string, { sales: number; refunds: number }>([
+    ["cash", { sales: 0, refunds: 0 }],
+    ["card", { sales: 0, refunds: 0 }],
+    ["mixed", { sales: 0, refunds: 0 }],
+  ]);
+  const hourMap = new Map<string, number>();
+  for (let i = 0; i < 24; i += 1) {
+    hourMap.set(String(i).padStart(2, "0"), 0);
+  }
+  const dailyMap = new Map<string, { sales: number; refunds: number }>();
+  const orderNetMap = new Map<string, number>();
+  const paidOrderIds = new Set<string>();
+
+  for (const row of rows) {
+    const amount = Number(row.amount);
+    const methodBucket = methodMap.get(row.method) ?? { sales: 0, refunds: 0 };
+    const dayKey = String(row.created_at).slice(0, 10);
+    if (!dailyMap.has(dayKey)) {
+      dailyMap.set(dayKey, { sales: 0, refunds: 0 });
+    }
+    const dayBucket = dailyMap.get(dayKey)!;
+
+    if (row.payment_type === "refund") {
+      refunds += amount;
+      methodBucket.refunds += amount;
+      dayBucket.refunds += amount;
+      orderNetMap.set(row.order_id, (orderNetMap.get(row.order_id) ?? 0) - amount);
+    } else {
+      grossSales += amount;
+      methodBucket.sales += amount;
+      dayBucket.sales += amount;
+      paidOrderIds.add(row.order_id);
+      const hour = new Date(row.created_at).getHours().toString().padStart(2, "0");
+      hourMap.set(hour, (hourMap.get(hour) ?? 0) + amount);
+      orderNetMap.set(row.order_id, (orderNetMap.get(row.order_id) ?? 0) + amount);
+    }
+
+    methodMap.set(row.method, methodBucket);
+    dailyMap.set(dayKey, dayBucket);
+  }
+
+  return {
+    grossSales,
+    refunds,
+    netSales: grossSales - refunds,
+    methodMap,
+    hourMap,
+    dailyMap,
+    orderNetMap,
+    paidOrderIds,
+  };
+}
+
 function applyPaymentSummaryToOrders(
   orders: Order[],
   paymentSummary: Map<string, { paid: number; refunds: number; net: number; count: number }>,
@@ -2824,6 +2965,7 @@ export async function completeOrderPayment(input: {
   amount?: number;
   note?: string;
   createdBy?: string;
+  requestKey?: string;
 }) {
   const supabase = await getTenantDataClient();
   if (!supabase) {
@@ -2833,7 +2975,7 @@ export async function completeOrderPayment(input: {
   const scope = await getDefaultBusinessScope();
   let findQuery = supabase
     .from("orders")
-    .select("id, table_id, final_price, total_price")
+    .select("id, table_id, final_price, total_price, status")
     .eq("id", input.orderId);
   if (!scope.useLegacySchema && scope.businessId) {
     findQuery = findQuery.eq("business_id", scope.businessId);
@@ -2844,6 +2986,9 @@ export async function completeOrderPayment(input: {
   const { data: orderRow, error: findError } = await findQuery.maybeSingle();
   if (findError || !orderRow) {
     return { ok: false, error: findError?.message ?? "Siparis bulunamadi." };
+  }
+  if (orderRow.status === "cancelled" || orderRow.status === "refunded") {
+    return { ok: false, error: "Iptal veya iade edilmis siparise odeme eklenemez." };
   }
 
   const paymentSummary = await getOrderPaymentSummaryMap(supabase, [input.orderId]);
@@ -2857,6 +3002,35 @@ export async function completeOrderPayment(input: {
   if (amount > remaining) {
     return { ok: false, error: "Odeme tutari kalan bakiyeden buyuk olamaz." };
   }
+  const requestKey = typeof input.requestKey === "string" && input.requestKey.trim() ? input.requestKey.trim() : null;
+  if (requestKey) {
+    let idempotencyLookup = supabase
+      .from("payments")
+      .select("id")
+      .eq("order_id", input.orderId)
+      .eq("payment_type", "sale")
+      .eq("idempotency_key", requestKey)
+      .limit(1);
+    if (!scope.useLegacySchema && scope.businessId) {
+      idempotencyLookup = idempotencyLookup.eq("business_id", scope.businessId);
+    }
+    if (scope.branchId) {
+      idempotencyLookup = idempotencyLookup.eq("branch_id", scope.branchId);
+    }
+    const { data: existingPayment, error: idempotencyError } = await idempotencyLookup.maybeSingle();
+    if (!idempotencyError && existingPayment) {
+      const currentNet = paymentSummary.get(input.orderId)?.net ?? 0;
+      const currentRemaining = Math.max(0, targetAmount - currentNet);
+      return {
+        ok: true,
+        idempotent: true,
+        status: currentNet >= targetAmount ? ("paid" as OrderStatus) : ("served" as OrderStatus),
+        amountPaid: currentNet,
+        remaining: currentRemaining,
+      };
+    }
+  }
+
   const withBusinessPayment = {
     business_id: scope.businessId,
     branch_id: scope.branchId,
@@ -2866,6 +3040,7 @@ export async function completeOrderPayment(input: {
     amount,
     note: input.note ?? null,
     created_by: input.createdBy ?? null,
+    idempotency_key: requestKey,
   };
   const fallbackPayment = {
     order_id: input.orderId,
@@ -2874,32 +3049,59 @@ export async function completeOrderPayment(input: {
     amount,
     note: input.note ?? null,
     created_by: input.createdBy ?? null,
+    idempotency_key: requestKey,
   };
   let paymentInsert = await supabase.from("payments").insert(withBusinessPayment);
-  if (paymentInsert.error?.message?.toLowerCase().includes("business_id")) {
+  if (
+    paymentInsert.error?.message?.toLowerCase().includes("business_id") ||
+    paymentInsert.error?.message?.toLowerCase().includes("idempotency_key")
+  ) {
     paymentInsert = await supabase.from("payments").insert(fallbackPayment);
   }
   const paymentError = paymentInsert.error;
   if (paymentError) {
+    if (paymentError.message.toLowerCase().includes("duplicate key") && requestKey) {
+      const latestSummary = await getOrderPaymentSummaryMap(supabase, [input.orderId]);
+      const latestNet = latestSummary.get(input.orderId)?.net ?? 0;
+      return {
+        ok: true,
+        idempotent: true,
+        status: latestNet >= targetAmount ? ("paid" as OrderStatus) : ("served" as OrderStatus),
+        amountPaid: latestNet,
+        remaining: Math.max(0, targetAmount - latestNet),
+      };
+    }
     return { ok: false, error: paymentError.message };
   }
 
-  const nextPaidTotal = alreadyPaid + amount;
-  const nextStatus = nextPaidTotal >= targetAmount ? ("paid" as OrderStatus) : ("served" as OrderStatus);
-  let orderUpdateQuery = supabase.from("orders").update({ status: nextStatus }).eq("id", input.orderId);
-  if (!scope.useLegacySchema && scope.businessId) {
-    orderUpdateQuery = orderUpdateQuery.eq("business_id", scope.businessId);
-  }
-  if (scope.branchId) {
-    orderUpdateQuery = orderUpdateQuery.eq("branch_id", scope.branchId);
-  }
-  const { error: orderError } = await orderUpdateQuery;
-  if (orderError) {
-    return { ok: false, error: orderError.message };
+  const latestSummary = await getOrderPaymentSummaryMap(supabase, [input.orderId]);
+  const nextPaidTotal = Math.max(0, latestSummary.get(input.orderId)?.net ?? alreadyPaid + amount);
+  const nextStatus = resolveOrderSettlementStatus(targetAmount, nextPaidTotal, false);
+  const orderUpdateResult = await retryMutation(async () => {
+    let orderUpdateQuery = supabase.from("orders").update({ status: nextStatus }).eq("id", input.orderId);
+    if (!scope.useLegacySchema && scope.businessId) {
+      orderUpdateQuery = orderUpdateQuery.eq("business_id", scope.businessId);
+    }
+    if (scope.branchId) {
+      orderUpdateQuery = orderUpdateQuery.eq("branch_id", scope.branchId);
+    }
+    return orderUpdateQuery;
+  });
+  if (orderUpdateResult.error) {
+    await setAlertDispatch("payment_status_reconcile_failed", {
+      orderId: input.orderId,
+      flow: "complete_payment",
+      nextStatus,
+      targetAmount,
+      nextPaidTotal,
+      error: orderUpdateResult.error.message,
+      at: new Date().toISOString(),
+    });
+    return { ok: false, error: orderUpdateResult.error.message };
   }
 
   if (nextStatus === "paid" && orderRow.table_id) {
-    await supabase.from("tables").update({ status: "empty" as TableStatus }).eq("id", orderRow.table_id);
+    await retryMutation(async () => supabase.from("tables").update({ status: "empty" as TableStatus }).eq("id", orderRow.table_id));
   }
   await logAuditEvent({
     entityType: "payment",
@@ -2912,14 +3114,14 @@ export async function completeOrderPayment(input: {
   return { ok: true, status: nextStatus, amountPaid: nextPaidTotal, remaining: Math.max(0, targetAmount - nextPaidTotal) };
 }
 
-export async function cancelOrder(orderId: string, note?: string) {
+export async function cancelOrder(orderId: string, note?: string, requestKey?: string) {
   const supabase = await getTenantDataClient();
   if (!supabase) {
     return { ok: false, error: "Demo modda iptal pasif." };
   }
 
   const scope = await getDefaultBusinessScope();
-  let findQuery = supabase.from("orders").select("id, table_id").eq("id", orderId);
+  let findQuery = supabase.from("orders").select("id, table_id, status").eq("id", orderId);
   if (!scope.useLegacySchema && scope.businessId) {
     findQuery = findQuery.eq("business_id", scope.businessId);
   }
@@ -2930,21 +3132,59 @@ export async function cancelOrder(orderId: string, note?: string) {
   if (findError || !orderRow) {
     return { ok: false, error: findError?.message ?? "Siparis bulunamadi." };
   }
+  const normalizedRequestKey = typeof requestKey === "string" && requestKey.trim() ? requestKey.trim() : null;
+  if (normalizedRequestKey) {
+    let idempotencyLookup = supabase
+      .from("payments")
+      .select("id")
+      .eq("order_id", orderId)
+      .eq("payment_type", "sale")
+      .eq("amount", 0)
+      .eq("idempotency_key", normalizedRequestKey)
+      .limit(1);
+    if (!scope.useLegacySchema && scope.businessId) {
+      idempotencyLookup = idempotencyLookup.eq("business_id", scope.businessId);
+    }
+    if (scope.branchId) {
+      idempotencyLookup = idempotencyLookup.eq("branch_id", scope.branchId);
+    }
+    const { data: existingCancelNote, error: idempotencyError } = await idempotencyLookup.maybeSingle();
+    if (!idempotencyError && existingCancelNote) {
+      return { ok: true, idempotent: true };
+    }
+  }
+  if (orderRow.status === "paid") {
+    return { ok: false, error: "Odeme alinmis siparis iptal edilemez. Iade akisini kullanin." };
+  }
+  const paymentSummary = await getOrderPaymentSummaryMap(supabase, [orderId]);
+  const netPaid = paymentSummary.get(orderId)?.net ?? 0;
+  if (netPaid > 0) {
+    return { ok: false, error: "Bu sipariste tahsilat var. Iptal yerine iade yapin." };
+  }
 
-  let cancelQuery = supabase.from("orders").update({ status: "cancelled" as OrderStatus }).eq("id", orderId);
-  if (!scope.useLegacySchema && scope.businessId) {
-    cancelQuery = cancelQuery.eq("business_id", scope.businessId);
-  }
-  if (scope.branchId) {
-    cancelQuery = cancelQuery.eq("branch_id", scope.branchId);
-  }
-  const { error } = await cancelQuery;
-  if (error) {
-    return { ok: false, error: error.message };
+  const cancelResult = await retryMutation(async () => {
+    let cancelQuery = supabase.from("orders").update({ status: "cancelled" as OrderStatus }).eq("id", orderId);
+    if (!scope.useLegacySchema && scope.businessId) {
+      cancelQuery = cancelQuery.eq("business_id", scope.businessId);
+    }
+    if (scope.branchId) {
+      cancelQuery = cancelQuery.eq("branch_id", scope.branchId);
+    }
+    return cancelQuery;
+  });
+  if (cancelResult.error) {
+    await setAlertDispatch("payment_status_reconcile_failed", {
+      orderId,
+      flow: "cancel",
+      nextStatus: "cancelled",
+      error: cancelResult.error.message,
+      at: new Date().toISOString(),
+    });
+    return { ok: false, error: cancelResult.error.message };
   }
 
   if (orderRow.table_id) {
-    await supabase.from("tables").update({ status: "empty" as TableStatus }).eq("id", orderRow.table_id);
+    await retryMutation(async () => supabase.from("tables").update({ status: "empty" as TableStatus }).eq("id", orderRow.table_id));
   }
   if (note) {
     const withBusinessPayment = {
@@ -2955,6 +3195,7 @@ export async function cancelOrder(orderId: string, note?: string) {
       method: "cash" as PaymentMethod,
       amount: 0,
       note: `cancel_note:${note}`,
+      idempotency_key: normalizedRequestKey,
     };
     const fallbackPayment = {
       order_id: orderId,
@@ -2962,9 +3203,13 @@ export async function cancelOrder(orderId: string, note?: string) {
       method: "cash" as PaymentMethod,
       amount: 0,
       note: `cancel_note:${note}`,
+      idempotency_key: normalizedRequestKey,
     };
     const paymentInsert = await supabase.from("payments").insert(withBusinessPayment);
-    if (paymentInsert.error?.message?.toLowerCase().includes("business_id")) {
+    if (
+      paymentInsert.error?.message?.toLowerCase().includes("business_id") ||
+      paymentInsert.error?.message?.toLowerCase().includes("idempotency_key")
+    ) {
       await supabase.from("payments").insert(fallbackPayment);
     }
   }
@@ -2985,6 +3230,7 @@ export async function refundOrder(input: {
   amount?: number;
   note?: string;
   createdBy?: string;
+  requestKey?: string;
 }) {
   const supabase = await getTenantDataClient();
   if (!supabase) {
@@ -2994,7 +3240,7 @@ export async function refundOrder(input: {
   const scope = await getDefaultBusinessScope();
   let findQuery = supabase
     .from("orders")
-    .select("id, final_price, total_price")
+    .select("id, final_price, total_price, status")
     .eq("id", input.orderId);
   if (!scope.useLegacySchema && scope.businessId) {
     findQuery = findQuery.eq("business_id", scope.businessId);
@@ -3003,8 +3249,45 @@ export async function refundOrder(input: {
   if (findError || !orderRow) {
     return { ok: false, error: findError?.message ?? "Siparis bulunamadi." };
   }
+  if (orderRow.status === "cancelled") {
+    return { ok: false, error: "Iptal edilmis siparise iade eklenemez." };
+  }
+  const paymentSummary = await getOrderPaymentSummaryMap(supabase, [input.orderId]);
+  const summary = paymentSummary.get(input.orderId) ?? { paid: 0, refunds: 0, net: 0, count: 0 };
+  const refundableBalance = Math.max(0, summary.paid - summary.refunds);
+  if (refundableBalance <= 0) {
+    return { ok: false, error: "Iade edilebilir tahsilat bulunamadi." };
+  }
 
-  const amount = Math.max(0, Number(input.amount ?? orderRow.final_price ?? orderRow.total_price));
+  const amount = Math.max(0, Number(input.amount ?? refundableBalance));
+  if (amount <= 0) {
+    return { ok: false, error: "Iade tutari sifirdan buyuk olmali." };
+  }
+  if (amount > refundableBalance) {
+    return { ok: false, error: "Iade tutari iade edilebilir bakiyeden buyuk olamaz." };
+  }
+
+  const requestKey = typeof input.requestKey === "string" && input.requestKey.trim() ? input.requestKey.trim() : null;
+  if (requestKey) {
+    let idempotencyLookup = supabase
+      .from("payments")
+      .select("id")
+      .eq("order_id", input.orderId)
+      .eq("payment_type", "refund")
+      .eq("idempotency_key", requestKey)
+      .limit(1);
+    if (!scope.useLegacySchema && scope.businessId) {
+      idempotencyLookup = idempotencyLookup.eq("business_id", scope.businessId);
+    }
+    if (scope.branchId) {
+      idempotencyLookup = idempotencyLookup.eq("branch_id", scope.branchId);
+    }
+    const { data: existingPayment, error: idempotencyError } = await idempotencyLookup.maybeSingle();
+    if (!idempotencyError && existingPayment) {
+      return { ok: true, idempotent: true };
+    }
+  }
+
   const withBusinessPayment = {
     business_id: scope.businessId,
     branch_id: scope.branchId,
@@ -3014,6 +3297,7 @@ export async function refundOrder(input: {
     amount,
     note: input.note ?? null,
     created_by: input.createdBy ?? null,
+    idempotency_key: requestKey,
   };
   const fallbackPayment = {
     order_id: input.orderId,
@@ -3022,38 +3306,60 @@ export async function refundOrder(input: {
     amount,
     note: input.note ?? null,
     created_by: input.createdBy ?? null,
+    idempotency_key: requestKey,
   };
   let paymentInsert = await supabase.from("payments").insert(withBusinessPayment);
-  if (paymentInsert.error?.message?.toLowerCase().includes("business_id")) {
+  if (
+    paymentInsert.error?.message?.toLowerCase().includes("business_id") ||
+    paymentInsert.error?.message?.toLowerCase().includes("idempotency_key")
+  ) {
     paymentInsert = await supabase.from("payments").insert(fallbackPayment);
   }
   const paymentError = paymentInsert.error;
   if (paymentError) {
+    if (paymentError.message.toLowerCase().includes("duplicate key") && requestKey) {
+      return { ok: true, idempotent: true };
+    }
     return { ok: false, error: paymentError.message };
   }
 
-  let refundUpdateQuery = supabase.from("orders").update({ status: "refunded" as OrderStatus }).eq("id", input.orderId);
-  if (!scope.useLegacySchema && scope.businessId) {
-    refundUpdateQuery = refundUpdateQuery.eq("business_id", scope.businessId);
-  }
-  if (scope.branchId) {
-    refundUpdateQuery = refundUpdateQuery.eq("branch_id", scope.branchId);
-  }
-  const { error } = await refundUpdateQuery;
-  if (error) {
-    return { ok: false, error: error.message };
+  const latestSummary = await getOrderPaymentSummaryMap(supabase, [input.orderId]);
+  const targetAmount = Number(orderRow.final_price ?? orderRow.total_price);
+  const nextNet = Math.max(0, latestSummary.get(input.orderId)?.net ?? summary.net - amount);
+  const nextStatus = resolveOrderSettlementStatus(targetAmount, nextNet, true);
+  const refundUpdateResult = await retryMutation(async () => {
+    let refundUpdateQuery = supabase.from("orders").update({ status: nextStatus }).eq("id", input.orderId);
+    if (!scope.useLegacySchema && scope.businessId) {
+      refundUpdateQuery = refundUpdateQuery.eq("business_id", scope.businessId);
+    }
+    if (scope.branchId) {
+      refundUpdateQuery = refundUpdateQuery.eq("branch_id", scope.branchId);
+    }
+    return refundUpdateQuery;
+  });
+  if (refundUpdateResult.error) {
+    await setAlertDispatch("payment_status_reconcile_failed", {
+      orderId: input.orderId,
+      flow: "refund",
+      nextStatus,
+      targetAmount,
+      nextNet,
+      error: refundUpdateResult.error.message,
+      at: new Date().toISOString(),
+    });
+    return { ok: false, error: refundUpdateResult.error.message };
   }
 
   await logAuditEvent({
     entityType: "payment",
     entityId: input.orderId,
     action: "refund",
-    details: { method: input.method, amount, note: input.note ?? null },
+    details: { method: input.method, amount, note: input.note ?? null, refundableBalance, nextStatus },
   });
 
   revalidateOperationsCaches();
   revalidateReportCaches();
-  return { ok: true };
+  return { ok: true, status: nextStatus };
 }
 
 export async function assignOrderCourier(input: {
@@ -4314,23 +4620,17 @@ async function getCachedSalesReportSummaryRow(input: {
       start.setHours(0, 0, 0, 0);
       start.setDate(start.getDate() - (input.days - 1));
 
-      let query = supabase
-        .from("payments")
-        .select("amount, payment_type, created_at")
-        .gte("created_at", start.toISOString())
-        .order("created_at", { ascending: true });
-
-      if (!input.useLegacySchema && input.businessId) {
-        query = query.eq("business_id", input.businessId);
-      }
-      if (input.branchId) {
-        query = query.eq("branch_id", input.branchId);
-      }
-
-      const { data, error } = await query;
-      if (error) {
+      const paymentResult = await listScopedFinancePayments({
+        supabase,
+        startIso: start.toISOString(),
+        businessId: input.businessId,
+        branchId: input.branchId,
+        useLegacySchema: input.useLegacySchema,
+      });
+      if (paymentResult.error) {
         return { rows: [] as Array<{ day: string; sales: number; refunds: number; net: number }>, hasError: true };
       }
+      const aggregation = aggregateFinancePayments(paymentResult.rows);
 
       const map = new Map<string, { sales: number; refunds: number }>();
       for (let i = 0; i < input.days; i += 1) {
@@ -4339,18 +4639,13 @@ async function getCachedSalesReportSummaryRow(input: {
         map.set(day.toISOString().slice(0, 10), { sales: 0, refunds: 0 });
       }
 
-      for (const row of data ?? []) {
-        const day = String(row.created_at).slice(0, 10);
+      for (const [day, values] of aggregation.dailyMap.entries()) {
         if (!map.has(day)) {
           map.set(day, { sales: 0, refunds: 0 });
         }
         const bucket = map.get(day)!;
-        const amount = Number(row.amount);
-        if (row.payment_type === "refund") {
-          bucket.refunds += amount;
-        } else {
-          bucket.sales += amount;
-        }
+        bucket.sales += values.sales;
+        bucket.refunds += values.refunds;
       }
 
       return {
@@ -4415,21 +4710,14 @@ async function getCachedFinancialInsightsRow(input: {
       start.setHours(0, 0, 0, 0);
       start.setDate(start.getDate() - (input.days - 1));
 
-      const paymentBase = supabase
-        .from("payments")
-        .select("id, order_id, payment_type, method, amount, note, created_at")
-        .gte("created_at", start.toISOString())
-        .order("created_at", { ascending: false });
-
-      const [{ data: payments, error: paymentsError }] = await Promise.all([
-        !input.useLegacySchema && input.businessId
-          ? (input.branchId
-              ? paymentBase.eq("business_id", input.businessId).eq("branch_id", input.branchId)
-              : paymentBase.eq("business_id", input.businessId))
-          : paymentBase,
-      ]);
-
-      if (paymentsError) {
+      const paymentResult = await listScopedFinancePayments({
+        supabase,
+        startIso: start.toISOString(),
+        businessId: input.businessId,
+        branchId: input.branchId,
+        useLegacySchema: input.useLegacySchema,
+      });
+      if (paymentResult.error) {
         return {
           hasError: true,
           summary: {
@@ -4457,45 +4745,9 @@ async function getCachedFinancialInsightsRow(input: {
           }>,
         };
       }
-
-      const paymentRows = (payments ?? []) as Array<{
-        id: string;
-        order_id: string;
-        payment_type: "sale" | "refund";
-        method: "cash" | "card" | "mixed";
-        amount: number;
-        note: string | null;
-        created_at: string;
-      }>;
-
-      let grossSales = 0;
-      let refunds = 0;
-      const methodMap = new Map<string, { sales: number; refunds: number }>([
-        ["cash", { sales: 0, refunds: 0 }],
-        ["card", { sales: 0, refunds: 0 }],
-        ["mixed", { sales: 0, refunds: 0 }],
-      ]);
-      const hourMap = new Map<string, number>();
-      for (let i = 0; i < 24; i += 1) {
-        hourMap.set(String(i).padStart(2, "0"), 0);
-      }
-
-      for (const row of paymentRows) {
-        const amount = Number(row.amount);
-        const methodBucket = methodMap.get(row.method) ?? { sales: 0, refunds: 0 };
-        if (row.payment_type === "refund") {
-          refunds += amount;
-          methodBucket.refunds += amount;
-        } else {
-          grossSales += amount;
-          methodBucket.sales += amount;
-          const hour = new Date(row.created_at).getHours().toString().padStart(2, "0");
-          hourMap.set(hour, (hourMap.get(hour) ?? 0) + amount);
-        }
-        methodMap.set(row.method, methodBucket);
-      }
-
-      const paidOrderIds = [...new Set(paymentRows.filter((row) => row.payment_type === "sale").map((row) => row.order_id).filter(Boolean))];
+      const paymentRows = paymentResult.rows;
+      const aggregation = aggregateFinancePayments(paymentRows);
+      const paidOrderIds = [...aggregation.paidOrderIds];
 
       let topProducts: Array<{ productName: string; qty: number; revenue: number }> = [];
       if (paidOrderIds.length > 0) {
@@ -4526,29 +4778,64 @@ async function getCachedFinancialInsightsRow(input: {
           .slice(0, 10);
       }
 
+      let orderQuery = supabase
+        .from("orders")
+        .select("id, status, discount_amount, service_fee, final_price, total_price, created_at")
+        .gte("created_at", start.toISOString());
+      if (!input.useLegacySchema && input.businessId) {
+        orderQuery = orderQuery.eq("business_id", input.businessId);
+      }
+      if (input.branchId) {
+        orderQuery = orderQuery.eq("branch_id", input.branchId);
+      }
+      const { data: orderRows } = await orderQuery;
+      let discountTotal = 0;
+      let serviceFeeTotal = 0;
+      let outstandingReceivables = 0;
+      let cancelledCount = 0;
+      for (const order of (orderRows ?? []) as Array<{
+        id: string;
+        status: OrderStatus;
+        discount_amount: number | null;
+        service_fee: number | null;
+        final_price: number | null;
+        total_price: number;
+      }>) {
+        discountTotal += Number(order.discount_amount ?? 0);
+        serviceFeeTotal += Number(order.service_fee ?? 0);
+        if (order.status === "cancelled") {
+          cancelledCount += 1;
+        }
+        if (order.status === "pending" || order.status === "preparing" || order.status === "served") {
+          const finalAmount = Number(order.final_price ?? order.total_price);
+          const orderNet = aggregation.orderNetMap.get(order.id) ?? 0;
+          outstandingReceivables += Math.max(0, finalAmount - orderNet);
+        }
+      }
+
       const paidOrderCount = paidOrderIds.length;
-      const averageTicket = paidOrderCount > 0 ? grossSales / paidOrderCount : 0;
+      const averageTicket = paidOrderCount > 0 ? aggregation.grossSales / paidOrderCount : 0;
 
       return {
         hasError: false,
         summary: {
-          grossSales,
-          refunds,
-          netSales: grossSales - refunds,
-          discountTotal: 0,
-          serviceFeeTotal: 0,
+          grossSales: aggregation.grossSales,
+          refunds: aggregation.refunds,
+          netSales: aggregation.netSales,
+          discountTotal,
+          serviceFeeTotal,
           paidOrderCount,
           averageTicket,
-          outstandingReceivables: 0,
-          cancelledCount: 0,
+          outstandingReceivables,
+          cancelledCount,
         },
-        methodBreakdown: Array.from(methodMap.entries()).map(([method, values]) => ({
+        methodBreakdown: Array.from(aggregation.methodMap.entries()).map(([method, values]) => ({
           method,
           sales: values.sales,
           refunds: values.refunds,
           net: values.sales - values.refunds,
         })),
-        hourlySales: Array.from(hourMap.entries()).map(([hour, sales]) => ({
+        hourlySales: Array.from(aggregation.hourMap.entries()).map(([hour, sales]) => ({
           hour,
           sales,
         })),
@@ -4716,27 +5003,49 @@ export async function openCashSession(openingCash: number, note?: string, opened
     return { ok: false, error: "Acik kasa oturumu zaten var." };
   }
 
-  let insert = await supabase.from("cash_register_sessions").insert({
-    business_id: scope.businessId,
-    branch_id: scope.branchId,
-    opened_by: openedBy ?? null,
-    opening_cash: Math.max(0, Number(openingCash || 0)),
-    note: note ?? null,
-    status: "open",
-  });
-  if (insert.error?.message?.toLowerCase().includes("business_id")) {
-    insert = await supabase.from("cash_register_sessions").insert({
+  let insert = await supabase
+    .from("cash_register_sessions")
+    .insert({
+      business_id: scope.businessId,
+      branch_id: scope.branchId,
       opened_by: openedBy ?? null,
       opening_cash: Math.max(0, Number(openingCash || 0)),
       note: note ?? null,
       status: "open",
-    });
+    })
+    .select("id")
+    .maybeSingle();
+  if (insert.error?.message?.toLowerCase().includes("business_id")) {
+    insert = await supabase
+      .from("cash_register_sessions")
+      .insert({
+        opened_by: openedBy ?? null,
+        opening_cash: Math.max(0, Number(openingCash || 0)),
+        note: note ?? null,
+        status: "open",
+      })
+      .select("id")
+      .maybeSingle();
   }
   const error = insert.error;
 
   if (error) {
     return { ok: false, error: error.message };
   }
+
+  const sessionId = (insert.data as { id: string } | null)?.id ?? "cash-register-session";
+  await logAuditEvent({
+    actorId: openedBy ?? null,
+    entityType: "cash_register_session",
+    entityId: sessionId,
+    action: "open",
+    details: {
+      businessId: scope.businessId,
+      branchId: scope.branchId,
+      openingCash: Math.max(0, Number(openingCash || 0)),
+    },
+  });
+
   return { ok: true };
 }
 
@@ -4752,7 +5061,10 @@ export async function closeCashSession(input: {
   }
 
   const scope = await getDefaultBusinessScope();
-  let sessionQuery = supabase.from("cash_register_sessions").select("id, opened_at").eq("id", input.sessionId);
+  let sessionQuery = supabase
+    .from("cash_register_sessions")
+    .select("id, opened_at, opening_cash")
+    .eq("id", input.sessionId);
   if (!scope.useLegacySchema && scope.businessId) {
     sessionQuery = sessionQuery.eq("business_id", scope.businessId);
   }
@@ -4782,9 +5094,14 @@ export async function closeCashSession(input: {
       return sum - Number(row.amount);
     }
     return sum + Number(row.amount);
-  }, 0);
+  }, Math.max(0, Number(sessionRow.opening_cash ?? 0)));
 
   const closingCash = Math.max(0, Number(input.closingCash || 0));
+  const variance = closingCash - expectedCash;
+  const envThreshold = Number(process.env.CASH_RECONCILIATION_DIFF_ALERT);
+  const mismatchThreshold = Number.isFinite(envThreshold) && envThreshold >= 0 ? envThreshold : 50;
+  const shouldSendMismatchAlert = Math.abs(variance) >= mismatchThreshold;
+
   let closeQuery = supabase
     .from("cash_register_sessions")
     .update({
@@ -4807,7 +5124,45 @@ export async function closeCashSession(input: {
     return { ok: false, error: error.message };
   }
 
-  return { ok: true, expectedCash };
+  let mismatchAlertSent = false;
+  if (shouldSendMismatchAlert) {
+    const alertPayload = {
+      sessionId: input.sessionId,
+      businessId: scope.businessId,
+      branchId: scope.branchId,
+      expectedCash,
+      closingCash,
+      variance,
+      threshold: mismatchThreshold,
+      closedAt: new Date().toISOString(),
+    };
+    const alertResult = await setAlertDispatch("cash_reconciliation_mismatch", alertPayload);
+    mismatchAlertSent = Boolean(alertResult.ok);
+  }
+
+  await logAuditEvent({
+    actorId: input.closedBy ?? null,
+    entityType: "cash_register_session",
+    entityId: input.sessionId,
+    action: shouldSendMismatchAlert ? "close_mismatch" : "close",
+    details: {
+      businessId: scope.businessId,
+      branchId: scope.branchId,
+      expectedCash,
+      closingCash,
+      variance,
+      threshold: mismatchThreshold,
+      mismatchAlertSent,
+    },
+  });
+
+  return {
+    ok: true,
+    expectedCash,
+    variance,
+    mismatchThreshold,
+    mismatchAlertSent,
+  };
 }
 
 export async function getPaymentOverview() {
@@ -4823,43 +5178,24 @@ export async function getPaymentOverview() {
   todayStart.setHours(0, 0, 0, 0);
 
   const scope = await getDefaultBusinessScope();
-  let query = supabase
-    .from("payments")
-    .select("method, payment_type, amount")
-    .gte("created_at", todayStart.toISOString());
-  if (!scope.useLegacySchema && scope.businessId) {
-    query = query.eq("business_id", scope.businessId);
-  }
-  if (scope.branchId) {
-    query = query.eq("branch_id", scope.branchId);
-  }
-  const { data, error } = await query;
-  if (error) {
+  const paymentResult = await listScopedFinancePayments({
+    supabase,
+    startIso: todayStart.toISOString(),
+    businessId: scope.businessId,
+    branchId: scope.branchId,
+    useLegacySchema: scope.useLegacySchema,
+  });
+  if (paymentResult.error) {
     return {
       today: { cashSale: 0, cardSale: 0, mixedSale: 0, refunds: 0, net: 0 },
       usingDemoData: false,
     };
   }
-
-  let cashSale = 0;
-  let cardSale = 0;
-  let mixedSale = 0;
-  let refunds = 0;
-
-  for (const row of data ?? []) {
-    const amount = Number(row.amount);
-    if (row.payment_type === "refund") {
-      refunds += amount;
-      continue;
-    }
-    if (row.method === "cash") {
-      cashSale += amount;
-    } else if (row.method === "card") {
-      cardSale += amount;
-    } else {
-      mixedSale += amount;
-    }
-  }
+  const aggregation = aggregateFinancePayments(paymentResult.rows);
+  const cashSale = aggregation.methodMap.get("cash")?.sales ?? 0;
+  const cardSale = aggregation.methodMap.get("card")?.sales ?? 0;
+  const mixedSale = aggregation.methodMap.get("mixed")?.sales ?? 0;
+  const refunds = aggregation.refunds;
 
   return {
     today: {
@@ -4867,7 +5203,7 @@ export async function getPaymentOverview() {
       cardSale,
       mixedSale,
       refunds,
-      net: cashSale + cardSale + mixedSale - refunds,
+      net: aggregation.netSales,
     },
     usingDemoData: false,
   };
@@ -4890,27 +5226,24 @@ export async function getOpsSummary() {
   const scope = await getDefaultBusinessScope();
   const openBase = supabase.from("orders").select("id, status", { count: "exact" });
   const pendingBase = supabase.from("orders").select("id", { count: "exact" }).eq("status", "pending");
-  const paymentBase = supabase
-    .from("payments")
-    .select("amount, payment_type")
-    .gte("created_at", todayStart.toISOString());
 
-  const [{ data: openRows }, { data: pendingRows }, { data: paymentRows }] = await Promise.all([
+  const [{ data: openRows }, { data: pendingRows }, paymentResult] = await Promise.all([
     !scope.useLegacySchema && scope.businessId
       ? (scope.branchId ? openBase.eq("business_id", scope.businessId).eq("branch_id", scope.branchId) : openBase.eq("business_id", scope.businessId))
       : openBase,
     !scope.useLegacySchema && scope.businessId
       ? (scope.branchId ? pendingBase.eq("business_id", scope.businessId).eq("branch_id", scope.branchId) : pendingBase.eq("business_id", scope.businessId))
       : pendingBase,
-    !scope.useLegacySchema && scope.businessId
-      ? (scope.branchId ? paymentBase.eq("business_id", scope.businessId).eq("branch_id", scope.branchId) : paymentBase.eq("business_id", scope.businessId))
-      : paymentBase,
+    listScopedFinancePayments({
+      supabase,
+      startIso: todayStart.toISOString(),
+      businessId: scope.businessId,
+      branchId: scope.branchId,
+      useLegacySchema: scope.useLegacySchema,
+    }),
   ]);
 
-  const todayRevenue = ((paymentRows ?? []) as Array<{ amount: number; payment_type: "sale" | "refund" }>).reduce((sum, row) => {
-    const amount = Number(row.amount);
-    return sum + (row.payment_type === "refund" ? -amount : amount);
-  }, 0);
+  const todayRevenue = paymentResult.error ? 0 : aggregateFinancePayments(paymentResult.rows).netSales;
 
   return {
     openOrders:

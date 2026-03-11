@@ -1,5 +1,5 @@
 import { requireSupportAccess } from "@/lib/auth";
-import { listSupportTeamSummaries } from "@/lib/data";
+import { listSupportTeamSummaries } from "@/lib/domains/support";
 
 export default async function SupportTeamPage() {
   await requireSupportAccess("/support/team", ["support_admin"]);
@@ -65,3 +65,4 @@ export default async function SupportTeamPage() {
     </main>
   );
 }
+

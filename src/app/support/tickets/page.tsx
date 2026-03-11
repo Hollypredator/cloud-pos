@@ -1,7 +1,7 @@
 import { revalidatePath } from "next/cache";
 import Link from "next/link";
 import { requireSupportAccess } from "@/lib/auth";
-import { assignSupportTicket, getPlatformAccessByEmail, listSupportAccessUsers, listSupportTickets, setSupportTicketStatus } from "@/lib/data";
+import { assignSupportTicket, getPlatformAccessByEmail, listSupportAccessUsers, listSupportTickets, setSupportTicketStatus } from "@/lib/domains/support";
 import { getCurrentLocale } from "@/lib/i18n-server";
 import { translateUiText } from "@/lib/i18n";
 import type { SupportTicketStatus } from "@/lib/types";
@@ -161,3 +161,4 @@ export default async function SupportTicketsPage({
     </main>
   );
 }
+

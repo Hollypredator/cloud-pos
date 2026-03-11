@@ -3,7 +3,8 @@ import { AdminOrderEntry } from "@/components/admin-order-entry";
 import { BackofficePage, SidebarPanel, SummaryCard, WorkflowGuide } from "@/components/backoffice-ui";
 import { requireRole } from "@/lib/auth";
 import { getActiveBusinessSlug } from "@/lib/business-server";
-import { getMenu, getTableMap } from "@/lib/data";
+import { getMenu } from "@/lib/domains/orders";
+import { getTableMap } from "@/lib/domains/tables";
 import { translateUiText } from "@/lib/i18n";
 import { getCurrentLocale } from "@/lib/i18n-server";
 

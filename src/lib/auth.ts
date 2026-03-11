@@ -1,10 +1,9 @@
 import { redirect } from "next/navigation";
 import { cache } from "react";
 import type { AppRole, PlatformPermission, StaffAccessScope, StudioRole, SupportRole } from "@/lib/types";
-import { getPlatformAccessByEmail, getStudioAccessByEmail, getSupportAccessByEmail, hasPlatformPermission } from "@/lib/data";
+import { getPlatformAccessByEmail, getStudioAccessByEmail, getSupportAccessByEmail, hasPlatformPermission } from "@/lib/domains/support";
 import { getRequestAppContext } from "@/lib/server/app-context";
-
-const DIRECT_PLATFORM_OWNER_EMAILS = new Set(["msamedcbn@gmail.com"]);
+import { getDirectPlatformOwnerEmails } from "@/lib/platform-owner";
 
 export function hasRoleAccess(role: AppRole | null, allowedRoles: AppRole[]) {
   return !!role && (allowedRoles.includes(role) || (role === "owner" && allowedRoles.includes("admin")));
@@ -105,7 +104,7 @@ export async function requireStudioAccess(nextPath: string, allowedRoles?: Studi
   }
 
   const email = context.user.email?.toLowerCase() ?? "";
-  if (DIRECT_PLATFORM_OWNER_EMAILS.has(email)) {
+  if (getDirectPlatformOwnerEmails().has(email)) {
     return { bypass: false as const, role: context.role, email, studioRole: "owner" as StudioRole, platformRole: "platform_owner" as const };
   }
 
@@ -141,7 +140,7 @@ export async function requireSupportAccess(nextPath: string, allowedRoles?: Supp
   }
 
   const email = context.user.email?.toLowerCase() ?? "";
-  if (DIRECT_PLATFORM_OWNER_EMAILS.has(email)) {
+  if (getDirectPlatformOwnerEmails().has(email)) {
     return { bypass: false as const, role: context.role, email, supportRole: "support_admin" as SupportRole, platformRole: "platform_owner" as const };
   }
 

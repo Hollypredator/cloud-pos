@@ -1,6 +1,8 @@
 "use client";
 
 import { useMemo, useState } from "react";
+import { OrderHistoryWidget } from "@/components/order-history-widget";
+import { OrderStatusWidget } from "@/components/order-status-widget";
 import type {
   Category,
   Product,
@@ -9,7 +11,9 @@ import type {
 } from "@/lib/types";
 
 export function QrOrderingClient({
+  businessSlug,
   qrCodeIdentifier,
+  qrAccessToken,
   categories,
   products,
   modifierGroups,
@@ -17,6 +21,7 @@ export function QrOrderingClient({
 }: {
   businessSlug?: string;
   qrCodeIdentifier: string;
+  qrAccessToken: string;
   tableId: string;
   categories: Category[];
   products: Product[];
@@ -73,6 +78,11 @@ export function QrOrderingClient({
           Bu ekranda sadece menu goruntulenir. Siparis ve adisyon islemleri isletme personeli tarafindan yonetilir.
         </p>
       </header>
+
+      <div className="grid gap-4 lg:grid-cols-2">
+        <OrderStatusWidget businessSlug={businessSlug} qrCodeIdentifier={qrCodeIdentifier} qrAccessToken={qrAccessToken} />
+        <OrderHistoryWidget businessSlug={businessSlug} qrCodeIdentifier={qrCodeIdentifier} qrAccessToken={qrAccessToken} />
+      </div>
 
       {activeProduct ? (
         <section className="rounded-2xl border border-slate-200 bg-white p-4">

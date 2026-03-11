@@ -3,7 +3,7 @@ import {
   getAlertDispatchByType,
   getOpsMetricsSnapshot,
   setAlertDispatch,
-} from "@/lib/data";
+} from "@/lib/domains/finance";
 
 async function evaluateOps() {
   const snapshot = await getOpsMetricsSnapshot();

@@ -2,7 +2,7 @@ import Link from "next/link";
 import { PendingSubmitButton } from "@/components/pending-submit-button";
 import { BackofficePage, EmptyPanel, NoticeBanner, SummaryCard, WorkflowGuide, WorkspaceTabs } from "@/components/backoffice-ui";
 import { requireRole } from "@/lib/auth";
-import { getOrderHistoryByTableId, getTableMap, listLatestOrdersByTableIds } from "@/lib/data";
+import { getOrderHistoryByTableId, getTableMap, listLatestOrdersByTableIds } from "@/lib/domains/tables";
 import { translateUiText } from "@/lib/i18n";
 import { getCurrentLocale } from "@/lib/i18n-server";
 import { logServerPerf, measureAsync } from "@/lib/perf";

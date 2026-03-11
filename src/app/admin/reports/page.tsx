@@ -1,6 +1,7 @@
 import Link from "next/link";
 import { requireRole } from "@/lib/auth";
-import { getFinancialInsights, getSalesReportSummary, getOpsMetricsSnapshot, listBranches, listProfiles } from "@/lib/data";
+import { getFinancialInsights, getOpsMetricsSnapshot, getSalesReportSummary } from "@/lib/domains/finance";
+import { listBranches, listProfiles } from "@/lib/data";
 import { ALL_BRANCHES_VALUE } from "@/lib/business";
 import {
   BackofficePage,

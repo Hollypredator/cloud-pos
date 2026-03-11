@@ -9,7 +9,7 @@ import {
   getSupportTicketDetail,
   listSupportAccessUsers,
   setSupportTicketStatus,
-} from "@/lib/data";
+} from "@/lib/domains/support";
 import type { SupportTicketStatus } from "@/lib/types";
 
 async function updateTicketStatusAction(formData: FormData) {

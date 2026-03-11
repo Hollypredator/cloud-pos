@@ -1,7 +1,7 @@
 import Link from "next/link";
 import { PrintActions } from "@/components/print-actions";
 import { requireRole } from "@/lib/auth";
-import { getCurrentCashSession, getPaymentOverview } from "@/lib/data";
+import { getCurrentCashSession, getPaymentOverview } from "@/lib/domains/finance";
 
 export default async function SessionReportPrintPage({
   searchParams,

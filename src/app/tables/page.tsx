@@ -1,6 +1,6 @@
 import Link from "next/link";
 import { LiveOpsBridge } from "@/components/live-ops-bridge";
-import { getTableMap } from "@/lib/data";
+import { getTableMap } from "@/lib/domains/tables";
 
 const statusStyles: Record<string, string> = {
   empty: "bg-emerald-100 text-emerald-700",

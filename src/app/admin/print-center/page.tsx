@@ -1,7 +1,9 @@
 import Link from "next/link";
 import { BackofficePage, ContentCard, SummaryCard, WorkflowGuide } from "@/components/backoffice-ui";
 import { requireRole } from "@/lib/auth";
-import { getApplicationSettings, getCurrentCashSession, listOrders } from "@/lib/data";
+import { getApplicationSettings } from "@/lib/data";
+import { getCurrentCashSession } from "@/lib/domains/finance";
+import { listOrders } from "@/lib/domains/orders";
 
 export default async function PrintCenterPage() {
   await requireRole(["admin", "cashier"], "/admin/print-center");

@@ -1,5 +1,5 @@
 import { requireSupportAccess } from "@/lib/auth";
-import { listSupportAuditLogs } from "@/lib/data";
+import { listSupportAuditLogs } from "@/lib/domains/support";
 
 export default async function SupportAuditPage() {
   await requireSupportAccess("/support/audit", ["support_admin", "support_agent", "billing_agent"]);
@@ -32,3 +32,4 @@ export default async function SupportAuditPage() {
     </main>
   );
 }
+

@@ -1,6 +1,6 @@
 import Link from "next/link";
 import { requireSupportAccess } from "@/lib/auth";
-import { getSupportDashboardSnapshot } from "@/lib/data";
+import { getSupportDashboardSnapshot } from "@/lib/domains/support";
 
 export default async function SupportHomePage() {
   const access = await requireSupportAccess("/support");
@@ -112,3 +112,4 @@ export default async function SupportHomePage() {
     </main>
   );
 }
+

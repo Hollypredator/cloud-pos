@@ -3,7 +3,7 @@ import { redirect } from "next/navigation";
 import { LiveOpsBridge } from "@/components/live-ops-bridge";
 import { BackofficePage, ContentCard, FeatureLockedState, NoticeBanner, SidebarPanel, SummaryCard, WorkflowGuide } from "@/components/backoffice-ui";
 import { requireRole } from "@/lib/auth";
-import { closeCashSession, getCurrentCashSession, getPaymentOverview, openCashSession } from "@/lib/data";
+import { closeCashSession, getCurrentCashSession, getPaymentOverview, openCashSession } from "@/lib/domains/finance";
 import { getFeatureAccess } from "@/lib/plan-access";
 
 function feedbackHref(tone: "success" | "error", message: string) {
@@ -44,13 +44,24 @@ async function closeSessionAction(formData: FormData) {
   }
 
   try {
-    await closeCashSession({
+    const result = await closeCashSession({
       sessionId,
       closingCash,
       note: typeof note === "string" ? note : undefined,
     });
+    if (!result.ok) {
+      redirect(feedbackHref("error", result.error ?? "Gun sonu islemi tamamlanamadi."));
+    }
     revalidatePath("/cashier/session");
-    redirect(feedbackHref("success", "Gun sonu islemi tamamlandi."));
+    const varianceMessage =
+      typeof result.variance === "number"
+        ? ` Beklenen: ${result.expectedCash.toFixed(2)} TL, fark: ${result.variance.toFixed(2)} TL.`
+        : "";
+    const mismatchMessage =
+      result.mismatchAlertSent
+        ? " Mutabakat farki esigi asildigi icin operasyon alarmi olusturuldu."
+        : "";
+    redirect(feedbackHref("success", `Gun sonu islemi tamamlandi.${varianceMessage}${mismatchMessage}`));
   } catch {
     redirect(feedbackHref("error", "Gun sonu islemi tamamlanamadi."));
   }

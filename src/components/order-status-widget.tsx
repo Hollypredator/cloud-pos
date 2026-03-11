@@ -34,9 +34,11 @@ function statusClass(status: OrderStatus) {
 export function OrderStatusWidget({
   businessSlug,
   qrCodeIdentifier,
+  qrAccessToken,
 }: {
   businessSlug?: string;
   qrCodeIdentifier: string;
+  qrAccessToken: string;
 }) {
   const [order, setOrder] = useState<LatestOrder | null>(null);
   const [loading, setLoading] = useState(true);
@@ -45,7 +47,7 @@ export function OrderStatusWidget({
   const fetchLatest = useEffectEvent(async () => {
     try {
       const response = await fetch(
-        `/api/orders/latest?qr=${encodeURIComponent(qrCodeIdentifier)}${businessSlug ? `&b=${encodeURIComponent(businessSlug)}` : ""}`,
+        `/api/orders/latest?qr=${encodeURIComponent(qrCodeIdentifier)}${businessSlug ? `&b=${encodeURIComponent(businessSlug)}` : ""}&t=${encodeURIComponent(qrAccessToken)}`,
         {
           cache: "no-store",
         },
@@ -96,7 +98,7 @@ export function OrderStatusWidget({
       document.removeEventListener("visibilitychange", handleAttentionRefresh);
       window.removeEventListener("live-ops:update", handleAttentionRefresh);
     };
-  }, [businessSlug, qrCodeIdentifier]);
+  }, [businessSlug, qrCodeIdentifier, qrAccessToken]);
 
   return (
     <section className="rounded-2xl border border-slate-200 bg-white p-4">

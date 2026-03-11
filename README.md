@@ -22,6 +22,7 @@ npm install
 NEXT_PUBLIC_SUPABASE_URL=...
 NEXT_PUBLIC_SUPABASE_ANON_KEY=...
 SUPABASE_SERVICE_ROLE_KEY=...
+PLATFORM_OWNER_EMAILS=owner@example.com
 STUDIO_ADMIN_EMAILS=admin@example.com
 APP_HOST=
 STUDIO_HOST=
@@ -30,6 +31,7 @@ NEXT_PUBLIC_DEFAULT_BUSINESS_SLUG=default
 ALERT_WEBHOOK_URL=...
 ALERT_DISPATCH_SECRET=...
 ALERT_DISPATCH_ENDPOINT=...
+QR_ACCESS_SECRET=...
 NEXT_PUBLIC_BUSINESS_NAME=Cloud POS Cafe
 NEXT_PUBLIC_BUSINESS_PHONE=+90 555 000 00 00
 NEXT_PUBLIC_BUSINESS_ADDRESS=Istanbul
@@ -74,6 +76,7 @@ NEXT_PUBLIC_VAT_RATE=10
 - `supabase/migrations/20260302_scope_profiles_rls.sql`
 - `supabase/migrations/20260302_fix_profiles_rls_recursion.sql`
 - `supabase/migrations/20260302_allow_table_delete_with_order_history.sql`
+- `supabase/migrations/20260311_add_payment_idempotency.sql`
 
 4. Gelistirme sunucusunu baslatin:
 
@@ -159,14 +162,25 @@ npm run dev
 - Admin kategori ekraninda kategori sirasini yukari/asagi tasiyabilirsiniz.
 - Satis raporu CSV export: `/api/reports/sales.csv?days=7`
 - QR servis talebi API: `/api/table-requests`
-- QR siparis durum API: `/api/orders/latest?qr=table-1`
-- QR siparis gecmis API: `/api/orders/history?qr=table-1`
+- QR siparis durum API: `/api/orders/latest?qr=table-1&b=default&t=<qr-access-token>`
+- QR siparis gecmis API: `/api/orders/history?qr=table-1&b=default&t=<qr-access-token>`
 - Health API: `/api/health`
 - Ops metrics API: `/api/metrics/ops`
 - Ops alert dispatch API: `/api/alerts/dispatch` (`GET` preview, `POST` webhook send)
 - Demo sunum akisi: `DEMO.md`
 
 ## Uretim Checklist
+
+Detayli checklist ve incident proseduru:
+- `docs/go-live-checklist.md`
+- `docs/incident-runbook.md`
+- `docs/productization-8-phases.md`
+- `docs/phases/phase-1-stabilization.md`
+- `docs/phases/phase-2-security-hardening.md`
+- `docs/phases/phase-3-payment-hardening.md`
+- `docs/phases/phase-4-financial-reconciliation.md`
+- `docs/phases/phase-5-resilience-and-error-management.md`
+- `docs/finance-uat-checklist.md`
 
 - Tum migration dosyalarini sirayla uygulayin.
 - `branches`, `staff_branch_access`, `owner` role ve core RLS migrationlarini atlamayin.
@@ -190,3 +204,9 @@ npm run dev
   - Cron: `POST /api/alerts/dispatch` + `x-alert-secret` header
   - Cooldown: 10 dakika
   - Lokal manuel tetikleme: `npm run alerts:dispatch`
+- Operasyon smoke-check: `npm run ops:smoke`
+- Tenant runtime isolation check: `npm run phase2:runtime` (uygulama ayakta olmali)
+- Faz 3 finans runtime kontrolu: `npm run phase3:runtime` (Supabase env gerekli)
+- Faz 4 mutabakat kontrolu: `npm run phase4:reconciliation` (Supabase env gerekli)
+- Faz 5 durum tutarlilik kontrolu: `npm run phase5:consistency` (Supabase env gerekli)
+- QR public API korumasi icin `.env.local` icinde `QR_ACCESS_SECRET` tanimli olmali.

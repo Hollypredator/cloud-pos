@@ -1,12 +1,22 @@
 import { NextResponse } from "next/server";
-import { getLatestOrderByTableId, getTableByQr } from "@/lib/data";
+import { getLatestOrderByTableId, getTableByQr } from "@/lib/domains/orders";
+import { verifyQrAccessToken } from "@/lib/qr-access";
 
 export async function GET(request: Request) {
   const { searchParams } = new URL(request.url);
   const qrCodeIdentifier = searchParams.get("qr");
   const businessSlug = searchParams.get("b") ?? undefined;
+  const accessToken = searchParams.get("t");
   if (!qrCodeIdentifier) {
     return NextResponse.json({ ok: false, message: "qr parametresi gerekli." }, { status: 400 });
+  }
+
+  const tokenCheck = verifyQrAccessToken({ token: accessToken, qrCodeIdentifier, businessSlug });
+  if (!tokenCheck.ok) {
+    if (tokenCheck.reason === "misconfigured") {
+      return NextResponse.json({ ok: false, message: "QR API token ayari eksik." }, { status: 503 });
+    }
+    return NextResponse.json({ ok: false, message: "QR API erisim token gecersiz." }, { status: 403 });
   }
 
   const table = await getTableByQr(qrCodeIdentifier, businessSlug);

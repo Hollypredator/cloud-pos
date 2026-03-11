@@ -1,5 +1,5 @@
 import { requireSupportAccess } from "@/lib/auth";
-import { listSupportOnboardingSummaries } from "@/lib/data";
+import { listSupportOnboardingSummaries } from "@/lib/domains/support";
 
 export default async function SupportOnboardingPage() {
   await requireSupportAccess("/support/onboarding");
@@ -36,3 +36,4 @@ export default async function SupportOnboardingPage() {
     </main>
   );
 }
+

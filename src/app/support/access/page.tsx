@@ -9,7 +9,7 @@ import {
   setSupportAccessUserStatus,
   upsertPlatformAccessUser,
   upsertSupportAccessUser,
-} from "@/lib/data";
+} from "@/lib/domains/support";
 import type { PlatformRole, SupportRole } from "@/lib/types";
 
 async function addSupportUserAction(formData: FormData) {
@@ -204,3 +204,4 @@ export default async function SupportAccessPage() {
     </main>
   );
 }
+

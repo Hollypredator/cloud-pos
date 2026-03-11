@@ -1,6 +1,7 @@
 import { notFound } from "next/navigation";
-import { getMenu, getTableByQr } from "@/lib/data";
+import { getMenu, getTableByQr } from "@/lib/domains/orders";
 import { normalizeBusinessSlug } from "@/lib/business";
+import { createQrAccessToken } from "@/lib/qr-access";
 import { QrOrderingClient } from "@/components/qr-ordering-client";
 
 export default async function BusinessQrPage({
@@ -16,6 +17,10 @@ export default async function BusinessQrPage({
   }
 
   const { categories, products, modifierGroups, modifierOptions, usingDemoData } = await getMenu(businessSlug);
+  const qrAccessToken = createQrAccessToken({ qrCodeIdentifier: identifier, businessSlug });
+  if (!qrAccessToken) {
+    throw new Error("QR_ACCESS_SECRET tanimli olmadan QR operasyon API'leri acilamaz.");
+  }
 
   return (
     <div className="min-h-screen bg-slate-100">
@@ -27,6 +32,7 @@ export default async function BusinessQrPage({
       <QrOrderingClient
         businessSlug={businessSlug}
         qrCodeIdentifier={identifier}
+        qrAccessToken={qrAccessToken}
         tableId={table.id}
         categories={categories}
         products={products}

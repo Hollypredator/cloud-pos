@@ -1,5 +1,5 @@
 import { getCurrentUserWithRole, hasRoleAccess } from "@/lib/auth";
-import { getSalesReportSummary } from "@/lib/data";
+import { getSalesReportSummary } from "@/lib/domains/finance";
 
 export async function GET(request: Request) {
   const auth = await getCurrentUserWithRole();

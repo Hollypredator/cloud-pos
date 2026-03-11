@@ -1,7 +1,7 @@
 import Link from "next/link";
 import { redirect } from "next/navigation";
 import { getCurrentUserWithRole } from "@/lib/auth";
-import { getStudioAccessByEmail } from "@/lib/data";
+import { getStudioAccessByEmail } from "@/lib/domains/support";
 
 export default async function StudioLoginPage({
   searchParams,
@@ -90,3 +90,4 @@ export default async function StudioLoginPage({
     </div>
   );
 }
+

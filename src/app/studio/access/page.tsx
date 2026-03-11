@@ -1,5 +1,5 @@
 import { revalidatePath } from "next/cache";
-import { listStudioAccessUsers, setStudioAccessUserRole, setStudioAccessUserStatus, upsertStudioAccessUser } from "@/lib/data";
+import { listStudioAccessUsers, setStudioAccessUserRole, setStudioAccessUserStatus, upsertStudioAccessUser } from "@/lib/domains/support";
 import { requireStudioAccess } from "@/lib/auth";
 import type { StudioRole } from "@/lib/types";
 

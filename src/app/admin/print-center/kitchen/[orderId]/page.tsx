@@ -2,7 +2,7 @@ import Link from "next/link";
 import { notFound } from "next/navigation";
 import { PrintActions } from "@/components/print-actions";
 import { requireRole } from "@/lib/auth";
-import { getOrderReceipt } from "@/lib/data";
+import { getOrderReceipt } from "@/lib/domains/orders";
 
 function orderSourceLabel(order: {
   channel?: string;

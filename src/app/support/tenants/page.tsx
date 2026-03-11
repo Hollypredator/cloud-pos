@@ -1,6 +1,6 @@
 import Link from "next/link";
 import { requireSupportAccess } from "@/lib/auth";
-import { listSupportTenantSummaries } from "@/lib/data";
+import { listSupportTenantSummaries } from "@/lib/domains/support";
 import { getCurrentLocale } from "@/lib/i18n-server";
 import { translateUiText } from "@/lib/i18n";
 
@@ -84,3 +84,4 @@ export default async function SupportTenantsPage({
     </main>
   );
 }
+

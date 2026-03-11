@@ -1,10 +1,12 @@
 import { NextResponse } from "next/server";
-import { createTableRequest } from "@/lib/data";
+import { createTableRequest } from "@/lib/domains/tables";
+import { verifyQrAccessToken } from "@/lib/qr-access";
 import type { TableRequestType } from "@/lib/types";
 
 type Body = {
   businessSlug?: string;
   qrCodeIdentifier?: string;
+  accessToken?: string;
   requestType?: TableRequestType;
   note?: string;
 };
@@ -23,6 +25,18 @@ export async function POST(request: Request) {
 
   if (body.requestType !== "call_waiter" && body.requestType !== "request_bill") {
     return NextResponse.json({ ok: false, message: "Gecersiz talep tipi." }, { status: 400 });
+  }
+
+  const tokenCheck = verifyQrAccessToken({
+    token: body.accessToken,
+    qrCodeIdentifier: body.qrCodeIdentifier,
+    businessSlug: body.businessSlug,
+  });
+  if (!tokenCheck.ok) {
+    if (tokenCheck.reason === "misconfigured") {
+      return NextResponse.json({ ok: false, message: "QR API token ayari eksik." }, { status: 503 });
+    }
+    return NextResponse.json({ ok: false, message: "QR API erisim token gecersiz." }, { status: 403 });
   }
 
   const result = await createTableRequest({

@@ -3,7 +3,7 @@ import Link from "next/link";
 import { notFound } from "next/navigation";
 import { FEATURE_META, getPlanLabel, hasFeature, type FeatureKey } from "@/lib/features";
 import { requireSupportAccess } from "@/lib/auth";
-import { getSupportTenantDetail, updateSupportTenantProfile, upsertSupportFeatureFlagOverride } from "@/lib/data";
+import { getSupportTenantDetail, updateSupportTenantProfile, upsertSupportFeatureFlagOverride } from "@/lib/domains/support";
 import { translateUiText } from "@/lib/i18n";
 import { getCurrentLocale } from "@/lib/i18n-server";
 import type { SupportBillingStatus, SupportRiskLevel, TenantLifecycleStage } from "@/lib/types";

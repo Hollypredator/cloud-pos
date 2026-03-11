@@ -1,5 +1,5 @@
 import { requireSupportAccess } from "@/lib/auth";
-import { listSupportHealthSummaries } from "@/lib/data";
+import { listSupportHealthSummaries } from "@/lib/domains/support";
 import { translateUiText } from "@/lib/i18n";
 import { getCurrentLocale } from "@/lib/i18n-server";
 
@@ -75,3 +75,4 @@ export default async function SupportHealthPage({
     </main>
   );
 }
+

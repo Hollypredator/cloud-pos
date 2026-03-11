@@ -2,7 +2,7 @@ import Link from "next/link";
 import { BackofficePage, ContentCard, EmptyPanel, SidebarPanel, SummaryCard, WorkflowGuide } from "@/components/backoffice-ui";
 import { LiveOpsBridge } from "@/components/live-ops-bridge";
 import { requireRole } from "@/lib/auth";
-import { listTableRequests, resolveTableRequest } from "@/lib/data";
+import { listTableRequests, resolveTableRequest } from "@/lib/domains/tables";
 
 async function resolveAction(formData: FormData) {
   "use server";

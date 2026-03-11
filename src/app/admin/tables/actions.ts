@@ -3,7 +3,7 @@
 import { revalidatePath } from "next/cache";
 import { redirect } from "next/navigation";
 import { requireRole } from "@/lib/auth";
-import { createTable, deleteTable, moveTableOrder, updateTableDetails } from "@/lib/data";
+import { createTable, deleteTable, moveTableOrder, updateTableDetails } from "@/lib/domains/tables";
 import { feedbackHref } from "./helpers";
 
 export async function addTableAction(formData: FormData) {

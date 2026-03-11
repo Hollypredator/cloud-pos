@@ -1,5 +1,5 @@
 import { requireSupportAccess } from "@/lib/auth";
-import { listSupportBillingSummaries } from "@/lib/data";
+import { listSupportBillingSummaries } from "@/lib/domains/support";
 import { getPlanLabel } from "@/lib/features";
 
 export default async function SupportBillingPage() {
@@ -35,3 +35,4 @@ export default async function SupportBillingPage() {
     </main>
   );
 }
+

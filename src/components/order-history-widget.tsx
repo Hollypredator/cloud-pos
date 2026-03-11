@@ -13,9 +13,11 @@ type HistoryOrder = {
 export function OrderHistoryWidget({
   businessSlug,
   qrCodeIdentifier,
+  qrAccessToken,
 }: {
   businessSlug?: string;
   qrCodeIdentifier: string;
+  qrAccessToken: string;
 }) {
   const [orders, setOrders] = useState<HistoryOrder[]>([]);
   const [loading, setLoading] = useState(true);
@@ -24,7 +26,7 @@ export function OrderHistoryWidget({
   const fetchHistory = useEffectEvent(async () => {
     try {
       const response = await fetch(
-        `/api/orders/history?qr=${encodeURIComponent(qrCodeIdentifier)}${businessSlug ? `&b=${encodeURIComponent(businessSlug)}` : ""}`,
+        `/api/orders/history?qr=${encodeURIComponent(qrCodeIdentifier)}${businessSlug ? `&b=${encodeURIComponent(businessSlug)}` : ""}&t=${encodeURIComponent(qrAccessToken)}`,
         {
           cache: "no-store",
         },
@@ -75,7 +77,7 @@ export function OrderHistoryWidget({
       document.removeEventListener("visibilitychange", handleAttentionRefresh);
       window.removeEventListener("live-ops:update", handleAttentionRefresh);
     };
-  }, [businessSlug, qrCodeIdentifier]);
+  }, [businessSlug, qrCodeIdentifier, qrAccessToken]);
 
   return (
     <section className="rounded-2xl border border-slate-200 bg-white p-4">

@@ -1,6 +1,6 @@
 import { revalidatePath } from "next/cache";
 import { requireSupportAccess } from "@/lib/auth";
-import { listSupportPlanRequests, setSupportPlanRequestStatus } from "@/lib/data";
+import { listSupportPlanRequests, setSupportPlanRequestStatus } from "@/lib/domains/support";
 import { translateUiText } from "@/lib/i18n";
 import { getCurrentLocale } from "@/lib/i18n-server";
 import type { SupportPlanRequestStatus } from "@/lib/types";
@@ -92,3 +92,4 @@ export default async function SupportPlanRequestsPage({
     </main>
   );
 }
+

@@ -1,7 +1,7 @@
 import { revalidatePath } from "next/cache";
 import { notFound } from "next/navigation";
 import { requireSupportAccess } from "@/lib/auth";
-import { createSupportIncidentUpdate, getSupportIncidentDetail } from "@/lib/data";
+import { createSupportIncidentUpdate, getSupportIncidentDetail } from "@/lib/domains/support";
 import { translateUiText } from "@/lib/i18n";
 import { getCurrentLocale } from "@/lib/i18n-server";
 import type { SupportIncidentStatus } from "@/lib/types";

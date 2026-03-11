@@ -1,6 +1,6 @@
 import { NextResponse } from "next/server";
 import { getCurrentUserWithRole, hasRoleAccess } from "@/lib/auth";
-import { createOrder, getBusinessContextBySlug, getTableByQr } from "@/lib/data";
+import { createOrder, getBusinessContextBySlug, getTableByQr } from "@/lib/domains/orders";
 import type { FulfillmentStatus, OrderChannel } from "@/lib/types";
 
 type Body = {
@@ -34,6 +34,13 @@ type Body = {
 };
 
 export async function POST(request: Request) {
+  const auth = await getCurrentUserWithRole();
+  const canCreateOrders =
+    auth.usingDemoData || (!!auth.user && hasRoleAccess(auth.role, ["admin", "waiter", "cashier"]));
+  if (!canCreateOrders) {
+    return NextResponse.json({ ok: false, message: "Siparis olusturma yetkiniz yok." }, { status: 403 });
+  }
+
   let body: Body;
   try {
     body = (await request.json()) as Body;
@@ -48,16 +55,6 @@ export async function POST(request: Request) {
 
   if (channel === "dine_in" && !body.qrCodeIdentifier) {
     return NextResponse.json({ ok: false, message: "Masa siparisi icin QR kodu gerekli." }, { status: 400 });
-  }
-
-  if (body.qrCodeIdentifier) {
-    const auth = await getCurrentUserWithRole();
-    if (!auth.user || !hasRoleAccess(auth.role, ["admin", "waiter", "cashier"])) {
-      return NextResponse.json(
-        { ok: false, message: "QR uzerinden dogrudan siparis kapali. Lutfen garsona iletin." },
-        { status: 403 },
-      );
-    }
   }
 
   let table = null;

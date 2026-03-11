@@ -1,4 +1,5 @@
 import { NextResponse } from "next/server";
+import { getCurrentUserWithRole } from "@/lib/auth";
 import { ACTIVE_BUSINESS_COOKIE, normalizeBusinessSlug } from "@/lib/business";
 
 type Body = {
@@ -6,6 +7,11 @@ type Body = {
 };
 
 export async function POST(request: Request) {
+  const auth = await getCurrentUserWithRole();
+  if (!auth.user) {
+    return NextResponse.json({ ok: false, message: "Yetkisiz" }, { status: 401 });
+  }
+
   let body: Body;
   try {
     body = (await request.json()) as Body;

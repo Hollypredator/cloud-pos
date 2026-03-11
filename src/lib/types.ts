@@ -211,6 +211,7 @@ export type Payment = {
   method: PaymentMethod;
   amount: number;
   note: string | null;
+  idempotency_key?: string | null;
   created_at: string;
 };
 

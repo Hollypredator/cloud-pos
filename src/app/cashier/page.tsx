@@ -1,10 +1,13 @@
+import { revalidatePath } from "next/cache";
 import Image from "next/image";
 import Link from "next/link";
+import { redirect } from "next/navigation";
 import { CashierPaymentPanel } from "@/components/cashier-payment-panel";
 import {
   BackofficePage,
   ContentCard,
   EmptyPanel,
+  NoticeBanner,
   SummaryCard,
   WorkflowGuide,
 } from "@/components/backoffice-ui";
@@ -17,7 +20,7 @@ import {
   completeOrderPayment,
   getCashierPageSnapshot,
   refundOrder,
-} from "@/lib/data";
+} from "@/lib/domains/orders";
 import { logServerPerf, measureAsync } from "@/lib/perf";
 import type { Order, OrderItem, PaymentMethod } from "@/lib/types";
 
@@ -50,6 +53,10 @@ function statusTone(status: string) {
   return "bg-slate-100 text-slate-700";
 }
 
+function feedbackHref(tone: "success" | "error", message: string) {
+  return `/cashier?tone=${encodeURIComponent(tone)}&feedback=${encodeURIComponent(message)}`;
+}
+
 async function applyFinancialsAction(formData: FormData) {
   "use server";
   await requireRole(["admin", "cashier"], "/cashier");
@@ -58,14 +65,24 @@ async function applyFinancialsAction(formData: FormData) {
   const discountAmount = Number(formData.get("discountAmount"));
   const serviceFee = Number(formData.get("serviceFee"));
   if (typeof orderId !== "string") {
-    return;
+    redirect(feedbackHref("error", "Siparis bulunamadi."));
   }
 
-  await applyOrderFinancials({
-    orderId,
-    discountAmount: Number.isFinite(discountAmount) ? discountAmount : 0,
-    serviceFee: Number.isFinite(serviceFee) ? serviceFee : 0,
-  });
+  try {
+    const result = await applyOrderFinancials({
+      orderId,
+      discountAmount: Number.isFinite(discountAmount) ? discountAmount : 0,
+      serviceFee: Number.isFinite(serviceFee) ? serviceFee : 0,
+    });
+    if (!result.ok) {
+      redirect(feedbackHref("error", result.error ?? "Finans guncellenemedi."));
+    }
+    revalidatePath("/cashier");
+    const finalPrice = typeof result.finalPrice === "number" ? result.finalPrice : 0;
+    redirect(feedbackHref("success", `Finans guncellendi. Yeni toplam: ${finalPrice.toFixed(2)} TL.`));
+  } catch {
+    redirect(feedbackHref("error", "Finans guncellenemedi."));
+  }
 }
 
 async function completePaymentAction(formData: FormData) {
@@ -76,16 +93,32 @@ async function completePaymentAction(formData: FormData) {
   const method = formData.get("method");
   const amount = Number(formData.get("amount"));
   const note = formData.get("note");
+  const requestKey = formData.get("requestKey");
   if (typeof orderId !== "string" || typeof method !== "string") {
-    return;
+    redirect(feedbackHref("error", "Odeme bilgileri gecersiz."));
   }
 
-  await completeOrderPayment({
-    orderId,
-    method: method as PaymentMethod,
-    amount: Number.isFinite(amount) ? amount : undefined,
-    note: typeof note === "string" ? note : undefined,
-  });
+  try {
+    const result = await completeOrderPayment({
+      orderId,
+      method: method as PaymentMethod,
+      amount: Number.isFinite(amount) ? amount : undefined,
+      note: typeof note === "string" ? note : undefined,
+      requestKey: typeof requestKey === "string" ? requestKey : undefined,
+    });
+    if (!result.ok) {
+      redirect(feedbackHref("error", result.error ?? "Odeme alinamadi."));
+    }
+    revalidatePath("/cashier");
+    if (result.idempotent) {
+      const remaining = typeof result.remaining === "number" ? result.remaining : 0;
+      redirect(feedbackHref("success", `Ayni odeme daha once kaydedilmis. Kalan bakiye: ${remaining.toFixed(2)} TL.`));
+    }
+    const remaining = typeof result.remaining === "number" ? result.remaining : 0;
+    redirect(feedbackHref("success", `Odeme kaydedildi. Kalan bakiye: ${remaining.toFixed(2)} TL.`));
+  } catch {
+    redirect(feedbackHref("error", "Odeme alinamadi."));
+  }
 }
 
 async function cancelOrderAction(formData: FormData) {
@@ -94,11 +127,25 @@ async function cancelOrderAction(formData: FormData) {
 
   const orderId = formData.get("orderId");
   const note = formData.get("note");
+  const requestKey = formData.get("requestKey");
   if (typeof orderId !== "string") {
-    return;
+    redirect(feedbackHref("error", "Siparis bulunamadi."));
   }
 
-  await cancelOrder(orderId, typeof note === "string" ? note : undefined);
+  try {
+    const result = await cancelOrder(
+      orderId,
+      typeof note === "string" ? note : undefined,
+      typeof requestKey === "string" ? requestKey : undefined,
+    );
+    if (!result.ok) {
+      redirect(feedbackHref("error", result.error ?? "Siparis iptal edilemedi."));
+    }
+    revalidatePath("/cashier");
+    redirect(feedbackHref("success", result.idempotent ? "Iptal islemi daha once kaydedilmis." : "Siparis iptal edildi."));
+  } catch {
+    redirect(feedbackHref("error", "Siparis iptal edilemedi."));
+  }
 }
 
 async function refundOrderAction(formData: FormData) {
@@ -109,16 +156,30 @@ async function refundOrderAction(formData: FormData) {
   const method = formData.get("method");
   const amount = Number(formData.get("amount"));
   const note = formData.get("note");
+  const requestKey = formData.get("requestKey");
   if (typeof orderId !== "string" || typeof method !== "string") {
-    return;
+    redirect(feedbackHref("error", "Iade bilgileri gecersiz."));
   }
 
-  await refundOrder({
-    orderId,
-    method: method as PaymentMethod,
-    amount: Number.isFinite(amount) ? amount : undefined,
-    note: typeof note === "string" ? note : undefined,
-  });
+  try {
+    const result = await refundOrder({
+      orderId,
+      method: method as PaymentMethod,
+      amount: Number.isFinite(amount) ? amount : undefined,
+      note: typeof note === "string" ? note : undefined,
+      requestKey: typeof requestKey === "string" ? requestKey : undefined,
+    });
+    if (!result.ok) {
+      redirect(feedbackHref("error", result.error ?? "Iade tamamlanamadi."));
+    }
+    revalidatePath("/cashier");
+    if (result.idempotent) {
+      redirect(feedbackHref("success", "Ayni iade daha once kaydedilmis."));
+    }
+    redirect(feedbackHref("success", "Iade islemi kaydedildi."));
+  } catch {
+    redirect(feedbackHref("error", "Iade tamamlanamadi."));
+  }
 }
 
 function totals(orders: Order[]) {
@@ -136,10 +197,10 @@ function totals(orders: Order[]) {
 export default async function CashierPage({
   searchParams,
 }: {
-  searchParams: Promise<{ order?: string }>;
+  searchParams: Promise<{ order?: string; feedback?: string; tone?: "success" | "error" }>;
 }) {
   await requireRole(["admin", "cashier"], "/cashier");
-  const { order: selectedOrderId } = await searchParams;
+  const { order: selectedOrderId, feedback, tone } = await searchParams;
   const cashierSnapshotResult = await measureAsync("cashier_snapshot", () => getCashierPageSnapshot(selectedOrderId));
   logServerPerf("/cashier", [cashierSnapshotResult]);
   const { servedOrders, paidOrders, selectedOrder, usingDemoData } = cashierSnapshotResult.value;
@@ -163,6 +224,14 @@ export default async function CashierPage({
         </>
       }
     >
+      {feedback ? (
+        <NoticeBanner
+          tone={tone === "error" ? "error" : "success"}
+          title={tone === "error" ? "Kasa islemi tamamlanamadi" : "Kasa islemi tamamlandi"}
+          description={feedback}
+        />
+      ) : null}
+
       {usingDemoData ? (
         <div className="rounded-[24px] border border-amber-200 bg-amber-50 px-5 py-4 text-sm text-amber-900">
           Demo veri modu aktif. Split, odeme ve iade akislarini bu ekran uzerinden test edebilirsin.
@@ -331,6 +400,7 @@ export default async function CashierPage({
 
                     <form action={refundOrderAction} className="grid gap-2 rounded-[20px] border border-rose-200 bg-rose-50/60 p-4">
                       <input type="hidden" name="orderId" value={order.id} />
+                      <input type="hidden" name="requestKey" value={crypto.randomUUID()} />
                       <select name="method" className="rounded-2xl border border-slate-300 px-4 py-3 text-sm">
                         <option value="cash">Nakit</option>
                         <option value="card">Kart</option>
@@ -385,6 +455,8 @@ export default async function CashierPage({
               const final = Number(order.final_price ?? subtotal);
               const paid = Number(order.amount_paid ?? 0);
               const remaining = Number(order.remaining_balance ?? final);
+              const paymentRequestKey = crypto.randomUUID();
+              const cancelRequestKey = crypto.randomUUID();
 
               return (
                 <div className="space-y-4">
@@ -522,11 +594,13 @@ export default async function CashierPage({
                       orderId={order.id}
                       defaultAmount={remaining}
                       items={order.items as OrderItem[]}
+                      requestKey={paymentRequestKey}
                       action={completePaymentAction}
                     />
 
                     <form action={cancelOrderAction} className="grid gap-2 rounded-[20px] border border-rose-200 bg-rose-50/60 p-4 content-start">
                       <input type="hidden" name="orderId" value={order.id} />
+                      <input type="hidden" name="requestKey" value={cancelRequestKey} />
                       <p className="text-xs font-bold uppercase tracking-[0.16em] text-rose-700">Adisyon Iptal</p>
                       <input
                         name="note"

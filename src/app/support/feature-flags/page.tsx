@@ -1,6 +1,6 @@
 import { FEATURE_META, getPlanLabel } from "@/lib/features";
 import { requireSupportAccess } from "@/lib/auth";
-import { listSupportFeatureFlagOverrides } from "@/lib/data";
+import { listSupportFeatureFlagOverrides } from "@/lib/domains/support";
 
 export default async function SupportFeatureFlagsPage() {
   await requireSupportAccess("/support/feature-flags", ["support_admin"]);
@@ -52,3 +52,4 @@ export default async function SupportFeatureFlagsPage() {
     </main>
   );
 }
+

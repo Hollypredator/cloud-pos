@@ -1,6 +1,6 @@
 import { revalidatePath } from "next/cache";
 import { requireSupportAccess } from "@/lib/auth";
-import { listSupportKnowledgeArticles, upsertSupportKnowledgeArticle } from "@/lib/data";
+import { listSupportKnowledgeArticles, upsertSupportKnowledgeArticle } from "@/lib/domains/support";
 
 async function upsertKnowledgeAction(formData: FormData) {
   "use server";
@@ -52,3 +52,4 @@ export default async function SupportKnowledgePage() {
     </main>
   );
 }
+

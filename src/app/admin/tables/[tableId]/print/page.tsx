@@ -3,7 +3,7 @@ import { notFound } from "next/navigation";
 import { getAppBaseUrl } from "@/lib/app-url";
 import { requireRole } from "@/lib/auth";
 import { getActiveBusinessSlug } from "@/lib/business-server";
-import { getTableMap } from "@/lib/data";
+import { getTableMap } from "@/lib/domains/tables";
 
 async function buildQrTarget(identifier: string) {
   const base = getAppBaseUrl();

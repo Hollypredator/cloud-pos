@@ -15,11 +15,13 @@ export function CashierPaymentPanel({
   orderId,
   defaultAmount,
   items,
+  requestKey,
   action,
 }: {
   orderId: string;
   defaultAmount: number;
   items: OrderItem[];
+  requestKey: string;
   action: (formData: FormData) => void | Promise<void>;
 }) {
   const [amount, setAmount] = useState(defaultAmount.toFixed(2));
@@ -164,6 +166,7 @@ export function CashierPaymentPanel({
 
       <form action={action} className="space-y-3 rounded-[20px] border border-slate-200 bg-white p-4">
         <input type="hidden" name="orderId" value={orderId} />
+        <input type="hidden" name="requestKey" value={requestKey} />
         <input type="hidden" name="note" value={finalNote} />
         <input type="hidden" name="method" value={method} />
 

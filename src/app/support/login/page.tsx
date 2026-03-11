@@ -1,7 +1,7 @@
 import Link from "next/link";
 import { redirect } from "next/navigation";
 import { getCurrentUserWithRole } from "@/lib/auth";
-import { getSupportAccessByEmail } from "@/lib/data";
+import { getSupportAccessByEmail } from "@/lib/domains/support";
 
 export default async function SupportLoginPage({
   searchParams,
@@ -76,3 +76,5 @@ export default async function SupportLoginPage({
     </div>
   );
 }
+
+
