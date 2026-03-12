@@ -90,42 +90,42 @@ export function TableManagementModal({
         </div>
 
         <div className="grid gap-4 md:grid-cols-3">
-          <article className="rounded-[24px] border border-slate-200 bg-slate-50 p-4">
+          <article className="rounded-[24px] border border-slate-200 bg-[linear-gradient(130deg,rgba(59,130,246,0.09),rgba(255,255,255,0.95)_65%)] p-4">
             <p className="text-xs font-bold uppercase tracking-[0.16em] text-slate-500">{translateUiText("Masa Durumu", locale)}</p>
             <p className="font-display mt-3 text-2xl font-semibold text-slate-900">{tableStatusLabel(table.status)}</p>
             <p className="mt-2 text-sm text-slate-500">{translateUiText("Masa", locale)} {table.table_number}</p>
           </article>
-          <article className="rounded-[24px] border border-slate-200 bg-slate-50 p-4">
+          <article className="rounded-[24px] border border-slate-200 bg-[linear-gradient(130deg,rgba(255,106,61,0.1),rgba(255,255,255,0.95)_65%)] p-4">
             <p className="text-xs font-bold uppercase tracking-[0.16em] text-slate-500">{translateUiText("Aktif Adisyon", locale)}</p>
             <p className="font-display mt-3 text-2xl font-semibold text-slate-900">{latestOrder ? `#${latestOrder.id.slice(0, 8)}` : translateUiText("Yok", locale)}</p>
             <p className="mt-2 text-sm text-slate-500">{latestOrder ? latestOrder.status : translateUiText("Bu masa icin acik siparis bulunmuyor", locale)}</p>
           </article>
-          <article className="rounded-[24px] border border-slate-200 bg-slate-50 p-4">
+          <article className="rounded-[24px] border border-slate-200 bg-[linear-gradient(130deg,rgba(16,185,129,0.1),rgba(255,255,255,0.95)_65%)] p-4">
             <p className="text-xs font-bold uppercase tracking-[0.16em] text-slate-500">{translateUiText("Kalan Bakiye", locale)}</p>
             <p className="font-display font-numeric mt-3 text-2xl font-semibold text-emerald-700">{Number(latestOrder?.remaining_balance ?? 0).toFixed(2)} TL</p>
             <p className="mt-2 text-sm text-slate-500">{translateUiText("Aktif siparis uzerinden hesaplanir", locale)}</p>
           </article>
         </div>
 
-        <div className="mt-5 grid gap-2 rounded-2xl border border-slate-200 bg-slate-50 p-2 sm:grid-cols-3">
+        <div className="mt-5 grid gap-2 rounded-2xl border border-slate-200 bg-[linear-gradient(135deg,rgba(248,250,252,0.9),rgba(255,255,255,0.98))] p-2 sm:grid-cols-3">
           <button
             type="button"
             onClick={() => setActiveTab("order")}
-            className={`rounded-xl px-4 py-3 text-sm font-semibold ${activeTab === "order" ? "bg-slate-900 text-white" : "bg-white text-slate-700"}`}
+            className={`rounded-xl px-4 py-3 text-sm font-semibold ${activeTab === "order" ? "bg-gradient-to-r from-[#ff6a3d] to-[#f2b44f] text-white shadow-[0_12px_22px_rgba(255,106,61,0.2)]" : "bg-white text-slate-700"}`}
           >
             {translateUiText("Siparis Girisi", locale)}
           </button>
           <button
             type="button"
             onClick={() => setActiveTab("history")}
-            className={`rounded-xl px-4 py-3 text-sm font-semibold ${activeTab === "history" ? "bg-slate-900 text-white" : "bg-white text-slate-700"}`}
+            className={`rounded-xl px-4 py-3 text-sm font-semibold ${activeTab === "history" ? "bg-gradient-to-r from-[#ff6a3d] to-[#f2b44f] text-white shadow-[0_12px_22px_rgba(255,106,61,0.2)]" : "bg-white text-slate-700"}`}
           >
             {translateUiText("Son Siparisler", locale)}
           </button>
           <button
             type="button"
             onClick={() => setActiveTab("ops")}
-            className={`rounded-xl px-4 py-3 text-sm font-semibold ${activeTab === "ops" ? "bg-slate-900 text-white" : "bg-white text-slate-700"}`}
+            className={`rounded-xl px-4 py-3 text-sm font-semibold ${activeTab === "ops" ? "bg-gradient-to-r from-[#ff6a3d] to-[#f2b44f] text-white shadow-[0_12px_22px_rgba(255,106,61,0.2)]" : "bg-white text-slate-700"}`}
           >
             {translateUiText("Masa Islemleri", locale)}
           </button>

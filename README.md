@@ -22,6 +22,9 @@ npm install
 NEXT_PUBLIC_SUPABASE_URL=...
 NEXT_PUBLIC_SUPABASE_ANON_KEY=...
 SUPABASE_SERVICE_ROLE_KEY=...
+RESEND_API_KEY=...
+RESEND_FROM_EMAIL=noreply@yourdomain.com
+RESEND_REPLY_TO_EMAIL=support@yourdomain.com
 PLATFORM_OWNER_EMAILS=owner@example.com
 STUDIO_ADMIN_EMAILS=admin@example.com
 APP_HOST=
@@ -134,6 +137,7 @@ npm run dev
 - Supabase env degerleri yoksa uygulama demo veri ile calisir.
 - `STUDIO_ADMIN_EMAILS` icine backoffice kullanacak dahili e-postalari virgulle ayirarak girin.
 - `APP_HOST` ve `STUDIO_HOST` ile ileride `app.domain.com` / `studio.domain.com` ayrimini aktif edebilirsiniz.
+- Mail gonderiminde oncelik `RESEND_API_KEY` + `RESEND_FROM_EMAIL`; tanimli degilse paneldeki SMTP ayarlari kullanilir.
 - Studio erisimi env listesinden veya `studio_access_users` tablosundan verilebilir.
 - Studio/backoffice tablolarinda dogrudan tenant admin erisimi kapatilmis, islem server-side service role akisi uzerine alinmistir.
 - Musteri operasyon yuzeyi ile studio/backoffice bilincli olarak ayridir:

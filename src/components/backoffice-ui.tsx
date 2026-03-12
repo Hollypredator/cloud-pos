@@ -97,11 +97,13 @@ export function SummaryCard({
   value,
   hint,
   tone = "neutral",
+  className,
 }: {
   label: string;
   value: string;
   hint?: string;
   tone?: "neutral" | "success" | "danger" | "accent";
+  className?: string;
 }) {
   const locale = getLocale();
   const toneStyles = {
@@ -112,7 +114,7 @@ export function SummaryCard({
   };
 
   return (
-    <article className="panel-surface panel-hover mesh-accent rounded-[24px] p-5">
+    <article className={cn("panel-surface panel-hover mesh-accent rounded-[24px] p-5", className)}>
       <div className="flex items-start justify-between gap-3">
         <div>
           <p className="text-xs font-bold uppercase tracking-[0.16em] text-slate-500">{translateUiText(label, locale)}</p>
@@ -160,13 +162,15 @@ export function SegmentedTabs({
 export function ContentCard({
   title,
   children,
+  className,
 }: {
   title: string;
   children: React.ReactNode;
+  className?: string;
 }) {
   const locale = getLocale();
   return (
-    <section className="panel-surface panel-hover rounded-[28px] p-5">
+    <section className={cn("panel-surface panel-hover rounded-[28px] p-5", className)}>
       <div className="border-b border-slate-200 pb-4">
         <h3 className="font-display text-2xl font-semibold tracking-tight text-slate-900">{translateUiText(title, locale)}</h3>
       </div>
@@ -248,14 +252,16 @@ export function WorkflowGuide({
   title,
   description,
   steps,
+  className,
 }: {
   title: string;
   description?: string;
   steps: Array<{ title: string; description: string }>;
+  className?: string;
 }) {
   const locale = getLocale();
   return (
-    <section className="panel-surface panel-hover rounded-[28px] p-5">
+    <section className={cn("panel-surface panel-hover rounded-[28px] p-5", className)}>
       <div className="border-b border-slate-200 pb-4">
         <h3 className="font-display text-2xl font-semibold tracking-tight text-slate-900">{translateUiText(title, locale)}</h3>
         {description ? <p className="mt-2 text-sm text-slate-500">{translateUiText(description, locale)}</p> : null}

@@ -106,15 +106,39 @@ export default async function AdminTablesPage({
       ) : null}
 
       <section className="grid gap-4 xl:grid-cols-4">
-        <SummaryCard label={translateUiText("Toplam Masa", locale)} value={String(tables.length)} hint="Salon kapasitesi" tone="accent" />
-        <SummaryCard label={translateUiText("Dolu Masa", locale)} value={String(occupiedCount)} hint={translateUiText("Aktif servis alan masa", locale)} tone="danger" />
-        <SummaryCard label={translateUiText("Bos Masa", locale)} value={String(emptyCount)} hint={translateUiText("Yeni musteri icin hazir", locale)} tone="success" />
-        <SummaryCard label={translateUiText("Acik Adisyon", locale)} value={String(activeOrderCount)} hint={translateUiText("Masaya bagli operasyon", locale)} />
+        <SummaryCard
+          label={translateUiText("Toplam Masa", locale)}
+          value={String(tables.length)}
+          hint="Salon kapasitesi"
+          tone="accent"
+          className="bg-[linear-gradient(130deg,rgba(255,106,61,0.14),rgba(255,255,255,0.9)_65%)]"
+        />
+        <SummaryCard
+          label={translateUiText("Dolu Masa", locale)}
+          value={String(occupiedCount)}
+          hint={translateUiText("Aktif servis alan masa", locale)}
+          tone="danger"
+          className="bg-[linear-gradient(130deg,rgba(251,113,133,0.12),rgba(255,255,255,0.9)_65%)]"
+        />
+        <SummaryCard
+          label={translateUiText("Bos Masa", locale)}
+          value={String(emptyCount)}
+          hint={translateUiText("Yeni musteri icin hazir", locale)}
+          tone="success"
+          className="bg-[linear-gradient(130deg,rgba(16,185,129,0.12),rgba(255,255,255,0.9)_65%)]"
+        />
+        <SummaryCard
+          label={translateUiText("Acik Adisyon", locale)}
+          value={String(activeOrderCount)}
+          hint={translateUiText("Masaya bagli operasyon", locale)}
+          className="bg-[linear-gradient(130deg,rgba(59,130,246,0.1),rgba(255,255,255,0.9)_65%)]"
+        />
       </section>
 
       <WorkflowGuide
         title={translateUiText("Masalari 3 Adimda Hazirla", locale)}
         description={translateUiText("Salon kurulumu ilk kez yapilsa bile masa akisi kolay anlasilsin.", locale)}
+        className="bg-[linear-gradient(125deg,rgba(15,23,42,0.03),rgba(255,255,255,0.92)_45%,rgba(255,106,61,0.08))]"
         steps={[
           { title: translateUiText("Masayi olustur ve isim ver", locale), description: translateUiText("Yeni masa numarasini ve gorunur masa adini kaydet; ekip bu isimle calisir.", locale) },
           { title: translateUiText("QR'i kontrol et", locale), description: translateUiText("QR ve yazdirma islerini Masa Yonet popup'i icinden tamamla.", locale) },
