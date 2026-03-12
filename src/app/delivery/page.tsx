@@ -2,6 +2,7 @@ import Link from "next/link";
 import { redirect } from "next/navigation";
 import { BackofficePage, ContentCard, EmptyPanel, FeatureLockedState, NoticeBanner, SummaryCard, WorkflowGuide } from "@/components/backoffice-ui";
 import { LiveOpsBridge } from "@/components/live-ops-bridge";
+import { PendingSubmitButton } from "@/components/pending-submit-button";
 import { requireRole } from "@/lib/auth";
 import {
   assignOrderCourier,
@@ -60,12 +61,18 @@ async function assignCourierAction(formData: FormData) {
   }
 
   try {
-    await assignOrderCourier({
+    const result = await assignOrderCourier({
       orderId,
       courierId,
       courierName,
       courierPhone: courierPhone || null,
     });
+    if (!result.ok) {
+      redirect(feedbackHref("error", result.error ?? "Kurye atamasi tamamlanamadi."));
+    }
+    if ("noop" in result && result.noop) {
+      redirect(feedbackHref("success", "Kurye atamasi zaten yapilmis."));
+    }
     redirect(feedbackHref("success", "Siparis kuryeye atandi."));
   } catch {
     redirect(feedbackHref("error", "Kurye atamasi tamamlanamadi."));
@@ -124,7 +131,13 @@ async function completeDeliveryAction(formData: FormData) {
   }
 
   try {
-    await markDeliveryCompleted(orderId);
+    const result = await markDeliveryCompleted(orderId);
+    if (!result.ok) {
+      redirect(feedbackHref("error", result.error ?? "Teslimat kapanisi yapilamadi."));
+    }
+    if ("noop" in result && result.noop) {
+      redirect(feedbackHref("success", "Teslimat zaten tamamlanmis."));
+    }
     redirect(feedbackHref("success", "Teslimat tamamlandi olarak isaretlendi."));
   } catch {
     redirect(feedbackHref("error", "Teslimat kapanisi yapilamadi."));
@@ -194,21 +207,22 @@ function renderOrderCard(
               </option>
             ))}
           </select>
-          <button
-            type="submit"
+          <PendingSubmitButton
+            idleLabel="Kuryeye Ata"
+            pendingLabel="Ataniyor..."
             className="rounded-2xl bg-gradient-to-r from-[#ff5a34] to-[#f0b14f] px-4 py-3 text-sm font-semibold text-white shadow-[0_10px_20px_rgba(255,111,60,0.24)]"
-          >
-            Kuryeye Ata
-          </button>
+          />
         </form>
       ) : null}
 
       {kind === "travel" ? (
         <form action={completeDeliveryAction} className="mt-4">
           <input type="hidden" name="orderId" value={order.id} />
-          <button type="submit" className="w-full rounded-2xl bg-emerald-600 px-4 py-3 text-sm font-semibold text-white">
-            Teslim Edildi
-          </button>
+          <PendingSubmitButton
+            idleLabel="Teslim Edildi"
+            pendingLabel="Kapatiliyor..."
+            className="w-full rounded-2xl bg-emerald-600 px-4 py-3 text-sm font-semibold text-white"
+          />
         </form>
       ) : null}
     </article>
@@ -218,7 +232,7 @@ function renderOrderCard(
 export default async function DeliveryPage({
   searchParams,
 }: {
-  searchParams: Promise<{ feedback?: string; tone?: "success" | "error"; order?: string; courier?: string }>;
+  searchParams: Promise<{ feedback?: string; tone?: "success" | "error"; order?: string; courier?: string; showAll?: string }>;
 }) {
   await requireRole(["admin", "cashier", "waiter"], "/delivery");
   const featureAccessResult = await measureAsync("feature_access", () => getFeatureAccess("delivery_dispatch"));
@@ -236,13 +250,18 @@ export default async function DeliveryPage({
       </BackofficePage>
     );
   }
-  const { feedback, tone, order: selectedOrderId, courier: selectedCourierId } = await searchParams;
+  const { feedback, tone, order: selectedOrderId, courier: selectedCourierId, showAll } = await searchParams;
   const deliverySnapshotResult = await measureAsync("delivery_snapshot", () => getDeliveryPageSnapshot(selectedOrderId));
   logServerPerf("/delivery", [featureAccessResult, deliverySnapshotResult]);
   const { orders: deliveryOrders, couriers, selectedOrder, usingDemoData } = deliverySnapshotResult.value;
   const awaitingDispatch = deliveryOrders.filter((order) => order.fulfillment_status === "awaiting_dispatch");
   const outForDelivery = deliveryOrders.filter((order) => order.fulfillment_status === "out_for_delivery");
   const completed = deliveryOrders.filter((order) => order.fulfillment_status === "completed");
+  const showAllColumns = showAll === "1";
+  const initialColumnLimit = 12;
+  const visibleAwaiting = showAllColumns ? awaitingDispatch : awaitingDispatch.slice(0, initialColumnLimit);
+  const visibleTravel = showAllColumns ? outForDelivery : outForDelivery.slice(0, initialColumnLimit);
+  const visibleCompleted = showAllColumns ? completed : completed.slice(0, initialColumnLimit);
   const selectedCourier = selectedCourierId ? couriers.find((courier) => courier.id === selectedCourierId) ?? null : null;
 
   return (
@@ -284,36 +303,42 @@ export default async function DeliveryPage({
           {deliveryOrders.length === 0 ? (
             <EmptyPanel title="Teslimat Yok" description="Aktif delivery siparisi bulunmuyor." />
           ) : (
-            <div className="grid gap-4 xl:grid-cols-3">
-              <section className="rounded-[24px] border border-slate-200 bg-[#f7f8fa] p-4">
-                <div className="flex flex-wrap items-start justify-between gap-3">
-                  <div>
-                    <p className="text-xs font-bold uppercase tracking-[0.16em] text-slate-500">Asama</p>
-                    <h2 className="mt-2 text-xl font-semibold tracking-tight text-slate-900 sm:text-2xl">Dispatch</h2>
-                    <p className="mt-1 text-sm text-slate-500">Kurye atamasi bekleyen siparisler</p>
-                  </div>
-                  <span className="rounded-full bg-[#fff2ee] px-3 py-1 text-xs font-semibold text-[#ff5a34]">{awaitingDispatch.length}</span>
-                </div>
-                <div className="mt-4 space-y-4">
-                  {awaitingDispatch.length === 0 ? (
-                    <div className="rounded-[20px] border border-dashed border-slate-200 bg-white px-4 py-8 text-center text-sm text-slate-500">
-                      Dispatch bekleyen siparis yok.
+            <div className="space-y-4">
+              <div className="flex justify-end">
+                <Link href={showAllColumns ? "/delivery" : "/delivery?showAll=1"} className="rounded-2xl border border-slate-200 bg-white px-4 py-2 text-sm font-semibold text-slate-700">
+                  {showAllColumns ? "Ilk gorunume don" : "Tum siparisleri goster"}
+                </Link>
+              </div>
+              <div className="grid gap-4 xl:grid-cols-3">
+                <section className="rounded-[24px] border border-slate-200 bg-[#f7f8fa] p-4">
+                  <div className="flex flex-wrap items-start justify-between gap-3">
+                    <div>
+                      <p className="text-xs font-bold uppercase tracking-[0.16em] text-slate-500">Asama</p>
+                      <h2 className="mt-2 text-xl font-semibold tracking-tight text-slate-900 sm:text-2xl">Dispatch</h2>
+                      <p className="mt-1 text-sm text-slate-500">Kurye atamasi bekleyen siparisler</p>
                     </div>
-                  ) : (
-                    awaitingDispatch.map((order) => (
-                      <div key={order.id}>
-                        {renderOrderCard(order, "awaiting", couriers)}
-                        <Link
-                          href={`/delivery?order=${order.id}`}
-                          className="mt-2 block rounded-2xl border border-slate-200 bg-white px-4 py-3 text-center text-sm font-semibold text-slate-700"
-                        >
-                          Detayi Ac
-                        </Link>
+                    <span className="rounded-full bg-[#fff2ee] px-3 py-1 text-xs font-semibold text-[#ff5a34]">{awaitingDispatch.length}</span>
+                  </div>
+                  <div className="mt-4 space-y-4">
+                    {visibleAwaiting.length === 0 ? (
+                      <div className="rounded-[20px] border border-dashed border-slate-200 bg-white px-4 py-8 text-center text-sm text-slate-500">
+                        Dispatch bekleyen siparis yok.
                       </div>
-                    ))
-                  )}
-                </div>
-              </section>
+                    ) : (
+                      visibleAwaiting.map((order) => (
+                        <div key={order.id}>
+                          {renderOrderCard(order, "awaiting", couriers)}
+                          <Link
+                            href={`/delivery?order=${order.id}`}
+                            className="mt-2 block rounded-2xl border border-slate-200 bg-white px-4 py-3 text-center text-sm font-semibold text-slate-700"
+                          >
+                            Detayi Ac
+                          </Link>
+                        </div>
+                      ))
+                    )}
+                  </div>
+                </section>
 
               <section className="rounded-[24px] border border-slate-200 bg-[#f7f8fa] p-4">
                 <div className="flex flex-wrap items-start justify-between gap-3">
@@ -325,12 +350,12 @@ export default async function DeliveryPage({
                   <span className="rounded-full bg-sky-100 px-3 py-1 text-xs font-semibold text-sky-700">{outForDelivery.length}</span>
                 </div>
                 <div className="mt-4 space-y-4">
-                  {outForDelivery.length === 0 ? (
+                  {visibleTravel.length === 0 ? (
                     <div className="rounded-[20px] border border-dashed border-slate-200 bg-white px-4 py-8 text-center text-sm text-slate-500">
                       Yolda siparis yok.
                     </div>
                   ) : (
-                    outForDelivery.map((order) => (
+                    visibleTravel.map((order) => (
                       <div key={order.id}>
                         {renderOrderCard(order, "travel", couriers)}
                         <Link
@@ -355,12 +380,12 @@ export default async function DeliveryPage({
                   <span className="rounded-full bg-emerald-100 px-3 py-1 text-xs font-semibold text-emerald-700">{completed.length}</span>
                 </div>
                 <div className="mt-4 space-y-4">
-                  {completed.length === 0 ? (
+                  {visibleCompleted.length === 0 ? (
                     <div className="rounded-[20px] border border-dashed border-slate-200 bg-white px-4 py-8 text-center text-sm text-slate-500">
                       Tamamlanan teslimat yok.
                     </div>
                   ) : (
-                    completed.map((order) => (
+                    visibleCompleted.map((order) => (
                       <div key={order.id}>
                         {renderOrderCard(order, "done", couriers)}
                         <Link
@@ -374,6 +399,7 @@ export default async function DeliveryPage({
                   )}
                 </div>
               </section>
+              </div>
             </div>
           )}
         </ContentCard>
@@ -402,9 +428,11 @@ export default async function DeliveryPage({
                 placeholder="Telefon"
                 className="w-full rounded-2xl border border-slate-300 px-4 py-3 text-sm"
               />
-              <button type="submit" className="rounded-2xl bg-slate-900 px-4 py-3 text-sm font-semibold text-white">
-                Kurye Olustur
-              </button>
+              <PendingSubmitButton
+                idleLabel="Kurye Olustur"
+                pendingLabel="Olusturuluyor..."
+                className="rounded-2xl bg-slate-900 px-4 py-3 text-sm font-semibold text-white"
+              />
             </form>
           </ContentCard>
 
@@ -594,9 +622,11 @@ export default async function DeliveryPage({
                       <input type="checkbox" name="isActive" defaultChecked={selectedCourier.is_active} className="h-4 w-4 rounded border-slate-300" />
                       Kurye aktif olarak kullanilsin
                     </label>
-                    <button type="submit" className="rounded-2xl bg-slate-900 px-4 py-3 text-sm font-semibold text-white">
-                      Kurye Bilgilerini Kaydet
-                    </button>
+                    <PendingSubmitButton
+                      idleLabel="Kurye Bilgilerini Kaydet"
+                      pendingLabel="Kaydediliyor..."
+                      className="rounded-2xl bg-slate-900 px-4 py-3 text-sm font-semibold text-white"
+                    />
                   </form>
                 </article>
 
@@ -607,9 +637,11 @@ export default async function DeliveryPage({
                   </p>
                   <form action={deleteCourierAction} className="mt-4">
                     <input type="hidden" name="courierId" value={selectedCourier.id} />
-                    <button type="submit" className="rounded-2xl border border-rose-300 bg-white px-4 py-3 text-sm font-semibold text-rose-700">
-                      Kuryeyi Sil
-                    </button>
+                    <PendingSubmitButton
+                      idleLabel="Kuryeyi Sil"
+                      pendingLabel="Siliniyor..."
+                      className="rounded-2xl border border-rose-300 bg-white px-4 py-3 text-sm font-semibold text-rose-700"
+                    />
                   </form>
                 </article>
               </div>

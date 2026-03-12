@@ -8,7 +8,6 @@ import {
   ContentCard,
   EmptyPanel,
   FeatureLockedState,
-  FilterButton,
   SegmentedTabs,
   SidebarPanel,
   SummaryCard,
@@ -21,6 +20,80 @@ import { getFeatureAccess } from "@/lib/plan-access";
 export const dynamic = "force-dynamic";
 
 type ReportTab = "general" | "cari" | "detail" | "staff";
+type FilterMode = "period" | "date";
+
+function toDateInputValue(value: Date) {
+  const year = value.getFullYear();
+  const month = String(value.getMonth() + 1).padStart(2, "0");
+  const day = String(value.getDate()).padStart(2, "0");
+  return `${year}-${month}-${day}`;
+}
+
+function parseDateInput(value?: string) {
+  if (!value || !/^\d{4}-\d{2}-\d{2}$/.test(value)) return null;
+  const [yearText, monthText, dayText] = value.split("-");
+  const year = Number(yearText);
+  const month = Number(monthText);
+  const day = Number(dayText);
+  const parsed = new Date(year, month - 1, day);
+  return Number.isNaN(parsed.getTime()) ? null : parsed;
+}
+
+function resolveDateInputs(days: number, start?: string, end?: string) {
+  const defaultEnd = new Date();
+  const defaultStart = new Date();
+  defaultStart.setDate(defaultStart.getDate() - Math.max(0, days - 1));
+
+  const parsedStart = parseDateInput(start);
+  const parsedEnd = parseDateInput(end);
+  if (!parsedStart || !parsedEnd) {
+    return {
+      startDate: toDateInputValue(defaultStart),
+      endDate: toDateInputValue(defaultEnd),
+      warning: start || end ? "Tarih formati gecersizdi. Varsayilan aralik uygulandi." : null,
+    };
+  }
+
+  const maxDays = 366;
+  const isReversed = parsedStart.getTime() > parsedEnd.getTime();
+  const normalizedStart = isReversed ? parsedEnd : parsedStart;
+  const normalizedEnd = isReversed ? parsedStart : parsedEnd;
+  const totalDays = Math.floor((normalizedEnd.getTime() - normalizedStart.getTime()) / 86400000) + 1;
+
+  if (totalDays > maxDays) {
+    const clampedEnd = new Date(normalizedStart);
+    clampedEnd.setDate(clampedEnd.getDate() + maxDays - 1);
+    return {
+      startDate: toDateInputValue(normalizedStart),
+      endDate: toDateInputValue(clampedEnd),
+      warning: "Tarih araligi en fazla 366 gun olabilir. Aralik sinirlandi.",
+    };
+  }
+
+  return {
+    startDate: toDateInputValue(normalizedStart),
+    endDate: toDateInputValue(normalizedEnd),
+    warning: isReversed ? "Baslangic ve bitis tarihleri yer degistirilerek duzeltildi." : null,
+  };
+}
+
+function buildReportHref(input: {
+  tab: ReportTab;
+  days: number;
+  mode: FilterMode;
+  start?: string;
+  end?: string;
+}) {
+  const params = new URLSearchParams();
+  params.set("tab", input.tab);
+  params.set("days", String(input.days));
+  params.set("mode", input.mode);
+  if (input.mode === "date" && input.start && input.end) {
+    params.set("start", input.start);
+    params.set("end", input.end);
+  }
+  return `/admin/reports?${params.toString()}`;
+}
 
 function dayLabel(value: string) {
   const date = new Date(value);
@@ -137,7 +210,7 @@ function DonutChart({
 export default async function AdminReportsPage({
   searchParams,
 }: {
-  searchParams: Promise<{ tab?: string; days?: string }>;
+  searchParams: Promise<{ tab?: string; days?: string; mode?: string; start?: string; end?: string }>;
 }) {
   try {
     await requireRole(["admin"], "/admin/reports");
@@ -157,8 +230,10 @@ export default async function AdminReportsPage({
         </BackofficePage>
       );
     }
-    const { tab: tabParam, days: daysParam } = await searchParams;
+    const { tab: tabParam, days: daysParam, mode: modeParam, start: startParam, end: endParam } = await searchParams;
     const days = Number.isFinite(Number(daysParam)) ? Number(daysParam) : 7;
+    const mode: FilterMode = modeParam === "date" ? "date" : "period";
+    const { startDate, endDate, warning: dateGuardWarning } = resolveDateInputs(days, startParam, endParam);
     const activeTab: ReportTab =
       tabParam === "cari" || tabParam === "detail" || tabParam === "staff" ? tabParam : "general";
     const shouldLoadFinancial = activeTab === "cari" || activeTab === "detail";
@@ -209,9 +284,13 @@ export default async function AdminReportsPage({
         });
 
     const [salesResult, financialResult, opsResult, roleCountsResult, branchContextResult] = await Promise.all([
-      measureAsync("sales_report_summary", () => getSalesReportSummary(days)),
+      measureAsync("sales_report_summary", () =>
+        getSalesReportSummary(mode === "date" ? { startDate, endDate } : { days }),
+      ),
       shouldLoadFinancial
-        ? measureAsync("financial_insights", () => getFinancialInsights(days))
+        ? measureAsync("financial_insights", () =>
+            getFinancialInsights(mode === "date" ? { startDate, endDate } : { days }),
+          )
         : Promise.resolve({
           label: "financial_insights",
           ms: 0,
@@ -270,19 +349,55 @@ export default async function AdminReportsPage({
       sidebar={
         <SidebarPanel title={translateUiText("Filtreler", locale)} description={translateUiText("Donem ve gorunum secimi", locale)}>
           <div className="grid gap-2 sm:grid-cols-2">
-            <FilterButton>{translateUiText("Donem", locale)}</FilterButton>
-            <FilterButton active>{translateUiText("Tarih", locale)}</FilterButton>
+            <Link href={buildReportHref({ tab: activeTab, days, mode: "period" })} className={mode === "period" ? "rounded-2xl bg-gradient-to-r from-[#ff5a34] to-[#f0b14f] px-4 py-3 text-center text-sm font-semibold text-white" : "rounded-2xl border border-slate-200 bg-slate-50 px-4 py-3 text-center text-sm font-semibold text-slate-700"}>
+              {translateUiText("Donem", locale)}
+            </Link>
+            <Link href={buildReportHref({ tab: activeTab, days, mode: "date", start: startDate, end: endDate })} className={mode === "date" ? "rounded-2xl bg-gradient-to-r from-[#ff5a34] to-[#f0b14f] px-4 py-3 text-center text-sm font-semibold text-white" : "rounded-2xl border border-slate-200 bg-slate-50 px-4 py-3 text-center text-sm font-semibold text-slate-700"}>
+              {translateUiText("Tarih", locale)}
+            </Link>
           </div>
 
-          <div>
-            <p className="mb-3 text-sm font-bold uppercase tracking-[0.16em] text-slate-800">{translateUiText("Tarih Araligi", locale)}</p>
-            <div className="grid gap-2 sm:grid-cols-2">
-              <FilterButton>{translateUiText("Bugun", locale)}</FilterButton>
-              <FilterButton>{translateUiText("Dun", locale)}</FilterButton>
-              <FilterButton active>{translateUiText("Son 7 Gun", locale)}</FilterButton>
-              <FilterButton>{translateUiText("Son 30 Gun", locale)}</FilterButton>
+          {mode === "period" ? (
+            <div>
+              <p className="mb-3 text-sm font-bold uppercase tracking-[0.16em] text-slate-800">{translateUiText("Tarih Araligi", locale)}</p>
+              <div className="grid gap-2 sm:grid-cols-2">
+                <Link href={buildReportHref({ tab: activeTab, days: 1, mode: "period" })} className={days === 1 ? "rounded-2xl bg-gradient-to-r from-[#ff5a34] to-[#f0b14f] px-4 py-3 text-center text-sm font-semibold text-white" : "rounded-2xl border border-slate-200 bg-slate-50 px-4 py-3 text-center text-sm font-semibold text-slate-700"}>
+                  {translateUiText("Bugun", locale)}
+                </Link>
+                <Link href={buildReportHref({ tab: activeTab, days: 2, mode: "period" })} className={days === 2 ? "rounded-2xl bg-gradient-to-r from-[#ff5a34] to-[#f0b14f] px-4 py-3 text-center text-sm font-semibold text-white" : "rounded-2xl border border-slate-200 bg-slate-50 px-4 py-3 text-center text-sm font-semibold text-slate-700"}>
+                  {translateUiText("Dun", locale)}
+                </Link>
+                <Link href={buildReportHref({ tab: activeTab, days: 7, mode: "period" })} className={days === 7 ? "rounded-2xl bg-gradient-to-r from-[#ff5a34] to-[#f0b14f] px-4 py-3 text-center text-sm font-semibold text-white" : "rounded-2xl border border-slate-200 bg-slate-50 px-4 py-3 text-center text-sm font-semibold text-slate-700"}>
+                  {translateUiText("Son 7 Gun", locale)}
+                </Link>
+                <Link href={buildReportHref({ tab: activeTab, days: 30, mode: "period" })} className={days === 30 ? "rounded-2xl bg-gradient-to-r from-[#ff5a34] to-[#f0b14f] px-4 py-3 text-center text-sm font-semibold text-white" : "rounded-2xl border border-slate-200 bg-slate-50 px-4 py-3 text-center text-sm font-semibold text-slate-700"}>
+                  {translateUiText("Son 30 Gun", locale)}
+                </Link>
+              </div>
             </div>
-          </div>
+          ) : (
+            <form method="get" className="space-y-3">
+              <input type="hidden" name="tab" value={activeTab} />
+              <input type="hidden" name="mode" value="date" />
+              <input type="hidden" name="days" value={String(days)} />
+              <div>
+                <p className="mb-2 text-sm font-semibold text-slate-800">{translateUiText("Baslangic Tarihi", locale)}</p>
+                <input name="start" type="date" defaultValue={startDate} className="w-full rounded-2xl border border-slate-200 bg-slate-50 px-4 py-3 text-sm" />
+              </div>
+              <div>
+                <p className="mb-2 text-sm font-semibold text-slate-800">{translateUiText("Bitis Tarihi", locale)}</p>
+                <input name="end" type="date" defaultValue={endDate} className="w-full rounded-2xl border border-slate-200 bg-slate-50 px-4 py-3 text-sm" />
+              </div>
+              <button type="submit" className="w-full rounded-2xl bg-gradient-to-r from-[#ff5a34] to-[#f0b14f] px-4 py-3 text-sm font-semibold text-white">
+                {translateUiText("Filtreleri Uygula", locale)}
+              </button>
+              {dateGuardWarning ? (
+                <div className="rounded-2xl border border-amber-200 bg-amber-50 px-3 py-2 text-xs text-amber-900">
+                  {dateGuardWarning}
+                </div>
+              ) : null}
+            </form>
+          )}
 
           <div>
             <p className="mb-3 text-sm font-bold uppercase tracking-[0.16em] text-slate-800">{translateUiText("Satis Kanali", locale)}</p>
@@ -308,12 +423,12 @@ export default async function AdminReportsPage({
           </div>
 
           <div className="space-y-3">
-            <button type="button" className="w-full rounded-2xl bg-gradient-to-r from-[#ff5a34] to-[#f0b14f] px-4 py-3 text-sm font-semibold text-white">
+            <Link href={buildReportHref({ tab: activeTab, days, mode, start: startDate, end: endDate })} className="block w-full rounded-2xl bg-gradient-to-r from-[#ff5a34] to-[#f0b14f] px-4 py-3 text-center text-sm font-semibold text-white">
               {translateUiText("Filtreleri Uygula", locale)}
-            </button>
-            <button type="button" className="w-full rounded-2xl border border-slate-200 bg-slate-50 px-4 py-3 text-sm font-semibold text-slate-700">
+            </Link>
+            <Link href={buildReportHref({ tab: activeTab, days: 7, mode: "period" })} className="block w-full rounded-2xl border border-slate-200 bg-slate-50 px-4 py-3 text-center text-sm font-semibold text-slate-700">
               {translateUiText("Sifirla", locale)}
-            </button>
+            </Link>
           </div>
         </SidebarPanel>
       }
@@ -325,10 +440,10 @@ export default async function AdminReportsPage({
             </p>
             <p className="text-sm text-slate-500">{branchLabel}</p>
           </div>
-          <a href={`/api/reports/sales.csv?days=${days}`} className="w-full rounded-2xl border border-slate-200 bg-white px-5 py-3 text-center text-sm font-semibold text-slate-800 sm:w-auto">
+          <a href={mode === "date" ? `/api/reports/sales.csv?start=${startDate}&end=${endDate}` : `/api/reports/sales.csv?days=${days}`} className="w-full rounded-2xl border border-slate-200 bg-white px-5 py-3 text-center text-sm font-semibold text-slate-800 sm:w-auto">
             {translateUiText("Excel", locale)}
           </a>
-          <Link href={`/admin/finance?days=${days}`} className="w-full rounded-2xl border border-slate-200 bg-white px-5 py-3 text-center text-sm font-semibold text-slate-800 sm:w-auto">
+          <Link href={mode === "date" ? `/admin/finance?mode=date&start=${startDate}&end=${endDate}` : `/admin/finance?mode=period&days=${days}`} className="w-full rounded-2xl border border-slate-200 bg-white px-5 py-3 text-center text-sm font-semibold text-slate-800 sm:w-auto">
             {translateUiText("Finans", locale)}
           </Link>
         </>
@@ -336,10 +451,10 @@ export default async function AdminReportsPage({
     >
       <SegmentedTabs
         tabs={[
-          { label: translateUiText("Genel", locale), active: activeTab === "general", href: `/admin/reports?tab=general&days=${days}` },
-          { label: translateUiText("Cari", locale), active: activeTab === "cari", href: `/admin/reports?tab=cari&days=${days}` },
-          { label: translateUiText("Detay", locale), active: activeTab === "detail", href: `/admin/reports?tab=detail&days=${days}` },
-          { label: translateUiText("Personel", locale), active: activeTab === "staff", href: `/admin/reports?tab=staff&days=${days}` },
+          { label: translateUiText("Genel", locale), active: activeTab === "general", href: buildReportHref({ tab: "general", days, mode, start: startDate, end: endDate }) },
+          { label: translateUiText("Cari", locale), active: activeTab === "cari", href: buildReportHref({ tab: "cari", days, mode, start: startDate, end: endDate }) },
+          { label: translateUiText("Detay", locale), active: activeTab === "detail", href: buildReportHref({ tab: "detail", days, mode, start: startDate, end: endDate }) },
+          { label: translateUiText("Personel", locale), active: activeTab === "staff", href: buildReportHref({ tab: "staff", days, mode, start: startDate, end: endDate }) },
         ]}
       />
 

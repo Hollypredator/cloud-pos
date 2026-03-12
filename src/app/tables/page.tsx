@@ -1,5 +1,6 @@
 import Link from "next/link";
 import { LiveOpsBridge } from "@/components/live-ops-bridge";
+import { requireRole } from "@/lib/auth";
 import { getTableMap } from "@/lib/domains/tables";
 
 const statusStyles: Record<string, string> = {
@@ -9,6 +10,7 @@ const statusStyles: Record<string, string> = {
 };
 
 export default async function TablesPage() {
+  await requireRole(["admin", "waiter", "cashier", "kitchen"], "/tables");
   const { tables, usingDemoData } = await getTableMap();
 
   return (

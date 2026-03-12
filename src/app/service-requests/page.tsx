@@ -1,7 +1,9 @@
 import Link from "next/link";
 import { BackofficePage, ContentCard, EmptyPanel, SidebarPanel, SummaryCard, WorkflowGuide } from "@/components/backoffice-ui";
 import { LiveOpsBridge } from "@/components/live-ops-bridge";
+import { PendingSubmitButton } from "@/components/pending-submit-button";
 import { requireRole } from "@/lib/auth";
+import { getCurrentLocale } from "@/lib/i18n-server";
 import { listTableRequests, resolveTableRequest } from "@/lib/domains/tables";
 
 async function resolveAction(formData: FormData) {
@@ -28,9 +30,17 @@ function elapsedLabel(createdAt: string) {
   return `${diff} dk`;
 }
 
-export default async function ServiceRequestsPage() {
+export default async function ServiceRequestsPage({
+  searchParams,
+}: {
+  searchParams: Promise<{ page?: string }>;
+}) {
   await requireRole(["admin", "waiter", "cashier"], "/service-requests");
-  const { requests, usingDemoData } = await listTableRequests("open");
+  const locale = await getCurrentLocale();
+  const localeCode = locale === "en" ? "en-US" : locale === "fr" ? "fr-FR" : "tr-TR";
+  const { page: pageParam } = await searchParams;
+  const page = Number.isFinite(Number(pageParam)) ? Math.max(1, Number(pageParam)) : 1;
+  const { requests, usingDemoData, hasNextPage, hasPreviousPage } = await listTableRequests("open", { page, limit: 24 });
 
   const waiterCalls = requests.filter((request) => request.request_type === "call_waiter").length;
   const billCalls = requests.filter((request) => request.request_type === "request_bill").length;
@@ -71,6 +81,9 @@ export default async function ServiceRequestsPage() {
           <span className="rounded-2xl border border-slate-200 bg-slate-50 px-5 py-3 text-sm font-semibold text-slate-800">
             {requests.length} aktif talep
           </span>
+          <span className="rounded-2xl border border-slate-200 bg-white px-5 py-3 text-sm font-semibold text-slate-700">
+            Sayfa {page}
+          </span>
         </>
       }
     >
@@ -101,33 +114,54 @@ export default async function ServiceRequestsPage() {
         {requests.length === 0 ? (
           <EmptyPanel title="Acik talep yok" description="Garson cagri veya hesap istegi geldikce bu kuyrukta gorunecek." />
         ) : (
-          <div className="grid gap-4 xl:grid-cols-2">
-            {requests.map((request) => (
-              <article key={request.id} className="rounded-[24px] border border-slate-200 bg-[#fbfbfc] p-4 shadow-[0_10px_20px_rgba(15,23,42,0.04)]">
-                <div className="flex items-start justify-between gap-3">
-                  <div>
-                    <p className="text-xs font-bold uppercase tracking-[0.16em] text-slate-500">Masa {request.table_number ?? "-"}</p>
-                    <h3 className="mt-2 text-xl font-semibold tracking-tight text-slate-900 sm:text-2xl">{toLabel(request.request_type)}</h3>
-                    <p className="mt-1 text-sm text-slate-500">{new Date(request.created_at).toLocaleString("tr-TR")}</p>
+          <div className="space-y-4">
+            <div className="grid gap-4 xl:grid-cols-2">
+              {requests.map((request) => (
+                <article key={request.id} className="rounded-[24px] border border-slate-200 bg-[#fbfbfc] p-4 shadow-[0_10px_20px_rgba(15,23,42,0.04)]">
+                  <div className="flex items-start justify-between gap-3">
+                    <div>
+                      <p className="text-xs font-bold uppercase tracking-[0.16em] text-slate-500">Masa {request.table_number ?? "-"}</p>
+                      <h3 className="mt-2 text-xl font-semibold tracking-tight text-slate-900 sm:text-2xl">{toLabel(request.request_type)}</h3>
+                      <p className="mt-1 text-sm text-slate-500">{new Date(request.created_at).toLocaleString(localeCode)}</p>
+                    </div>
+                    <span className="rounded-full bg-amber-100 px-3 py-2 text-xs font-semibold uppercase text-amber-800">
+                      {elapsedLabel(request.created_at)}
+                    </span>
                   </div>
-                  <span className="rounded-full bg-amber-100 px-3 py-2 text-xs font-semibold uppercase text-amber-800">
-                    {elapsedLabel(request.created_at)}
-                  </span>
-                </div>
 
-                <div className="mt-4 rounded-[20px] border border-slate-200 bg-white px-4 py-4">
-                  <p className="text-xs font-bold uppercase tracking-[0.16em] text-slate-500">Talep Notu</p>
-                  <p className="mt-2 text-sm leading-6 text-slate-700">{request.note?.trim() ? request.note : "Ek not yok."}</p>
-                </div>
+                  <div className="mt-4 rounded-[20px] border border-slate-200 bg-white px-4 py-4">
+                    <p className="text-xs font-bold uppercase tracking-[0.16em] text-slate-500">Talep Notu</p>
+                    <p className="mt-2 text-sm leading-6 text-slate-700">{request.note?.trim() ? request.note : "Ek not yok."}</p>
+                  </div>
 
-                <form action={resolveAction} className="mt-4">
-                  <input type="hidden" name="requestId" value={request.id} />
-                  <button type="submit" className="w-full rounded-2xl bg-gradient-to-r from-[#ff5a34] to-[#f0b14f] px-4 py-3 text-sm font-semibold text-white">
-                    Cozuldu Olarak Isaretle
-                  </button>
-                </form>
-              </article>
-            ))}
+                  <form action={resolveAction} className="mt-4">
+                    <input type="hidden" name="requestId" value={request.id} />
+                    <PendingSubmitButton
+                      idleLabel="Cozuldu Olarak Isaretle"
+                      pendingLabel="Kapatiliyor..."
+                      className="w-full rounded-2xl bg-gradient-to-r from-[#ff5a34] to-[#f0b14f] px-4 py-3 text-sm font-semibold text-white"
+                    />
+                  </form>
+                </article>
+              ))}
+            </div>
+
+            <div className="flex flex-wrap items-center justify-end gap-2">
+              {hasPreviousPage ? (
+                <Link href={`/service-requests?page=${page - 1}`} className="rounded-2xl border border-slate-200 bg-white px-4 py-2 text-sm font-semibold text-slate-700">
+                  Onceki
+                </Link>
+              ) : (
+                <span className="rounded-2xl border border-slate-200 bg-slate-100 px-4 py-2 text-sm font-semibold text-slate-400">Onceki</span>
+              )}
+              {hasNextPage ? (
+                <Link href={`/service-requests?page=${page + 1}`} className="rounded-2xl border border-slate-200 bg-white px-4 py-2 text-sm font-semibold text-slate-700">
+                  Sonraki
+                </Link>
+              ) : (
+                <span className="rounded-2xl border border-slate-200 bg-slate-100 px-4 py-2 text-sm font-semibold text-slate-400">Sonraki</span>
+              )}
+            </div>
           </div>
         )}
       </ContentCard>

@@ -13,11 +13,15 @@ type RateLimitMeta = {
 };
 
 const RATE_LIMIT_RULES: RateLimitRule[] = [
+  { prefix: "/auth/login", windowMs: 60_000, max: 15 },
   { prefix: "/api/orders", windowMs: 60_000, max: 40 },
   { prefix: "/api/orders/latest", windowMs: 60_000, max: 80 },
   { prefix: "/api/orders/history", windowMs: 60_000, max: 80 },
   { prefix: "/api/table-requests", windowMs: 60_000, max: 30 },
   { prefix: "/api/alerts/dispatch", windowMs: 60_000, max: 12 },
+  { prefix: "/api/metrics/ops", windowMs: 60_000, max: 60 },
+  { prefix: "/api/reports/sales.csv", windowMs: 60_000, max: 20 },
+  { prefix: "/api/health", windowMs: 60_000, max: 120 },
 ];
 const MAX_RATE_LIMIT_WINDOW_MS = Math.max(...RATE_LIMIT_RULES.map((rule) => rule.windowMs));
 const RATE_LIMIT_SWEEP_INTERVAL = 200;

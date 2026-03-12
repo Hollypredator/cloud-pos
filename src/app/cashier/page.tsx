@@ -14,6 +14,7 @@ import {
 import { LiveOpsBridge } from "@/components/live-ops-bridge";
 import { getAppBaseUrl } from "@/lib/app-url";
 import { requireRole } from "@/lib/auth";
+import { getCurrentLocale } from "@/lib/i18n-server";
 import {
   applyOrderFinancials,
   cancelOrder,
@@ -200,6 +201,8 @@ export default async function CashierPage({
   searchParams: Promise<{ order?: string; feedback?: string; tone?: "success" | "error" }>;
 }) {
   await requireRole(["admin", "cashier"], "/cashier");
+  const locale = await getCurrentLocale();
+  const localeCode = locale === "en" ? "en-US" : locale === "fr" ? "fr-FR" : "tr-TR";
   const { order: selectedOrderId, feedback, tone } = await searchParams;
   const cashierSnapshotResult = await measureAsync("cashier_snapshot", () => getCashierPageSnapshot(selectedOrderId));
   logServerPerf("/cashier", [cashierSnapshotResult]);
@@ -313,7 +316,7 @@ export default async function CashierPage({
                       <div>
                         <p className="text-xs font-bold uppercase tracking-[0.16em] text-slate-500">{orderSourceLabel(order)}</p>
                         <h3 className="mt-2 text-2xl font-semibold tracking-tight text-slate-900">Siparis #{order.id.slice(0, 8)}</h3>
-                        <p className="mt-1 text-sm text-slate-500">{new Date(order.created_at).toLocaleTimeString("tr-TR")}</p>
+                        <p className="mt-1 text-sm text-slate-500">{new Date(order.created_at).toLocaleTimeString(localeCode)}</p>
                         {order.delivery_address ? <p className="mt-1 break-words text-sm text-slate-500">{order.delivery_address}</p> : null}
                       </div>
                       <div className="flex w-full flex-col items-start gap-2 sm:w-auto sm:items-end">
@@ -355,7 +358,7 @@ export default async function CashierPage({
                     <div>
                       <p className="text-xs font-bold uppercase tracking-[0.16em] text-slate-500">{orderSourceLabel(order)}</p>
                       <h3 className="mt-2 text-xl font-semibold tracking-tight text-slate-900">Siparis #{order.id.slice(0, 8)}</h3>
-                      <p className="mt-1 text-sm text-slate-500">{new Date(order.created_at).toLocaleTimeString("tr-TR")}</p>
+                      <p className="mt-1 text-sm text-slate-500">{new Date(order.created_at).toLocaleTimeString(localeCode)}</p>
                     </div>
                     <span className={`inline-flex w-full justify-center rounded-full px-3 py-1 text-xs font-semibold uppercase sm:w-auto ${statusTone(order.status)}`}>{order.status}</span>
                   </div>
@@ -467,7 +470,7 @@ export default async function CashierPage({
                           <div>
                             <p className="text-xs font-bold uppercase tracking-[0.16em] text-slate-500">Siparis Bilgisi</p>
                             <p className="font-display mt-2 text-2xl font-semibold tracking-tight text-slate-900">Siparis #{order.id.slice(0, 8)}</p>
-                            <p className="mt-1 text-sm text-slate-500">{new Date(order.created_at).toLocaleTimeString("tr-TR")}</p>
+                            <p className="mt-1 text-sm text-slate-500">{new Date(order.created_at).toLocaleTimeString(localeCode)}</p>
                             {order.delivery_address ? <p className="mt-1 break-words text-sm text-slate-500">{order.delivery_address}</p> : null}
                           </div>
                           <span className={`rounded-full px-3 py-1 text-xs font-semibold uppercase ${statusTone(order.status)}`}>{order.status}</span>

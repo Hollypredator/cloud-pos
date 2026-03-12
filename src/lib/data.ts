@@ -1648,17 +1648,38 @@ type TableRequestRow = {
   tables: { table_number: number } | { table_number: number }[] | null;
 };
 
-export async function listTableRequests(status: "open" | "resolved" = "open") {
+export async function listTableRequests(
+  status: "open" | "resolved" = "open",
+  options?: { limit?: number; page?: number },
+) {
+  const safeLimit = Math.max(1, Math.min(200, Math.floor(options?.limit ?? 50)));
+  const safePage = Math.max(1, Math.floor(options?.page ?? 1));
+  const offset = (safePage - 1) * safeLimit;
+  const fetchLimit = safeLimit + 1;
   const supabase = getSupabaseServerClient();
   if (!supabase) {
-    return { requests: [] as TableRequest[], usingDemoData: true };
+    return {
+      requests: [] as TableRequest[],
+      page: safePage,
+      limit: safeLimit,
+      hasNextPage: false,
+      hasPreviousPage: safePage > 1,
+      usingDemoData: true,
+    };
   }
 
   const scope = await getDefaultBusinessScope();
   if (!scope.useLegacySchema && !scope.businessId) {
-    return { requests: [] as TableRequest[], usingDemoData: false };
+    return {
+      requests: [] as TableRequest[],
+      page: safePage,
+      limit: safeLimit,
+      hasNextPage: false,
+      hasPreviousPage: safePage > 1,
+      usingDemoData: false,
+    };
   }
-  const cacheKey = `table-requests:${scope.businessId ?? "none"}:${scope.branchId ?? "all"}:${status}:${scope.useLegacySchema ? "legacy" : "scoped"}`;
+  const cacheKey = `table-requests:${scope.businessId ?? "none"}:${scope.branchId ?? "all"}:${status}:${safeLimit}:${safePage}:${scope.useLegacySchema ? "legacy" : "scoped"}`;
   const reader = unstable_cache(
     async () => {
       const innerSupabase = getSupabaseServerClient();
@@ -1670,7 +1691,8 @@ export async function listTableRequests(status: "open" | "resolved" = "open") {
         .from("table_requests")
         .select("id, table_id, request_type, status, note, created_at, resolved_at, tables(table_number)")
         .eq("status", status)
-        .order("created_at", { ascending: false });
+        .order("created_at", { ascending: false })
+        .range(offset, offset + fetchLimit - 1);
 
       if (!scope.useLegacySchema && scope.businessId) {
         query = query.eq("business_id", scope.businessId);
@@ -1691,10 +1713,19 @@ export async function listTableRequests(status: "open" | "resolved" = "open") {
 
   const cached = await reader();
   if (!cached || cached.error) {
-    return { requests: [] as TableRequest[], usingDemoData: false };
+    return {
+      requests: [] as TableRequest[],
+      page: safePage,
+      limit: safeLimit,
+      hasNextPage: false,
+      hasPreviousPage: safePage > 1,
+      usingDemoData: false,
+    };
   }
 
-  const requests = ((cached.data ?? []) as TableRequestRow[]).map((row) => ({
+  const rows = (cached.data ?? []) as TableRequestRow[];
+  const hasNextPage = rows.length > safeLimit;
+  const requests = rows.slice(0, safeLimit).map((row) => ({
     id: row.id,
     branch_id: (row as { branch_id?: string | null }).branch_id ?? scope.branchId ?? null,
     table_id: row.table_id,
@@ -1706,7 +1737,14 @@ export async function listTableRequests(status: "open" | "resolved" = "open") {
     resolved_at: row.resolved_at,
   }));
 
-  return { requests, usingDemoData: false };
+  return {
+    requests,
+    page: safePage,
+    limit: safeLimit,
+    hasNextPage,
+    hasPreviousPage: safePage > 1,
+    usingDemoData: false,
+  };
 }
 
 export async function resolveTableRequest(requestId: string) {
@@ -1715,13 +1753,18 @@ export async function resolveTableRequest(requestId: string) {
     return { ok: false, error: "Demo modda talep cozme pasif." };
   }
 
-  const { error } = await supabase
+  const { data, error } = await supabase
     .from("table_requests")
     .update({ status: "resolved", resolved_at: new Date().toISOString() })
-    .eq("id", requestId);
+    .eq("id", requestId)
+    .eq("status", "open")
+    .select("id");
 
   if (error) {
     return { ok: false, error: error.message };
+  }
+  if (!data || data.length === 0) {
+    return { ok: true, noop: true };
   }
 
   await logAuditEvent({
@@ -2642,7 +2685,7 @@ export async function getKitchenOrdersSnapshot() {
 
 export async function getCashierPageSnapshot(selectedOrderId?: string) {
   const [servedResult, paidResult, selectedOrderResult, supabase] = await Promise.all([
-    listOrders(["served"], { includeItems: false, includePaymentSummary: false }),
+    listOrders(["served"], { includeItems: false, includePaymentSummary: false, limit: 60, ascending: false }),
     listOrders(["paid"], { includeItems: false, includePaymentSummary: false, limit: 8, ascending: false }),
     typeof selectedOrderId === "string"
       ? getOrderReceipt(selectedOrderId)
@@ -2667,6 +2710,8 @@ export async function getDeliveryPageSnapshot(selectedOrderId?: string) {
       includeItems: false,
       includePaymentSummary: false,
       channels: ["delivery"],
+      limit: 80,
+      ascending: false,
     }),
     listCouriers(),
     typeof selectedOrderId === "string"
@@ -3383,7 +3428,9 @@ export async function assignOrderCourier(input: {
       fulfillment_status: "out_for_delivery" as FulfillmentStatus,
     })
     .eq("id", input.orderId)
-    .eq("channel", "delivery");
+    .eq("channel", "delivery")
+    .eq("fulfillment_status", "awaiting_dispatch")
+    .select("id");
   if (!scope.useLegacySchema && scope.businessId) {
     query = query.eq("business_id", scope.businessId);
   }
@@ -3391,9 +3438,34 @@ export async function assignOrderCourier(input: {
     query = query.eq("branch_id", scope.branchId);
   }
 
-  const { error } = await query;
+  const { data, error } = await query;
   if (error) {
     return { ok: false, error: error.message };
+  }
+  if (!data || data.length === 0) {
+    let existingQuery = supabase
+      .from("orders")
+      .select("id, courier_id, fulfillment_status")
+      .eq("id", input.orderId)
+      .eq("channel", "delivery");
+    if (!scope.useLegacySchema && scope.businessId) {
+      existingQuery = existingQuery.eq("business_id", scope.businessId);
+    }
+    if (scope.branchId) {
+      existingQuery = existingQuery.eq("branch_id", scope.branchId);
+    }
+
+    const { data: existing, error: existingError } = await existingQuery.maybeSingle();
+    if (existingError) {
+      return { ok: false, error: existingError.message };
+    }
+    if (!existing) {
+      return { ok: false, error: "Siparis bulunamadi veya erisim izni yok." };
+    }
+    if (existing.fulfillment_status === "out_for_delivery" && existing.courier_id === input.courierId) {
+      return { ok: true, noop: true };
+    }
+    return { ok: false, error: "Siparis mevcut durumunda kurye atamasi kabul etmiyor." };
   }
 
   await logAuditEvent({
@@ -3418,21 +3490,52 @@ export async function markDeliveryCompleted(orderId: string) {
   }
 
   const scope = await getDefaultBusinessScope();
-  let query = supabase
+  let currentOrderQuery = supabase
     .from("orders")
-    .update({ fulfillment_status: "completed" as FulfillmentStatus, status: "served" as OrderStatus })
+    .select("id, status, fulfillment_status")
     .eq("id", orderId)
     .eq("channel", "delivery");
   if (!scope.useLegacySchema && scope.businessId) {
-    query = query.eq("business_id", scope.businessId);
+    currentOrderQuery = currentOrderQuery.eq("business_id", scope.businessId);
   }
   if (scope.branchId) {
-    query = query.eq("branch_id", scope.branchId);
+    currentOrderQuery = currentOrderQuery.eq("branch_id", scope.branchId);
   }
 
-  const { error } = await query;
+  const { data: currentOrder, error: currentOrderError } = await currentOrderQuery.maybeSingle();
+  if (currentOrderError) {
+    return { ok: false, error: currentOrderError.message };
+  }
+  if (!currentOrder) {
+    return { ok: false, error: "Siparis bulunamadi veya erisim izni yok." };
+  }
+  if (currentOrder.fulfillment_status === "completed") {
+    return { ok: true, noop: true };
+  }
+
+  const immutableStatuses = new Set<OrderStatus>(["paid", "refunded", "cancelled"]);
+  const nextStatus: OrderStatus = immutableStatuses.has(currentOrder.status) ? currentOrder.status : "served";
+
+  let updateQuery = supabase
+    .from("orders")
+    .update({ fulfillment_status: "completed" as FulfillmentStatus, status: nextStatus })
+    .eq("id", orderId)
+    .eq("channel", "delivery")
+    .neq("fulfillment_status", "completed")
+    .select("id");
+  if (!scope.useLegacySchema && scope.businessId) {
+    updateQuery = updateQuery.eq("business_id", scope.businessId);
+  }
+  if (scope.branchId) {
+    updateQuery = updateQuery.eq("branch_id", scope.branchId);
+  }
+
+  const { data: updated, error } = await updateQuery;
   if (error) {
     return { ok: false, error: error.message };
+  }
+  if (!updated || updated.length === 0) {
+    return { ok: true, noop: true };
   }
 
   await logAuditEvent({
@@ -3779,12 +3882,15 @@ export async function createIngredient(name: string, unit: string) {
   if (!supabase) {
     return { ok: false, error: "Demo modda malzeme ekleme pasif." };
   }
+  const scope = await getDefaultBusinessScope();
+  if (!scope.useLegacySchema && !scope.businessId) {
+    return { ok: false, error: "Aktif isletme bulunamadi." };
+  }
 
-  const { data, error } = await supabase
-    .from("ingredients")
-    .insert({ name, unit })
-    .select("id")
-    .single();
+  const payload = !scope.useLegacySchema && scope.businessId
+    ? { name, unit, business_id: scope.businessId }
+    : { name, unit };
+  const { data, error } = await supabase.from("ingredients").insert(payload).select("id").single();
 
   if (error) {
     return { ok: false, error: error.message };
@@ -3799,8 +3905,13 @@ export async function deleteIngredient(ingredientId: string) {
   if (!supabase) {
     return { ok: false, error: "Demo modda malzeme silme pasif." };
   }
+  const scope = await getDefaultBusinessScope();
 
-  const { error } = await supabase.from("ingredients").delete().eq("id", ingredientId);
+  let query = supabase.from("ingredients").delete().eq("id", ingredientId);
+  if (!scope.useLegacySchema && scope.businessId) {
+    query = query.eq("business_id", scope.businessId);
+  }
+  const { error } = await query;
   if (error) {
     return { ok: false, error: error.message };
   }
@@ -3817,6 +3928,27 @@ export async function attachIngredientToProduct(input: {
   if (!supabase) {
     return { ok: false, error: "Demo modda urun malzemesi duzenleme pasif." };
   }
+  const scope = await getDefaultBusinessScope();
+  if (!scope.useLegacySchema && scope.businessId) {
+    const [{ data: product }, { data: ingredient }] = await Promise.all([
+      supabase
+        .from("products")
+        .select("id, business_id")
+        .eq("id", input.productId)
+        .eq("business_id", scope.businessId)
+        .maybeSingle(),
+      supabase
+        .from("ingredients")
+        .select("id, business_id")
+        .eq("id", input.ingredientId)
+        .eq("business_id", scope.businessId)
+        .maybeSingle(),
+    ]);
+
+    if (!product || !ingredient) {
+      return { ok: false, error: "Malzeme veya urun aktif isletmede bulunamadi." };
+    }
+  }
 
   const { error } = await supabase.from("product_ingredients").upsert({
     product_id: input.productId,
@@ -3832,9 +3964,21 @@ export async function attachIngredientToProduct(input: {
 }
 
 export async function detachIngredientFromProduct(productId: string, ingredientId: string) {
-  const supabase = getSupabaseServerClient();
+  const supabase = await getTenantDataClient();
   if (!supabase) {
     return { ok: false, error: "Demo modda urun malzemesi duzenleme pasif." };
+  }
+  const scope = await getDefaultBusinessScope();
+  if (!scope.useLegacySchema && scope.businessId) {
+    const { data: product } = await supabase
+      .from("products")
+      .select("id")
+      .eq("id", productId)
+      .eq("business_id", scope.businessId)
+      .maybeSingle();
+    if (!product) {
+      return { ok: false, error: "Urun aktif isletmede bulunamadi." };
+    }
   }
 
   const { error } = await supabase
@@ -4637,12 +4781,17 @@ export async function listStockMovements(limit = 100) {
   if (!supabase) {
     return { movements: [] as StockMovement[], usingDemoData: true };
   }
+  const scope = await getDefaultBusinessScope();
 
-  const { data, error } = await supabase
+  let query = supabase
     .from("stock_movements")
-    .select("id, product_id, change_amount, previous_stock, new_stock, reason, created_at, products(name)")
+    .select("id, product_id, change_amount, previous_stock, new_stock, reason, created_at, products(name, business_id)")
     .order("created_at", { ascending: false })
     .limit(limit);
+  if (!scope.useLegacySchema && scope.businessId) {
+    query = query.eq("products.business_id", scope.businessId);
+  }
+  const { data, error } = await query;
 
   if (error) {
     return { movements: [] as StockMovement[], usingDemoData: true };
@@ -4672,12 +4821,32 @@ export async function listAuditLogs(limit = 200) {
   if (!supabase) {
     return { logs: [] as AuditLog[], usingDemoData: true };
   }
+  const scope = await getDefaultBusinessScope();
+  if (!scope.useLegacySchema && !scope.businessId) {
+    return { logs: [] as AuditLog[], usingDemoData: false };
+  }
 
-  const { data, error } = await supabase
+  let allowedActorIds: string[] | null = null;
+  if (!scope.useLegacySchema && scope.businessId) {
+    const { data: accessRows } = await supabase
+      .from("staff_branch_access")
+      .select("profile_id")
+      .eq("business_id", scope.businessId);
+    allowedActorIds = [...new Set(((accessRows ?? []) as Array<{ profile_id: string }>).map((row) => row.profile_id))];
+    if (allowedActorIds.length === 0) {
+      return { logs: [] as AuditLog[], usingDemoData: false };
+    }
+  }
+
+  let query = supabase
     .from("audit_logs")
     .select("id, actor_id, entity_type, entity_id, action, details, created_at")
     .order("created_at", { ascending: false })
     .limit(limit);
+  if (allowedActorIds) {
+    query = query.in("actor_id", allowedActorIds);
+  }
+  const { data, error } = await query;
 
   if (error) {
     return { logs: [] as AuditLog[], usingDemoData: false };
@@ -4694,8 +4863,11 @@ async function getCachedSalesReportSummaryRow(input: {
   branchId: string | null;
   useLegacySchema: boolean;
   days: number;
+  startIso: string;
+  endIso?: string;
+  rangeKey: string;
 }) {
-  const cacheKey = `sales-report-summary:${input.businessId ?? "none"}:${input.branchId ?? "all"}:${input.days}:${input.useLegacySchema ? "legacy" : "scoped"}`;
+  const cacheKey = `sales-report-summary:${input.businessId ?? "none"}:${input.branchId ?? "all"}:${input.rangeKey}:${input.useLegacySchema ? "legacy" : "scoped"}`;
   const reader = unstable_cache(
     async () => {
       const supabase = getSupabaseServerClient();
@@ -4703,13 +4875,10 @@ async function getCachedSalesReportSummaryRow(input: {
         return null;
       }
 
-      const start = new Date();
-      start.setHours(0, 0, 0, 0);
-      start.setDate(start.getDate() - (input.days - 1));
-
       const paymentResult = await listScopedFinancePayments({
         supabase,
-        startIso: start.toISOString(),
+        startIso: input.startIso,
+        endIso: input.endIso,
         businessId: input.businessId,
         branchId: input.branchId,
         useLegacySchema: input.useLegacySchema,
@@ -4720,6 +4889,7 @@ async function getCachedSalesReportSummaryRow(input: {
       const aggregation = aggregateFinancePayments(paymentResult.rows);
 
       const map = new Map<string, { sales: number; refunds: number }>();
+      const start = new Date(input.startIso);
       for (let i = 0; i < input.days; i += 1) {
         const day = new Date(start);
         day.setDate(start.getDate() + i);
@@ -4752,7 +4922,59 @@ async function getCachedSalesReportSummaryRow(input: {
   return reader();
 }
 
-export async function getSalesReportSummary(days = 7) {
+function parseDateOnly(value?: string | null) {
+  if (!value || !/^\d{4}-\d{2}-\d{2}$/.test(value)) {
+    return null;
+  }
+  const date = new Date(`${value}T00:00:00.000Z`);
+  return Number.isNaN(date.getTime()) ? null : date;
+}
+
+function resolveFinanceRange(input: {
+  days?: number;
+  startDate?: string | null;
+  endDate?: string | null;
+}) {
+  const startDate = parseDateOnly(input.startDate);
+  const endDate = parseDateOnly(input.endDate);
+
+  if (startDate && endDate) {
+    const normalizedStart = startDate <= endDate ? startDate : endDate;
+    const normalizedEnd = startDate <= endDate ? endDate : startDate;
+    const maxSpanDays = 366;
+    const spanDays = Math.floor((normalizedEnd.getTime() - normalizedStart.getTime()) / 86400000) + 1;
+    const clampedDays = Math.max(1, Math.min(maxSpanDays, spanDays));
+    const clampedEnd = new Date(normalizedStart);
+    clampedEnd.setUTCDate(normalizedStart.getUTCDate() + clampedDays - 1);
+    const endExclusive = new Date(clampedEnd);
+    endExclusive.setUTCDate(clampedEnd.getUTCDate() + 1);
+    return {
+      days: clampedDays,
+      startIso: normalizedStart.toISOString(),
+      endIso: endExclusive.toISOString(),
+      startDate: normalizedStart.toISOString().slice(0, 10),
+      endDate: clampedEnd.toISOString().slice(0, 10),
+      mode: "date" as const,
+      rangeKey: `date:${normalizedStart.toISOString().slice(0, 10)}:${clampedEnd.toISOString().slice(0, 10)}`,
+    };
+  }
+
+  const safeDays = Math.max(1, Math.min(90, Math.floor(input.days ?? 7)));
+  const start = new Date();
+  start.setHours(0, 0, 0, 0);
+  start.setDate(start.getDate() - (safeDays - 1));
+  return {
+    days: safeDays,
+    startIso: start.toISOString(),
+    endIso: undefined,
+    startDate: start.toISOString().slice(0, 10),
+    endDate: new Date().toISOString().slice(0, 10),
+    mode: "period" as const,
+    rangeKey: `period:${safeDays}`,
+  };
+}
+
+export async function getSalesReportSummary(input: { days?: number; startDate?: string | null; endDate?: string | null } | number = 7) {
   const supabase = await getTenantDataClient();
   if (!supabase) {
     return { rows: [] as Array<{ day: string; sales: number; refunds: number; net: number }>, usingDemoData: true };
@@ -4760,12 +4982,16 @@ export async function getSalesReportSummary(days = 7) {
 
   try {
     const scope = await getDefaultBusinessScope();
-    const safeDays = Math.max(1, Math.min(90, Math.floor(days)));
+    const normalizedInput = typeof input === "number" ? { days: input } : input;
+    const range = resolveFinanceRange(normalizedInput);
     const cached = await getCachedSalesReportSummaryRow({
       businessId: scope.businessId,
       branchId: scope.branchId,
       useLegacySchema: scope.useLegacySchema,
-      days: safeDays,
+      days: range.days,
+      startIso: range.startIso,
+      endIso: range.endIso,
+      rangeKey: range.rangeKey,
     });
 
     if (!cached || cached.hasError) {
@@ -4784,8 +5010,11 @@ async function getCachedFinancialInsightsRow(input: {
   branchId: string | null;
   useLegacySchema: boolean;
   days: number;
+  startIso: string;
+  endIso?: string;
+  rangeKey: string;
 }) {
-  const cacheKey = `financial-insights:${input.businessId ?? "none"}:${input.branchId ?? "all"}:${input.days}:${input.useLegacySchema ? "legacy" : "scoped"}`;
+  const cacheKey = `financial-insights:${input.businessId ?? "none"}:${input.branchId ?? "all"}:${input.rangeKey}:${input.useLegacySchema ? "legacy" : "scoped"}`;
   const reader = unstable_cache(
     async () => {
       const supabase = getSupabaseServerClient();
@@ -4793,13 +5022,10 @@ async function getCachedFinancialInsightsRow(input: {
         return null;
       }
 
-      const start = new Date();
-      start.setHours(0, 0, 0, 0);
-      start.setDate(start.getDate() - (input.days - 1));
-
       const paymentResult = await listScopedFinancePayments({
         supabase,
-        startIso: start.toISOString(),
+        startIso: input.startIso,
+        endIso: input.endIso,
         businessId: input.businessId,
         branchId: input.branchId,
         useLegacySchema: input.useLegacySchema,
@@ -4868,7 +5094,10 @@ async function getCachedFinancialInsightsRow(input: {
       let orderQuery = supabase
         .from("orders")
         .select("id, status, discount_amount, service_fee, final_price, total_price, created_at")
-        .gte("created_at", start.toISOString());
+        .gte("created_at", input.startIso);
+      if (input.endIso) {
+        orderQuery = orderQuery.lt("created_at", input.endIso);
+      }
       if (!input.useLegacySchema && input.businessId) {
         orderQuery = orderQuery.eq("business_id", input.businessId);
       }
@@ -4937,7 +5166,7 @@ async function getCachedFinancialInsightsRow(input: {
   return reader();
 }
 
-export async function getFinancialInsights(days = 7) {
+export async function getFinancialInsights(input: { days?: number; startDate?: string | null; endDate?: string | null } | number = 7) {
   const supabase = await getTenantDataClient();
   if (!supabase) {
     return {
@@ -4970,12 +5199,16 @@ export async function getFinancialInsights(days = 7) {
 
   try {
     const scope = await getDefaultBusinessScope();
-    const safeDays = Math.max(1, Math.min(90, Math.floor(days)));
+    const normalizedInput = typeof input === "number" ? { days: input } : input;
+    const range = resolveFinanceRange(normalizedInput);
     const cached = await getCachedFinancialInsightsRow({
       businessId: scope.businessId,
       branchId: scope.branchId,
       useLegacySchema: scope.useLegacySchema,
-      days: safeDays,
+      days: range.days,
+      startIso: range.startIso,
+      endIso: range.endIso,
+      rangeKey: range.rangeKey,
     });
 
     if (!cached || cached.hasError) {
@@ -6002,6 +6235,7 @@ async function getCachedOpsPageRow(input: {
       if (!supabase) {
         return null;
       }
+      const recentOrderLimit = 30;
 
       const todayStart = new Date();
       todayStart.setHours(0, 0, 0, 0);
@@ -6042,18 +6276,18 @@ async function getCachedOpsPageRow(input: {
                   .eq("business_id", input.businessId)
                   .eq("branch_id", input.branchId)
                   .order("created_at", { ascending: false })
-                  .limit(5)
+                  .limit(recentOrderLimit)
               : supabase
                   .from("orders")
                   .select("id, table_id, total_price, final_price, channel, customer_name, status, created_at, tables(table_number)")
                   .eq("business_id", input.businessId)
                   .order("created_at", { ascending: false })
-                  .limit(5))
+                  .limit(recentOrderLimit))
           : supabase
               .from("orders")
               .select("id, table_id, total_price, final_price, channel, customer_name, status, created_at, tables(table_number)")
               .order("created_at", { ascending: false })
-              .limit(5),
+              .limit(recentOrderLimit),
         !input.useLegacySchema && input.businessId
           ? supabase
               .from("products")

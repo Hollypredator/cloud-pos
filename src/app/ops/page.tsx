@@ -42,16 +42,29 @@ function formatCurrency(value: number) {
   return `${value.toFixed(2)} TL`;
 }
 
-function formatClock(value: string) {
-  return new Date(value).toLocaleTimeString("tr-TR", { hour: "2-digit", minute: "2-digit" });
+function getIntlLocale(locale: "tr" | "en" | "fr") {
+  if (locale === "en") return "en-US";
+  if (locale === "fr") return "fr-FR";
+  return "tr-TR";
+}
+
+function formatClock(value: string, locale: "tr" | "en" | "fr") {
+  return new Date(value).toLocaleTimeString(getIntlLocale(locale), { hour: "2-digit", minute: "2-digit" });
 }
 
 function checklistTone(done: boolean) {
   return done ? "bg-emerald-100 text-emerald-700" : "bg-amber-100 text-amber-800";
 }
 
-export default async function OpsPage() {
+export default async function OpsPage({
+  searchParams,
+}: {
+  searchParams: Promise<{ ordersPage?: string }>;
+}) {
   const locale = await getCurrentLocale();
+  const { ordersPage: ordersPageParam } = await searchParams;
+  const ordersPage = Number.isFinite(Number(ordersPageParam)) ? Math.max(1, Number(ordersPageParam)) : 1;
+  const ordersPageSize = 6;
   const authResult = await measureAsync("current_user", () => getCurrentUserIdentity());
   const auth = authResult.value;
 
@@ -62,7 +75,8 @@ export default async function OpsPage() {
   const role = auth.role;
   const allowAll = auth.usingDemoData;
   const isManagement = role === "owner" || role === "admin";
-  const showInlineSetup = allowAll;
+  const canAdmin = allowAll || isManagement;
+  const showInlineSetup = canAdmin;
   const opsSnapshotResult = await measureAsync("ops_snapshot", () => getOpsPageSnapshot({ includeSetup: showInlineSetup }));
   logServerPerf("/ops", [authResult, opsSnapshotResult]);
   const opsSnapshot = opsSnapshotResult.value;
@@ -71,7 +85,6 @@ export default async function OpsPage() {
     ops,
     setup,
   } = opsSnapshot;
-  const canAdmin = allowAll || isManagement;
   const canOwner = allowAll || role === "owner";
   const canKitchen = allowAll || isManagement || role === "kitchen";
   const canCashier = allowAll || isManagement || role === "cashier";
@@ -122,24 +135,31 @@ export default async function OpsPage() {
 
   const priorityWarnings = [
     {
+      key: "kitchen_delay",
       label: translateUiText("Mutfak Gecikmesi", locale),
       value: String(ops.delayedKitchenOrders),
       hint: `${ops.criticalKitchenOrders} ${translateUiText("Kritik", locale).toLowerCase()} ${translateUiText("Urun", locale).toLowerCase() === "product" ? "orders" : "siparis"}`,
       tone: ops.criticalKitchenOrders > 0 ? ("danger" as const) : ("accent" as const),
     },
     {
+      key: "service_requests",
       label: translateUiText("Masa Talepleri", locale),
       value: String(ops.openServiceRequests),
       hint: translateUiText("Acik garson ve hesap talepleri", locale),
       tone: ops.openServiceRequests > 0 ? ("accent" as const) : ("neutral" as const),
     },
     {
+      key: "cashier_queue",
       label: translateUiText("Kasada Bekleyen", locale),
       value: String(ops.servedOrders),
       hint: translateUiText("Tahsilat icin hazir siparis", locale),
       tone: ops.servedOrders > 0 ? ("success" as const) : ("neutral" as const),
     },
   ];
+  const recentOrdersStart = (ordersPage - 1) * ordersPageSize;
+  const pagedRecentOrders = recentOrders.slice(recentOrdersStart, recentOrdersStart + ordersPageSize);
+  const hasNextRecentOrdersPage = recentOrders.length > recentOrdersStart + ordersPageSize;
+  const hasPreviousRecentOrdersPage = ordersPage > 1;
 
   return (
     <BackofficePage
@@ -187,9 +207,9 @@ export default async function OpsPage() {
 
             <div className="space-y-3">
               {priorityWarnings
-                .filter((item) => (item.label === "Mutfak Gecikmesi" ? canKitchen || canAdmin : item.label === "Kasada Bekleyen" ? canCashier : canWaiterOps))
+                .filter((item) => (item.key === "kitchen_delay" ? canKitchen || canAdmin : item.key === "cashier_queue" ? canCashier : canWaiterOps))
                 .map((item) => (
-                  <div key={item.label} className="rounded-[22px] border border-slate-200 bg-slate-50 p-4">
+                  <div key={item.key} className="rounded-[22px] border border-slate-200 bg-slate-50 p-4">
                     <div className="flex flex-col items-start justify-between gap-3 sm:flex-row">
                       <div>
                         <p className="text-xs font-bold uppercase tracking-[0.16em] text-slate-500">{item.label}</p>
@@ -305,13 +325,13 @@ export default async function OpsPage() {
             <EmptyPanel title={translateUiText("Siparis akisi bos", locale)} description={translateUiText("Bu vardiyada izlenecek yeni siparis olustugunda burada gune ait son siparisler gorunur.", locale)} />
           ) : (
             <div className="space-y-3">
-              {recentOrders.map((order) => (
+              {pagedRecentOrders.map((order) => (
                 <div key={order.id} className="rounded-[24px] border border-slate-200 bg-slate-50 p-4">
                   <div className="flex flex-col items-start justify-between gap-4 sm:flex-row">
                     <div>
                       <p className="text-xs font-bold uppercase tracking-[0.16em] text-slate-500">{orderSourceLabel(order, locale)}</p>
                       <h3 className="mt-2 text-xl font-semibold tracking-tight text-slate-900">Siparis #{order.id.slice(0, 8)}</h3>
-                      <p className="mt-2 text-sm text-slate-500">{formatClock(order.created_at)} {translateUiText("olusturuldu", locale)}</p>
+                      <p className="mt-2 text-sm text-slate-500">{formatClock(order.created_at, locale)} {translateUiText("olusturuldu", locale)}</p>
                     </div>
                     <div className="w-full text-left sm:w-auto sm:text-right">
                       <span className={`inline-flex w-full justify-center rounded-full px-3 py-2 text-xs font-semibold uppercase sm:w-auto ${statusTone(order.status)}`}>
@@ -324,6 +344,22 @@ export default async function OpsPage() {
                   </div>
                 </div>
               ))}
+              <div className="flex flex-wrap items-center justify-end gap-2 pt-1">
+                {hasPreviousRecentOrdersPage ? (
+                  <Link href={`/ops?ordersPage=${ordersPage - 1}`} className="rounded-2xl border border-slate-200 bg-white px-4 py-2 text-sm font-semibold text-slate-700">
+                    Onceki
+                  </Link>
+                ) : (
+                  <span className="rounded-2xl border border-slate-200 bg-slate-100 px-4 py-2 text-sm font-semibold text-slate-400">Onceki</span>
+                )}
+                {hasNextRecentOrdersPage ? (
+                  <Link href={`/ops?ordersPage=${ordersPage + 1}`} className="rounded-2xl border border-slate-200 bg-white px-4 py-2 text-sm font-semibold text-slate-700">
+                    Sonraki
+                  </Link>
+                ) : (
+                  <span className="rounded-2xl border border-slate-200 bg-slate-100 px-4 py-2 text-sm font-semibold text-slate-400">Sonraki</span>
+                )}
+              </div>
             </div>
           )}
         </ContentCard>

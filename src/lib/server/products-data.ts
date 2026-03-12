@@ -89,10 +89,25 @@ async function getCachedProductManagementRow(input: {
               .eq("business_id", input.businessId!))
           .order("created_at", { ascending: false }),
         includes.includeIngredients
-          ? supabase.from("ingredients").select("id, name, unit").order("name", { ascending: true })
+          ? (
+              input.useLegacySchema
+                ? supabase.from("ingredients").select("id, name, unit").order("name", { ascending: true })
+                : supabase
+                    .from("ingredients")
+                    .select("id, name, unit")
+                    .eq("business_id", input.businessId!)
+                    .order("name", { ascending: true })
+            )
           : Promise.resolve({ data: [], error: null }),
         includes.includeIngredients
-          ? supabase.from("product_ingredients").select("product_id, ingredient_id, quantity, ingredients(id, name, unit)")
+          ? (
+              input.useLegacySchema
+                ? supabase.from("product_ingredients").select("product_id, ingredient_id, quantity, ingredients(id, name, unit)")
+                : supabase
+                    .from("product_ingredients")
+                    .select("product_id, ingredient_id, quantity, ingredients(id, name, unit), products!inner(business_id)")
+                    .eq("products.business_id", input.businessId!)
+            )
           : Promise.resolve({ data: [], error: null }),
         includes.includeModifiers
           ? supabase

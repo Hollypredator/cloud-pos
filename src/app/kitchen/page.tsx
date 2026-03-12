@@ -1,8 +1,10 @@
 import Link from "next/link";
 import { BackofficePage, ContentCard, EmptyPanel, FeatureLockedState, SummaryCard, WorkflowGuide } from "@/components/backoffice-ui";
 import { LiveOpsBridge } from "@/components/live-ops-bridge";
+import { PendingSubmitButton } from "@/components/pending-submit-button";
 import { requireRole } from "@/lib/auth";
 import { getKitchenPageSnapshot, updateOrderStatus } from "@/lib/data";
+import { getCurrentLocale } from "@/lib/i18n-server";
 import { logServerPerf, measureAsync } from "@/lib/perf";
 import { getFeatureAccess } from "@/lib/plan-access";
 import type { Order, OrderItem } from "@/lib/types";
@@ -102,6 +104,8 @@ function buildStationGroups(order: Order, productCategoryMap: Map<string, string
 
 export default async function KitchenPage() {
   await requireRole(["admin", "kitchen"], "/kitchen");
+  const locale = await getCurrentLocale();
+  const localeCode = locale === "en" ? "en-US" : locale === "fr" ? "fr-FR" : "tr-TR";
   const featureAccessResult = await measureAsync("feature_access", () => getFeatureAccess("kitchen_display"));
   const featureAccess = featureAccessResult.value;
   if (!featureAccess.enabled) {
@@ -228,7 +232,7 @@ export default async function KitchenPage() {
                             <div>
                               <p className="text-xs font-bold uppercase tracking-[0.16em] text-slate-500">{orderSourceLabel(order)}</p>
                               <h3 className="mt-2 text-xl font-semibold tracking-tight text-slate-900">Siparis #{order.id.slice(0, 8)}</h3>
-                              <p className="mt-1 text-sm text-slate-500">{new Date(order.created_at).toLocaleTimeString("tr-TR")}</p>
+                              <p className="mt-1 text-sm text-slate-500">{new Date(order.created_at).toLocaleTimeString(localeCode)}</p>
                             </div>
                             <div className="flex w-full flex-col items-start gap-2 sm:w-auto sm:items-end">
                               <span className={`inline-flex w-full justify-center rounded-full px-3 py-1 text-xs font-semibold uppercase sm:w-auto ${statusTone(order.status)}`}>{statusLabel(order.status)}</span>
@@ -291,8 +295,9 @@ export default async function KitchenPage() {
                                   name="nextStatus"
                                   value={order.status === "pending" ? "preparing" : order.status === "preparing" ? "served" : "preparing"}
                                 />
-                                <button
-                                  type="submit"
+                                <PendingSubmitButton
+                                  idleLabel={order.status === "pending" ? "Hazirlanmaya Al" : order.status === "preparing" ? "Servise Hazir" : "Geri Al"}
+                                  pendingLabel="Guncelleniyor..."
                                   className={`w-full rounded-2xl px-4 py-3 text-sm font-semibold text-white sm:w-auto ${
                                     order.status === "pending"
                                       ? "bg-gradient-to-r from-[#ff5a34] to-[#f0b14f] shadow-[0_10px_20px_rgba(255,111,60,0.24)]"
@@ -300,9 +305,7 @@ export default async function KitchenPage() {
                                         ? "bg-slate-900"
                                         : "bg-emerald-700"
                                   }`}
-                                >
-                                  {order.status === "pending" ? "Hazirlanmaya Al" : order.status === "preparing" ? "Servise Hazir" : "Geri Al"}
-                                </button>
+                                />
                               </form>
                             </div>
                           </div>
