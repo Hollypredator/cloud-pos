@@ -32,6 +32,19 @@ function applySecurityHeaders(response: NextResponse) {
   response.headers.set("Referrer-Policy", "strict-origin-when-cross-origin");
   response.headers.set("Permissions-Policy", "camera=(), microphone=(), geolocation=()");
   response.headers.set("X-DNS-Prefetch-Control", "off");
+  response.headers.set("Cross-Origin-Resource-Policy", "same-origin");
+  response.headers.set("Cross-Origin-Opener-Policy", "same-origin");
+  response.headers.set("Content-Security-Policy", [
+    "default-src 'self'",
+    "base-uri 'self'",
+    "object-src 'none'",
+    "frame-ancestors 'none'",
+    "img-src 'self' data: blob: https:",
+    "font-src 'self' data: https:",
+    "style-src 'self' 'unsafe-inline'",
+    "script-src 'self' 'unsafe-inline' 'unsafe-eval' https:",
+    "connect-src 'self' https: wss:",
+  ].join("; "));
   return response;
 }
 
@@ -151,7 +164,7 @@ export async function middleware(request: NextRequest) {
   if (hostResponse) {
     return hostResponse;
   }
-  return withSecurityAndCorrelation(
+  const response = withSecurityAndCorrelation(
     NextResponse.next({
       request: {
         headers: requestHeaders,
@@ -159,6 +172,10 @@ export async function middleware(request: NextRequest) {
     }),
     correlationId,
   );
+  if (request.nextUrl.protocol === "https:") {
+    response.headers.set("Strict-Transport-Security", "max-age=31536000; includeSubDomains; preload");
+  }
+  return response;
 }
 
 export const config = {

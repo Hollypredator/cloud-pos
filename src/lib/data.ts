@@ -1991,12 +1991,12 @@ async function getOrderPaymentSummaryMap(supabase: TenantSupabaseClient | null, 
 }
 
 type FinancePaymentRow = {
-  id: string;
+  id?: string;
   order_id: string;
   payment_type: "sale" | "refund";
   method: "cash" | "card" | "mixed";
   amount: number;
-  note: string | null;
+  note?: string | null;
   created_at: string;
 };
 
@@ -2007,12 +2007,22 @@ async function listScopedFinancePayments(input: {
   businessId: string | null;
   branchId: string | null;
   useLegacySchema: boolean;
+  mode?: "compact" | "full";
+  orderByCreatedAtDesc?: boolean;
+  limit?: number;
 }) {
-  let query = input.supabase
-    .from("payments")
-    .select("id, order_id, payment_type, method, amount, note, created_at")
-    .gte("created_at", input.startIso)
-    .order("created_at", { ascending: false });
+  const mode = input.mode ?? "compact";
+
+  let query =
+    mode === "full"
+      ? input.supabase
+          .from("payments")
+          .select("id, order_id, payment_type, method, amount, note, created_at")
+          .gte("created_at", input.startIso)
+      : input.supabase
+          .from("payments")
+          .select("order_id, payment_type, method, amount, created_at")
+          .gte("created_at", input.startIso);
 
   if (input.endIso) {
     query = query.lt("created_at", input.endIso);
@@ -2023,6 +2033,12 @@ async function listScopedFinancePayments(input: {
   }
   if (input.branchId) {
     query = query.eq("branch_id", input.branchId);
+  }
+  if (input.orderByCreatedAtDesc) {
+    query = query.order("created_at", { ascending: false });
+  }
+  if (input.limit && input.limit > 0) {
+    query = query.limit(input.limit);
   }
 
   const { data, error } = await query;
@@ -4882,6 +4898,7 @@ async function getCachedSalesReportSummaryRow(input: {
         businessId: input.businessId,
         branchId: input.branchId,
         useLegacySchema: input.useLegacySchema,
+        mode: "compact",
       });
       if (paymentResult.error) {
         return { rows: [] as Array<{ day: string; sales: number; refunds: number; net: number }>, hasError: true };
@@ -4893,7 +4910,7 @@ async function getCachedSalesReportSummaryRow(input: {
       for (let i = 0; i < input.days; i += 1) {
         const day = new Date(start);
         day.setDate(start.getDate() + i);
-        map.set(day.toISOString().slice(0, 10), { sales: 0, refunds: 0 });
+        map.set(formatDateOnly(day), { sales: 0, refunds: 0 });
       }
 
       for (const [day, values] of aggregation.dailyMap.entries()) {
@@ -4926,8 +4943,19 @@ function parseDateOnly(value?: string | null) {
   if (!value || !/^\d{4}-\d{2}-\d{2}$/.test(value)) {
     return null;
   }
-  const date = new Date(`${value}T00:00:00.000Z`);
+  const [yearText, monthText, dayText] = value.split("-");
+  const year = Number(yearText);
+  const month = Number(monthText);
+  const day = Number(dayText);
+  const date = new Date(year, month - 1, day);
   return Number.isNaN(date.getTime()) ? null : date;
+}
+
+function formatDateOnly(value: Date) {
+  const year = value.getFullYear();
+  const month = String(value.getMonth() + 1).padStart(2, "0");
+  const day = String(value.getDate()).padStart(2, "0");
+  return `${year}-${month}-${day}`;
 }
 
 function resolveFinanceRange(input: {
@@ -4945,17 +4973,17 @@ function resolveFinanceRange(input: {
     const spanDays = Math.floor((normalizedEnd.getTime() - normalizedStart.getTime()) / 86400000) + 1;
     const clampedDays = Math.max(1, Math.min(maxSpanDays, spanDays));
     const clampedEnd = new Date(normalizedStart);
-    clampedEnd.setUTCDate(normalizedStart.getUTCDate() + clampedDays - 1);
+    clampedEnd.setDate(normalizedStart.getDate() + clampedDays - 1);
     const endExclusive = new Date(clampedEnd);
-    endExclusive.setUTCDate(clampedEnd.getUTCDate() + 1);
+    endExclusive.setDate(clampedEnd.getDate() + 1);
     return {
       days: clampedDays,
       startIso: normalizedStart.toISOString(),
       endIso: endExclusive.toISOString(),
-      startDate: normalizedStart.toISOString().slice(0, 10),
-      endDate: clampedEnd.toISOString().slice(0, 10),
+      startDate: formatDateOnly(normalizedStart),
+      endDate: formatDateOnly(clampedEnd),
       mode: "date" as const,
-      rangeKey: `date:${normalizedStart.toISOString().slice(0, 10)}:${clampedEnd.toISOString().slice(0, 10)}`,
+      rangeKey: `date:${formatDateOnly(normalizedStart)}:${formatDateOnly(clampedEnd)}`,
     };
   }
 
@@ -4967,8 +4995,8 @@ function resolveFinanceRange(input: {
     days: safeDays,
     startIso: start.toISOString(),
     endIso: undefined,
-    startDate: start.toISOString().slice(0, 10),
-    endDate: new Date().toISOString().slice(0, 10),
+    startDate: formatDateOnly(start),
+    endDate: formatDateOnly(new Date()),
     mode: "period" as const,
     rangeKey: `period:${safeDays}`,
   };
@@ -5013,8 +5041,10 @@ async function getCachedFinancialInsightsRow(input: {
   startIso: string;
   endIso?: string;
   rangeKey: string;
+  includeTopProducts: boolean;
+  includeRecentPayments: boolean;
 }) {
-  const cacheKey = `financial-insights:${input.businessId ?? "none"}:${input.branchId ?? "all"}:${input.rangeKey}:${input.useLegacySchema ? "legacy" : "scoped"}`;
+  const cacheKey = `financial-insights:${input.businessId ?? "none"}:${input.branchId ?? "all"}:${input.rangeKey}:${input.includeTopProducts ? "top" : "notop"}:${input.includeRecentPayments ? "recent" : "norecent"}:${input.useLegacySchema ? "legacy" : "scoped"}`;
   const reader = unstable_cache(
     async () => {
       const supabase = getSupabaseServerClient();
@@ -5029,6 +5059,7 @@ async function getCachedFinancialInsightsRow(input: {
         businessId: input.businessId,
         branchId: input.branchId,
         useLegacySchema: input.useLegacySchema,
+        mode: "compact",
       });
       if (paymentResult.error) {
         return {
@@ -5058,12 +5089,25 @@ async function getCachedFinancialInsightsRow(input: {
           }>,
         };
       }
-      const paymentRows = paymentResult.rows;
-      const aggregation = aggregateFinancePayments(paymentRows);
+      const aggregationRows = paymentResult.rows;
+      const aggregation = aggregateFinancePayments(aggregationRows);
       const paidOrderIds = [...aggregation.paidOrderIds];
+      const recentPaymentsResult = input.includeRecentPayments
+        ? await listScopedFinancePayments({
+            supabase,
+            startIso: input.startIso,
+            endIso: input.endIso,
+            businessId: input.businessId,
+            branchId: input.branchId,
+            useLegacySchema: input.useLegacySchema,
+            mode: "full",
+            orderByCreatedAtDesc: true,
+            limit: 60,
+          })
+        : { rows: [] as FinancePaymentRow[], error: null as { message: string } | null };
 
       let topProducts: Array<{ productName: string; qty: number; revenue: number }> = [];
-      if (paidOrderIds.length > 0) {
+      if (input.includeTopProducts && paidOrderIds.length > 0) {
         const { data: itemRows } = await supabase
           .from("order_items")
           .select("order_id, product_name, quantity, line_total")
@@ -5156,7 +5200,17 @@ async function getCachedFinancialInsightsRow(input: {
           sales,
         })),
         topProducts,
-        recentPayments: paymentRows.slice(0, 60),
+        recentPayments: recentPaymentsResult.error
+          ? []
+          : recentPaymentsResult.rows.slice(0, 60).map((row) => ({
+              id: row.id ?? "",
+              order_id: row.order_id,
+              payment_type: row.payment_type,
+              method: row.method,
+              amount: row.amount,
+              note: row.note ?? null,
+              created_at: row.created_at,
+            })),
       };
     },
     [cacheKey],
@@ -5166,7 +5220,17 @@ async function getCachedFinancialInsightsRow(input: {
   return reader();
 }
 
-export async function getFinancialInsights(input: { days?: number; startDate?: string | null; endDate?: string | null } | number = 7) {
+export async function getFinancialInsights(
+  input:
+    | {
+        days?: number;
+        startDate?: string | null;
+        endDate?: string | null;
+        includeTopProducts?: boolean;
+        includeRecentPayments?: boolean;
+      }
+    | number = 7,
+) {
   const supabase = await getTenantDataClient();
   if (!supabase) {
     return {
@@ -5199,7 +5263,10 @@ export async function getFinancialInsights(input: { days?: number; startDate?: s
 
   try {
     const scope = await getDefaultBusinessScope();
-    const normalizedInput = typeof input === "number" ? { days: input } : input;
+    const normalizedInput =
+      typeof input === "number"
+        ? { days: input, includeTopProducts: true, includeRecentPayments: true }
+        : { includeTopProducts: true, includeRecentPayments: true, ...input };
     const range = resolveFinanceRange(normalizedInput);
     const cached = await getCachedFinancialInsightsRow({
       businessId: scope.businessId,
@@ -5209,6 +5276,8 @@ export async function getFinancialInsights(input: { days?: number; startDate?: s
       startIso: range.startIso,
       endIso: range.endIso,
       rangeKey: range.rangeKey,
+      includeTopProducts: normalizedInput.includeTopProducts ?? true,
+      includeRecentPayments: normalizedInput.includeRecentPayments ?? true,
     });
 
     if (!cached || cached.hasError) {
@@ -5544,10 +5613,13 @@ export async function getOpsSummary() {
   todayStart.setHours(0, 0, 0, 0);
 
   const scope = await getDefaultBusinessScope();
-  const openBase = supabase.from("orders").select("id, status", { count: "exact" });
-  const pendingBase = supabase.from("orders").select("id", { count: "exact" }).eq("status", "pending");
+  const openBase = supabase
+    .from("orders")
+    .select("id", { count: "exact", head: true })
+    .in("status", ["pending", "preparing", "served"]);
+  const pendingBase = supabase.from("orders").select("id", { count: "exact", head: true }).eq("status", "pending");
 
-  const [{ data: openRows }, { data: pendingRows }, paymentResult] = await Promise.all([
+  const [{ count: openOrdersCount }, { count: pendingCount }, paymentResult] = await Promise.all([
     !scope.useLegacySchema && scope.businessId
       ? (scope.branchId ? openBase.eq("business_id", scope.businessId).eq("branch_id", scope.branchId) : openBase.eq("business_id", scope.businessId))
       : openBase,
@@ -5566,12 +5638,8 @@ export async function getOpsSummary() {
   const todayRevenue = paymentResult.error ? 0 : aggregateFinancePayments(paymentResult.rows).netSales;
 
   return {
-    openOrders:
-      (openRows ?? []).filter((row) => {
-        const current = (row as { status?: OrderStatus }).status;
-        return current === "pending" || current === "preparing" || current === "served";
-      }).length ?? 0,
-    pendingCount: pendingRows?.length ?? 0,
+    openOrders: openOrdersCount ?? 0,
+    pendingCount: pendingCount ?? 0,
     todayRevenue,
     usingDemoData: false,
   };
@@ -5616,7 +5684,7 @@ export async function getOpsMetricsSnapshot() {
     };
   }
 
-  const [dashboard, scope] = await Promise.all([getDashboardData(), getDefaultBusinessScope()]);
+  const scope = await getDefaultBusinessScope();
   const cached = await getCachedOpsPageRow({
     businessId: scope.businessId,
     branchId: scope.branchId,
@@ -5624,20 +5692,31 @@ export async function getOpsMetricsSnapshot() {
   });
 
   const orders = cached?.openRows ?? [];
+  const paymentRows = cached?.paymentRows ?? [];
+  const tableRows = (cached?.tablesRows ?? []) as Array<{ id: string; status?: TableStatus }>;
   const openServiceRequests = cached?.openServiceRequests ?? 0;
 
   const pendingKitchenOrders = orders.filter(isPendingKitchenSignal);
   const delayedKitchenOrders = pendingKitchenOrders.filter((order) => isKitchenOrderDelayed(order)).length;
   const criticalKitchenOrders = pendingKitchenOrders.filter((order) => isKitchenOrderCritical(order)).length;
+  const pendingOrders = orders.filter((order) => order.status === "pending").length;
+  const preparingOrders = orders.filter((order) => order.status === "preparing").length;
+  const servedOrders = orders.filter((order) => order.status === "served").length;
+  const occupiedTables = tableRows.filter((row) => row.status === "occupied").length;
+  const emptyTables = tableRows.filter((row) => row.status === "empty").length;
+  const todayRevenue = ((paymentRows ?? []) as Array<{ amount: number; payment_type: "sale" | "refund" }>).reduce((sum, row) => {
+    const amount = Number(row.amount);
+    return sum + (row.payment_type === "refund" ? -amount : amount);
+  }, 0);
 
   return {
-    openOrders: dashboard.metrics.openOrders,
-    pendingOrders: dashboard.metrics.pending,
-    preparingOrders: dashboard.metrics.preparing,
-    servedOrders: dashboard.metrics.served,
-    occupiedTables: dashboard.metrics.occupiedTables,
-    emptyTables: dashboard.metrics.emptyTables,
-    todayRevenue: Number(dashboard.metrics.todayRevenue.toFixed(2)),
+    openOrders: pendingOrders + preparingOrders + servedOrders,
+    pendingOrders,
+    preparingOrders,
+    servedOrders,
+    occupiedTables,
+    emptyTables,
+    todayRevenue: Number(todayRevenue.toFixed(2)),
     openServiceRequests,
     delayedKitchenOrders,
     criticalKitchenOrders,
@@ -5786,7 +5865,7 @@ export async function getDashboardData() {
   }
 
   const scope = await getDefaultBusinessScope();
-  const cached = await getCachedDashboardDataRow({
+  const cached = await getCachedOpsPageRow({
     businessId: scope.businessId,
     branchId: scope.branchId,
     useLegacySchema: scope.useLegacySchema,
@@ -6122,107 +6201,6 @@ function buildSitePageKey(slug?: string) {
   return normalizedSlug === "home" ? "landing_page" : `site_page:${normalizedSlug}`;
 }
 
-async function getCachedDashboardDataRow(input: {
-  businessId: string | null;
-  branchId: string | null;
-  useLegacySchema: boolean;
-}) {
-  const cacheKey = `dashboard:${input.businessId ?? "none"}:${input.branchId ?? "all"}:${input.useLegacySchema ? "legacy" : "scoped"}`;
-  const reader = unstable_cache(
-    async () => {
-      const supabase = getSupabaseServerClient();
-      if (!supabase) {
-        return null;
-      }
-
-      const todayStart = new Date();
-      todayStart.setHours(0, 0, 0, 0);
-
-      const [
-        { data: openRows },
-        { data: paymentRows },
-        { data: tablesRows },
-        { data: recentOrderRows },
-        { data: lowStockRows },
-        { count: openServiceRequests },
-      ] = await Promise.all([
-        !input.useLegacySchema && input.businessId
-          ? (input.branchId
-              ? supabase
-                  .from("orders")
-                  .select("status, created_at")
-                  .eq("business_id", input.businessId)
-                  .eq("branch_id", input.branchId)
-                  .in("status", ["pending", "preparing", "served"])
-              : supabase.from("orders").select("status, created_at").eq("business_id", input.businessId).in("status", ["pending", "preparing", "served"]))
-          : supabase.from("orders").select("status, created_at").in("status", ["pending", "preparing", "served"]),
-        !input.useLegacySchema && input.businessId
-          ? (input.branchId
-              ? supabase.from("payments").select("amount, payment_type").eq("business_id", input.businessId).eq("branch_id", input.branchId).gte("created_at", todayStart.toISOString())
-              : supabase.from("payments").select("amount, payment_type").eq("business_id", input.businessId).gte("created_at", todayStart.toISOString()))
-          : supabase.from("payments").select("amount, payment_type").gte("created_at", todayStart.toISOString()),
-        !input.useLegacySchema && input.businessId
-          ? (input.branchId
-              ? supabase.from("tables").select("id, status").eq("business_id", input.businessId).eq("branch_id", input.branchId)
-              : supabase.from("tables").select("id, status").eq("business_id", input.businessId))
-          : supabase.from("tables").select("id, status"),
-        !input.useLegacySchema && input.businessId
-          ? (input.branchId
-              ? supabase
-                  .from("orders")
-                  .select("id, table_id, total_price, final_price, channel, customer_name, status, created_at, tables(table_number)")
-                  .eq("business_id", input.businessId)
-                  .eq("branch_id", input.branchId)
-                  .order("created_at", { ascending: false })
-                  .limit(4)
-              : supabase
-                  .from("orders")
-                  .select("id, table_id, total_price, final_price, channel, customer_name, status, created_at, tables(table_number)")
-                  .eq("business_id", input.businessId)
-                  .order("created_at", { ascending: false })
-                  .limit(4))
-          : supabase
-              .from("orders")
-              .select("id, table_id, total_price, final_price, channel, customer_name, status, created_at, tables(table_number)")
-              .order("created_at", { ascending: false })
-              .limit(4),
-        !input.useLegacySchema && input.businessId
-          ? supabase
-              .from("products")
-              .select("id, name, stock_count")
-              .eq("business_id", input.businessId)
-              .lte("stock_count", 10)
-              .order("stock_count", { ascending: true })
-              .limit(4)
-          : supabase.from("products").select("id, name, stock_count").lte("stock_count", 10).order("stock_count", { ascending: true }).limit(4),
-        !input.useLegacySchema && input.businessId
-          ? (input.branchId
-              ? supabase
-                  .from("table_requests")
-                  .select("id", { count: "exact", head: true })
-                  .eq("business_id", input.businessId)
-                  .eq("branch_id", input.branchId)
-                  .eq("status", "open")
-              : supabase.from("table_requests").select("id", { count: "exact", head: true }).eq("business_id", input.businessId).eq("status", "open"))
-          : supabase.from("table_requests").select("id", { count: "exact", head: true }).eq("status", "open"),
-      ]);
-
-      return {
-        openRows: (openRows ?? []) as Array<{ status?: OrderStatus; created_at: string }>,
-        paymentRows: (paymentRows ?? []) as Array<{ amount: number; payment_type: "sale" | "refund" }>,
-        tablesRows: (tablesRows ?? []) as Array<{ id: string; status?: TableStatus }>,
-        recentOrderRows: (recentOrderRows ?? []) as Array<OrderRow>,
-        lowStockRows: (lowStockRows ?? []) as Array<Pick<Product, "id" | "name" | "stock_count">>,
-        openServiceRequests: openServiceRequests ?? 0,
-      };
-    },
-    [cacheKey],
-    { revalidate: 10, tags: ["dashboard-snapshot"] },
-  );
-
-  return reader();
-}
-
 async function getCachedOpsPageRow(input: {
   businessId: string | null;
   branchId: string | null;
@@ -6235,7 +6213,7 @@ async function getCachedOpsPageRow(input: {
       if (!supabase) {
         return null;
       }
-      const recentOrderLimit = 30;
+      const recentOrderLimit = 18;
 
       const todayStart = new Date();
       todayStart.setHours(0, 0, 0, 0);

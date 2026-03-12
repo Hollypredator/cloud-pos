@@ -60,6 +60,11 @@ jobs:
           cat app.log
           exit 1
 
+      - name: Synthetic smoke check
+        env:
+          SYNTHETIC_BASE_URL: http://127.0.0.1:3000
+        run: npm run monitor:synthetic
+
       - name: Phase 2 Runtime Tenant Checks
         if: ${{ secrets.NEXT_PUBLIC_SUPABASE_URL != '' && secrets.SUPABASE_SERVICE_ROLE_KEY != '' }}
         env:

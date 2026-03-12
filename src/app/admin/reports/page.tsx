@@ -237,6 +237,8 @@ export default async function AdminReportsPage({
     const activeTab: ReportTab =
       tabParam === "cari" || tabParam === "detail" || tabParam === "staff" ? tabParam : "general";
     const shouldLoadFinancial = activeTab === "cari" || activeTab === "detail";
+    const needsTopProducts = activeTab === "detail";
+    const needsRecentPayments = activeTab === "cari" || activeTab === "detail";
     const shouldLoadStaff = activeTab === "staff";
 
     const safeOpsPromise = shouldLoadStaff
@@ -289,7 +291,11 @@ export default async function AdminReportsPage({
       ),
       shouldLoadFinancial
         ? measureAsync("financial_insights", () =>
-            getFinancialInsights(mode === "date" ? { startDate, endDate } : { days }),
+            getFinancialInsights(
+              mode === "date"
+                ? { startDate, endDate, includeTopProducts: needsTopProducts, includeRecentPayments: needsRecentPayments }
+                : { days, includeTopProducts: needsTopProducts, includeRecentPayments: needsRecentPayments },
+            ),
           )
         : Promise.resolve({
           label: "financial_insights",

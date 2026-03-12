@@ -232,9 +232,15 @@ export default async function AdminFinancePage({
     const { startDate, endDate, warning: dateGuardWarning } = resolveDateInputs(days, startParam, endParam);
     const activeView: FinanceView =
       viewParam === "cashflow" || viewParam === "sales" || viewParam === "transactions" ? viewParam : "overview";
+    const needsTopProducts = activeView === "overview" || activeView === "sales";
+    const needsRecentPayments = activeView === "overview" || activeView === "sales" || activeView === "transactions";
     const [financialResult, branchContextResult] = await Promise.all([
       measureAsync("financial_insights", () =>
-        getFinancialInsights(mode === "date" ? { startDate, endDate } : { days }),
+        getFinancialInsights(
+          mode === "date"
+            ? { startDate, endDate, includeTopProducts: needsTopProducts, includeRecentPayments: needsRecentPayments }
+            : { days, includeTopProducts: needsTopProducts, includeRecentPayments: needsRecentPayments },
+        ),
       ),
       measureAsync("list_branches", () => listBranches()),
     ]);
