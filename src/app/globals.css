@@ -144,8 +144,8 @@ button:disabled {
 
 @media print {
   @page {
-    size: A4;
-    margin: 12mm;
+    size: auto;
+    margin: 8mm;
   }
 
   nav,
@@ -164,5 +164,38 @@ button:disabled {
   .print-card {
     box-shadow: none !important;
     border: 1px solid #d4d4d4 !important;
+    margin: 0 auto !important;
+    break-inside: avoid-page !important;
+    page-break-inside: avoid !important;
   }
+
+  .print-root {
+    min-height: auto !important;
+    padding: 0 !important;
+    background: #ffffff !important;
+  }
+
+  body.printing-inline-receipt * {
+    visibility: hidden !important;
+  }
+
+  body.printing-inline-receipt .receipt-inline-sheet,
+  body.printing-inline-receipt .receipt-inline-sheet * {
+    visibility: visible !important;
+  }
+
+  body.printing-inline-receipt .receipt-inline-sheet {
+    position: fixed !important;
+    left: 0 !important;
+    top: 0 !important;
+    right: 0 !important;
+    width: 100% !important;
+    max-width: 100% !important;
+    margin: 0 !important;
+    border: 0 !important;
+    border-radius: 0 !important;
+    box-shadow: none !important;
+    background: #fff !important;
+  }
+
 }

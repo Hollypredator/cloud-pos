@@ -12,6 +12,7 @@ import {
   WorkflowGuide,
 } from "@/components/backoffice-ui";
 import { LiveOpsBridge } from "@/components/live-ops-bridge";
+import { ReceiptPreviewLauncher } from "@/components/receipt-preview-launcher";
 import { getAppBaseUrl } from "@/lib/app-url";
 import { requireRole } from "@/lib/auth";
 import { getCurrentLocale } from "@/lib/i18n-server";
@@ -260,7 +261,7 @@ export default async function CashierPage({
 
       <ContentCard title="Masa ve Adisyon Secimi">
         {servedOrders.length === 0 ? (
-          <EmptyPanel title="Secilecek Adisyon Yok" description="Servise hazir ve tahsilat bekleyen masa bulunmuyor." />
+          <EmptyPanel title="Secilecek Adisyon Yok" description="Acik adisyon bulunmuyor." />
         ) : (
           <div className="grid gap-3 md:grid-cols-2 xl:grid-cols-4">
             {servedOrders.map((order) => {
@@ -283,7 +284,7 @@ export default async function CashierPage({
                         {order.table_number ? `Masa ${order.table_number}` : order.customer_name ?? "Adisyon"}
                       </p>
                     </div>
-                    <span className={`inline-flex w-full justify-center rounded-full px-3 py-1 text-xs font-semibold uppercase sm:w-auto ${statusTone(order.status)}`}>Acik</span>
+                    <span className={`inline-flex w-full justify-center rounded-full px-3 py-1 text-xs font-semibold uppercase sm:w-auto ${statusTone(order.status)}`}>{order.status}</span>
                   </div>
                   <div className="mt-4 flex flex-col items-start gap-3 sm:flex-row sm:items-end sm:justify-between">
                     <div>
@@ -301,8 +302,8 @@ export default async function CashierPage({
 
       <section className="grid gap-5 xl:grid-cols-[1.3fr_0.7fr]">
         <ContentCard title="Odeme Bekleyen Adisyonlar">
-          {servedOrders.length === 0 ? (
-            <EmptyPanel title="Adisyon Yok" description="Tahsilat bekleyen siparis bulunmuyor." />
+        {servedOrders.length === 0 ? (
+            <EmptyPanel title="Adisyon Yok" description="Acik siparis bulunmuyor." />
           ) : (
             <div className="space-y-4">
               {servedOrders.map((order) => {
@@ -333,12 +334,14 @@ export default async function CashierPage({
                       >
                         Buyut ve Tahsilata Gec
                       </Link>
-                      <Link href={`/receipt/${order.id}?layout=a4`} target="_blank" rel="noreferrer" className="w-full rounded-2xl border border-slate-200 bg-white px-4 py-3 text-center text-sm font-semibold text-slate-700 sm:w-auto">
-                        Adisyon Yazdir
-                      </Link>
-                      <Link href={`/receipt/${order.id}?layout=thermal`} target="_blank" rel="noreferrer" className="w-full rounded-2xl border border-slate-200 bg-white px-4 py-3 text-center text-sm font-semibold text-slate-700 sm:w-auto">
-                        Fis Yazdir
-                      </Link>
+                      <div className="w-full sm:w-auto">
+                        <ReceiptPreviewLauncher
+                          order={order}
+                          receiptLink={buildReceiptLink(order.id)}
+                          showShareLink={false}
+                          compactButtons
+                        />
+                      </div>
                     </div>
                   </article>
                 );
@@ -373,22 +376,7 @@ export default async function CashierPage({
 
                     <div className="rounded-2xl bg-white px-4 py-4">
                       <p className="text-xs font-bold uppercase tracking-[0.16em] text-slate-500">Adisyon Paylasimi</p>
-                      <a
-                        href={buildReceiptLink(order.id)}
-                        target="_blank"
-                        rel="noreferrer"
-                        className="mt-3 block rounded-2xl border border-slate-200 bg-slate-50 px-4 py-3 text-sm font-semibold text-slate-700"
-                      >
-                        Linki Ac / Paylas
-                      </a>
-                      <div className="mt-3 grid gap-2 sm:grid-cols-2">
-                        <Link href={`/receipt/${order.id}?layout=a4`} target="_blank" rel="noreferrer" className="rounded-2xl border border-slate-200 bg-white px-4 py-3 text-center text-sm font-semibold text-slate-700">
-                          Adisyon Yazdir
-                        </Link>
-                        <Link href={`/receipt/${order.id}?layout=thermal`} target="_blank" rel="noreferrer" className="rounded-2xl border border-slate-200 bg-white px-4 py-3 text-center text-sm font-semibold text-slate-700">
-                          Fis Yazdir
-                        </Link>
-                      </div>
+                      <ReceiptPreviewLauncher order={order} receiptLink={buildReceiptLink(order.id)} />
                       <div className="mt-4 flex justify-center rounded-[20px] border border-dashed border-slate-200 bg-slate-50 p-4">
                         <Image
                           src={buildReceiptQr(order.id)}
@@ -533,22 +521,7 @@ export default async function CashierPage({
 
                         <div className="rounded-[24px] border border-slate-200 bg-white p-4">
                           <p className="text-xs font-bold uppercase tracking-[0.16em] text-slate-500">Adisyon Paylasimi</p>
-                          <a
-                            href={buildReceiptLink(order.id)}
-                            target="_blank"
-                            rel="noreferrer"
-                            className="mt-3 block rounded-2xl border border-slate-200 bg-slate-50 px-4 py-3 text-sm font-semibold text-slate-700"
-                          >
-                            Linki Ac / Paylas
-                          </a>
-                          <div className="mt-3 grid gap-2 sm:grid-cols-2">
-                            <Link href={`/receipt/${order.id}?layout=a4`} target="_blank" rel="noreferrer" className="rounded-2xl border border-slate-200 bg-white px-4 py-3 text-center text-sm font-semibold text-slate-700">
-                              Adisyon Yazdir
-                            </Link>
-                            <Link href={`/receipt/${order.id}?layout=thermal`} target="_blank" rel="noreferrer" className="rounded-2xl border border-slate-200 bg-white px-4 py-3 text-center text-sm font-semibold text-slate-700">
-                              Fis Yazdir
-                            </Link>
-                          </div>
+                          <ReceiptPreviewLauncher order={order} receiptLink={buildReceiptLink(order.id)} />
                           <div className="mt-4 flex justify-center rounded-[20px] border border-dashed border-slate-200 bg-slate-50 p-4">
                             <Image
                               src={buildReceiptQr(order.id)}

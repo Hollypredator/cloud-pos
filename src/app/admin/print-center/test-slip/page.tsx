@@ -11,7 +11,7 @@ export default async function TestSlipPage({
   const thermal = layout === "thermal";
 
   return (
-    <div className="min-h-screen bg-slate-100 px-4 py-8">
+    <div className="print-root bg-slate-100 px-4 py-8">
       <main
         className={`print-card mx-auto rounded-2xl bg-white shadow-sm ${
           thermal ? "max-w-[340px] p-4" : "max-w-2xl p-6"

@@ -45,7 +45,7 @@ export default async function KitchenTicketPage({
         : "border-[#ffd5ca] bg-[#fff2ee] text-[#ff5a34]";
 
   return (
-    <div className="min-h-screen bg-slate-100 px-4 py-8">
+    <div className="print-root bg-slate-100 px-4 py-8">
       <main
         className={`print-card mx-auto rounded-2xl bg-white shadow-sm ${
           compact ? "max-w-[280px] p-3" : thermal ? "max-w-[340px] p-4" : "max-w-2xl p-6"
@@ -87,7 +87,7 @@ export default async function KitchenTicketPage({
 
         <PrintActions baseHref={`/admin/print-center/kitchen/${order.id}`} />
 
-        <div className="mt-4">
+        <div className="no-print mt-4">
           <Link href="/kitchen" className="text-sm font-medium text-slate-700 underline">
             Mutfaga Don
           </Link>

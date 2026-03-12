@@ -2,12 +2,15 @@ import Link from "next/link";
 import { PendingSubmitButton } from "@/components/pending-submit-button";
 import { BackofficePage, EmptyPanel, NoticeBanner, SummaryCard, WorkflowGuide, WorkspaceTabs } from "@/components/backoffice-ui";
 import { requireRole } from "@/lib/auth";
+import { getMenu, getOrderReceipt } from "@/lib/domains/orders";
 import { getOrderHistoryByTableId, getTableMap, listLatestOrdersByTableIds } from "@/lib/domains/tables";
 import { translateUiText } from "@/lib/i18n";
 import { getCurrentLocale } from "@/lib/i18n-server";
 import { logServerPerf, measureAsync } from "@/lib/perf";
+import { getBusinessScopeContext } from "@/lib/server/app-context";
 import { addTableAction } from "./actions";
-import { buildQrImage, buildQrTarget, orderTone, tableStatusLabel, tableStatusTone } from "./helpers";
+import { orderTone, tableStatusLabel, tableStatusTone } from "./helpers";
+import { buildQrImage, buildQrTarget } from "./qr-helpers-server";
 import { TableManagementModal } from "./table-management-modal";
 
 export default async function AdminTablesPage({
@@ -20,6 +23,10 @@ export default async function AdminTablesPage({
   const { feedback, tone, table: selectedTableId } = await searchParams;
   const tableMapResult = await measureAsync("table_map", () => getTableMap());
   const { tables, usingDemoData } = tableMapResult.value;
+  const businessScopeResult = await measureAsync("business_scope", () => getBusinessScopeContext());
+  const businessSlug = businessScopeResult.value.activeSlug;
+  const menuResult = await measureAsync("menu_for_table_modal_order_entry", () => getMenu(businessSlug));
+  const { categories, products, modifierGroups, modifierOptions } = menuResult.value;
 
   const targetResult = await measureAsync("qr_targets", () => Promise.all(
     tables.map(async (table) => ({
@@ -37,7 +44,28 @@ export default async function AdminTablesPage({
     ? await measureAsync("selected_table_history", () => getOrderHistoryByTableId(selectedTable.id, 8))
     : null;
   const { orders: selectedTableHistory } = selectedHistoryResult?.value ?? { orders: [] };
-  logServerPerf("/admin/tables", [tableMapResult, targetResult, latestOrdersResult, ...(selectedHistoryResult ? [selectedHistoryResult] : [])]);
+  const selectedReceiptDetailsResult =
+    selectedTable && selectedTableHistory.length > 0
+      ? await measureAsync("selected_table_receipt_details", async () => {
+          const entries = await Promise.all(
+            selectedTableHistory.map(async (order) => {
+              const receipt = await getOrderReceipt(order.id);
+              return [order.id, receipt.order] as const;
+            }),
+          );
+          return Object.fromEntries(entries.filter((entry) => !!entry[1])) as Record<string, NonNullable<(typeof entries)[number][1]>>;
+        })
+      : null;
+  const selectedReceiptDetailsByOrderId = selectedReceiptDetailsResult?.value ?? {};
+  logServerPerf("/admin/tables", [
+    tableMapResult,
+    businessScopeResult,
+    menuResult,
+    targetResult,
+    latestOrdersResult,
+    ...(selectedHistoryResult ? [selectedHistoryResult] : []),
+    ...(selectedReceiptDetailsResult ? [selectedReceiptDetailsResult] : []),
+  ]);
   const movableTables = selectedTable
     ? tables
         .filter((table) => table.id !== selectedTable.id && table.status === "empty")
@@ -134,7 +162,11 @@ export default async function AdminTablesPage({
             ) : (
               <div className="mt-4 grid gap-4 md:grid-cols-2 xl:grid-cols-3 2xl:grid-cols-4">
                 {tables.map((table) => {
-                  const latestOrder = latestOrderMap.get(table.id);
+                  const latestOrderRaw = latestOrderMap.get(table.id);
+                  const latestOrder =
+                    latestOrderRaw && !["paid", "cancelled", "refunded"].includes(latestOrderRaw.status)
+                      ? latestOrderRaw
+                      : null;
                   return (
                     <article
                       key={table.id}
@@ -211,9 +243,16 @@ export default async function AdminTablesPage({
           table={selectedTable}
           latestOrder={latestOrderMap.get(selectedTable.id) ?? null}
           orders={selectedTableHistory}
+          receiptDetailsByOrderId={selectedReceiptDetailsByOrderId}
           qrTarget={targetMap.get(selectedTable.id)?.target ?? "#"}
           qrImage={targetMap.get(selectedTable.id)?.image ?? "#"}
           movableTables={movableTables}
+          businessSlug={businessSlug}
+          categories={categories}
+          products={products}
+          modifierGroups={modifierGroups}
+          modifierOptions={modifierOptions}
+          allTables={tables}
         />
       ) : null}
     </BackofficePage>

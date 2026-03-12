@@ -2,16 +2,22 @@ import Link from "next/link";
 import { AdminOrderEntry } from "@/components/admin-order-entry";
 import { BackofficePage, SidebarPanel, SummaryCard, WorkflowGuide } from "@/components/backoffice-ui";
 import { requireRole } from "@/lib/auth";
-import { getActiveBusinessSlug } from "@/lib/business-server";
 import { getMenu } from "@/lib/domains/orders";
 import { getTableMap } from "@/lib/domains/tables";
 import { translateUiText } from "@/lib/i18n";
 import { getCurrentLocale } from "@/lib/i18n-server";
+import { getBusinessScopeContext } from "@/lib/server/app-context";
 
-export default async function AdminOrdersPage() {
+export default async function AdminOrdersPage({
+  searchParams,
+}: {
+  searchParams: Promise<{ table?: string }>;
+}) {
   await requireRole(["admin", "cashier", "waiter"], "/admin/orders");
   const locale = await getCurrentLocale();
-  const businessSlug = await getActiveBusinessSlug();
+  const { table: preselectedTableId } = await searchParams;
+  const businessScope = await getBusinessScopeContext();
+  const businessSlug = businessScope.activeSlug;
   const [{ categories, products, modifierGroups, modifierOptions, usingDemoData: usingMenuDemo }, { tables, usingDemoData: usingTablesDemo }] = await Promise.all([
     getMenu(businessSlug),
     getTableMap(),
@@ -83,6 +89,7 @@ export default async function AdminOrdersPage() {
           modifierGroups={modifierGroups}
           modifierOptions={modifierOptions}
           tables={tables}
+          initialTableId={preselectedTableId}
         />
     </BackofficePage>
   );

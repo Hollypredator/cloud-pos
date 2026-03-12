@@ -113,7 +113,7 @@ export async function POST(request: Request) {
     const result = await createOrder({
       tableId: table?.id ?? null,
       businessId: table?.business_id ?? businessContext.businessId ?? undefined,
-      branchId: table?.branch_id ?? null,
+      branchId: table?.branch_id ?? undefined,
       items: body.items,
       totalPrice: body.totalPrice,
       channel,

@@ -1198,7 +1198,10 @@ export async function createSupportTenantProvision(input: {
   }
 
   const actor = await getCurrentSupportActor();
-  if (actor.role !== "support_admin") {
+  const platformAccess = await getPlatformAccessByEmail(actor.email ?? "");
+  const canManageTenantProvision =
+    actor.role === "support_admin" || hasPlatformPermission(platformAccess, "support.access.manage");
+  if (!canManageTenantProvision) {
     return { ok: false, error: "Bu islem icin support admin yetkisi gerekli." };
   }
 
@@ -2092,27 +2095,159 @@ export async function createOrder(input: {
     status: "pending",
   };
 
-  let orderData: { id: string } | null = null;
-  let orderError: { message: string } | null = null;
-  const firstInsert = await supabase.from("orders").insert(withBusinessPayload).select("id").single();
-  orderData = firstInsert.data as { id: string } | null;
-  orderError = firstInsert.error as { message: string } | null;
-  if (orderError?.message?.toLowerCase().includes("business_id")) {
-    const secondInsert = await supabase.from("orders").insert(fallbackPayload).select("id").single();
-    orderData = secondInsert.data as { id: string } | null;
-    orderError = secondInsert.error as { message: string } | null;
+  const rpcPayload = input.items.map((item) => ({
+    product_id: item.product_id,
+    name: item.name,
+    quantity: item.quantity,
+    unit_price: item.unit_price,
+    line_total: item.line_total,
+    modifiers: (item.modifiers ?? []).map((modifier) => ({
+      group_name: modifier.group_name,
+      option_name: modifier.option_name,
+      price_delta: modifier.price_delta,
+      quantity: modifier.quantity ?? item.quantity,
+    })),
+  }));
+
+  const rpcResult = await supabase.rpc("create_or_append_order", {
+    p_business_id: input.businessId ?? scope.businessId ?? null,
+    p_branch_id: input.branchId ?? scope.branchId ?? null,
+    p_table_id: input.tableId ?? null,
+    p_channel: channel,
+    p_customer_name: trimmedCustomerName,
+    p_customer_phone: trimmedCustomerPhone,
+    p_delivery_address: trimmedDeliveryAddress,
+    p_delivery_note: trimmedDeliveryNote,
+    p_courier_id: courierId,
+    p_courier_name: trimmedCourierName,
+    p_courier_phone: trimmedCourierPhone,
+    p_fulfillment_status: fulfillmentStatus,
+    p_total_price: input.totalPrice,
+    p_items: rpcPayload,
+  });
+
+  const rpcOrder = ((rpcResult.data as Array<{ order_id: string; created_new: boolean }> | null) ?? [])[0] ?? null;
+  if (!rpcResult.error && rpcOrder?.order_id) {
+    if (input.tableId) {
+      await supabase.from("tables").update({ status: "occupied" as TableStatus }).eq("id", input.tableId);
+    }
+    await logAuditEvent({
+      entityType: "order",
+      entityId: rpcOrder.order_id,
+      action: rpcOrder.created_new ? "create" : "update",
+      details: {
+        tableId: input.tableId ?? null,
+        channel,
+        totalPrice: input.totalPrice,
+        itemCount: input.items.length,
+        customerName: trimmedCustomerName,
+        courierId,
+      },
+    });
+    return { ok: true, id: rpcOrder.order_id, usingDemoData: false };
   }
 
-  if (orderError) {
-    return { ok: false, error: orderError.message };
+  type OrderMergeCandidate = {
+    id: string;
+    total_price: number;
+    final_price: number | null;
+    items: OrderItem[] | null;
+    status: OrderStatus | null;
+  };
+
+  let orderId: string | null = null;
+  let createdNewOrder = false;
+  let mergeSnapshot: {
+    id: string;
+    total_price: number;
+    final_price: number;
+    items: OrderItem[];
+    status: OrderStatus;
+  } | null = null;
+
+  if (channel === "dine_in" && input.tableId) {
+    let mergeQuery = supabase
+      .from("orders")
+      .select("id, total_price, final_price, items, status")
+      .eq("table_id", input.tableId)
+      .eq("channel", "dine_in")
+      .in("status", ["pending", "preparing", "served"])
+      .order("created_at", { ascending: false })
+      .limit(1);
+
+    if (!scope.useLegacySchema && (input.businessId ?? scope.businessId)) {
+      mergeQuery = mergeQuery.eq("business_id", input.businessId ?? scope.businessId);
+    }
+    if (input.branchId ?? scope.branchId) {
+      mergeQuery = mergeQuery.eq("branch_id", input.branchId ?? scope.branchId);
+    }
+
+    const mergeResult = await mergeQuery;
+    const mergeRow = (mergeResult.data?.[0] as OrderMergeCandidate | undefined) ?? null;
+
+    if (mergeRow) {
+      const currentItems = Array.isArray(mergeRow.items) ? mergeRow.items : [];
+      const mergedItems = [...currentItems, ...input.items];
+      const baseTotal = Number(mergeRow.total_price ?? 0);
+      const baseFinal = Number(mergeRow.final_price ?? mergeRow.total_price ?? 0);
+      const updatedTotal = baseTotal + Number(input.totalPrice);
+      const updatedFinal = baseFinal + Number(input.totalPrice);
+      mergeSnapshot = {
+        id: mergeRow.id,
+        total_price: baseTotal,
+        final_price: baseFinal,
+        items: currentItems,
+        status: (mergeRow.status ?? "pending") as OrderStatus,
+      };
+
+      const { error: updateExistingError } = await supabase
+        .from("orders")
+        .update({
+          items: mergedItems,
+          total_price: updatedTotal,
+          final_price: updatedFinal,
+          status: "pending",
+        })
+        .eq("id", mergeRow.id);
+
+      if (updateExistingError) {
+        return { ok: false, error: updateExistingError.message };
+      }
+
+      orderId = mergeRow.id;
+    }
   }
-  if (!orderData) {
+
+  if (!orderId) {
+    let orderData: { id: string } | null = null;
+    let orderError: { message: string } | null = null;
+    const firstInsert = await supabase.from("orders").insert(withBusinessPayload).select("id").single();
+    orderData = firstInsert.data as { id: string } | null;
+    orderError = firstInsert.error as { message: string } | null;
+    if (orderError?.message?.toLowerCase().includes("business_id")) {
+      const secondInsert = await supabase.from("orders").insert(fallbackPayload).select("id").single();
+      orderData = secondInsert.data as { id: string } | null;
+      orderError = secondInsert.error as { message: string } | null;
+    }
+
+    if (orderError) {
+      return { ok: false, error: orderError.message };
+    }
+    if (!orderData) {
+      return { ok: false, error: "Siparis olusturulamadi." };
+    }
+
+    orderId = orderData.id;
+    createdNewOrder = true;
+  }
+
+  const persistedOrderId = orderId;
+  if (!persistedOrderId) {
     return { ok: false, error: "Siparis olusturulamadi." };
   }
 
-  const orderId = orderData.id as string;
   const payload = input.items.map((item) => ({
-    order_id: orderId,
+    order_id: persistedOrderId,
     product_id: item.product_id,
     product_name: item.name,
     quantity: item.quantity,
@@ -2122,7 +2257,19 @@ export async function createOrder(input: {
 
   const { error: itemError } = await supabase.from("order_items").insert(payload);
   if (itemError) {
-    await supabase.from("orders").delete().eq("id", orderId);
+    if (createdNewOrder) {
+      await supabase.from("orders").delete().eq("id", persistedOrderId);
+    } else if (mergeSnapshot) {
+      await supabase
+        .from("orders")
+        .update({
+          items: mergeSnapshot.items,
+          total_price: mergeSnapshot.total_price,
+          final_price: mergeSnapshot.final_price,
+          status: mergeSnapshot.status,
+        })
+        .eq("id", mergeSnapshot.id);
+    }
     return { ok: false, error: itemError.message };
   }
 
@@ -2141,8 +2288,23 @@ export async function createOrder(input: {
   if (modifierPayload.length > 0) {
     const modifierInsert = await supabase.from("order_item_modifiers").insert(modifierPayload);
     if (modifierInsert.error) {
-      await supabase.from("order_items").delete().eq("order_id", orderId);
-      await supabase.from("orders").delete().eq("id", orderId);
+      if (createdNewOrder) {
+        await supabase
+          .from("order_items")
+          .delete()
+          .eq("order_id", persistedOrderId);
+        await supabase.from("orders").delete().eq("id", persistedOrderId);
+      } else if (mergeSnapshot) {
+        await supabase
+          .from("orders")
+          .update({
+            items: mergeSnapshot.items,
+            total_price: mergeSnapshot.total_price,
+            final_price: mergeSnapshot.final_price,
+            status: mergeSnapshot.status,
+          })
+          .eq("id", mergeSnapshot.id);
+      }
       return { ok: false, error: modifierInsert.error.message };
     }
   }
@@ -2152,8 +2314,8 @@ export async function createOrder(input: {
   }
   await logAuditEvent({
     entityType: "order",
-    entityId: orderId,
-    action: "create",
+    entityId: persistedOrderId,
+    action: createdNewOrder ? "create" : "update",
     details: {
       tableId: input.tableId ?? null,
       channel,
@@ -2163,7 +2325,7 @@ export async function createOrder(input: {
       courierId,
     },
   });
-  return { ok: true, id: orderId, usingDemoData: false };
+  return { ok: true, id: persistedOrderId, usingDemoData: false };
 }
 
 type OrderRow = {
@@ -2944,8 +3106,17 @@ export async function getKitchenOrdersSnapshot() {
 }
 
 export async function getCashierPageSnapshot(selectedOrderId?: string) {
+  const cashierOpenScope = (process.env.CASHIER_OPEN_SCOPE ?? "all").toLowerCase();
+  const openStatuses: OrderStatus[] =
+    cashierOpenScope === "served_only" ? ["served"] : ["pending", "preparing", "served"];
+
   const [servedResult, paidResult, selectedOrderResult, supabase] = await Promise.all([
-    listOrders(["served"], { includeItems: false, includePaymentSummary: false, limit: 60, ascending: false }),
+    listOrders(openStatuses, {
+      includeItems: false,
+      includePaymentSummary: false,
+      limit: 60,
+      ascending: false,
+    }),
     listOrders(["paid"], { includeItems: false, includePaymentSummary: false, limit: 8, ascending: false }),
     typeof selectedOrderId === "string"
       ? getOrderReceipt(selectedOrderId)

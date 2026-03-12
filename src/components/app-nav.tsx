@@ -250,7 +250,7 @@ export function AppNav({
       </nav>
 
       {mobileOpen ? (
-        <div className="fixed inset-0 z-40 bg-slate-950/40 md:hidden" onClick={() => setMobileOpen(false)}>
+        <div className="no-print fixed inset-0 z-40 bg-slate-950/40 md:hidden" onClick={() => setMobileOpen(false)}>
           <div
             className="absolute inset-x-0 top-[58px] max-h-[calc(100vh-72px)] overflow-y-auto rounded-t-[28px] border-t border-slate-200 bg-white px-3 py-3 shadow-[0_-10px_30px_rgba(15,23,42,0.18)]"
             onClick={(event) => event.stopPropagation()}
@@ -323,7 +323,7 @@ export function AppNav({
       ) : null}
 
       {mobilePrimaryLinks.length > 0 ? (
-        <div className="fixed inset-x-0 bottom-0 z-30 border-t border-slate-200 bg-white/95 px-2 py-1.5 shadow-[0_-10px_24px_rgba(15,23,42,0.08)] backdrop-blur md:hidden">
+        <div className="no-print fixed inset-x-0 bottom-0 z-30 border-t border-slate-200 bg-white/95 px-2 py-1.5 shadow-[0_-10px_24px_rgba(15,23,42,0.08)] backdrop-blur md:hidden">
           <div className="grid grid-cols-4 gap-2">
             {mobilePrimaryLinks.map((link) => (
               <Link

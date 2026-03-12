@@ -306,6 +306,7 @@ export const getRequestAppContext = cache(async () => {
           ]
         : [];
   const defaultActiveBusiness = allBusinesses.find((item) => item.slug === activeSlug) ?? allBusinesses[0] ?? null;
+  const defaultActiveSlug = defaultActiveBusiness?.slug ?? activeSlug;
   const useLegacySchema = Boolean(businessesResult?.error ? businessesResult.useLegacySchema : fallbackContext?.useLegacySchema);
 
   if (!user) {
@@ -314,7 +315,7 @@ export const getRequestAppContext = cache(async () => {
       role: null as AppRole | null,
       hasUser: false,
       usingDemoData: false,
-      activeSlug,
+      activeSlug: defaultActiveSlug,
       activeBranchCookie,
       businesses: allBusinesses,
       activeBusiness: defaultActiveBusiness,
@@ -339,6 +340,7 @@ export const getRequestAppContext = cache(async () => {
         ? allBusinesses.filter((business) => userBusinessAccess.businessIds.includes(business.id))
         : [];
   const activeBusiness = businesses.find((item) => item.slug === activeSlug) ?? businesses[0] ?? null;
+  const resolvedActiveSlug = activeBusiness?.slug ?? defaultActiveSlug;
 
   const { role, accessScope, primaryBranchId, branchAccessIds } = await getCachedResolvedUserScope({
     userId: user.id,
@@ -352,7 +354,7 @@ export const getRequestAppContext = cache(async () => {
       role,
       hasUser: true,
       usingDemoData: false,
-      activeSlug,
+      activeSlug: resolvedActiveSlug,
       activeBranchCookie,
       businesses,
       activeBusiness,
@@ -397,7 +399,7 @@ export const getRequestAppContext = cache(async () => {
     role,
     hasUser: true,
     usingDemoData: false,
-    activeSlug,
+    activeSlug: resolvedActiveSlug,
     activeBranchCookie,
     businesses,
     activeBusiness,

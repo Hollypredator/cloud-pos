@@ -41,6 +41,8 @@ export function AdminOrderEntry({
   modifierGroups,
   modifierOptions,
   tables,
+  initialTableId,
+  lockedTableId,
 }: {
   businessSlug: string;
   categories: Category[];
@@ -48,9 +50,18 @@ export function AdminOrderEntry({
   modifierGroups: ProductModifierGroup[];
   modifierOptions: ProductModifierOption[];
   tables: DiningTable[];
+  initialTableId?: string;
+  lockedTableId?: string;
 }) {
-  const [channel, setChannel] = useState<OrderChannel>("dine_in");
-  const [selectedTableId, setSelectedTableId] = useState<string>(tables[0]?.id ?? "");
+  const isTableLocked = Boolean(lockedTableId);
+  const [channel, setChannel] = useState<OrderChannel>(isTableLocked ? "dine_in" : "dine_in");
+  const [selectedTableId, setSelectedTableId] = useState<string>(
+    (lockedTableId && tables.some((table) => table.id === lockedTableId))
+      ? lockedTableId
+      : (initialTableId && tables.some((table) => table.id === initialTableId))
+        ? initialTableId
+        : (tables[0]?.id ?? ""),
+  );
   const [customerName, setCustomerName] = useState("");
   const [customerPhone, setCustomerPhone] = useState("");
   const [deliveryAddress, setDeliveryAddress] = useState("");
@@ -319,10 +330,15 @@ export function AdminOrderEntry({
               <button
                 key={value}
                 type="button"
-                onClick={() => setChannel(value)}
+                onClick={() => {
+                  if (!isTableLocked) {
+                    setChannel(value);
+                  }
+                }}
+                disabled={isTableLocked && value !== "dine_in"}
                 className={`rounded-xl px-4 py-3 text-sm font-semibold ${
                   channel === value ? "bg-slate-900 text-white" : "bg-slate-100 text-slate-700"
-                }`}
+                } ${isTableLocked && value !== "dine_in" ? "cursor-not-allowed opacity-50" : ""}`}
               >
                 {channelLabel(value)}
               </button>
@@ -339,8 +355,12 @@ export function AdminOrderEntry({
                 className="mt-2 w-full rounded-xl border border-slate-300 px-3 py-3 text-sm"
                 value={selectedTableId}
                 onChange={(event) => setSelectedTableId(event.target.value)}
+                disabled={isTableLocked}
               >
-                {tables.map((table) => (
+                {(isTableLocked
+                  ? tables.filter((table) => table.id === selectedTableId)
+                  : tables
+                ).map((table) => (
                   <option key={table.id} value={table.id}>
                     {(table.name || `Masa ${table.table_number}`)} - {table.status}
                   </option>

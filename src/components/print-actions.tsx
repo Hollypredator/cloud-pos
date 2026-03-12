@@ -17,7 +17,7 @@ export function PrintActions({ baseHref }: PrintActionsProps) {
   const hideLogo = searchParams.get("logo") === "0";
 
   return (
-    <div className="mt-5 space-y-3">
+    <div className="no-print mt-5 space-y-3">
       <div className="flex flex-wrap items-center gap-2">
         <Link
           href={`${baseHref}?layout=a4${hideLogo ? "&logo=0" : ""}`}
