@@ -1,6 +1,6 @@
 import { NextResponse } from "next/server";
 import { getCurrentUserWithRole, hasRoleAccess } from "@/lib/auth";
-import { createOrder, getBusinessContextBySlug, getTableByQr } from "@/lib/domains/orders";
+import { createOrder, getBusinessContextBySlug, getTableById, getTableByQr } from "@/lib/domains/orders";
 import { getCorrelationId, logApiEvent, withCorrelationId } from "@/lib/observability";
 import type { FulfillmentStatus, OrderChannel } from "@/lib/types";
 
@@ -62,24 +62,58 @@ export async function POST(request: Request) {
       return json({ ok: false, message: "Eksik siparis alanlari var." }, { status: 400 });
     }
 
-    if (channel === "dine_in" && !body.qrCodeIdentifier) {
+    if (channel === "dine_in" && !body.qrCodeIdentifier && !body.tableId) {
       logApiEvent("warn", "orders.create.missing_qr", { correlationId });
-      return json({ ok: false, message: "Masa siparisi icin QR kodu gerekli." }, { status: 400 });
+      return json({ ok: false, message: "Masa siparisi icin masa secimi gerekli." }, { status: 400 });
     }
 
     let table = null;
     if (body.qrCodeIdentifier) {
       table = await getTableByQr(body.qrCodeIdentifier, body.businessSlug);
-      if (channel === "dine_in" && !table) {
-        logApiEvent("warn", "orders.create.table_not_found", { correlationId });
-        return json({ ok: false, message: "Masa bulunamadi." }, { status: 404 });
-      }
+    } else if (body.tableId) {
+      table = await getTableById(body.tableId, body.businessSlug);
+    }
+
+    if (!table && body.tableId) {
+      table = await getTableById(body.tableId, body.businessSlug);
+    }
+
+    if (!table && body.qrCodeIdentifier) {
+      table = await getTableByQr(body.qrCodeIdentifier, body.businessSlug);
+    }
+
+    if (channel === "dine_in" && !table) {
+      logApiEvent("warn", "orders.create.table_not_found", {
+        correlationId,
+        tableId: body.tableId ?? null,
+        qrCodeIdentifier: body.qrCodeIdentifier ?? null,
+      });
+      return json({ ok: false, message: "Masa bulunamadi." }, { status: 404 });
+    }
+
+    if (channel === "dine_in" && table && body.tableId && table.id !== body.tableId) {
+      logApiEvent("warn", "orders.create.table_mismatch", {
+        correlationId,
+        tableId: body.tableId,
+        resolvedTableId: table.id,
+      });
+      return json({ ok: false, message: "Masa secimi dogrulanamadi." }, { status: 400 });
+    }
+
+    if (channel === "dine_in" && table && body.qrCodeIdentifier && table.qr_code_identifier !== body.qrCodeIdentifier) {
+      logApiEvent("warn", "orders.create.qr_mismatch", {
+        correlationId,
+        qrCodeIdentifier: body.qrCodeIdentifier,
+        resolvedQr: table.qr_code_identifier,
+      });
+      return json({ ok: false, message: "Masa QR bilgisi dogrulanamadi." }, { status: 400 });
     }
 
     const businessContext = await getBusinessContextBySlug(body.businessSlug);
     const result = await createOrder({
       tableId: table?.id ?? null,
       businessId: table?.business_id ?? businessContext.businessId ?? undefined,
+      branchId: table?.branch_id ?? null,
       items: body.items,
       totalPrice: body.totalPrice,
       channel,
@@ -93,11 +127,15 @@ export async function POST(request: Request) {
     });
 
     if (!result.ok) {
-      logApiEvent("error", "orders.create.failed", { correlationId, channel });
+      logApiEvent("error", "orders.create.failed", {
+        correlationId,
+        channel,
+        error: result.error ?? null,
+      });
       return json(
         {
           ok: false,
-          message: "Siparis kaydedilemedi.",
+          message: result.error ?? "Siparis kaydedilemedi.",
         },
         { status: 500 },
       );

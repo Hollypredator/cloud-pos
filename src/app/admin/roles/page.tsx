@@ -3,7 +3,15 @@ import { revalidatePath } from "next/cache";
 import { redirect } from "next/navigation";
 import { BackofficePage, ContentCard, EmptyPanel, FeatureLockedState, SidebarPanel, SummaryCard, WorkflowGuide } from "@/components/backoffice-ui";
 import { requireExactRole } from "@/lib/auth";
-import { createStaffAccount, deleteStaffAccount, listBranches, listProfiles, updateProfileRole, updateStaffAccount } from "@/lib/data";
+import {
+  assignExistingAuthUserToBusiness,
+  createStaffAccount,
+  deleteStaffAccount,
+  listBranches,
+  listProfiles,
+  updateProfileRole,
+  updateStaffAccount,
+} from "@/lib/data";
 import { logServerPerf, measureAsync } from "@/lib/perf";
 import { getFeatureAccess } from "@/lib/plan-access";
 import type { AppRole, StaffAccessScope } from "@/lib/types";
@@ -76,6 +84,39 @@ async function createStaffAction(formData: FormData) {
     branchId: typeof branchId === "string" ? branchId : null,
   });
   revalidatePath("/admin/roles");
+}
+
+async function assignAuthUserAction(formData: FormData) {
+  "use server";
+  await requireExactRole(["owner"], "/admin/roles");
+
+  const email = formData.get("email");
+  const fullName = formData.get("fullName");
+  const role = formData.get("role");
+  const accessScope = formData.get("accessScope");
+  const branchId = formData.get("branchId");
+  if (typeof email !== "string" || typeof role !== "string" || typeof accessScope !== "string") {
+    redirect(feedbackHref("error", "Auth kullanicisi baglanamadi. Zorunlu alanlar eksik."));
+  }
+
+  if (!roles.includes(role as AppRole)) {
+    redirect(feedbackHref("error", "Secilen rol gecersiz."));
+  }
+
+  const result = await assignExistingAuthUserToBusiness({
+    email,
+    fullName: typeof fullName === "string" ? fullName : undefined,
+    role: role as AppRole,
+    accessScope: accessScope as StaffAccessScope,
+    branchId: typeof branchId === "string" ? branchId : null,
+  });
+
+  if (!result.ok) {
+    redirect(feedbackHref("error", result.error ?? "Auth kullanicisi baglanamadi."));
+  }
+
+  revalidatePath("/admin/roles");
+  redirect(feedbackHref("success", "Auth kullanicisi isletmeye baglandi.", result.id));
 }
 
 async function updateStaffAction(formData: FormData) {
@@ -276,7 +317,7 @@ export default async function AdminRolesPage({
         ]}
       />
 
-      <section className="grid gap-5 xl:grid-cols-[0.9fr_1.1fr]">
+      <section className="grid gap-5 xl:grid-cols-2">
         <ContentCard title="Yeni Personel Ekle">
           <form action={createStaffAction} className="grid gap-3">
             <input
@@ -324,6 +365,46 @@ export default async function AdminRolesPage({
           </form>
         </ContentCard>
 
+        <ContentCard title="Auth Kullanicisini Isletmeye Bagla">
+          <form action={assignAuthUserAction} className="grid gap-3">
+            <input
+              type="email"
+              name="email"
+              required
+              placeholder="auth kaydindaki e-posta"
+              className="rounded-2xl border border-slate-200 bg-slate-50 px-4 py-3 text-sm"
+            />
+            <input
+              name="fullName"
+              placeholder="Ad soyad (opsiyonel)"
+              className="rounded-2xl border border-slate-200 bg-slate-50 px-4 py-3 text-sm"
+            />
+            <select name="role" defaultValue="waiter" className="rounded-2xl border border-slate-200 bg-slate-50 px-4 py-3 text-sm">
+              {roles.map((role) => (
+                <option key={role} value={role}>
+                  {roleLabel(role)}
+                </option>
+              ))}
+            </select>
+            <select name="accessScope" defaultValue="branch" className="rounded-2xl border border-slate-200 bg-slate-50 px-4 py-3 text-sm">
+              <option value="branch">Tek Sube Erisimi</option>
+              <option value="business">Tum Subeler (yalnizca patron)</option>
+            </select>
+            <select name="branchId" defaultValue={branches[0]?.id ?? ""} className="rounded-2xl border border-slate-200 bg-slate-50 px-4 py-3 text-sm">
+              {branches.map((branch) => (
+                <option key={branch.id} value={branch.id}>
+                  {branch.name}
+                </option>
+              ))}
+            </select>
+            <button type="submit" className="rounded-2xl bg-slate-900 px-4 py-3 text-sm font-semibold text-white">
+              Kullaniciyi Bagla
+            </button>
+          </form>
+        </ContentCard>
+      </section>
+
+      <section>
         <ContentCard title="Personel Listesi">
           {staffProfiles.length === 0 ? (
             <EmptyPanel title="Personel yok" description="Ilk kullaniciyi ekledikten sonra ekip listesi burada gorunecek." />

@@ -31,9 +31,14 @@ export default async function SupportTenantsPage({
 
   return (
     <main className="mx-auto w-full max-w-7xl space-y-6 px-4 py-8 md:px-8">
-      <header>
-        <p className="text-sm text-slate-500">{translateUiText("Tenant Directory", locale)}</p>
-        <h1 className="text-3xl font-semibold text-slate-900">{translateUiText("Musteri isletmeleri", locale)}</h1>
+      <header className="flex flex-wrap items-center justify-between gap-3">
+        <div>
+          <p className="text-sm text-slate-500">{translateUiText("Tenant Directory", locale)}</p>
+          <h1 className="text-3xl font-semibold text-slate-900">{translateUiText("Musteri isletmeleri", locale)}</h1>
+        </div>
+        <Link href="/support/tenants/new" className="rounded-xl bg-slate-900 px-4 py-3 text-sm font-semibold text-white">
+          Yeni Tenant
+        </Link>
       </header>
 
       <form className="grid gap-3 rounded-2xl bg-white p-4 shadow-sm md:grid-cols-[1fr_180px_120px]">

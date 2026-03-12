@@ -8,6 +8,7 @@ export {
   getKitchenPageSnapshot,
   getLatestOrderByTableId,
   getMenu,
+  getTableById,
   getOrderHistoryByTableId,
   getOrderReceipt,
   getTableByQr,

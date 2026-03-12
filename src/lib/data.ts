@@ -1165,6 +1165,204 @@ export async function setBusinessActiveStatus(input: { businessId: string; isAct
   return { ok: true };
 }
 
+function normalizeTenantSlug(value: string) {
+  return normalizeBusinessSlug(value);
+}
+
+function normalizeBranchSlug(value: string) {
+  const normalized = value
+    .trim()
+    .toLowerCase()
+    .replace(/[^a-z0-9]+/g, "-")
+    .replace(/^-+|-+$/g, "");
+  return normalized || "merkez";
+}
+
+function generateTemporaryPassword() {
+  return `Tmp${Math.random().toString(36).slice(2, 10)}!9`;
+}
+
+export async function createSupportTenantProvision(input: {
+  businessName: string;
+  businessSlug: string;
+  plan?: BusinessPlan;
+  branchName: string;
+  branchSlug?: string;
+  ownerEmail: string;
+  ownerFullName?: string;
+  ownerPassword?: string;
+}) {
+  const supabase = getSupabaseServerClient();
+  if (!supabase) {
+    return { ok: false, error: "Demo modda tenant olusturma pasif." };
+  }
+
+  const actor = await getCurrentSupportActor();
+  if (actor.role !== "support_admin") {
+    return { ok: false, error: "Bu islem icin support admin yetkisi gerekli." };
+  }
+
+  const businessName = input.businessName.trim();
+  const businessSlug = normalizeTenantSlug(input.businessSlug);
+  const branchName = input.branchName.trim();
+  const branchSlug = normalizeBranchSlug(input.branchSlug?.trim() || branchName);
+  const ownerEmail = input.ownerEmail.trim().toLowerCase();
+  const ownerFullName = input.ownerFullName?.trim() || ownerEmail.split("@")[0] || "Owner";
+  const ownerPassword = input.ownerPassword?.trim() || "";
+
+  if (!businessName || !businessSlug || !branchName || !ownerEmail) {
+    return { ok: false, error: "Isletme, sube ve owner e-posta alanlari zorunludur." };
+  }
+
+  let createdBusinessId: string | null = null;
+  let createdBranchId: string | null = null;
+  let createdUserId: string | null = null;
+
+  const rollback = async () => {
+    if (createdUserId) {
+      await supabase.auth.admin.deleteUser(createdUserId);
+    }
+    if (createdBranchId) {
+      await supabase.from("branches").delete().eq("id", createdBranchId);
+    }
+    if (createdBusinessId) {
+      await supabase.from("businesses").delete().eq("id", createdBusinessId);
+    }
+  };
+
+  const businessInsert = await supabase
+    .from("businesses")
+    .insert({
+      name: businessName,
+      slug: businessSlug,
+      plan: input.plan ?? "growth",
+      is_active: true,
+    })
+    .select("id")
+    .single();
+
+  if (businessInsert.error || !businessInsert.data?.id) {
+    return { ok: false, error: businessInsert.error?.message ?? "Isletme olusturulamadi." };
+  }
+  createdBusinessId = businessInsert.data.id as string;
+
+  const branchInsert = await supabase
+    .from("branches")
+    .insert({
+      business_id: createdBusinessId,
+      name: branchName,
+      slug: branchSlug,
+      is_active: true,
+    })
+    .select("id")
+    .single();
+
+  if (branchInsert.error || !branchInsert.data?.id) {
+    await rollback();
+    return { ok: false, error: branchInsert.error?.message ?? "Ilk sube olusturulamadi." };
+  }
+  createdBranchId = branchInsert.data.id as string;
+
+  const usersResult = await supabase.auth.admin.listUsers();
+  if (usersResult.error) {
+    await rollback();
+    return { ok: false, error: usersResult.error.message };
+  }
+  const existingUser = usersResult.data.users.find((user) => user.email?.toLowerCase() === ownerEmail);
+  let ownerUserId = existingUser?.id ?? null;
+  let temporaryPassword: string | null = null;
+
+  if (!ownerUserId) {
+    const passwordToUse = ownerPassword || generateTemporaryPassword();
+    temporaryPassword = ownerPassword ? null : passwordToUse;
+    const createUser = await supabase.auth.admin.createUser({
+      email: ownerEmail,
+      password: passwordToUse,
+      email_confirm: true,
+      user_metadata: { full_name: ownerFullName },
+    });
+    if (createUser.error || !createUser.data.user?.id) {
+      await rollback();
+      return { ok: false, error: createUser.error?.message ?? "Owner kullanicisi olusturulamadi." };
+    }
+    ownerUserId = createUser.data.user.id;
+    createdUserId = ownerUserId;
+  } else {
+    const existingAccess =
+      (
+        await supabase
+          .from("staff_branch_access")
+          .select("business_id")
+          .eq("profile_id", ownerUserId)
+      ).data ?? [];
+
+    const hasOtherTenant = (existingAccess as Array<{ business_id: string }>).some(
+      (row) => row.business_id !== createdBusinessId,
+    );
+    if (hasOtherTenant) {
+      await rollback();
+      return { ok: false, error: "Bu owner e-postasi baska tenantta kullaniliyor." };
+    }
+  }
+
+  const profileUpsert = await supabase.from("profiles").upsert(
+    {
+      id: ownerUserId,
+      full_name: ownerFullName,
+      role: "owner",
+    },
+    { onConflict: "id" },
+  );
+
+  if (profileUpsert.error) {
+    await rollback();
+    return { ok: false, error: profileUpsert.error.message };
+  }
+
+  await supabase
+    .from("staff_branch_access")
+    .delete()
+    .eq("profile_id", ownerUserId)
+    .eq("business_id", createdBusinessId);
+
+  const accessInsert = await supabase.from("staff_branch_access").insert({
+    profile_id: ownerUserId,
+    business_id: createdBusinessId,
+    branch_id: null,
+    access_scope: "business",
+    is_primary: true,
+  });
+
+  if (accessInsert.error) {
+    await rollback();
+    return { ok: false, error: accessInsert.error.message };
+  }
+
+  await writeSupportAuditLog({
+    action: "tenant.created",
+    entityType: "business",
+    entityId: createdBusinessId,
+    businessId: createdBusinessId,
+    details: {
+      businessName,
+      businessSlug,
+      plan: input.plan ?? "growth",
+      branchName,
+      branchSlug,
+      ownerEmail,
+      ownerUserId,
+    },
+  });
+
+  return {
+    ok: true,
+    businessId: createdBusinessId,
+    branchId: createdBranchId,
+    ownerUserId,
+    temporaryPassword,
+  };
+}
+
 export async function updateActiveBusinessPlan(plan: BusinessPlan) {
   const supabase = await getTenantDataClient();
   if (!supabase) {
@@ -1568,6 +1766,52 @@ export async function getTableByQr(
     error = result.error as { message: string } | null;
   } catch {
     return demoTables.find((table) => table.qr_code_identifier === qrCodeIdentifier) ?? null;
+  }
+
+  if (error) {
+    return null;
+  }
+
+  return (data as DiningTable | null) ?? null;
+}
+
+export async function getTableById(
+  tableId: string,
+  businessSlug?: string,
+): Promise<DiningTable | null> {
+  const supabase = getSupabaseServerClient();
+  if (!supabase) {
+    return demoTables.find((table) => table.id === tableId) ?? null;
+  }
+
+  const { business, useLegacySchema } = await resolveBusinessBySlug(businessSlug);
+  if (!business && !useLegacySchema) {
+    return null;
+  }
+
+  let data: unknown = null;
+  let error: { message: string } | null = null;
+  try {
+    const result = (useLegacySchema
+      ? await withQueryTimeout(
+          supabase
+            .from("tables")
+            .select("id, table_number, status, qr_code_identifier")
+            .eq("id", tableId)
+            .maybeSingle(),
+        )
+      : await withQueryTimeout(
+          supabase
+            .from("tables")
+            .select("id, business_id, branch_id, table_number, status, qr_code_identifier")
+            .eq("business_id", business!.id)
+            .eq("id", tableId)
+            .maybeSingle(),
+        )) as { data: unknown; error: { message: string } | null };
+    data = result.data;
+    error = result.error as { message: string } | null;
+  } catch {
+    return demoTables.find((table) => table.id === tableId) ?? null;
   }
 
   if (error) {
@@ -4335,7 +4579,7 @@ export async function updateStaffAccount(input: {
   if (password && password.length < 6) {
     return { ok: false, error: "Sifre en az 6 karakter olmali." };
   }
-  const normalizedAccessScope: StaffAccessScope = input.role === "owner" ? "business" : "branch";
+  const normalizedAccessScope: StaffAccessScope = input.role === "owner" ? "business" : input.accessScope;
   const normalizedBranchId = normalizedAccessScope === "branch" ? input.branchId ?? null : null;
 
   if (normalizedAccessScope === "branch" && !normalizedBranchId) {
@@ -4625,6 +4869,110 @@ export async function createStaffAccount(input: {
       email,
       role: input.role,
       fullName,
+      accessScope: normalizedAccessScope,
+      branchId: normalizedBranchId,
+    },
+  });
+
+  return { ok: true, id: userId };
+}
+
+export async function assignExistingAuthUserToBusiness(input: {
+  email: string;
+  fullName?: string;
+  role: AppRole;
+  accessScope: StaffAccessScope;
+  branchId?: string | null;
+}) {
+  const authClient = await getSupabaseAuthServerClient();
+  const serviceClient = getSupabaseServerClient();
+  if (!authClient || !serviceClient) {
+    return { ok: false, error: "Demo modda kullanici baglama pasif." };
+  }
+
+  const email = input.email.trim().toLowerCase();
+  const fullName = input.fullName?.trim() ?? "";
+  if (!email) {
+    return { ok: false, error: "E-posta zorunludur." };
+  }
+
+  const normalizedAccessScope: StaffAccessScope = input.role === "owner" ? "business" : "branch";
+  const normalizedBranchId = normalizedAccessScope === "branch" ? input.branchId ?? null : null;
+  if (normalizedAccessScope === "branch" && !normalizedBranchId) {
+    return { ok: false, error: "Sube personeli icin bir sube secilmelidir." };
+  }
+
+  const businessScope = await getDefaultBusinessScope();
+  if (!businessScope.businessId) {
+    return { ok: false, error: "Aktif isletme bulunamadi." };
+  }
+
+  const { data: usersData, error: usersError } = await serviceClient.auth.admin.listUsers();
+  if (usersError) {
+    return { ok: false, error: usersError.message };
+  }
+
+  const authUser = usersData.users.find((user) => user.email?.toLowerCase() === email);
+  if (!authUser) {
+    return { ok: false, error: "Auth kayitlarinda bu e-postayla kullanici bulunamadi." };
+  }
+
+  const userId = authUser.id;
+  const currentName =
+    ((authUser.user_metadata as { full_name?: string | null } | null)?.full_name ?? "").trim() ||
+    authUser.email?.split("@")[0] ||
+    "Personel";
+  const resolvedFullName = fullName || currentName;
+
+  const existingAccessRows =
+    (
+      await serviceClient
+        .from("staff_branch_access")
+        .select("business_id")
+        .eq("profile_id", userId)
+    ).data ?? [];
+  const businessIds = [...new Set((existingAccessRows as Array<{ business_id: string }>).map((row) => row.business_id))];
+  if (businessIds.some((businessId) => businessId !== businessScope.businessId)) {
+    return { ok: false, error: "Bu hesap baska bir isletmeye bagli. Tenant guvenligi nedeniyle eklenemedi." };
+  }
+
+  const { error: profileError } = await serviceClient.from("profiles").upsert(
+    {
+      id: userId,
+      full_name: resolvedFullName,
+      role: input.role,
+    },
+    { onConflict: "id" },
+  );
+  if (profileError) {
+    return { ok: false, error: profileError.message };
+  }
+
+  await authClient
+    .from("staff_branch_access")
+    .delete()
+    .eq("profile_id", userId)
+    .eq("business_id", businessScope.businessId);
+
+  const { error: accessInsertError } = await authClient.from("staff_branch_access").insert({
+    profile_id: userId,
+    business_id: businessScope.businessId,
+    branch_id: normalizedBranchId,
+    access_scope: normalizedAccessScope,
+    is_primary: true,
+  });
+  if (accessInsertError) {
+    return { ok: false, error: accessInsertError.message };
+  }
+
+  await logAuditEvent({
+    entityType: "profile",
+    entityId: userId,
+    action: "assign_existing_auth_user",
+    details: {
+      email,
+      role: input.role,
+      fullName: resolvedFullName,
       accessScope: normalizedAccessScope,
       branchId: normalizedBranchId,
     },

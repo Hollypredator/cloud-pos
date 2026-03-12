@@ -1,6 +1,7 @@
 export {
   assignSupportTicket,
   createSupportIncident,
+  createSupportTenantProvision,
   createSupportIncidentUpdate,
   createSupportTicketMessage,
   getPlatformAccessByEmail,

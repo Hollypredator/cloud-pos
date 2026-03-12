@@ -12,6 +12,7 @@ export type SidebarNavItem = {
 
 export const operationLinks: SidebarNavItem[] = [
   { href: "/ops", label: "Yonetim Paneli", icon: "YP", roles: ["admin", "waiter", "kitchen", "cashier"] },
+  { href: "/admin/orders", label: "Siparisler", icon: "SP", roles: ["admin", "waiter", "cashier"] },
   { href: "/kitchen", label: "Mutfak", icon: "MK", roles: ["admin", "kitchen"], feature: "kitchen_display" },
   { href: "/admin/reports", label: "Raporlar", icon: "RP", roles: ["admin"], feature: "advanced_reports" },
   { href: "/cashier/session", label: "Gun Islemleri", icon: "GI", roles: ["admin", "cashier"], feature: "shift_management" },
@@ -30,6 +31,7 @@ export const sidebarPresetOrders = {
   owner: {
     management_first: [
       "/ops",
+      "/admin/orders",
       "/admin/reports",
       "/admin/finance",
       "/admin/audit",
@@ -62,6 +64,7 @@ export const sidebarPresetOrders = {
   admin: {
     management_first: [
       "/ops",
+      "/admin/orders",
       "/admin/products",
       "/admin/tables",
       "/cashier/session",
@@ -74,6 +77,7 @@ export const sidebarPresetOrders = {
     ],
     service_first: [
       "/ops",
+      "/admin/orders",
       "/cashier",
       "/kitchen",
       "/delivery",
