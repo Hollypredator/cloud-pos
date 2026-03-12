@@ -29,6 +29,62 @@ function createTransport(settings: SmtpSettings) {
   });
 }
 
+function getResendConfig(settings: SmtpSettings) {
+  const apiKey = process.env.RESEND_API_KEY?.trim() ?? "";
+  const fromEmail = process.env.RESEND_FROM_EMAIL?.trim() || settings.fromEmail;
+  const replyToEmail = process.env.RESEND_REPLY_TO_EMAIL?.trim() || settings.replyToEmail || settings.fromEmail;
+  return {
+    apiKey,
+    fromEmail,
+    replyToEmail,
+    enabled: Boolean(apiKey && fromEmail),
+  };
+}
+
+async function sendMailWithResend(
+  input: {
+    to: string;
+    subject: string;
+    text: string;
+    html?: string;
+  },
+  settings: SmtpSettings,
+) {
+  const config = getResendConfig(settings);
+  if (!config.enabled) {
+    return { ok: false as const, error: "Resend ayarlari eksik." };
+  }
+
+  const response = await fetch("https://api.resend.com/emails", {
+    method: "POST",
+    headers: {
+      Authorization: `Bearer ${config.apiKey}`,
+      "Content-Type": "application/json",
+    },
+    body: JSON.stringify({
+      from: config.fromEmail,
+      to: [input.to],
+      subject: input.subject,
+      text: input.text,
+      html: input.html ?? `<pre>${input.text}</pre>`,
+      reply_to: config.replyToEmail || undefined,
+    }),
+  });
+
+  if (!response.ok) {
+    let detail = "";
+    try {
+      const payload = (await response.json()) as { message?: string; error?: string };
+      detail = payload.message ?? payload.error ?? "";
+    } catch {
+      detail = "";
+    }
+    return { ok: false as const, error: `Resend gonderimi basarisiz (${response.status})${detail ? `: ${detail}` : ""}` };
+  }
+
+  return { ok: true as const };
+}
+
 export async function sendMailWithStoredSettings(input: {
   to: string;
   subject: string;
@@ -36,8 +92,13 @@ export async function sendMailWithStoredSettings(input: {
   html?: string;
 }) {
   const settings = await getStoredSmtpSettings();
+  const resendConfig = getResendConfig(settings);
+  if (resendConfig.enabled) {
+    return sendMailWithResend(input, settings);
+  }
+
   if (!isSmtpConfigured(settings)) {
-    return { ok: false, error: "SMTP ayarlari eksik." };
+    return { ok: false, error: "Mail ayarlari eksik (Resend veya SMTP)." };
   }
 
   const transport = createTransport(settings);
@@ -61,9 +122,9 @@ export async function sendSmtpTestEmail(recipient: string) {
 
   return sendMailWithStoredSettings({
     to,
-    subject: "Cloud POS SMTP test",
-    text: "Bu bir test e-postasidir. SMTP ayarlari calisiyor.",
-    html: "<p>Bu bir test e-postasidir. SMTP ayarlari calisiyor.</p>",
+    subject: "Cloud POS mail test",
+    text: "Bu bir test e-postasidir. Mail ayarlari calisiyor.",
+    html: "<p>Bu bir test e-postasidir. Mail ayarlari calisiyor.</p>",
   });
 }
 

@@ -1,5 +1,6 @@
 import Link from "next/link";
 import { revalidatePath } from "next/cache";
+import { redirect } from "next/navigation";
 import { isSmtpConfigured } from "@/lib/app-settings";
 import { requireStudioAccess } from "@/lib/auth";
 import { getGeneralSettings, getSmtpSettings, updateGeneralSettings, updateSmtpSettings } from "@/lib/data";
@@ -53,7 +54,11 @@ async function sendSmtpTestAction(formData: FormData) {
   await requireStudioAccess("/studio/settings");
 
   const recipient = readString(formData, "testRecipient");
-  await sendSmtpTestEmail(recipient);
+  const result = await sendSmtpTestEmail(recipient);
+  if (!result.ok) {
+    redirect(`/studio/settings?mail=error&detail=${encodeURIComponent(result.error ?? "Mail gonderimi basarisiz.")}`);
+  }
+  redirect("/studio/settings?mail=success");
 }
 
 function Field({
@@ -102,8 +107,15 @@ function Area({
   );
 }
 
-export default async function AdminSettingsPage() {
+export default async function AdminSettingsPage({
+  searchParams,
+}: {
+  searchParams?: Promise<{ mail?: string; detail?: string }>;
+}) {
   await requireStudioAccess("/studio/settings");
+  const params = (await searchParams) ?? {};
+  const mailStatus = params.mail;
+  const mailDetail = params.detail;
   const [{ settings: generalSettings }, { settings: smtpSettings, usingDemoData }] = await Promise.all([
     getGeneralSettings(),
     getSmtpSettings(),
@@ -128,6 +140,17 @@ export default async function AdminSettingsPage() {
         {usingDemoData ? (
           <p className="rounded-lg bg-amber-100 px-3 py-2 text-sm text-amber-900">
             Ayarlar tablosu okunamadi. Varsayilan ayarlar gosteriliyor.
+          </p>
+        ) : null}
+
+        {mailStatus === "success" ? (
+          <p className="rounded-lg bg-emerald-100 px-3 py-2 text-sm text-emerald-900">
+            Test maili basariyla gonderildi. Gelen kutusu ve spam klasorunu kontrol et.
+          </p>
+        ) : null}
+        {mailStatus === "error" ? (
+          <p className="rounded-lg bg-rose-100 px-3 py-2 text-sm text-rose-900">
+            Test maili gonderilemedi: {mailDetail || "Bilinmeyen hata."}
           </p>
         ) : null}
 

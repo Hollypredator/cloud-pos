@@ -52,6 +52,7 @@ function orderSourceLabel(order: {
 function statusTone(status: string) {
   if (status === "paid") return "bg-emerald-100 text-emerald-700";
   if (status === "served") return "bg-[#fff2ee] text-[#ff5a34]";
+  if (status === "preparing") return "bg-sky-100 text-sky-700";
   return "bg-slate-100 text-slate-700";
 }
 
@@ -243,15 +244,16 @@ export default async function CashierPage({
       ) : null}
 
       <section className="grid gap-4 xl:grid-cols-4">
-        <SummaryCard label="Bekleyen Adisyon" value={String(servedOrders.length)} hint="Tahsilat bekleyen siparis" tone="accent" />
-        <SummaryCard label="Bekleyen Bakiye" value={`${servedTotals.remaining.toFixed(2)} TL`} hint="Henuz kapanmamis tutar" tone="danger" />
-        <SummaryCard label="Bugun Tahsil" value={`${paidTotals.paid.toFixed(2)} TL`} hint={`${paidOrders.length} kapali siparis`} tone="success" />
-        <SummaryCard label="Acik Ciro" value={`${servedTotals.final.toFixed(2)} TL`} hint="Served durumundaki adisyonlar" />
+        <SummaryCard label="Bekleyen Adisyon" value={String(servedOrders.length)} hint="Acilikta bekleyen tum hesaplar" tone="accent" className="bg-[linear-gradient(130deg,rgba(255,106,61,0.14),rgba(255,255,255,0.9)_65%)]" />
+        <SummaryCard label="Bekleyen Bakiye" value={`${servedTotals.remaining.toFixed(2)} TL`} hint="Tahsil edilmemis toplam tutar" tone="danger" className="bg-[linear-gradient(130deg,rgba(251,113,133,0.12),rgba(255,255,255,0.9)_65%)]" />
+        <SummaryCard label="Bugun Tahsil" value={`${paidTotals.paid.toFixed(2)} TL`} hint={`${paidOrders.length} kapanan adisyon`} tone="success" className="bg-[linear-gradient(130deg,rgba(16,185,129,0.12),rgba(255,255,255,0.9)_65%)]" />
+        <SummaryCard label="Acik Ciro" value={`${servedTotals.final.toFixed(2)} TL`} hint="Acilikta kalan adisyon hacmi" className="bg-[linear-gradient(130deg,rgba(59,130,246,0.1),rgba(255,255,255,0.9)_65%)]" />
       </section>
 
       <WorkflowGuide
         title="Kasada 3 Adim"
         description="Yeni gelen biri egitim almadan tahsilat akisini izleyebilir."
+        className="bg-[linear-gradient(125deg,rgba(15,23,42,0.03),rgba(255,255,255,0.92)_45%,rgba(255,106,61,0.08))]"
         steps={[
           { title: "Masayi veya adisyonu sec", description: "Ustteki masa kartlarindan odeme bekleyen adisyonu sec ve popup olarak buyut." },
           { title: "Tutari kontrol et", description: "Gerekirse indirim veya servis ucreti guncelle; kalan bakiyeyi kontrol et." },
@@ -259,7 +261,7 @@ export default async function CashierPage({
         ]}
       />
 
-      <ContentCard title="Masa ve Adisyon Secimi">
+      <ContentCard title="Masa ve Adisyon Secimi" className="bg-[linear-gradient(140deg,rgba(255,255,255,0.96),rgba(255,255,255,0.84))]">
         {servedOrders.length === 0 ? (
           <EmptyPanel title="Secilecek Adisyon Yok" description="Acik adisyon bulunmuyor." />
         ) : (
@@ -301,8 +303,8 @@ export default async function CashierPage({
       </ContentCard>
 
       <section className="grid gap-5 xl:grid-cols-[1.3fr_0.7fr]">
-        <ContentCard title="Odeme Bekleyen Adisyonlar">
-        {servedOrders.length === 0 ? (
+        <ContentCard title="Odeme Bekleyen Adisyonlar" className="bg-[linear-gradient(160deg,rgba(255,255,255,0.96),rgba(248,250,252,0.88))]">
+          {servedOrders.length === 0 ? (
             <EmptyPanel title="Adisyon Yok" description="Acik siparis bulunmuyor." />
           ) : (
             <div className="space-y-4">
@@ -350,7 +352,7 @@ export default async function CashierPage({
           )}
         </ContentCard>
 
-        <ContentCard title="Son Kapanan Adisyonlar">
+        <ContentCard title="Son Kapanan Adisyonlar" className="bg-[linear-gradient(160deg,rgba(255,255,255,0.96),rgba(245,252,248,0.86))]">
           {paidOrders.length === 0 ? (
             <EmptyPanel title="Kayit Yok" description="Bugun kapanan adisyon bulunmuyor." />
           ) : (
