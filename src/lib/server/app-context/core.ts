@@ -172,6 +172,38 @@ async function getCachedResolvedUserScope(input: {
   return reader();
 }
 
+async function getCachedUserBusinessIds(userId: string) {
+  const cacheKey = `user-business-access:${userId}`;
+  const reader = unstable_cache(
+    async () => {
+      const supabase = getSupabaseServerClient();
+      if (!supabase) {
+        return { businessIds: [] as string[], hasError: false as const };
+      }
+
+      const { data, error } = await supabase
+        .from("staff_branch_access")
+        .select("business_id")
+        .eq("profile_id", userId);
+
+      if (error) {
+        return {
+          businessIds: [] as string[],
+          hasError: true as const,
+          errorMessage: error.message,
+        };
+      }
+
+      const businessIds = [...new Set(((data ?? []) as Array<{ business_id: string | null }>).map((row) => row.business_id).filter(Boolean))] as string[];
+      return { businessIds, hasError: false as const };
+    },
+    [cacheKey],
+    { revalidate: 20, tags: ["staff-branch-access"] },
+  );
+
+  return reader();
+}
+
 async function getCachedScopedBranches(input: {
   businessId: string | null;
   accessScope: StaffAccessScope;
@@ -260,7 +292,7 @@ export const getRequestAppContext = cache(async () => {
   const cachedBusinesses = businessesResult?.businesses ?? [];
   const fallbackContext =
     cachedBusinesses.length === 0 ? await resolveBusinessBySlug(activeSlug || DEFAULT_BUSINESS_SLUG) : null;
-  const businesses: ActiveBusinessSummary[] =
+  const allBusinesses: ActiveBusinessSummary[] =
     cachedBusinesses.length > 0
       ? cachedBusinesses
       : fallbackContext?.business
@@ -273,7 +305,7 @@ export const getRequestAppContext = cache(async () => {
             },
           ]
         : [];
-  const activeBusiness = businesses.find((item) => item.slug === activeSlug) ?? businesses[0] ?? null;
+  const defaultActiveBusiness = allBusinesses.find((item) => item.slug === activeSlug) ?? allBusinesses[0] ?? null;
   const useLegacySchema = Boolean(businessesResult?.error ? businessesResult.useLegacySchema : fallbackContext?.useLegacySchema);
 
   if (!user) {
@@ -284,9 +316,9 @@ export const getRequestAppContext = cache(async () => {
       usingDemoData: false,
       activeSlug,
       activeBranchCookie,
-      businesses,
-      activeBusiness,
-      businessId: activeBusiness?.id ?? null,
+      businesses: allBusinesses,
+      activeBusiness: defaultActiveBusiness,
+      businessId: defaultActiveBusiness?.id ?? null,
       useLegacySchema,
       accessScope: "business" as StaffAccessScope,
       primaryBranchId: null as string | null,
@@ -298,6 +330,15 @@ export const getRequestAppContext = cache(async () => {
       activeBranchSelection: activeBranchCookie || null,
     };
   }
+
+  const userBusinessAccess = await getCachedUserBusinessIds(user.id);
+  const businesses =
+    userBusinessAccess.hasError && userBusinessAccess.errorMessage?.toLowerCase().includes("staff_branch_access")
+      ? allBusinesses
+      : userBusinessAccess.businessIds.length > 0
+        ? allBusinesses.filter((business) => userBusinessAccess.businessIds.includes(business.id))
+        : [];
+  const activeBusiness = businesses.find((item) => item.slug === activeSlug) ?? businesses[0] ?? null;
 
   const { role, accessScope, primaryBranchId, branchAccessIds } = await getCachedResolvedUserScope({
     userId: user.id,
