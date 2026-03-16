@@ -74,6 +74,7 @@ export function AppShell({
       return;
     }
 
+    let usedCachedEntry = false;
     try {
       const cached = window.sessionStorage.getItem(APP_SHELL_CACHE_KEY);
       if (cached) {
@@ -81,15 +82,25 @@ export function AppShell({
         if ("data" in parsed && "updatedAt" in parsed) {
           if (Date.now() - parsed.updatedAt < APP_SHELL_CACHE_TTL_MS) {
             setShellData(parsed.data);
-            return;
+            usedCachedEntry = true;
           }
         } else {
           setShellData(parsed);
-          return;
+          usedCachedEntry = true;
         }
       }
     } catch {}
+
+    if (usedCachedEntry) {
+      // Revalidate in the background to avoid showing stale auth state after a fresh login/logout.
+      void loadShellData();
+      return;
+    }
+
     setShellData(initialData ?? null);
+    if (!initialData) {
+      void loadShellData();
+    }
   }, [initialData, pathname, showShell]);
 
   useEffect(() => {
