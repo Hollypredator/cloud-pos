@@ -9,6 +9,7 @@ import {
   type GeneralSettings,
 } from "@/lib/app-settings";
 import type { AppShellPayload } from "@/lib/app-shell";
+import { DEFAULT_BUSINESS_SLUG } from "@/lib/business";
 import { getSupabaseServerClient } from "@/lib/supabase/server";
 import type { SiteContent, StaffAccessScope } from "@/lib/types";
 import { getAppShellContext } from "@/lib/server/app-context";
@@ -64,6 +65,27 @@ export async function getAppShellUiSettings() {
     generalSettings: normalizeGeneralSettings((generalRow?.content as Partial<GeneralSettings> | null) ?? null),
     applicationSettings: normalizeApplicationSettings((applicationRow?.content as Partial<ApplicationSettings> | null) ?? null),
     usingDemoData: false,
+  };
+}
+
+export function getFallbackAppShellPayload(): AppShellPayload {
+  return {
+    role: null,
+    hasUser: false,
+    usingDemoData: true,
+    activeBusinessSlug: DEFAULT_BUSINESS_SLUG,
+    businesses: [],
+    activeBranchId: "",
+    branches: [],
+    currentPlan: "growth",
+    branchAccessScope: "business",
+    canSwitchBranches: true,
+    brandName: defaultGeneralSettings.siteName,
+    logoUrl: undefined,
+    sidebarTheme: defaultApplicationSettings.sidebarTheme,
+    sidebarAccentColor: defaultApplicationSettings.sidebarAccentColor,
+    ownerSidebarOrder: defaultApplicationSettings.ownerSidebarOrder,
+    adminSidebarOrder: defaultApplicationSettings.adminSidebarOrder,
   };
 }
 

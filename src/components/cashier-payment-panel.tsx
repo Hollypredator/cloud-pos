@@ -1,6 +1,7 @@
 "use client";
 
-import { useMemo, useState } from "react";
+import { useEffect, useMemo, useRef, useState } from "react";
+import { PendingSubmitButton } from "@/components/pending-submit-button";
 import type { OrderItem } from "@/lib/types";
 
 function buildSplitSummary(items: OrderItem[], selectedQuantities: number[]) {
@@ -13,12 +14,14 @@ function buildSplitSummary(items: OrderItem[], selectedQuantities: number[]) {
 
 export function CashierPaymentPanel({
   orderId,
+  returnOrderId,
   defaultAmount,
   items,
   requestKey,
   action,
 }: {
   orderId: string;
+  returnOrderId?: string;
   defaultAmount: number;
   items: OrderItem[];
   requestKey: string;
@@ -28,8 +31,35 @@ export function CashierPaymentPanel({
   const [note, setNote] = useState("");
   const [method, setMethod] = useState<"cash" | "card" | "mixed">("cash");
   const [selectedQuantities, setSelectedQuantities] = useState<number[]>(() => items.map(() => 0));
+  const prevOrderIdRef = useRef(orderId);
+  const prevDefaultAmountRef = useRef(defaultAmount);
 
   const splitSummary = useMemo(() => buildSplitSummary(items, selectedQuantities), [items, selectedQuantities]);
+  const parsedAmount = Number(amount);
+  const safeAmount = Number.isFinite(parsedAmount) ? Math.max(0, parsedAmount) : 0;
+  const remainingAfterPayment = Math.max(0, defaultAmount - safeAmount);
+
+  useEffect(() => {
+    const isOrderChanged = prevOrderIdRef.current !== orderId;
+    const amountChanged = Math.abs(prevDefaultAmountRef.current - defaultAmount) > 0.009;
+
+    if (isOrderChanged) {
+      prevOrderIdRef.current = orderId;
+      prevDefaultAmountRef.current = defaultAmount;
+      setAmount(defaultAmount.toFixed(2));
+      setNote("");
+      setSelectedQuantities(items.map(() => 0));
+      return;
+    }
+
+    if (amountChanged) {
+      prevDefaultAmountRef.current = defaultAmount;
+      setAmount(defaultAmount.toFixed(2));
+      setNote("");
+    }
+
+    setSelectedQuantities((prev) => (prev.length === items.length ? prev : items.map(() => 0)));
+  }, [defaultAmount, items.length, orderId]);
 
   function applySplit(splitCount: number) {
     const share = Math.max(0.01, defaultAmount / splitCount);
@@ -166,6 +196,7 @@ export function CashierPaymentPanel({
 
       <form action={action} className="space-y-3 rounded-[20px] border border-slate-200 bg-white p-4">
         <input type="hidden" name="orderId" value={orderId} />
+        {returnOrderId ? <input type="hidden" name="returnOrderId" value={returnOrderId} /> : null}
         <input type="hidden" name="requestKey" value={requestKey} />
         <input type="hidden" name="note" value={finalNote} />
         <input type="hidden" name="method" value={method} />
@@ -212,12 +243,22 @@ export function CashierPaymentPanel({
           />
         </div>
 
-        <button
-          type="submit"
+        <div className="grid gap-2 rounded-2xl bg-emerald-50 px-4 py-3 text-sm">
+          <p className="flex items-center justify-between text-slate-700">
+            <span>Bu islemin tutari</span>
+            <span className="font-semibold">{safeAmount.toFixed(2)} TL</span>
+          </p>
+          <p className="flex items-center justify-between text-emerald-800">
+            <span>Islem sonrasi kalan</span>
+            <span className="font-semibold">{remainingAfterPayment.toFixed(2)} TL</span>
+          </p>
+        </div>
+
+        <PendingSubmitButton
+          idleLabel="Odeme Al"
+          pendingLabel="Odeme Isleniyor..."
           className="w-full rounded-2xl bg-emerald-600 px-4 py-3 text-sm font-semibold text-white shadow-[0_10px_20px_rgba(16,185,129,0.24)]"
-        >
-          Odeme Al
-        </button>
+        />
       </form>
     </div>
   );

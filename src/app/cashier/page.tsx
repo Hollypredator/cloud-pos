@@ -1,4 +1,3 @@
-import { revalidatePath } from "next/cache";
 import Image from "next/image";
 import Link from "next/link";
 import { redirect } from "next/navigation";
@@ -49,6 +48,10 @@ function orderSourceLabel(order: {
   return `Masa ${order.table_number ?? "-"}`;
 }
 
+function orderRef(order: { id: string; check_number?: string | null }) {
+  return order.check_number?.trim() ? order.check_number : order.id.slice(0, 8);
+}
+
 function statusTone(status: string) {
   if (status === "paid") return "bg-emerald-100 text-emerald-700";
   if (status === "served") return "bg-[#fff2ee] text-[#ff5a34]";
@@ -56,8 +59,23 @@ function statusTone(status: string) {
   return "bg-slate-100 text-slate-700";
 }
 
-function feedbackHref(tone: "success" | "error", message: string) {
-  return `/cashier?tone=${encodeURIComponent(tone)}&feedback=${encodeURIComponent(message)}`;
+function feedbackHref(tone: "success" | "error", message: string, orderId?: string) {
+  const params = new URLSearchParams();
+  params.set("tone", tone);
+  params.set("feedback", message);
+  if (orderId) {
+    params.set("order", orderId);
+  }
+  return `/cashier?${params.toString()}`;
+}
+
+function resolveReturnOrderId(formData: FormData) {
+  const returnOrderId = formData.get("returnOrderId");
+  if (typeof returnOrderId !== "string") {
+    return undefined;
+  }
+  const normalized = returnOrderId.trim();
+  return normalized || undefined;
 }
 
 async function applyFinancialsAction(formData: FormData) {
@@ -67,8 +85,9 @@ async function applyFinancialsAction(formData: FormData) {
   const orderId = formData.get("orderId");
   const discountAmount = Number(formData.get("discountAmount"));
   const serviceFee = Number(formData.get("serviceFee"));
+  const returnOrderId = resolveReturnOrderId(formData);
   if (typeof orderId !== "string") {
-    redirect(feedbackHref("error", "Siparis bulunamadi."));
+    redirect(feedbackHref("error", "Siparis bulunamadi.", returnOrderId));
   }
 
   try {
@@ -78,13 +97,12 @@ async function applyFinancialsAction(formData: FormData) {
       serviceFee: Number.isFinite(serviceFee) ? serviceFee : 0,
     });
     if (!result.ok) {
-      redirect(feedbackHref("error", result.error ?? "Finans guncellenemedi."));
+      redirect(feedbackHref("error", result.error ?? "Finans guncellenemedi.", returnOrderId ?? orderId));
     }
-    revalidatePath("/cashier");
     const finalPrice = typeof result.finalPrice === "number" ? result.finalPrice : 0;
-    redirect(feedbackHref("success", `Finans guncellendi. Yeni toplam: ${finalPrice.toFixed(2)} TL.`));
+    redirect(feedbackHref("success", `Finans guncellendi. Yeni toplam: ${finalPrice.toFixed(2)} TL.`, returnOrderId ?? orderId));
   } catch {
-    redirect(feedbackHref("error", "Finans guncellenemedi."));
+    redirect(feedbackHref("error", "Finans guncellenemedi.", returnOrderId ?? orderId));
   }
 }
 
@@ -97,8 +115,9 @@ async function completePaymentAction(formData: FormData) {
   const amount = Number(formData.get("amount"));
   const note = formData.get("note");
   const requestKey = formData.get("requestKey");
+  const returnOrderId = resolveReturnOrderId(formData);
   if (typeof orderId !== "string" || typeof method !== "string") {
-    redirect(feedbackHref("error", "Odeme bilgileri gecersiz."));
+    redirect(feedbackHref("error", "Odeme bilgileri gecersiz.", returnOrderId));
   }
 
   try {
@@ -110,17 +129,16 @@ async function completePaymentAction(formData: FormData) {
       requestKey: typeof requestKey === "string" ? requestKey : undefined,
     });
     if (!result.ok) {
-      redirect(feedbackHref("error", result.error ?? "Odeme alinamadi."));
+      redirect(feedbackHref("error", result.error ?? "Odeme alinamadi.", returnOrderId ?? orderId));
     }
-    revalidatePath("/cashier");
     if (result.idempotent) {
       const remaining = typeof result.remaining === "number" ? result.remaining : 0;
-      redirect(feedbackHref("success", `Ayni odeme daha once kaydedilmis. Kalan bakiye: ${remaining.toFixed(2)} TL.`));
+      redirect(feedbackHref("success", `Ayni odeme daha once kaydedilmis. Kalan bakiye: ${remaining.toFixed(2)} TL.`, returnOrderId ?? orderId));
     }
     const remaining = typeof result.remaining === "number" ? result.remaining : 0;
-    redirect(feedbackHref("success", `Odeme kaydedildi. Kalan bakiye: ${remaining.toFixed(2)} TL.`));
+    redirect(feedbackHref("success", `Odeme kaydedildi. Kalan bakiye: ${remaining.toFixed(2)} TL.`, returnOrderId ?? orderId));
   } catch {
-    redirect(feedbackHref("error", "Odeme alinamadi."));
+    redirect(feedbackHref("error", "Odeme alinamadi.", returnOrderId ?? orderId));
   }
 }
 
@@ -131,8 +149,9 @@ async function cancelOrderAction(formData: FormData) {
   const orderId = formData.get("orderId");
   const note = formData.get("note");
   const requestKey = formData.get("requestKey");
+  const returnOrderId = resolveReturnOrderId(formData);
   if (typeof orderId !== "string") {
-    redirect(feedbackHref("error", "Siparis bulunamadi."));
+    redirect(feedbackHref("error", "Siparis bulunamadi.", returnOrderId));
   }
 
   try {
@@ -142,12 +161,11 @@ async function cancelOrderAction(formData: FormData) {
       typeof requestKey === "string" ? requestKey : undefined,
     );
     if (!result.ok) {
-      redirect(feedbackHref("error", result.error ?? "Siparis iptal edilemedi."));
+      redirect(feedbackHref("error", result.error ?? "Siparis iptal edilemedi.", returnOrderId ?? orderId));
     }
-    revalidatePath("/cashier");
-    redirect(feedbackHref("success", result.idempotent ? "Iptal islemi daha once kaydedilmis." : "Siparis iptal edildi."));
+    redirect(feedbackHref("success", result.idempotent ? "Iptal islemi daha once kaydedilmis." : "Siparis iptal edildi.", returnOrderId ?? orderId));
   } catch {
-    redirect(feedbackHref("error", "Siparis iptal edilemedi."));
+    redirect(feedbackHref("error", "Siparis iptal edilemedi.", returnOrderId ?? orderId));
   }
 }
 
@@ -160,8 +178,9 @@ async function refundOrderAction(formData: FormData) {
   const amount = Number(formData.get("amount"));
   const note = formData.get("note");
   const requestKey = formData.get("requestKey");
+  const returnOrderId = resolveReturnOrderId(formData);
   if (typeof orderId !== "string" || typeof method !== "string") {
-    redirect(feedbackHref("error", "Iade bilgileri gecersiz."));
+    redirect(feedbackHref("error", "Iade bilgileri gecersiz.", returnOrderId));
   }
 
   try {
@@ -173,15 +192,14 @@ async function refundOrderAction(formData: FormData) {
       requestKey: typeof requestKey === "string" ? requestKey : undefined,
     });
     if (!result.ok) {
-      redirect(feedbackHref("error", result.error ?? "Iade tamamlanamadi."));
+      redirect(feedbackHref("error", result.error ?? "Iade tamamlanamadi.", returnOrderId ?? orderId));
     }
-    revalidatePath("/cashier");
     if (result.idempotent) {
-      redirect(feedbackHref("success", "Ayni iade daha once kaydedilmis."));
+      redirect(feedbackHref("success", "Ayni iade daha once kaydedilmis.", returnOrderId ?? orderId));
     }
-    redirect(feedbackHref("success", "Iade islemi kaydedildi."));
+    redirect(feedbackHref("success", "Iade islemi kaydedildi.", returnOrderId ?? orderId));
   } catch {
-    redirect(feedbackHref("error", "Iade tamamlanamadi."));
+    redirect(feedbackHref("error", "Iade tamamlanamadi.", returnOrderId ?? orderId));
   }
 }
 
@@ -318,7 +336,7 @@ export default async function CashierPage({
                     <div className="flex flex-wrap items-start justify-between gap-3">
                       <div>
                         <p className="text-xs font-bold uppercase tracking-[0.16em] text-slate-500">{orderSourceLabel(order)}</p>
-                        <h3 className="mt-2 text-2xl font-semibold tracking-tight text-slate-900">Siparis #{order.id.slice(0, 8)}</h3>
+                        <h3 className="mt-2 text-2xl font-semibold tracking-tight text-slate-900">Siparis #{orderRef(order)}</h3>
                         <p className="mt-1 text-sm text-slate-500">{new Date(order.created_at).toLocaleTimeString(localeCode)}</p>
                         {order.delivery_address ? <p className="mt-1 break-words text-sm text-slate-500">{order.delivery_address}</p> : null}
                       </div>
@@ -362,7 +380,7 @@ export default async function CashierPage({
                   <div className="flex flex-col items-start justify-between gap-3 sm:flex-row">
                     <div>
                       <p className="text-xs font-bold uppercase tracking-[0.16em] text-slate-500">{orderSourceLabel(order)}</p>
-                      <h3 className="mt-2 text-xl font-semibold tracking-tight text-slate-900">Siparis #{order.id.slice(0, 8)}</h3>
+                      <h3 className="mt-2 text-xl font-semibold tracking-tight text-slate-900">Siparis #{orderRef(order)}</h3>
                       <p className="mt-1 text-sm text-slate-500">{new Date(order.created_at).toLocaleTimeString(localeCode)}</p>
                     </div>
                     <span className={`inline-flex w-full justify-center rounded-full px-3 py-1 text-xs font-semibold uppercase sm:w-auto ${statusTone(order.status)}`}>{order.status}</span>
@@ -431,7 +449,7 @@ export default async function CashierPage({
               <div>
                 <p className="text-xs font-bold uppercase tracking-[0.16em] text-slate-500">{orderSourceLabel(selectedOrder)}</p>
                 <h2 className="font-display mt-2 text-2xl font-semibold tracking-tight text-slate-900 sm:text-3xl">
-                  {selectedOrder.table_number ? `Masa ${selectedOrder.table_number} Adisyonu` : `Siparis #${selectedOrder.id.slice(0, 8)}`}
+                  {selectedOrder.table_number ? `Masa ${selectedOrder.table_number} Adisyonu` : `Siparis #${orderRef(selectedOrder)}`}
                 </h2>
                 <p className="mt-1 text-sm text-slate-500">Popup tahsilat akisi. Ekrandan ayrilmadan odeme, split ve iptal yap.</p>
               </div>
@@ -439,6 +457,13 @@ export default async function CashierPage({
                 Kapat
               </Link>
             </div>
+            {feedback ? (
+              <NoticeBanner
+                tone={tone === "error" ? "error" : "success"}
+                title={tone === "error" ? "Islemde hata olustu" : "Islem kaydedildi"}
+                description={feedback}
+              />
+            ) : null}
 
             {(() => {
               const order = selectedOrder;
@@ -459,7 +484,7 @@ export default async function CashierPage({
                         <div className="flex flex-col items-start justify-between gap-3 sm:flex-row">
                           <div>
                             <p className="text-xs font-bold uppercase tracking-[0.16em] text-slate-500">Siparis Bilgisi</p>
-                            <p className="font-display mt-2 text-2xl font-semibold tracking-tight text-slate-900">Siparis #{order.id.slice(0, 8)}</p>
+                            <p className="font-display mt-2 text-2xl font-semibold tracking-tight text-slate-900">Siparis #{orderRef(order)}</p>
                             <p className="mt-1 text-sm text-slate-500">{new Date(order.created_at).toLocaleTimeString(localeCode)}</p>
                             {order.delivery_address ? <p className="mt-1 break-words text-sm text-slate-500">{order.delivery_address}</p> : null}
                           </div>
@@ -539,6 +564,7 @@ export default async function CashierPage({
 
                       <form action={applyFinancialsAction} className="grid gap-2 rounded-[20px] border border-slate-200 bg-white p-4 md:grid-cols-3">
                         <input type="hidden" name="orderId" value={order.id} />
+                        <input type="hidden" name="returnOrderId" value={order.id} />
                         <input
                           name="discountAmount"
                           type="number"
@@ -570,6 +596,7 @@ export default async function CashierPage({
                   <section className="grid gap-4 xl:grid-cols-[1.1fr_0.9fr]">
                     <CashierPaymentPanel
                       orderId={order.id}
+                      returnOrderId={order.id}
                       defaultAmount={remaining}
                       items={order.items as OrderItem[]}
                       requestKey={paymentRequestKey}
@@ -578,6 +605,7 @@ export default async function CashierPage({
 
                     <form action={cancelOrderAction} className="grid gap-2 rounded-[20px] border border-rose-200 bg-rose-50/60 p-4 content-start">
                       <input type="hidden" name="orderId" value={order.id} />
+                      <input type="hidden" name="returnOrderId" value={order.id} />
                       <input type="hidden" name="requestKey" value={cancelRequestKey} />
                       <p className="text-xs font-bold uppercase tracking-[0.16em] text-rose-700">Adisyon Iptal</p>
                       <input

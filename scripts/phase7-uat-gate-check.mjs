@@ -23,6 +23,7 @@ function run() {
   const scripts = packageJson.scripts ?? {};
   const requiredScripts = [
     "ops:smoke",
+    "perf:sla",
     "phase2:runtime",
     "phase3:runtime",
     "phase4:reconciliation",

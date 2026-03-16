@@ -18,6 +18,10 @@ function sourceLabel(order: Pick<Order, "channel" | "table_number" | "customer_n
   return `Masa ${order.table_number ?? "-"}`;
 }
 
+function orderRef(order: Pick<Order, "id" | "check_number">) {
+  return order.check_number?.trim() ? order.check_number : order.id.slice(0, 8);
+}
+
 export function ReceiptPreviewLauncher({
   order,
   receiptLink,
@@ -116,7 +120,7 @@ export function ReceiptPreviewLauncher({
               <header className="border-b border-slate-200 pb-3">
                 <p className="text-2xl font-semibold tracking-tight text-slate-900">Cloud POS Cafe</p>
                 <p className="text-sm text-slate-600">Adisyon</p>
-                <p className="mt-1 text-sm text-slate-600">Siparis #{order.id.slice(0, 8)} - {sourceLabel(order)}</p>
+                <p className="mt-1 text-sm text-slate-600">Siparis #{orderRef(order)} - {sourceLabel(order)}</p>
                 <p className="text-xs text-slate-500">{new Date(order.created_at).toLocaleString("tr-TR")}</p>
               </header>
 

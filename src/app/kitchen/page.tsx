@@ -1,25 +1,36 @@
 import Link from "next/link";
+import { revalidatePath } from "next/cache";
 import { BackofficePage, ContentCard, EmptyPanel, FeatureLockedState, SummaryCard, WorkflowGuide } from "@/components/backoffice-ui";
 import { LiveOpsBridge } from "@/components/live-ops-bridge";
 import { PendingSubmitButton } from "@/components/pending-submit-button";
 import { requireRole } from "@/lib/auth";
-import { getKitchenPageSnapshot, updateOrderStatus } from "@/lib/data";
+import { getKitchenPageSnapshot, updateOrderStationStatus } from "@/lib/data";
 import { getCurrentLocale } from "@/lib/i18n-server";
 import { logServerPerf, measureAsync } from "@/lib/perf";
 import { getFeatureAccess } from "@/lib/plan-access";
 import type { Order, OrderItem } from "@/lib/types";
+
+type KitchenStation = "kitchen" | "bar" | "dessert";
+type StationProgress = "pending" | "preparing" | "served";
 
 async function moveOrder(formData: FormData) {
   "use server";
   await requireRole(["admin", "kitchen"], "/kitchen");
 
   const orderId = formData.get("orderId");
+  const station = formData.get("station");
   const nextStatus = formData.get("nextStatus");
-  if (typeof orderId !== "string" || typeof nextStatus !== "string") {
+  if (
+    typeof orderId !== "string" ||
+    (station !== "kitchen" && station !== "bar" && station !== "dessert") ||
+    (nextStatus !== "pending" && nextStatus !== "preparing" && nextStatus !== "served")
+  ) {
     return;
   }
 
-  await updateOrderStatus(orderId, nextStatus as "pending" | "preparing" | "served");
+  await updateOrderStationStatus(orderId, station, nextStatus);
+  revalidatePath("/kitchen");
+  revalidatePath("/ops");
 }
 
 function getDelayLevel(status: string, createdAt: string) {
@@ -43,6 +54,10 @@ function orderSourceLabel(order: {
   return `Masa ${order.table_number ?? "-"}`;
 }
 
+function orderRef(order: { id: string; check_number?: string | null }) {
+  return order.check_number?.trim() ? order.check_number : order.id.slice(0, 8);
+}
+
 function normalizeLabel(value: string) {
   return value
     .toLocaleLowerCase("tr-TR")
@@ -54,7 +69,7 @@ function normalizeLabel(value: string) {
     .replaceAll("ğ", "g");
 }
 
-function inferStationLabel(categoryName?: string) {
+function inferStationByName(categoryName?: string): KitchenStation {
   const normalized = normalizeLabel(categoryName ?? "");
   if (
     normalized.includes("icecek") ||
@@ -62,17 +77,54 @@ function inferStationLabel(categoryName?: string) {
     normalized.includes("bar") ||
     normalized.includes("kokteyl")
   ) {
-    return "Bar";
+    return "bar";
   }
   if (normalized.includes("tatli") || normalized.includes("firin") || normalized.includes("dessert")) {
-    return "Tatli";
+    return "dessert";
   }
+  return "kitchen";
+}
+
+function inferStationByItemName(itemName?: string): KitchenStation {
+  const normalized = normalizeLabel(itemName ?? "");
+  if (
+    normalized.includes("viski") ||
+    normalized.includes("whisky") ||
+    normalized.includes("vodka") ||
+    normalized.includes("bira") ||
+    normalized.includes("sarap") ||
+    normalized.includes("kokteyl") ||
+    normalized.includes("tequila") ||
+    normalized.includes("tekila") ||
+    normalized.includes("gin") ||
+    normalized.includes("raki") ||
+    normalized.includes("rom")
+  ) {
+    return "bar";
+  }
+  if (
+    normalized.includes("tatli") ||
+    normalized.includes("sufle") ||
+    normalized.includes("souffle") ||
+    normalized.includes("pasta") ||
+    normalized.includes("cheesecake") ||
+    normalized.includes("brownie") ||
+    normalized.includes("dondurma")
+  ) {
+    return "dessert";
+  }
+  return "kitchen";
+}
+
+function stationLabel(station: KitchenStation) {
+  if (station === "bar") return "Bar";
+  if (station === "dessert") return "Tatli";
   return "Mutfak";
 }
 
-function stationTone(station: string) {
-  if (station === "Bar") return "bg-sky-100 text-sky-700";
-  if (station === "Tatli") return "bg-amber-100 text-amber-700";
+function stationTone(station: KitchenStation) {
+  if (station === "bar") return "bg-sky-100 text-sky-700";
+  if (station === "dessert") return "bg-amber-100 text-amber-700";
   return "bg-[#fff2ee] text-[#ff5a34]";
 }
 
@@ -88,12 +140,34 @@ function statusLabel(status: string) {
   return "Bekliyor";
 }
 
-function buildStationGroups(order: Order, productCategoryMap: Map<string, string>, categoryNameMap: Map<string, string>) {
-  const stationGroups = new Map<string, OrderItem[]>();
+function resolveStationFromCategory(category?: { name: string; prep_station?: string | null }): KitchenStation {
+  if (category?.prep_station === "bar" || category?.prep_station === "dessert" || category?.prep_station === "kitchen") {
+    return category.prep_station;
+  }
+  return inferStationByName(category?.name);
+}
+
+function resolveStationStatus(order: Order, station: KitchenStation): StationProgress {
+  const stationStatus = order.station_statuses?.[station];
+  if (stationStatus === "pending" || stationStatus === "preparing" || stationStatus === "served") {
+    return stationStatus;
+  }
+  if (order.status === "pending" || order.status === "preparing" || order.status === "served") {
+    return order.status;
+  }
+  return "pending";
+}
+
+function buildStationGroups(
+  order: Order,
+  productCategoryMap: Map<string, string>,
+  categoryMap: Map<string, { name: string; prep_station?: string | null }>,
+) {
+  const stationGroups = new Map<KitchenStation, OrderItem[]>();
   for (const item of order.items as OrderItem[]) {
     const categoryId = productCategoryMap.get(item.product_id);
-    const categoryName = categoryId ? categoryNameMap.get(categoryId) : undefined;
-    const station = inferStationLabel(categoryName);
+    const category = categoryId ? categoryMap.get(categoryId) : undefined;
+    const station = category ? resolveStationFromCategory(category) : inferStationByItemName(item.name);
     if (!stationGroups.has(station)) {
       stationGroups.set(station, []);
     }
@@ -132,22 +206,21 @@ export default async function KitchenPage() {
   const servedCount = orders.filter((order) => order.status === "served").length;
 
   const productCategoryMap = new Map(products.map((product) => [product.id, product.category_id]));
-  const categoryNameMap = new Map(categories.map((category) => [category.id, category.name]));
-  const stationGroupsByOrder = new Map(orders.map((order) => [order.id, buildStationGroups(order, productCategoryMap, categoryNameMap)]));
-  const delayMap = new Map(orders.map((order) => [order.id, getDelayLevel(order.status, order.created_at)]));
+  const categoryMap = new Map(categories.map((category) => [category.id, { name: category.name, prep_station: category.prep_station }]));
+  const stationGroupsByOrder = new Map(orders.map((order) => [order.id, buildStationGroups(order, productCategoryMap, categoryMap)]));
 
-  const stationBoards = ["Mutfak", "Bar", "Tatli"].map((station) => {
+  const stationBoards = (["kitchen", "bar", "dessert"] as KitchenStation[]).map((station) => {
     const stationOrders = orders.filter((order) => {
       const groups = stationGroupsByOrder.get(order.id);
       return groups?.has(station) ?? false;
     });
 
     return {
-      label: station,
+      key: station,
       orders: stationOrders,
-      pending: stationOrders.filter((order) => order.status === "pending").length,
-      preparing: stationOrders.filter((order) => order.status === "preparing").length,
-      served: stationOrders.filter((order) => order.status === "served").length,
+      pending: stationOrders.filter((order) => resolveStationStatus(order, station) === "pending").length,
+      preparing: stationOrders.filter((order) => resolveStationStatus(order, station) === "preparing").length,
+      served: stationOrders.filter((order) => resolveStationStatus(order, station) === "served").length,
       tone: stationTone(station),
     };
   });
@@ -194,11 +267,11 @@ export default async function KitchenPage() {
         ) : (
           <div className="grid gap-4 xl:grid-cols-3">
             {stationBoards.map((board) => (
-              <section key={board.label} className="rounded-[24px] border border-slate-200 bg-[#f7f8fa] p-4">
+              <section key={board.key} className="rounded-[24px] border border-slate-200 bg-[#f7f8fa] p-4">
                 <div className="flex flex-wrap items-start justify-between gap-3">
                   <div>
                     <p className="text-xs font-bold uppercase tracking-[0.16em] text-slate-500">Istasyon</p>
-                    <h2 className="mt-2 text-xl font-semibold tracking-tight text-slate-900 sm:text-2xl">{board.label}</h2>
+                    <h2 className="mt-2 text-xl font-semibold tracking-tight text-slate-900 sm:text-2xl">{stationLabel(board.key)}</h2>
                     <p className="mt-1 text-sm text-slate-500">
                       {board.pending} bekleyen - {board.preparing} hazirlanan - {board.served} hazir
                     </p>
@@ -213,13 +286,14 @@ export default async function KitchenPage() {
                     </div>
                   ) : (
                     board.orders.map((order) => {
-                      const delay = delayMap.get(order.id)!;
+                      const stationStatus = resolveStationStatus(order, board.key);
+                      const delay = getDelayLevel(stationStatus, order.created_at);
                       const stationGroups = stationGroupsByOrder.get(order.id)!;
-                      const items = stationGroups.get(board.label) ?? [];
+                      const items = stationGroups.get(board.key) ?? [];
 
                       return (
                         <article
-                          key={`${board.label}-${order.id}`}
+                          key={`${board.key}-${order.id}`}
                           className={`rounded-[22px] border bg-white p-4 shadow-[0_10px_20px_rgba(15,23,42,0.04)] ${
                             delay.critical
                               ? "border-rose-300 shadow-[0_12px_24px_rgba(244,63,94,0.16)]"
@@ -231,12 +305,12 @@ export default async function KitchenPage() {
                           <div className="flex flex-col items-start justify-between gap-3 sm:flex-row">
                             <div>
                               <p className="text-xs font-bold uppercase tracking-[0.16em] text-slate-500">{orderSourceLabel(order)}</p>
-                              <h3 className="mt-2 text-xl font-semibold tracking-tight text-slate-900">Siparis #{order.id.slice(0, 8)}</h3>
+                              <h3 className="mt-2 text-xl font-semibold tracking-tight text-slate-900">Siparis #{orderRef(order)}</h3>
                               <p className="mt-1 text-sm text-slate-500">{new Date(order.created_at).toLocaleTimeString(localeCode)}</p>
                             </div>
                             <div className="flex w-full flex-col items-start gap-2 sm:w-auto sm:items-end">
-                              <span className={`inline-flex w-full justify-center rounded-full px-3 py-1 text-xs font-semibold uppercase sm:w-auto ${statusTone(order.status)}`}>{statusLabel(order.status)}</span>
-                              <span className={`inline-flex w-full justify-center rounded-full px-3 py-1 text-xs font-semibold sm:w-auto ${board.tone}`}>{board.label}</span>
+                              <span className={`inline-flex w-full justify-center rounded-full px-3 py-1 text-xs font-semibold uppercase sm:w-auto ${statusTone(stationStatus)}`}>{statusLabel(stationStatus)}</span>
+                              <span className={`inline-flex w-full justify-center rounded-full px-3 py-1 text-xs font-semibold sm:w-auto ${board.tone}`}>{stationLabel(board.key)}</span>
                             </div>
                           </div>
 
@@ -256,7 +330,7 @@ export default async function KitchenPage() {
 
                           <div className="mt-3 space-y-2">
                             {items.map((item) => (
-                            <div key={`${order.id}-${board.label}-${item.product_id}`} className="rounded-2xl bg-slate-50 px-3 py-3">
+                            <div key={`${order.id}-${board.key}-${item.product_id}`} className="rounded-2xl bg-slate-50 px-3 py-3">
                                 <div className="flex items-start justify-between gap-3">
                                   <span className="min-w-0 break-words font-semibold text-slate-900">
                                     {item.quantity}x {item.name}
@@ -281,7 +355,7 @@ export default async function KitchenPage() {
                             </div>
                             <div className="flex w-full flex-wrap items-center gap-2 sm:w-auto sm:justify-end">
                               <Link
-                                href={`/admin/print-center/kitchen/${order.id}?layout=thermal&station=${encodeURIComponent(board.label)}`}
+                                href={`/admin/print-center/kitchen/${order.id}?layout=thermal&station=${encodeURIComponent(stationLabel(board.key))}`}
                                 target="_blank"
                                 rel="noreferrer"
                                 className="w-full rounded-2xl border border-slate-200 bg-white px-4 py-3 text-center text-sm font-semibold text-slate-700 sm:w-auto"
@@ -290,18 +364,19 @@ export default async function KitchenPage() {
                               </Link>
                               <form action={moveOrder}>
                                 <input type="hidden" name="orderId" value={order.id} />
+                                <input type="hidden" name="station" value={board.key} />
                                 <input
                                   type="hidden"
                                   name="nextStatus"
-                                  value={order.status === "pending" ? "preparing" : order.status === "preparing" ? "served" : "preparing"}
+                                  value={stationStatus === "pending" ? "preparing" : stationStatus === "preparing" ? "served" : "preparing"}
                                 />
                                 <PendingSubmitButton
-                                  idleLabel={order.status === "pending" ? "Hazirlanmaya Al" : order.status === "preparing" ? "Servise Hazir" : "Geri Al"}
+                                  idleLabel={stationStatus === "pending" ? "Hazirlanmaya Al" : stationStatus === "preparing" ? "Servise Hazir" : "Geri Al"}
                                   pendingLabel="Guncelleniyor..."
                                   className={`w-full rounded-2xl px-4 py-3 text-sm font-semibold text-white sm:w-auto ${
-                                    order.status === "pending"
+                                    stationStatus === "pending"
                                       ? "bg-gradient-to-r from-[#ff5a34] to-[#f0b14f] shadow-[0_10px_20px_rgba(255,111,60,0.24)]"
-                                      : order.status === "preparing"
+                                      : stationStatus === "preparing"
                                         ? "bg-slate-900"
                                         : "bg-emerald-700"
                                   }`}
@@ -309,7 +384,7 @@ export default async function KitchenPage() {
                               </form>
                             </div>
                           </div>
-                          {order.status === "served" ? (
+                          {stationStatus === "served" ? (
                             <div className="mt-3 flex flex-col items-start gap-3 rounded-2xl border border-emerald-200 bg-emerald-50 px-3 py-3 text-sm sm:flex-row sm:items-center sm:justify-between">
                               <div>
                                 <p className="font-semibold text-emerald-900">Siparis tampon alanda tutuluyor</p>

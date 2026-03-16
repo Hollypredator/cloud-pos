@@ -21,6 +21,35 @@ jobs:
           echo "health_response=$BODY"
           echo "$BODY" | node -e "const fs=require('fs');const raw=fs.readFileSync(0,'utf8');const json=JSON.parse(raw);if(!json.ok){process.exit(1)}"
 
+  perf-sla:
+    runs-on: ubuntu-latest
+    timeout-minutes: 10
+    if: ${{ secrets.PRODUCTION_APP_URL != '' }}
+    steps:
+      - name: Checkout
+        uses: actions/checkout@v4
+
+      - name: Setup Node.js
+        uses: actions/setup-node@v4
+        with:
+          node-version: 20
+
+      - name: Run performance SLA gate
+        env:
+          PERF_BASE_URL: ${{ secrets.PRODUCTION_APP_URL }}
+          PERF_AUTH_COOKIE: ${{ secrets.PERF_AUTH_COOKIE }}
+          PERF_ALERT_DISPATCH_SECRET: ${{ secrets.ALERT_DISPATCH_SECRET }}
+          PERF_AUTO_SESSION_CLOSE_SECRET: ${{ secrets.AUTO_SESSION_CLOSE_SECRET }}
+          PERF_RUNS: "3"
+          PERF_WARMUP_RUNS: "1"
+          PERF_API_BUDGET_MS: "200"
+          PERF_API_P95_BUDGET_MS: "300"
+          PERF_OPERATION_BUDGET_MS: "500"
+          PERF_OPERATION_P95_BUDGET_MS: "700"
+          PERF_PAGE_BUDGET_MS: "900"
+          PERF_PAGE_P95_BUDGET_MS: "1200"
+        run: node scripts/perf-sla-check.mjs
+
   alert-dispatch:
     runs-on: ubuntu-latest
     timeout-minutes: 5
@@ -35,3 +64,18 @@ jobs:
           URL="${APP_URL%/}/api/alerts/dispatch"
           BODY="$(curl -fsS -X POST -H "x-alert-secret: ${ALERT_DISPATCH_SECRET}" "$URL")"
           echo "alert_dispatch_response=$BODY"
+
+  session-auto-close:
+    runs-on: ubuntu-latest
+    timeout-minutes: 5
+    if: ${{ secrets.PRODUCTION_APP_URL != '' && secrets.AUTO_SESSION_CLOSE_SECRET != '' }}
+    steps:
+      - name: Trigger automatic session close
+        env:
+          APP_URL: ${{ secrets.PRODUCTION_APP_URL }}
+          AUTO_SESSION_CLOSE_SECRET: ${{ secrets.AUTO_SESSION_CLOSE_SECRET }}
+        run: |
+          set -euo pipefail
+          URL="${APP_URL%/}/api/cashier/session/auto-close"
+          BODY="$(curl -fsS -X POST -H "x-auto-close-secret: ${AUTO_SESSION_CLOSE_SECRET}" "$URL")"
+          echo "session_auto_close_response=$BODY"

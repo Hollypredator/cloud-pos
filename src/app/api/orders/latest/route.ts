@@ -26,22 +26,37 @@ export async function GET(request: Request) {
 
   const { order } = await getLatestOrderByTableId(table.id);
   if (!order) {
-    return NextResponse.json({ ok: true, order: null });
+    return NextResponse.json(
+      { ok: true, order: null },
+      {
+        headers: {
+          "Cache-Control": "no-store",
+        },
+      },
+    );
   }
 
-  return NextResponse.json({
-    ok: true,
-    order: {
-      id: order.id,
-      status: order.status,
-      totalPrice: order.total_price,
-      finalPrice: order.final_price ?? order.total_price,
-      createdAt: order.created_at,
-      items: order.items.map((item) => ({
-        productId: item.product_id,
-        name: item.name,
-        quantity: item.quantity,
-      })),
+  return NextResponse.json(
+    {
+      ok: true,
+      order: {
+        id: order.id,
+        checkNumber: order.check_number ?? null,
+        status: order.status,
+        totalPrice: order.total_price,
+        finalPrice: order.final_price ?? order.total_price,
+        createdAt: order.created_at,
+        items: order.items.map((item) => ({
+          productId: item.product_id,
+          name: item.name,
+          quantity: item.quantity,
+        })),
+      },
     },
-  });
+    {
+      headers: {
+        "Cache-Control": "no-store",
+      },
+    },
+  );
 }

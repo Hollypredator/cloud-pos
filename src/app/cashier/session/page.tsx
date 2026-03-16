@@ -1,9 +1,11 @@
 import { revalidatePath } from "next/cache";
 import { redirect } from "next/navigation";
 import { LiveOpsBridge } from "@/components/live-ops-bridge";
+import { CashierSessionSettingsForm, type SessionSettingsFormActionState } from "@/components/cashier-session-settings-form";
 import { BackofficePage, ContentCard, FeatureLockedState, NoticeBanner, SidebarPanel, SummaryCard, WorkflowGuide } from "@/components/backoffice-ui";
 import { requireRole } from "@/lib/auth";
 import { closeCashSession, getCurrentCashSession, getPaymentOverview, openCashSession } from "@/lib/domains/finance";
+import { getApplicationSettings, updateApplicationSettings } from "@/lib/data";
 import { getFeatureAccess } from "@/lib/plan-access";
 
 function feedbackHref(tone: "success" | "error", message: string) {
@@ -67,6 +69,45 @@ async function closeSessionAction(formData: FormData) {
   }
 }
 
+async function updateSessionSettingsAction(
+  _state: SessionSettingsFormActionState,
+  formData: FormData,
+): Promise<SessionSettingsFormActionState> {
+  "use server";
+  await requireRole(["admin", "cashier"], "/cashier/session");
+
+  const { settings: currentSettings } = await getApplicationSettings();
+  const hasAutoSessionClose = formData.has("autoSessionCloseEnabled_present") || formData.has("autoSessionCloseEnabled");
+  const hasOpenCheckControl =
+    formData.has("requireNoOpenChecksForSessionClose_present") || formData.has("requireNoOpenChecksForSessionClose");
+  const autoSessionCloseTimeRaw = formData.get("autoSessionCloseTime");
+  const autoSessionCloseTime =
+    typeof autoSessionCloseTimeRaw === "string" && /^([01]\d|2[0-3]):[0-5]\d$/.test(autoSessionCloseTimeRaw)
+      ? autoSessionCloseTimeRaw
+      : currentSettings.autoSessionCloseTime;
+  const result = await updateApplicationSettings({
+    ...currentSettings,
+    autoSessionCloseEnabled: hasAutoSessionClose ? formData.get("autoSessionCloseEnabled") === "on" : currentSettings.autoSessionCloseEnabled,
+    autoSessionCloseTime,
+    requireNoOpenChecksForSessionClose: hasOpenCheckControl
+      ? formData.get("requireNoOpenChecksForSessionClose") === "on"
+      : currentSettings.requireNoOpenChecksForSessionClose,
+  });
+
+  if (!result.ok) {
+    return {
+      tone: "error",
+      message: result.error ?? "Gun islemleri ayarlari kaydedilemedi.",
+    };
+  }
+
+  revalidatePath("/cashier/session");
+  return {
+    tone: "success",
+    message: "Gun islemleri ayarlari kaydedildi.",
+  };
+}
+
 export default async function CashierSessionPage({
   searchParams,
 }: {
@@ -87,7 +128,11 @@ export default async function CashierSessionPage({
     );
   }
   const { feedback, tone } = await searchParams;
-  const [{ session }, { today, usingDemoData }] = await Promise.all([getCurrentCashSession(), getPaymentOverview()]);
+  const [{ session }, { today, usingDemoData }, { settings: applicationSettings }] = await Promise.all([
+    getCurrentCashSession(),
+    getPaymentOverview(),
+    getApplicationSettings(),
+  ]);
 
   return (
     <BackofficePage
@@ -121,28 +166,14 @@ export default async function CashierSessionPage({
           </SidebarPanel>
 
           <SidebarPanel title="Gun Islemleri Ayarlari">
-            <label className="flex items-center justify-between rounded-2xl border border-slate-200 bg-slate-50 px-4 py-4">
-              <div>
-                <p className="text-lg font-semibold text-slate-900">Otomatik Gun Sonu</p>
-                <p className="text-sm text-slate-500">Belirtilen saatte otomatik gun sonu</p>
-              </div>
-              <span className="inline-flex h-8 w-14 rounded-full bg-gradient-to-r from-[#ff5a34] to-[#f0b14f] p-1">
-                <span className="ml-auto h-6 w-6 rounded-full bg-white" />
-              </span>
-            </label>
-            <div className="rounded-2xl border border-slate-200 bg-slate-50 px-4 py-4">
-              <p className="text-lg font-semibold text-slate-900">Gun Sonu Saati</p>
-              <div className="mt-3 rounded-2xl border border-slate-200 bg-white px-4 py-3 text-sm text-slate-800">12:00 AM</div>
-            </div>
-            <label className="flex items-center justify-between rounded-2xl border border-slate-200 bg-slate-50 px-4 py-4">
-              <div>
-                <p className="text-lg font-semibold text-slate-900">Acik Adisyon Kontrolu</p>
-                <p className="text-sm text-slate-500">Gun sonu oncesi acik hesaplari zorunlu kapat</p>
-              </div>
-              <span className="inline-flex h-8 w-14 rounded-full bg-slate-300 p-1">
-                <span className="h-6 w-6 rounded-full bg-white" />
-              </span>
-            </label>
+            <CashierSessionSettingsForm
+              values={{
+                autoSessionCloseEnabled: applicationSettings.autoSessionCloseEnabled,
+                autoSessionCloseTime: applicationSettings.autoSessionCloseTime,
+                requireNoOpenChecksForSessionClose: applicationSettings.requireNoOpenChecksForSessionClose,
+              }}
+              action={updateSessionSettingsAction}
+            />
           </SidebarPanel>
         </div>
       }

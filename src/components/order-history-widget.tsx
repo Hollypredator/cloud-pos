@@ -4,11 +4,16 @@ import { useEffect, useEffectEvent, useRef, useState } from "react";
 
 type HistoryOrder = {
   id: string;
+  checkNumber?: string | null;
   status: string;
   totalPrice: number;
   finalPrice: number;
   createdAt: string;
 };
+
+function orderRef(order: Pick<HistoryOrder, "id" | "checkNumber">) {
+  return order.checkNumber?.trim() ? order.checkNumber : order.id.slice(0, 8);
+}
 
 export function OrderHistoryWidget({
   businessSlug,
@@ -91,7 +96,7 @@ export function OrderHistoryWidget({
           {orders.map((order) => (
             <li key={order.id} className="rounded-lg bg-slate-50 px-3 py-2 text-xs">
               <div className="flex items-center justify-between">
-                <span className="font-medium text-slate-900">#{order.id.slice(0, 8)}</span>
+                <span className="font-medium text-slate-900">#{orderRef(order)}</span>
                 <span className="uppercase text-slate-500">{order.status}</span>
               </div>
               <div className="mt-1 flex items-center justify-between text-slate-600">

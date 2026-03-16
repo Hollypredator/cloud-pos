@@ -1,1 +1,1 @@
-export { getAppShellPayload, getAppShellUiSettings } from "@/lib/server/app-shell/core";
+export { getAppShellPayload, getAppShellUiSettings, getFallbackAppShellPayload } from "@/lib/server/app-shell/core";

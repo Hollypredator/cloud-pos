@@ -34,6 +34,9 @@ NEXT_PUBLIC_DEFAULT_BUSINESS_SLUG=default
 ALERT_WEBHOOK_URL=...
 ALERT_DISPATCH_SECRET=...
 ALERT_DISPATCH_ENDPOINT=...
+AUTO_SESSION_CLOSE_SECRET=...
+AUTO_SESSION_CLOSE_ENDPOINT=...
+AUTO_SESSION_CLOSE_TZ=Europe/Istanbul
 QR_ACCESS_SECRET=...
 NEXT_PUBLIC_BUSINESS_NAME=Cloud POS Cafe
 NEXT_PUBLIC_BUSINESS_PHONE=+90 555 000 00 00
@@ -43,44 +46,13 @@ NEXT_PUBLIC_RECEIPT_LOGO_URL=...
 NEXT_PUBLIC_VAT_RATE=10
 ```
 
-3. Supabase SQL Editor veya migration ile su dosyalari sirasiyla calistirin:
+3. Supabase schema kurulumunda iki yol var:
 
-- `supabase/migrations/20260227_initial_cloud_pos.sql`
-- `supabase/migrations/20260227_add_order_items.sql`
-- `supabase/migrations/20260227_add_profiles_and_roles.sql`
-- `supabase/migrations/20260227_profile_trigger.sql`
-- `supabase/migrations/20260227_add_ingredients.sql`
-- `supabase/migrations/20260227_add_stock_movements.sql`
-- `supabase/migrations/20260227_add_payments_and_sessions.sql`
-- `supabase/migrations/20260227_add_audit_logs.sql`
-- `supabase/migrations/20260227_add_table_requests.sql`
-- `supabase/migrations/20260227_add_alert_dispatches.sql`
-- `supabase/migrations/20260227_add_businesses_multi_tenant.sql`
-- `supabase/migrations/20260227_add_business_scope_finance.sql`
-- `supabase/migrations/20260228_add_sales_leads.sql`
-- `supabase/migrations/20260228_add_site_content.sql`
-- `supabase/migrations/20260228_add_app_settings.sql`
-- `supabase/migrations/20260228_add_media_library.sql`
-- `supabase/migrations/20260228_add_media_storage_fields.sql`
-- `supabase/migrations/20260228_add_blog_posts.sql`
-- `supabase/migrations/20260228_add_sales_lead_notes.sql`
-- `supabase/migrations/20260228_add_order_channels.sql`
-- `supabase/migrations/20260228_add_couriers.sql`
-- `supabase/migrations/20260228_add_product_modifiers.sql`
-- `supabase/migrations/20260228_add_studio_access.sql`
-- `supabase/migrations/20260228_add_studio_roles.sql`
-- `supabase/migrations/20260228_harden_studio_policies.sql`
-- `supabase/migrations/20260301_add_business_plans.sql`
-- `supabase/migrations/20260301_add_owner_role.sql`
-- `supabase/migrations/20260301_add_branches.sql`
-- `supabase/migrations/20260301_add_staff_branch_access.sql`
-- `supabase/migrations/20260301_add_table_names.sql`
-- `supabase/migrations/20260301_harden_core_rls.sql`
-- `supabase/migrations/20260302_scope_profiles_rls.sql`
-- `supabase/migrations/20260302_fix_profiles_rls_recursion.sql`
-- `supabase/migrations/20260302_allow_table_delete_with_order_history.sql`
-- `supabase/migrations/20260311_add_payment_idempotency.sql`
-- `supabase/migrations/20260312_harden_remaining_rls.sql`
+- Yeni bir ortam aciyorsaniz: once `supabase/baseline/20260316_baseline.sql`, sonra sadece bu tarihten yeni migration'lari calistirin.
+- Mevcut (canli/staging) ortamlarda: `supabase/migrations` altina eklenen yeni dosyalari sirayla calistirmaya devam edin.
+- Baseline dosyasini guncellemek icin:
+  - `powershell -NoProfile -ExecutionPolicy Bypass -File scripts/build-supabase-baseline.ps1 -OutputPath supabase/baseline/20260316_baseline.sql`
+- Detayli strateji: `docs/migration-strategy.md`
 
 4. Gelistirme sunucusunu baslatin:
 
@@ -175,6 +147,7 @@ npm run dev
 - Health API: `/api/health`
 - Ops metrics API: `/api/metrics/ops`
 - Ops alert dispatch API: `/api/alerts/dispatch` (`GET` preview, `POST` webhook send)
+- Otomatik gun sonu cron API: `/api/cashier/session/auto-close` (`GET` dry-run, `POST` execute)
 - Demo sunum akisi: `DEMO.md`
 
 ## Uretim Checklist
@@ -195,7 +168,8 @@ Detayli checklist ve incident proseduru:
 - `docs/commercial-product-pack.md`
 - `docs/presentation-cloud-pos.md`
 
-- Tum migration dosyalarini sirayla uygulayin.
+- Yeni kurulumlarda `supabase/baseline/20260316_baseline.sql` + sonraki delta migration modelini kullanin.
+- Mevcut ortamlarda eski migration dosyalarini silmeyin/yeniden adlandirmayin; sadece yeni migration ekleyin.
 - `branches`, `staff_branch_access`, `owner` role ve core RLS migrationlarini atlamayin.
 - Supabase Realtime publication tablolari:
   - `orders`
@@ -217,7 +191,12 @@ Detayli checklist ve incident proseduru:
   - Cron: `POST /api/alerts/dispatch` + `x-alert-secret` header
   - Cooldown: 10 dakika
   - Lokal manuel tetikleme: `npm run alerts:dispatch`
+- Otomatik gun sonu cron icin:
+  - `.env.local`: `AUTO_SESSION_CLOSE_SECRET` (opsiyonel: `AUTO_SESSION_CLOSE_ENDPOINT`, `AUTO_SESSION_CLOSE_TZ`)
+  - Cron: `POST /api/cashier/session/auto-close` + `x-auto-close-secret` header
+  - Lokal manuel tetikleme: `npm run sessions:auto-close`
 - Operasyon smoke-check: `npm run ops:smoke`
+- Perf SLA check: `npm run perf:sla` (API avg<=200ms, operation avg<=500ms hedefleri)
 - Tenant runtime isolation check: `npm run phase2:runtime` (uygulama ayakta olmali)
 - Faz 3 finans runtime kontrolu: `npm run phase3:runtime` (Supabase env gerekli)
 - Faz 4 mutabakat kontrolu: `npm run phase4:reconciliation` (Supabase env gerekli)

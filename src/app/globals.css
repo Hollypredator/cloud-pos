@@ -99,6 +99,27 @@ button:disabled {
   cursor: not-allowed;
 }
 
+@media (pointer: coarse) {
+  a,
+  button,
+  [role="button"] {
+    touch-action: manipulation;
+    -webkit-tap-highlight-color: rgba(255, 106, 61, 0.16);
+  }
+
+  input,
+  select,
+  textarea {
+    font-size: 16px;
+  }
+
+  .panel-hover:hover {
+    transform: none;
+    box-shadow: var(--panel-shadow);
+    border-color: var(--panel-border);
+  }
+}
+
 ::selection {
   background: rgba(255, 106, 61, 0.22);
   color: #111827;

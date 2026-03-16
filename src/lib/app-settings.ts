@@ -35,6 +35,9 @@ export type SeoSettings = {
 export type ApplicationSettings = {
   appPrintingEnabled: boolean;
   demoMode: boolean;
+  autoSessionCloseEnabled: boolean;
+  autoSessionCloseTime: string;
+  requireNoOpenChecksForSessionClose: boolean;
   sidebarTheme: "ember" | "ocean" | "night";
   sidebarOrder: "default" | "service_first" | "management_first";
   sidebarAccentColor: string;
@@ -91,6 +94,9 @@ export const defaultSeoSettings: SeoSettings = {
 export const defaultApplicationSettings: ApplicationSettings = {
   appPrintingEnabled: false,
   demoMode: false,
+  autoSessionCloseEnabled: false,
+  autoSessionCloseTime: "00:00",
+  requireNoOpenChecksForSessionClose: true,
   sidebarTheme: "ember",
   sidebarOrder: "default",
   sidebarAccentColor: "#ff7848",
@@ -106,6 +112,11 @@ function normalizeHexColor(value: string | undefined) {
 function normalizeSidebarOrder(value: unknown) {
   if (!Array.isArray(value)) return [];
   return value.filter((item): item is string => typeof item === "string" && item.startsWith("/"));
+}
+
+function normalizeTimeValue(value: unknown) {
+  const normalized = String(value ?? "").trim();
+  return /^([01]\d|2[0-3]):[0-5]\d$/.test(normalized) ? normalized : defaultApplicationSettings.autoSessionCloseTime;
 }
 
 export function normalizeGeneralSettings(input?: Partial<GeneralSettings> | null): GeneralSettings {
@@ -153,6 +164,9 @@ export function normalizeApplicationSettings(input?: Partial<ApplicationSettings
   return {
     appPrintingEnabled: Boolean(merged.appPrintingEnabled),
     demoMode: Boolean(merged.demoMode),
+    autoSessionCloseEnabled: Boolean(merged.autoSessionCloseEnabled),
+    autoSessionCloseTime: normalizeTimeValue(merged.autoSessionCloseTime),
+    requireNoOpenChecksForSessionClose: Boolean(merged.requireNoOpenChecksForSessionClose),
     sidebarTheme:
       merged.sidebarTheme === "ocean" || merged.sidebarTheme === "night" ? merged.sidebarTheme : "ember",
     sidebarOrder:

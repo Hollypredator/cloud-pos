@@ -1,5 +1,6 @@
 import Link from "next/link";
-import { revalidatePath } from "next/cache";
+import { headers } from "next/headers";
+import { redirect } from "next/navigation";
 import {
   attachIngredientToProduct,
   bulkUpdateCategoryPrices,
@@ -16,14 +17,55 @@ import {
   detachIngredientFromProduct,
   getProductManagementData,
   reorderCategories,
+  updateCategoryPrepStation,
   updateProduct,
 } from "@/lib/data";
 import { requireRole } from "@/lib/auth";
-import { BackofficePage, ContentCard, EmptyPanel, SummaryCard, WorkspaceTabs } from "@/components/backoffice-ui";
+import { BackofficePage, ContentCard, EmptyPanel, NoticeBanner, SummaryCard, WorkspaceTabs } from "@/components/backoffice-ui";
 import { CategorySortManager } from "@/components/category-sort-manager";
 import { translateUiText } from "@/lib/i18n";
 import { getCurrentLocale } from "@/lib/i18n-server";
 import { logServerPerf, measureAsync } from "@/lib/perf";
+
+function normalizePrepStation(value: FormDataEntryValue | null) {
+  const station = typeof value === "string" ? value : "";
+  if (station === "bar" || station === "dessert") {
+    return station;
+  }
+  return "kitchen";
+}
+
+async function resolveProductsReturnPath() {
+  const headerStore = await headers();
+  const referer = headerStore.get("referer");
+  if (!referer) {
+    return "/admin/products";
+  }
+
+  try {
+    const url = new URL(referer);
+    if (url.pathname.startsWith("/admin/products")) {
+      return `${url.pathname}${url.search}`;
+    }
+  } catch {
+    return "/admin/products";
+  }
+
+  return "/admin/products";
+}
+
+async function resolveProductsFeedbackPath(tone: "success" | "error", feedback: string) {
+  const basePath = await resolveProductsReturnPath();
+  const url = new URL(basePath, "http://localhost");
+  url.searchParams.set("tone", tone);
+  url.searchParams.set("feedback", feedback);
+  return `${url.pathname}${url.search}`;
+}
+
+function actionErrorMessage(result: { ok: boolean; error?: string | null }, fallback: string) {
+  const message = (result.error ?? "").trim();
+  return message || fallback;
+}
 
 async function addCategoryAction(formData: FormData) {
   "use server";
@@ -31,21 +73,43 @@ async function addCategoryAction(formData: FormData) {
 
   const name = formData.get("name");
   const sortOrder = Number(formData.get("sortOrder"));
+  const prepStation = normalizePrepStation(formData.get("prepStation"));
   if (typeof name !== "string" || !Number.isFinite(sortOrder)) {
-    return;
+    redirect(await resolveProductsFeedbackPath("error", "Kategori bilgisi gecersiz."));
   }
 
-  await createCategory(name, sortOrder);
-  revalidatePath("/admin/products");
-  revalidatePath("/admin/categories");
+  const result = await createCategory(name, sortOrder, prepStation);
+  if (!result.ok) {
+    redirect(await resolveProductsFeedbackPath("error", actionErrorMessage(result, "Kategori eklenemedi.")));
+  }
+  redirect(await resolveProductsReturnPath());
+}
+
+async function updateCategoryStationAction(formData: FormData) {
+  "use server";
+  await requireRole(["admin"], "/admin/products");
+
+  const categoryId = formData.get("categoryId");
+  const prepStation = normalizePrepStation(formData.get("prepStation"));
+  if (typeof categoryId !== "string") {
+    redirect(await resolveProductsFeedbackPath("error", "Kategori secimi gecersiz."));
+  }
+
+  const result = await updateCategoryPrepStation(categoryId, prepStation);
+  if (!result.ok) {
+    redirect(await resolveProductsFeedbackPath("error", actionErrorMessage(result, "Istasyon guncellenemedi.")));
+  }
+  redirect(await resolveProductsReturnPath());
 }
 
 async function reorderCategoriesAction(ids: string[]) {
   "use server";
   await requireRole(["admin"], "/admin/products");
-  await reorderCategories(ids);
-  revalidatePath("/admin/products");
-  revalidatePath("/admin/categories");
+  const result = await reorderCategories(ids);
+  if (!result.ok) {
+    redirect(await resolveProductsFeedbackPath("error", actionErrorMessage(result, "Kategori sirasi guncellenemedi.")));
+  }
+  redirect(await resolveProductsReturnPath());
 }
 
 async function deleteCategoryAction(formData: FormData) {
@@ -54,12 +118,14 @@ async function deleteCategoryAction(formData: FormData) {
 
   const categoryId = formData.get("categoryId");
   if (typeof categoryId !== "string") {
-    return;
+    redirect(await resolveProductsFeedbackPath("error", "Kategori secimi gecersiz."));
   }
 
-  await deleteCategory(categoryId);
-  revalidatePath("/admin/products");
-  revalidatePath("/admin/categories");
+  const result = await deleteCategory(categoryId);
+  if (!result.ok) {
+    redirect(await resolveProductsFeedbackPath("error", actionErrorMessage(result, "Kategori silinemedi.")));
+  }
+  redirect(await resolveProductsReturnPath());
 }
 
 async function addProductAction(formData: FormData) {
@@ -74,10 +140,10 @@ async function addProductAction(formData: FormData) {
   const imageUrl = formData.get("imageUrl");
 
   if (typeof categoryId !== "string" || typeof name !== "string" || !Number.isFinite(price) || !Number.isFinite(stockCount)) {
-    return;
+    redirect(await resolveProductsFeedbackPath("error", "Urun bilgileri gecersiz."));
   }
 
-  await createProduct({
+  const result = await createProduct({
     categoryId,
     name,
     price,
@@ -86,7 +152,10 @@ async function addProductAction(formData: FormData) {
     imageUrl: typeof imageUrl === "string" ? imageUrl : undefined,
     isAvailable: true,
   });
-  revalidatePath("/admin/products");
+  if (!result.ok) {
+    redirect(await resolveProductsFeedbackPath("error", actionErrorMessage(result, "Urun eklenemedi.")));
+  }
+  redirect(await resolveProductsReturnPath());
 }
 
 async function updateProductAction(formData: FormData) {
@@ -109,10 +178,10 @@ async function updateProductAction(formData: FormData) {
     !Number.isFinite(price) ||
     !Number.isFinite(stockCount)
   ) {
-    return;
+    redirect(await resolveProductsFeedbackPath("error", "Urun guncelleme bilgileri gecersiz."));
   }
 
-  await updateProduct({
+  const result = await updateProduct({
     productId,
     categoryId,
     name,
@@ -122,7 +191,10 @@ async function updateProductAction(formData: FormData) {
     imageUrl: typeof imageUrl === "string" ? imageUrl : undefined,
     isAvailable,
   });
-  revalidatePath("/admin/products");
+  if (!result.ok) {
+    redirect(await resolveProductsFeedbackPath("error", actionErrorMessage(result, "Urun guncellenemedi.")));
+  }
+  redirect(await resolveProductsReturnPath());
 }
 
 async function deleteProductAction(formData: FormData) {
@@ -131,11 +203,14 @@ async function deleteProductAction(formData: FormData) {
 
   const productId = formData.get("productId");
   if (typeof productId !== "string") {
-    return;
+    redirect(await resolveProductsFeedbackPath("error", "Urun secimi gecersiz."));
   }
 
-  await deleteProduct(productId);
-  revalidatePath("/admin/products");
+  const result = await deleteProduct(productId);
+  if (!result.ok) {
+    redirect(await resolveProductsFeedbackPath("error", actionErrorMessage(result, "Urun silinemedi.")));
+  }
+  redirect(await resolveProductsReturnPath());
 }
 
 async function bulkPriceAction(formData: FormData) {
@@ -145,11 +220,14 @@ async function bulkPriceAction(formData: FormData) {
   const categoryId = formData.get("categoryId");
   const percent = Number(formData.get("percent"));
   if (typeof categoryId !== "string" || !Number.isFinite(percent)) {
-    return;
+    redirect(await resolveProductsFeedbackPath("error", "Toplu fiyat bilgileri gecersiz."));
   }
 
-  await bulkUpdateCategoryPrices(categoryId, percent);
-  revalidatePath("/admin/products");
+  const result = await bulkUpdateCategoryPrices(categoryId, percent);
+  if (!result.ok) {
+    redirect(await resolveProductsFeedbackPath("error", actionErrorMessage(result, "Toplu fiyat guncelleme basarisiz.")));
+  }
+  redirect(await resolveProductsReturnPath());
 }
 
 async function addIngredientAction(formData: FormData) {
@@ -158,10 +236,13 @@ async function addIngredientAction(formData: FormData) {
   const name = formData.get("name");
   const unit = formData.get("unit");
   if (typeof name !== "string" || typeof unit !== "string") {
-    return;
+    redirect(await resolveProductsFeedbackPath("error", "Malzeme bilgileri gecersiz."));
   }
-  await createIngredient(name, unit);
-  revalidatePath("/admin/products");
+  const result = await createIngredient(name, unit);
+  if (!result.ok) {
+    redirect(await resolveProductsFeedbackPath("error", actionErrorMessage(result, "Malzeme eklenemedi.")));
+  }
+  redirect(await resolveProductsReturnPath());
 }
 
 async function deleteIngredientAction(formData: FormData) {
@@ -169,10 +250,13 @@ async function deleteIngredientAction(formData: FormData) {
   await requireRole(["admin"], "/admin/products");
   const ingredientId = formData.get("ingredientId");
   if (typeof ingredientId !== "string") {
-    return;
+    redirect(await resolveProductsFeedbackPath("error", "Malzeme secimi gecersiz."));
   }
-  await deleteIngredient(ingredientId);
-  revalidatePath("/admin/products");
+  const result = await deleteIngredient(ingredientId);
+  if (!result.ok) {
+    redirect(await resolveProductsFeedbackPath("error", actionErrorMessage(result, "Malzeme silinemedi.")));
+  }
+  redirect(await resolveProductsReturnPath());
 }
 
 async function attachIngredientAction(formData: FormData) {
@@ -182,10 +266,13 @@ async function attachIngredientAction(formData: FormData) {
   const ingredientId = formData.get("ingredientId");
   const quantity = Number(formData.get("quantity"));
   if (typeof productId !== "string" || typeof ingredientId !== "string" || !Number.isFinite(quantity) || quantity <= 0) {
-    return;
+    redirect(await resolveProductsFeedbackPath("error", "Malzeme baglama bilgileri gecersiz."));
   }
-  await attachIngredientToProduct({ productId, ingredientId, quantity });
-  revalidatePath("/admin/products");
+  const result = await attachIngredientToProduct({ productId, ingredientId, quantity });
+  if (!result.ok) {
+    redirect(await resolveProductsFeedbackPath("error", actionErrorMessage(result, "Malzeme urune baglanamadi.")));
+  }
+  redirect(await resolveProductsReturnPath());
 }
 
 async function detachIngredientAction(formData: FormData) {
@@ -194,10 +281,13 @@ async function detachIngredientAction(formData: FormData) {
   const productId = formData.get("productId");
   const ingredientId = formData.get("ingredientId");
   if (typeof productId !== "string" || typeof ingredientId !== "string") {
-    return;
+    redirect(await resolveProductsFeedbackPath("error", "Malzeme ayirma bilgileri gecersiz."));
   }
-  await detachIngredientFromProduct(productId, ingredientId);
-  revalidatePath("/admin/products");
+  const result = await detachIngredientFromProduct(productId, ingredientId);
+  if (!result.ok) {
+    redirect(await resolveProductsFeedbackPath("error", actionErrorMessage(result, "Malzeme urunden ayrilamadi.")));
+  }
+  redirect(await resolveProductsReturnPath());
 }
 
 async function addModifierGroupAction(formData: FormData) {
@@ -209,10 +299,13 @@ async function addModifierGroupAction(formData: FormData) {
   const maxSelect = Number(formData.get("maxSelect"));
   const isRequired = formData.get("isRequired") === "on";
   if (typeof productId !== "string" || typeof name !== "string") {
-    return;
+    redirect(await resolveProductsFeedbackPath("error", "Modifier grup bilgileri gecersiz."));
   }
-  await createProductModifierGroup({ productId, name, minSelect, maxSelect, isRequired });
-  revalidatePath("/admin/products");
+  const result = await createProductModifierGroup({ productId, name, minSelect, maxSelect, isRequired });
+  if (!result.ok) {
+    redirect(await resolveProductsFeedbackPath("error", actionErrorMessage(result, "Modifier grubu eklenemedi.")));
+  }
+  redirect(await resolveProductsReturnPath());
 }
 
 async function addModifierOptionAction(formData: FormData) {
@@ -223,10 +316,13 @@ async function addModifierOptionAction(formData: FormData) {
   const priceDelta = Number(formData.get("priceDelta"));
   const isDefault = formData.get("isDefault") === "on";
   if (typeof groupId !== "string" || typeof name !== "string") {
-    return;
+    redirect(await resolveProductsFeedbackPath("error", "Modifier opsiyon bilgileri gecersiz."));
   }
-  await createProductModifierOption({ groupId, name, priceDelta, isDefault });
-  revalidatePath("/admin/products");
+  const result = await createProductModifierOption({ groupId, name, priceDelta, isDefault });
+  if (!result.ok) {
+    redirect(await resolveProductsFeedbackPath("error", actionErrorMessage(result, "Modifier opsiyonu eklenemedi.")));
+  }
+  redirect(await resolveProductsReturnPath());
 }
 
 async function deleteModifierGroupAction(formData: FormData) {
@@ -234,10 +330,13 @@ async function deleteModifierGroupAction(formData: FormData) {
   await requireRole(["admin"], "/admin/products");
   const groupId = formData.get("groupId");
   if (typeof groupId !== "string") {
-    return;
+    redirect(await resolveProductsFeedbackPath("error", "Modifier grubu secimi gecersiz."));
   }
-  await deleteProductModifierGroup(groupId);
-  revalidatePath("/admin/products");
+  const result = await deleteProductModifierGroup(groupId);
+  if (!result.ok) {
+    redirect(await resolveProductsFeedbackPath("error", actionErrorMessage(result, "Modifier grubu silinemedi.")));
+  }
+  redirect(await resolveProductsReturnPath());
 }
 
 async function deleteModifierOptionAction(formData: FormData) {
@@ -245,20 +344,29 @@ async function deleteModifierOptionAction(formData: FormData) {
   await requireRole(["admin"], "/admin/products");
   const optionId = formData.get("optionId");
   if (typeof optionId !== "string") {
-    return;
+    redirect(await resolveProductsFeedbackPath("error", "Modifier opsiyonu secimi gecersiz."));
   }
-  await deleteProductModifierOption(optionId);
-  revalidatePath("/admin/products");
+  const result = await deleteProductModifierOption(optionId);
+  if (!result.ok) {
+    redirect(await resolveProductsFeedbackPath("error", actionErrorMessage(result, "Modifier opsiyonu silinemedi.")));
+  }
+  redirect(await resolveProductsReturnPath());
+}
+
+function prepStationLabel(station?: string | null) {
+  if (station === "bar") return "Bar";
+  if (station === "dessert") return "Tatli";
+  return "Mutfak";
 }
 
 export default async function AdminProductsPage({
   searchParams,
 }: {
-  searchParams: Promise<{ tab?: string; categoryId?: string }>;
+  searchParams: Promise<{ tab?: string; categoryId?: string; feedback?: string; tone?: "success" | "error" }>;
 }) {
   const locale = await getCurrentLocale();
   await requireRole(["admin"], "/admin/products");
-  const { tab: tabParam, categoryId: categoryIdParam } = await searchParams;
+  const { tab: tabParam, categoryId: categoryIdParam, feedback, tone } = await searchParams;
   const activeTab = ["catalog", "menu", "categories", "bulk", "features"].includes(tabParam ?? "")
     ? (tabParam as "catalog" | "menu" | "categories" | "bulk" | "features")
     : "catalog";
@@ -351,6 +459,15 @@ export default async function AdminProductsPage({
             {translateUiText("Demo veride kalici urun ve kategori aksiyonlari sinirlidir.", locale)}
           </div>
         ) : null}
+        {feedback ? (
+          <div className="mt-4">
+            <NoticeBanner
+              tone={tone === "error" ? "error" : "success"}
+              title={tone === "error" ? "Islem tamamlanamadi" : "Islem tamamlandi"}
+              description={feedback}
+            />
+          </div>
+        ) : null}
 
         <div className="mt-6 grid gap-4 md:grid-cols-2 xl:grid-cols-4">
           <SummaryCard label={translateUiText("Kategori", locale)} value={String(orderedCategories.length)} hint={translateUiText("Toplam ana kategori", locale)} tone="accent" />
@@ -371,6 +488,11 @@ export default async function AdminProductsPage({
 
             <form action={addCategoryAction} className="mt-4 grid gap-3">
               <input name="name" required placeholder="Yeni kategori" className="rounded-2xl border border-slate-200 bg-white px-4 py-3 text-sm" />
+              <select name="prepStation" defaultValue="kitchen" className="rounded-2xl border border-slate-200 bg-white px-4 py-3 text-sm">
+                <option value="kitchen">Mutfak Istasyonu</option>
+                <option value="bar">Bar Istasyonu</option>
+                <option value="dessert">Tatli Istasyonu</option>
+              </select>
               <input
                 name="sortOrder"
                 type="number"
@@ -391,6 +513,7 @@ export default async function AdminProductsPage({
                 }))}
                 onReorder={reorderCategoriesAction}
                 onDelete={deleteCategoryAction}
+                onStationUpdate={updateCategoryStationAction}
               />
             </div>
           </section>
@@ -654,6 +777,7 @@ export default async function AdminProductsPage({
                   <div key={category.id} className="rounded-[22px] border border-slate-200 bg-white px-4 py-4">
                     <p className="text-lg font-semibold text-slate-900">{category.name}</p>
                     <p className="mt-1 text-sm text-slate-500">{productCountMap.get(category.id) ?? 0} menu urunu</p>
+                    <p className="mt-1 text-xs font-semibold uppercase tracking-[0.12em] text-slate-400">{prepStationLabel(category.prep_station)} Istasyonu</p>
                   </div>
                 ))}
               </div>
@@ -712,6 +836,7 @@ export default async function AdminProductsPage({
                 }))}
                 onReorder={reorderCategoriesAction}
                 onDelete={deleteCategoryAction}
+                onStationUpdate={updateCategoryStationAction}
               />
             </ContentCard>
           </div>
@@ -785,7 +910,7 @@ export default async function AdminProductsPage({
                 {products.map((product) => (
                   <div key={product.id} className="rounded-2xl border border-slate-200 bg-slate-50 p-4">
                     <p className="text-lg font-semibold text-slate-900">{product.name}</p>
-                    <p className="mt-1 text-sm text-slate-500">{(groupsByProduct.get(product.id) ?? []).length} modifier grubu • {(ingredientsByProduct.get(product.id) ?? []).length} malzeme</p>
+                    <p className="mt-1 text-sm text-slate-500">{(groupsByProduct.get(product.id) ?? []).length} modifier grubu - {(ingredientsByProduct.get(product.id) ?? []).length} malzeme</p>
                   </div>
                 ))}
               </div>

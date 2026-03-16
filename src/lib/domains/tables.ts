@@ -1,14 +1,22 @@
 export {
+  assignTableZone,
+  bulkCreateTables,
+  bulkDeleteTablesByIds,
+  bulkDeleteTables,
+  bulkDeleteTableZones,
   createTable,
+  createTableZone,
   createTableRequest,
   deleteTable,
+  deleteTableZone,
   getOrderHistoryByTableId,
   getTableByQr,
   getTableMap,
+  getTableZones,
   listLatestOrdersByTableIds,
   listTableRequests,
   moveTableOrder,
   resolveTableRequest,
+  updateTableStatus,
   updateTableDetails,
 } from "@/lib/data";
-

@@ -20,7 +20,7 @@ export function PendingSubmitButton({
       type="submit"
       disabled={disabled || pending}
       aria-busy={pending}
-      className={className}
+      className={`touch-manipulation ${className ?? ""}`}
     >
       {pending ? pendingLabel ?? "Isleniyor..." : idleLabel}
     </button>

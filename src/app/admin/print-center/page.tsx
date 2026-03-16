@@ -5,6 +5,10 @@ import { getApplicationSettings } from "@/lib/data";
 import { getCurrentCashSession } from "@/lib/domains/finance";
 import { listOrders } from "@/lib/domains/orders";
 
+function orderRef(order: { id: string; check_number?: string | null }) {
+  return order.check_number?.trim() ? order.check_number : order.id.slice(0, 8);
+}
+
 export default async function PrintCenterPage() {
   await requireRole(["admin", "cashier"], "/admin/print-center");
 
@@ -31,7 +35,7 @@ export default async function PrintCenterPage() {
       <section className="grid gap-4 xl:grid-cols-3">
         <SummaryCard label="Yazdirma Modu" value={settings.appPrintingEnabled ? "Uygulama" : "Tarayici"} hint="Mevcut yazdirma davranisi" tone="accent" />
         <SummaryCard label="Test Yontemi" value="PDF" hint="Yazicisiz dogrulama icin uygun" tone="success" />
-        <SummaryCard label="Son Adisyon" value={latestOrder ? `#${latestOrder.id.slice(0, 8)}` : "Yok"} hint={latestOrder ? "Teste hazir" : "Ornek siparis olustur"} />
+        <SummaryCard label="Son Adisyon" value={latestOrder ? `#${orderRef(latestOrder)}` : "Yok"} hint={latestOrder ? "Teste hazir" : "Ornek siparis olustur"} />
       </section>
 
       <WorkflowGuide

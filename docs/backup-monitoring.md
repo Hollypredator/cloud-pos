@@ -20,12 +20,22 @@
   - endpoint: `POST /api/alerts/dispatch`
   - header: `x-alert-secret: $ALERT_DISPATCH_SECRET`
   - interval: 5 dakika
+- Auto session close cron:
+  - endpoint: `POST /api/cashier/session/auto-close`
+  - header: `x-auto-close-secret: $AUTO_SESSION_CLOSE_SECRET`
+  - interval: 5 dakika
+- Perf SLA gate:
+  - komut: `npm run perf:sla`
+  - API hedefi: `avg <= 200ms`, `p95 <= 300ms`
+  - Operasyon hedefi: `avg <= 500ms`, `p95 <= 700ms`
 - Lokal smoke:
   - `npm run ops:smoke`
 - Otomasyon:
   - GitHub Actions workflow: `.github/workflows/ops-monitoring.yml`
   - Health check: `*/5 * * * *`
+  - Perf SLA gate: `*/5 * * * *`
   - Alert dispatch trigger: `*/5 * * * *`
+  - Auto session close trigger: `*/5 * * * *`
 
 ## Incident Escalation
 - `sev-1`: aninda telefon/war-room

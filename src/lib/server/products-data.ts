@@ -3,6 +3,7 @@ import { getSupabaseServerClient } from "@/lib/supabase/server";
 import type {
   Category,
   Ingredient,
+  PrepStation,
   Product,
   ProductIngredient,
   ProductModifierGroup,
@@ -38,6 +39,18 @@ type ProductDeps = {
   demoProductIngredients: ProductIngredient[];
 };
 
+function fireAndForgetProductAudit(
+  deps: ProductDeps,
+  input: {
+    entityType: string;
+    entityId: string;
+    action: string;
+    details?: Record<string, unknown>;
+  },
+) {
+  void deps.logAuditEvent(input).catch(() => {});
+}
+
 export type ProductManagementTab = "catalog" | "menu" | "categories" | "bulk" | "features";
 
 function getProductManagementIncludes(tab: ProductManagementTab) {
@@ -68,6 +81,9 @@ async function getCachedProductManagementRow(input: {
       }
 
       const includes = getProductManagementIncludes(input.tab);
+      const categoriesQuery = input.useLegacySchema
+        ? supabase.from("categories").select("*").order("sort_order", { ascending: true })
+        : supabase.from("categories").select("*").eq("business_id", input.businessId!).order("sort_order", { ascending: true });
 
       const [
         { data: categories },
@@ -77,10 +93,7 @@ async function getCachedProductManagementRow(input: {
         { data: modifierGroups, error: modifierGroupError },
         { data: modifierOptions, error: modifierOptionError },
       ] = await Promise.all([
-        (input.useLegacySchema
-          ? supabase.from("categories").select("id, name, sort_order")
-          : supabase.from("categories").select("id, business_id, name, sort_order").eq("business_id", input.businessId!))
-          .order("sort_order", { ascending: true }),
+        categoriesQuery,
         (input.useLegacySchema
           ? supabase.from("products").select("id, category_id, name, price, stock_count, image_url, description, is_available")
           : supabase
@@ -278,7 +291,7 @@ export async function createProductImpl(
     return { ok: false, error: "Urun olusturulamadi." };
   }
 
-  await deps.logAuditEvent({
+  fireAndForgetProductAudit(deps, {
     entityType: "product",
     entityId: data.id,
     action: "create",
@@ -329,7 +342,7 @@ export async function updateProductImpl(
     return { ok: false, error: error.message };
   }
 
-  await deps.logAuditEvent({
+  fireAndForgetProductAudit(deps, {
     entityType: "product",
     entityId: input.productId,
     action: "update",
@@ -362,20 +375,20 @@ export async function deleteProductImpl(productId: string, deps: ProductDeps) {
     return { ok: false, error: error.message };
   }
 
-  await deps.logAuditEvent({ entityType: "product", entityId: productId, action: "delete" });
+  fireAndForgetProductAudit(deps, { entityType: "product", entityId: productId, action: "delete" });
   deps.revalidateProductManagementCaches();
   return { ok: true };
 }
 
-export async function createCategoryImpl(name: string, sortOrder: number, deps: ProductDeps) {
+export async function createCategoryImpl(name: string, sortOrder: number, prepStation: PrepStation, deps: ProductDeps) {
   const supabase = getSupabaseServerClient();
   if (!supabase) {
     return { ok: false, error: "Demo modda kategori ekleme pasif." };
   }
 
   const scope = await deps.getDefaultBusinessScope();
-  const withBusinessPayload = { business_id: scope.businessId, name, sort_order: sortOrder };
-  const fallbackPayload = { name, sort_order: sortOrder };
+  const withBusinessPayload = { business_id: scope.businessId, name, sort_order: sortOrder, prep_station: prepStation };
+  const fallbackPayload = { name, sort_order: sortOrder, prep_station: prepStation };
 
   let data: { id: string } | null = null;
   let error: { message: string } | null = null;
@@ -387,6 +400,9 @@ export async function createCategoryImpl(name: string, sortOrder: number, deps: 
     data = secondInsert.data as { id: string } | null;
     error = secondInsert.error as { message: string } | null;
   }
+  if (error?.message?.toLowerCase().includes("prep_station")) {
+    return { ok: false, error: "Istasyon yonlendirmesi icin veritabani migrasyonunu calistirin." };
+  }
   if (error) {
     return { ok: false, error: error.message };
   }
@@ -394,15 +410,63 @@ export async function createCategoryImpl(name: string, sortOrder: number, deps: 
     return { ok: false, error: "Kategori olusturulamadi." };
   }
 
-  await deps.logAuditEvent({
+  fireAndForgetProductAudit(deps, {
     entityType: "category",
     entityId: data.id,
     action: "create",
-    details: { name, sortOrder },
+    details: { name, sortOrder, prepStation },
   });
 
   deps.revalidateProductManagementCaches();
   return { ok: true, id: data.id };
+}
+
+export async function updateCategoryPrepStationImpl(
+  input: { categoryId: string; prepStation: PrepStation },
+  deps: ProductDeps,
+) {
+  const supabase = getSupabaseServerClient();
+  if (!supabase) {
+    return { ok: false, error: "Demo modda kategori istasyon guncelleme pasif." };
+  }
+
+  const scope = await deps.getDefaultBusinessScope();
+  const { data: categoryRow, error: categoryError } = await supabase
+    .from("categories")
+    .select("id, business_id")
+    .eq("id", input.categoryId)
+    .maybeSingle();
+  if (categoryError) {
+    return { ok: false, error: categoryError.message };
+  }
+  if (!categoryRow) {
+    return { ok: false, error: "Kategori bulunamadi." };
+  }
+  const categoryBusinessId = (categoryRow as { business_id?: string | null }).business_id ?? null;
+  if (!scope.useLegacySchema && scope.businessId && categoryBusinessId && categoryBusinessId !== scope.businessId) {
+    return { ok: false, error: "Bu kategori icin istasyon guncelleme yetkin yok." };
+  }
+
+  const { error } = await supabase
+    .from("categories")
+    .update({ prep_station: input.prepStation })
+    .eq("id", input.categoryId);
+  if (error?.message?.toLowerCase().includes("prep_station")) {
+    return { ok: false, error: "Istasyon yonlendirmesi icin veritabani migrasyonunu calistirin." };
+  }
+  if (error) {
+    return { ok: false, error: error.message };
+  }
+
+  fireAndForgetProductAudit(deps, {
+    entityType: "category",
+    entityId: input.categoryId,
+    action: "prep_station_update",
+    details: { prepStation: input.prepStation },
+  });
+
+  deps.revalidateProductManagementCaches();
+  return { ok: true };
 }
 
 export async function deleteCategoryImpl(categoryId: string, deps: ProductDeps) {
@@ -430,7 +494,7 @@ export async function deleteCategoryImpl(categoryId: string, deps: ProductDeps) 
     return { ok: false, error: error.message };
   }
 
-  await deps.logAuditEvent({ entityType: "category", entityId: categoryId, action: "delete" });
+  fireAndForgetProductAudit(deps, { entityType: "category", entityId: categoryId, action: "delete" });
   deps.revalidateProductManagementCaches();
   return { ok: true };
 }

@@ -38,6 +38,10 @@ function orderSourceLabel(order: {
   return `${translateUiText("Masa", locale)} ${order.table_number ?? "-"}`;
 }
 
+function orderRef(order: { id: string; check_number?: string | null }) {
+  return order.check_number?.trim() ? order.check_number : order.id.slice(0, 8);
+}
+
 function formatCurrency(value: number) {
   return `${value.toFixed(2)} TL`;
 }
@@ -330,7 +334,7 @@ export default async function OpsPage({
                   <div className="flex flex-col items-start justify-between gap-4 sm:flex-row">
                     <div>
                       <p className="text-xs font-bold uppercase tracking-[0.16em] text-slate-500">{orderSourceLabel(order, locale)}</p>
-                      <h3 className="mt-2 text-xl font-semibold tracking-tight text-slate-900">Siparis #{order.id.slice(0, 8)}</h3>
+                      <h3 className="mt-2 text-xl font-semibold tracking-tight text-slate-900">Siparis #{orderRef(order)}</h3>
                       <p className="mt-2 text-sm text-slate-500">{formatClock(order.created_at, locale)} {translateUiText("olusturuldu", locale)}</p>
                     </div>
                     <div className="w-full text-left sm:w-auto sm:text-right">

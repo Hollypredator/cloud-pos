@@ -6,12 +6,17 @@ type OrderStatus = "pending" | "preparing" | "served" | "paid" | "cancelled" | "
 
 type LatestOrder = {
   id: string;
+  checkNumber?: string | null;
   status: OrderStatus;
   totalPrice: number;
   finalPrice: number;
   createdAt: string;
   items: Array<{ productId: string; name: string; quantity: number }>;
 };
+
+function orderRef(order: Pick<LatestOrder, "id" | "checkNumber">) {
+  return order.checkNumber?.trim() ? order.checkNumber : order.id.slice(0, 8);
+}
 
 function statusLabel(status: OrderStatus) {
   if (status === "pending") return "Siparis alindi";
@@ -110,7 +115,7 @@ export function OrderStatusWidget({
       ) : (
         <div className="mt-2 space-y-2">
           <div className="flex flex-col items-start justify-between gap-2 sm:flex-row sm:items-center">
-            <p className="text-sm font-medium text-slate-900">#{order.id.slice(0, 8)}</p>
+            <p className="text-sm font-medium text-slate-900">#{orderRef(order)}</p>
             <span className={`rounded-full px-2 py-1 text-xs font-semibold uppercase ${statusClass(order.status)}`}>
               {statusLabel(order.status)}
             </span>

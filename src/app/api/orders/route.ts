@@ -109,7 +109,9 @@ export async function POST(request: Request) {
       return json({ ok: false, message: "Masa QR bilgisi dogrulanamadi." }, { status: 400 });
     }
 
-    const businessContext = await getBusinessContextBySlug(body.businessSlug);
+    const businessContext = table
+      ? { businessId: table.business_id, branchId: table.branch_id }
+      : await getBusinessContextBySlug(body.businessSlug);
     const result = await createOrder({
       tableId: table?.id ?? null,
       businessId: table?.business_id ?? businessContext.businessId ?? undefined,

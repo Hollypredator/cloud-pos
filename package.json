@@ -3,13 +3,14 @@
   "version": "0.1.0",
   "private": true,
   "scripts": {
-    "dev": "set NEXT_DIST_DIR=.next-webpack-dev&& next dev --webpack",
+    "dev": "next dev",
     "build": "next build",
     "start": "next start",
     "lint": "eslint src/app/api src/lib/auth.ts src/lib/data.ts src/lib/domains src/lib/platform-owner.ts src/lib/qr-access.ts src/components/order-status-widget.tsx src/components/order-history-widget.tsx src/components/qr-ordering-client.tsx scripts middleware.ts next.config.ts",
     "typecheck": "tsc --noEmit",
     "ops:smoke": "node scripts/ops-smoke-check.mjs",
     "alerts:dispatch": "node scripts/dispatch-ops-alert.mjs",
+    "sessions:auto-close": "node scripts/dispatch-auto-session-close.mjs",
     "phase2:guards": "node scripts/check-write-route-guards.mjs",
     "phase2:isolation": "node scripts/check-tenant-isolation.mjs",
     "phase2:runtime": "node scripts/tenant-runtime-check.mjs",
@@ -18,6 +19,7 @@
     "phase4:reconciliation": "node scripts/phase4-reconciliation-check.mjs",
     "phase5:consistency": "node scripts/phase5-order-status-consistency-check.mjs",
     "phase6:observability": "node scripts/phase6-observability-check.mjs",
+    "perf:sla": "node scripts/perf-sla-check.mjs",
     "monitor:synthetic": "node scripts/synthetic-health-check.mjs",
     "phase7:uat": "node scripts/phase7-uat-gate-check.mjs",
     "phase8:pilot": "node scripts/phase8-pilot-readiness-check.mjs"

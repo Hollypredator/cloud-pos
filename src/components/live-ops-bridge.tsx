@@ -7,31 +7,41 @@ import { getSupabaseAuthBrowserClient } from "@/lib/supabase/auth-browser";
 type LiveOpsBridgeProps = {
   tables: string[];
   enableSound?: boolean;
+  fallbackIntervalMs?: number;
 };
 
 const LIVE_REFRESH_DEBOUNCE_MS = 300;
 const LIVE_REFRESH_MIN_INTERVAL_MS = 1200;
 const OPS_REFRESH_DEBOUNCE_MS = 700;
 const OPS_REFRESH_MIN_INTERVAL_MS = 3500;
+const LIVE_POLL_VISIBLE_MS = 2800;
+const LIVE_POLL_HIDDEN_MS = 9000;
+const OPS_POLL_VISIBLE_MS = 5000;
+const OPS_POLL_HIDDEN_MS = 12000;
 
 function getRefreshProfile(pathname: string | null) {
   if (pathname === "/ops") {
     return {
       debounceMs: OPS_REFRESH_DEBOUNCE_MS,
       minIntervalMs: OPS_REFRESH_MIN_INTERVAL_MS,
+      pollVisibleMs: OPS_POLL_VISIBLE_MS,
+      pollHiddenMs: OPS_POLL_HIDDEN_MS,
     };
   }
 
   return {
     debounceMs: LIVE_REFRESH_DEBOUNCE_MS,
     minIntervalMs: LIVE_REFRESH_MIN_INTERVAL_MS,
+    pollVisibleMs: LIVE_POLL_VISIBLE_MS,
+    pollHiddenMs: LIVE_POLL_HIDDEN_MS,
   };
 }
 
-export function LiveOpsBridge({ tables, enableSound = false }: LiveOpsBridgeProps) {
+export function LiveOpsBridge({ tables, enableSound = false, fallbackIntervalMs }: LiveOpsBridgeProps) {
   const router = useRouter();
   const pathname = usePathname();
   const timeoutRef = useRef<ReturnType<typeof setTimeout> | null>(null);
+  const pollTimerRef = useRef<ReturnType<typeof setTimeout> | null>(null);
   const isRefreshingRef = useRef(false);
   const lastRefreshAtRef = useRef(0);
   const [connected, setConnected] = useState(false);
@@ -63,43 +73,69 @@ export function LiveOpsBridge({ tables, enableSound = false }: LiveOpsBridgeProp
     }, waitMs);
   });
 
+  const schedulePollRefresh = useEffectEvent(() => {
+    const intervalMs = document.hidden
+      ? refreshProfile.pollHiddenMs
+      : (fallbackIntervalMs && fallbackIntervalMs > 0 ? fallbackIntervalMs : refreshProfile.pollVisibleMs);
+
+    if (pollTimerRef.current) {
+      clearTimeout(pollTimerRef.current);
+    }
+
+    pollTimerRef.current = setTimeout(() => {
+      queueRefresh();
+      schedulePollRefresh();
+    }, intervalMs);
+  });
+
   useEffect(() => {
     const supabase = getSupabaseAuthBrowserClient();
-    if (!supabase) {
-      return;
+    let channel: ReturnType<NonNullable<typeof supabase>["channel"]> | null = null;
+
+    if (supabase) {
+      channel = supabase.channel(`ops-live-${channelKey}`);
+      for (const table of tables) {
+        channel.on(
+          "postgres_changes",
+          { event: "*", schema: "public", table },
+          (payload) => {
+            if (typeof document !== "undefined" && document.hidden) {
+              return;
+            }
+            if (pathname === "/ops" && table === "products" && payload.eventType !== "INSERT" && payload.eventType !== "DELETE") {
+              return;
+            }
+            if (enableSound && table === "orders" && payload.eventType === "INSERT") {
+              playAlertTone();
+            }
+            queueRefresh();
+          },
+        );
+      }
+
+      channel.subscribe((status) => {
+        setConnected(status === "SUBSCRIBED");
+      });
+    } else {
+      setConnected(false);
     }
 
-    const channel = supabase.channel(`ops-live-${channelKey}`);
-    for (const table of tables) {
-      channel.on(
-        "postgres_changes",
-        { event: "*", schema: "public", table },
-        (payload) => {
-          if (typeof document !== "undefined" && document.hidden) {
-            return;
-          }
-          if (pathname === "/ops" && table === "products" && payload.eventType !== "INSERT" && payload.eventType !== "DELETE") {
-            return;
-          }
-          if (enableSound && table === "orders" && payload.eventType === "INSERT") {
-            playAlertTone();
-          }
-          queueRefresh();
-        },
-      );
-    }
-
-    channel.subscribe((status) => {
-      setConnected(status === "SUBSCRIBED");
-    });
+    // Bust stale prefetch payloads after route transitions without requiring manual F5.
+    queueRefresh();
+    schedulePollRefresh();
 
     return () => {
       if (timeoutRef.current) {
         clearTimeout(timeoutRef.current);
       }
-      supabase.removeChannel(channel);
+      if (pollTimerRef.current) {
+        clearTimeout(pollTimerRef.current);
+      }
+      if (supabase && channel) {
+        supabase.removeChannel(channel);
+      }
     };
-  }, [channelKey, enableSound, pathname, refreshProfile, tables]);
+  }, [channelKey, enableSound, pathname, refreshProfile, tables, fallbackIntervalMs]);
 
   return (
     <span

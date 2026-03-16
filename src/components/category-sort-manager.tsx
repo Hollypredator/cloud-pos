@@ -7,6 +7,7 @@ type CategoryItem = {
   name: string;
   sort_order: number;
   productCount: number;
+  prep_station?: "kitchen" | "bar" | "dessert" | null;
 };
 
 function reorderItems(items: CategoryItem[], sourceId: string, targetId: string) {
@@ -27,10 +28,12 @@ export function CategorySortManager({
   categories,
   onReorder,
   onDelete,
+  onStationUpdate,
 }: {
   categories: CategoryItem[];
   onReorder: (ids: string[]) => Promise<void>;
   onDelete: (formData: FormData) => void;
+  onStationUpdate: (formData: FormData) => void;
 }) {
   const [draggingId, setDraggingId] = useState<string | null>(null);
   const [isPending, startTransition] = useTransition();
@@ -70,10 +73,24 @@ export function CategorySortManager({
               <div>
                 <p className="text-xl font-semibold text-slate-900">{category.name}</p>
                 <p className="mt-1 text-sm text-slate-500">{category.productCount} urun</p>
+                <p className="mt-1 text-xs font-semibold uppercase tracking-[0.12em] text-slate-400">
+                  {(category.prep_station === "bar" ? "Bar" : category.prep_station === "dessert" ? "Tatli" : "Mutfak")} Istasyonu
+                </p>
               </div>
             </div>
             <span className="rounded-full bg-slate-100 px-3 py-1 text-xs font-semibold text-slate-600">#{category.sort_order}</span>
           </div>
+          <form action={onStationUpdate} className="mt-3 grid gap-2 sm:grid-cols-[1fr_auto]">
+            <input type="hidden" name="categoryId" value={category.id} />
+            <select name="prepStation" defaultValue={category.prep_station ?? "kitchen"} className="rounded-xl border border-slate-200 bg-slate-50 px-3 py-2 text-sm">
+              <option value="kitchen">Mutfak Istasyonu</option>
+              <option value="bar">Bar Istasyonu</option>
+              <option value="dessert">Tatli Istasyonu</option>
+            </select>
+            <button type="submit" className="rounded-xl border border-slate-200 bg-white px-3 py-2 text-sm font-semibold text-slate-800">
+              Istasyonu Kaydet
+            </button>
+          </form>
           <div className="mt-4 flex items-center justify-between gap-3">
             <p className="text-xs font-medium uppercase tracking-[0.14em] text-slate-400">
               {isPending ? "Sira guncelleniyor..." : "Surukle birak ile yer degistir"}

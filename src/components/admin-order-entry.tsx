@@ -43,6 +43,7 @@ export function AdminOrderEntry({
   tables,
   initialTableId,
   lockedTableId,
+  onOrderCreated,
 }: {
   businessSlug: string;
   categories: Category[];
@@ -52,6 +53,7 @@ export function AdminOrderEntry({
   tables: DiningTable[];
   initialTableId?: string;
   lockedTableId?: string;
+  onOrderCreated?: (orderId: string) => void;
 }) {
   const isTableLocked = Boolean(lockedTableId);
   const [channel, setChannel] = useState<OrderChannel>(isTableLocked ? "dine_in" : "dine_in");
@@ -72,6 +74,7 @@ export function AdminOrderEntry({
   const [messageTone, setMessageTone] = useState<"success" | "error" | "info">("info");
   const [activeProductId, setActiveProductId] = useState<string | null>(null);
   const [selectedOptions, setSelectedOptions] = useState<Record<string, string[]>>({});
+  const [productQuantities, setProductQuantities] = useState<Record<string, number>>({});
 
   const tableById = useMemo(() => new Map(tables.map((table) => [table.id, table])), [tables]);
   const productById = useMemo(() => new Map(products.map((product) => [product.id, product])), [products]);
@@ -121,10 +124,23 @@ export function AdminOrderEntry({
     [cart],
   );
 
+  function getConfiguredQuantity(productId: string) {
+    const raw = Number(productQuantities[productId] ?? 1);
+    if (!Number.isFinite(raw)) {
+      return 1;
+    }
+    return Math.max(1, Math.min(99, Math.round(raw)));
+  }
+
+  function setConfiguredQuantity(productId: string, quantity: number) {
+    const safe = Math.max(1, Math.min(99, Math.round(quantity)));
+    setProductQuantities((prev) => ({ ...prev, [productId]: safe }));
+  }
+
   function openModifierPicker(product: Product) {
     const groups = groupsByProduct.get(product.id) ?? [];
     if (groups.length === 0) {
-      addConfiguredProduct(product, []);
+      addConfiguredProductWithQuantity(product, [], getConfiguredQuantity(product.id));
       return;
     }
 
@@ -179,15 +195,16 @@ export function AdminOrderEntry({
     return modifiers;
   }
 
-  function addConfiguredProduct(product: Product, modifiers: OrderItemModifierSelection[]) {
+  function addConfiguredProductWithQuantity(product: Product, modifiers: OrderItemModifierSelection[], quantity: number) {
     const key = buildCartKey(product.id, modifiers);
+    const safeQuantity = Math.max(1, Math.min(99, Math.round(quantity)));
     setCart((prev) => ({
       ...prev,
       [key]: {
         key,
         product,
         modifiers,
-        quantity: (prev[key]?.quantity ?? 0) + 1,
+        quantity: (prev[key]?.quantity ?? 0) + safeQuantity,
       },
     }));
     setActiveProductId(null);
@@ -213,7 +230,7 @@ export function AdminOrderEntry({
       }
     }
 
-    addConfiguredProduct(product, buildModifierSelections(activeProductId));
+    addConfiguredProductWithQuantity(product, buildModifierSelections(activeProductId), getConfiguredQuantity(activeProductId));
   }
 
   function removeProduct(key: string) {
@@ -232,6 +249,39 @@ export function AdminOrderEntry({
         [key]: {
           ...current,
           quantity: current.quantity - 1,
+        },
+      };
+    });
+  }
+
+  function increaseProduct(key: string) {
+    setCart((prev) => {
+      const current = prev[key];
+      if (!current) {
+        return prev;
+      }
+      return {
+        ...prev,
+        [key]: {
+          ...current,
+          quantity: Math.min(99, current.quantity + 1),
+        },
+      };
+    });
+  }
+
+  function setCartEntryQuantity(key: string, quantity: number) {
+    const safe = Math.max(1, Math.min(99, Math.round(quantity)));
+    setCart((prev) => {
+      const current = prev[key];
+      if (!current) {
+        return prev;
+      }
+      return {
+        ...prev,
+        [key]: {
+          ...current,
+          quantity: safe,
         },
       };
     });
@@ -309,6 +359,10 @@ export function AdminOrderEntry({
       setDeliveryNote("");
       setMessageTone("success");
       setMessage(`Siparis acildi: #${String(data.orderId ?? "").slice(0, 8)}`);
+      window.dispatchEvent(new Event("live-ops:update"));
+      if (data.orderId) {
+        onOrderCreated?.(data.orderId);
+      }
     } catch {
       setMessageTone("error");
       setMessage("Baglanti hatasi olustu.");
@@ -406,6 +460,31 @@ export function AdminOrderEntry({
                 <p className="text-xs uppercase tracking-[0.24em] text-slate-500">Modifier Secimi</p>
                 <h2 className="mt-2 text-xl font-semibold text-slate-900">{activeProduct.name}</h2>
               </div>
+              <div className="flex items-center gap-2">
+                <button
+                  type="button"
+                  onClick={() => setConfiguredQuantity(activeProduct.id, getConfiguredQuantity(activeProduct.id) - 1)}
+                  className="inline-flex h-9 w-9 items-center justify-center rounded-lg border border-slate-300 text-sm font-semibold text-slate-700"
+                >
+                  -
+                </button>
+                <input
+                  type="number"
+                  min={1}
+                  max={99}
+                  inputMode="numeric"
+                  value={getConfiguredQuantity(activeProduct.id)}
+                  onChange={(event) => setConfiguredQuantity(activeProduct.id, Number(event.target.value))}
+                  className="h-9 w-16 rounded-lg border border-slate-300 px-2 text-center text-sm"
+                />
+                <button
+                  type="button"
+                  onClick={() => setConfiguredQuantity(activeProduct.id, getConfiguredQuantity(activeProduct.id) + 1)}
+                  className="inline-flex h-9 w-9 items-center justify-center rounded-lg border border-slate-300 text-sm font-semibold text-slate-700"
+                >
+                  +
+                </button>
+              </div>
               <button
                 type="button"
                 onClick={() => {
@@ -475,7 +554,7 @@ export function AdminOrderEntry({
             <article key={category.id} className="rounded-2xl bg-white p-5 shadow-sm">
               <h2 className="text-lg font-semibold text-slate-900">{category.name}</h2>
               <div className="mt-4 grid gap-3 sm:grid-cols-2">
-                {(groupedProducts.get(category.id) ?? []).map((product) => (
+              {(groupedProducts.get(category.id) ?? []).map((product) => (
                   <div key={product.id} className="rounded-xl border border-slate-200 p-4">
                     <div className="flex flex-col items-start justify-between gap-2 sm:flex-row sm:gap-3">
                       <div>
@@ -484,13 +563,38 @@ export function AdminOrderEntry({
                       </div>
                       <span className="text-sm font-semibold text-emerald-700">{Number(product.price).toFixed(2)} TL</span>
                     </div>
-                    <button
-                      type="button"
-                      onClick={() => openModifierPicker(product)}
-                      className="mt-4 w-full rounded-lg bg-slate-900 px-3 py-2 text-sm font-semibold text-white sm:w-auto"
-                    >
-                      {(groupsByProduct.get(product.id) ?? []).length > 0 ? "Seceneklerle Ekle" : "Ekle"}
-                    </button>
+                    <div className="mt-4 flex flex-wrap items-center gap-2">
+                      <button
+                        type="button"
+                        onClick={() => setConfiguredQuantity(product.id, getConfiguredQuantity(product.id) - 1)}
+                        className="inline-flex h-9 w-9 items-center justify-center rounded-lg border border-slate-300 text-sm font-semibold text-slate-700"
+                      >
+                        -
+                      </button>
+                      <input
+                        type="number"
+                        min={1}
+                        max={99}
+                        inputMode="numeric"
+                        value={getConfiguredQuantity(product.id)}
+                        onChange={(event) => setConfiguredQuantity(product.id, Number(event.target.value))}
+                        className="h-9 w-16 rounded-lg border border-slate-300 px-2 text-center text-sm"
+                      />
+                      <button
+                        type="button"
+                        onClick={() => setConfiguredQuantity(product.id, getConfiguredQuantity(product.id) + 1)}
+                        className="inline-flex h-9 w-9 items-center justify-center rounded-lg border border-slate-300 text-sm font-semibold text-slate-700"
+                      >
+                        +
+                      </button>
+                      <button
+                        type="button"
+                        onClick={() => openModifierPicker(product)}
+                        className="rounded-lg bg-slate-900 px-3 py-2 text-sm font-semibold text-white"
+                      >
+                        {(groupsByProduct.get(product.id) ?? []).length > 0 ? "Seceneklerle Ekle" : "Ekle"}
+                      </button>
+                    </div>
                   </div>
                 ))}
               </div>
@@ -530,9 +634,25 @@ export function AdminOrderEntry({
                     <button
                       type="button"
                       onClick={() => removeProduct(entry.key)}
-                      className="w-full rounded-lg border border-slate-300 px-2 py-2 text-xs text-slate-700 sm:w-auto sm:py-1"
+                      className="rounded-lg border border-slate-300 px-3 py-2 text-xs text-slate-700"
                     >
-                      Azalt
+                      -
+                    </button>
+                    <input
+                      type="number"
+                      min={1}
+                      max={99}
+                      inputMode="numeric"
+                      value={entry.quantity}
+                      onChange={(event) => setCartEntryQuantity(entry.key, Number(event.target.value))}
+                      className="h-9 w-16 rounded-lg border border-slate-300 px-2 text-center text-xs"
+                    />
+                    <button
+                      type="button"
+                      onClick={() => increaseProduct(entry.key)}
+                      className="rounded-lg border border-slate-300 px-3 py-2 text-xs text-slate-700"
+                    >
+                      +
                     </button>
                   </div>
                   {entry.modifiers.length > 0 ? (

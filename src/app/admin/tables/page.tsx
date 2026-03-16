@@ -1,28 +1,44 @@
 import Link from "next/link";
+import { LiveOpsBridge } from "@/components/live-ops-bridge";
 import { PendingSubmitButton } from "@/components/pending-submit-button";
 import { BackofficePage, EmptyPanel, NoticeBanner, SummaryCard, WorkflowGuide, WorkspaceTabs } from "@/components/backoffice-ui";
 import { requireRole } from "@/lib/auth";
-import { getMenu, getOrderReceipt } from "@/lib/domains/orders";
-import { getOrderHistoryByTableId, getTableMap, listLatestOrdersByTableIds } from "@/lib/domains/tables";
+import { getMenu } from "@/lib/domains/orders";
+import { getOrderHistoryByTableId, getTableMap, getTableZones, listLatestOrdersByTableIds } from "@/lib/domains/tables";
 import { translateUiText } from "@/lib/i18n";
 import { getCurrentLocale } from "@/lib/i18n-server";
 import { logServerPerf, measureAsync } from "@/lib/perf";
 import { getBusinessScopeContext } from "@/lib/server/app-context";
-import { addTableAction } from "./actions";
+import type { Order } from "@/lib/types";
+import {
+  addTableAction,
+  bulkAddTablesAction,
+  bulkDeleteSelectedTablesAction,
+  bulkDeleteTablesAction,
+  bulkDeleteZonesAction,
+  createZoneAction,
+  deleteZoneAction,
+} from "./actions";
 import { orderTone, tableStatusLabel, tableStatusTone } from "./helpers";
 import { buildQrImage, buildQrTarget } from "./qr-helpers-server";
 import { TableManagementModal } from "./table-management-modal";
 
+function orderRef(order: { id: string; check_number?: string | null }) {
+  return order.check_number?.trim() ? order.check_number : order.id.slice(0, 8);
+}
+
 export default async function AdminTablesPage({
   searchParams,
 }: {
-  searchParams: Promise<{ feedback?: string; tone?: "success" | "error"; table?: string }>;
+  searchParams: Promise<{ feedback?: string; tone?: "success" | "error"; table?: string; zone?: string; delete?: string }>;
 }) {
   const locale = await getCurrentLocale();
   await requireRole(["admin"], "/admin/tables");
-  const { feedback, tone, table: selectedTableId } = await searchParams;
+  const { feedback, tone, table: selectedTableId, zone: zoneFilterParam, delete: deleteParam } = await searchParams;
   const tableMapResult = await measureAsync("table_map", () => getTableMap());
   const { tables, usingDemoData } = tableMapResult.value;
+  const zonesResult = await measureAsync("table_zones", () => getTableZones());
+  const { zones } = zonesResult.value;
   const businessScopeResult = await measureAsync("business_scope", () => getBusinessScopeContext());
   const businessSlug = businessScopeResult.value.activeSlug;
   const menuResult = await measureAsync("menu_for_table_modal_order_entry", () => getMenu(businessSlug));
@@ -44,34 +60,23 @@ export default async function AdminTablesPage({
     ? await measureAsync("selected_table_history", () => getOrderHistoryByTableId(selectedTable.id, 8))
     : null;
   const { orders: selectedTableHistory } = selectedHistoryResult?.value ?? { orders: [] };
-  const selectedReceiptDetailsResult =
-    selectedTable && selectedTableHistory.length > 0
-      ? await measureAsync("selected_table_receipt_details", async () => {
-          const entries = await Promise.all(
-            selectedTableHistory.map(async (order) => {
-              const receipt = await getOrderReceipt(order.id);
-              return [order.id, receipt.order] as const;
-            }),
-          );
-          return Object.fromEntries(entries.filter((entry) => !!entry[1])) as Record<string, NonNullable<(typeof entries)[number][1]>>;
-        })
-      : null;
-  const selectedReceiptDetailsByOrderId = selectedReceiptDetailsResult?.value ?? {};
+  const selectedReceiptDetailsByOrderId: Record<string, Order> = {};
   logServerPerf("/admin/tables", [
     tableMapResult,
+    zonesResult,
     businessScopeResult,
     menuResult,
     targetResult,
     latestOrdersResult,
     ...(selectedHistoryResult ? [selectedHistoryResult] : []),
-    ...(selectedReceiptDetailsResult ? [selectedReceiptDetailsResult] : []),
   ]);
+  const zoneById = new Map(zones.map((zone) => [zone.id, zone]));
   const movableTables = selectedTable
     ? tables
         .filter((table) => table.id !== selectedTable.id && table.status === "empty")
         .map((table) => ({
           id: table.id,
-          label: `${table.name || `Masa ${table.table_number}`} (No ${table.table_number})`,
+          label: `${table.name || `Masa ${table.table_number}`} (No ${table.table_number}${table.zone_id ? ` - ${zoneById.get(table.zone_id)?.name ?? "Atanmamis"}` : " - Atanmamis"})`,
         }))
     : [];
   const occupiedCount = tables.filter((table) => table.status === "occupied").length;
@@ -80,21 +85,72 @@ export default async function AdminTablesPage({
     const order = latestOrderMap.get(table.id);
     return order && order.status !== "paid" && order.status !== "cancelled" && order.status !== "refunded";
   }).length;
+  const zoneCounts = new Map<string, number>();
+  let unassignedCount = 0;
+  for (const table of tables) {
+    if (table.zone_id && zoneById.has(table.zone_id)) {
+      zoneCounts.set(table.zone_id, (zoneCounts.get(table.zone_id) ?? 0) + 1);
+    } else {
+      unassignedCount += 1;
+    }
+  }
+  const zoneFilter = (zoneFilterParam ?? "").trim();
+  const filteredTables =
+    zoneFilter === "__unassigned__"
+      ? tables.filter((table) => !table.zone_id || !zoneById.has(table.zone_id))
+      : zoneFilter
+        ? tables.filter((table) => table.zone_id === zoneFilter)
+        : tables;
+  const selectedZoneLabel =
+    zoneFilter === "__unassigned__"
+      ? "Atanmamis"
+      : zoneFilter
+        ? zoneById.get(zoneFilter)?.name ?? "Secili bolge"
+        : "Tum bolgeler";
+  const deleteMode = deleteParam === "1";
+  const zoneQueryPart = zoneFilter ? `?zone=${encodeURIComponent(zoneFilter)}` : "";
+  const deleteModeHref = zoneFilter
+    ? `/admin/tables?zone=${encodeURIComponent(zoneFilter)}&delete=1`
+    : "/admin/tables?delete=1";
+  const normalModeHref = zoneQueryPart ? `/admin/tables${zoneQueryPart}` : "/admin/tables";
 
   return (
     <BackofficePage
       title={translateUiText("Bolge ve Masa Yonetimi", locale)}
       description={translateUiText("Salon yerlesimi, QR hedefleri ve aktif masa listesi", locale)}
       actions={
-        <form action={addTableAction} className="flex flex-wrap items-center gap-3">
-          <input name="tableNumber" type="number" min={1} required placeholder={translateUiText("Yeni masa no", locale)} className="w-full rounded-2xl border border-slate-200 bg-slate-50 px-4 py-3 text-sm sm:w-36" />
-          <input name="tableName" placeholder={translateUiText("Masa adi", locale)} className="w-full rounded-2xl border border-slate-200 bg-slate-50 px-4 py-3 text-sm sm:w-44" />
-          <PendingSubmitButton
-            idleLabel={translateUiText("Yeni Masa", locale)}
-            pendingLabel="Ekleniyor..."
-            className="w-full rounded-2xl bg-gradient-to-r from-[#ff5a34] to-[#f0b14f] px-5 py-3 text-sm font-semibold text-white sm:w-auto"
-          />
-        </form>
+        <>
+          <LiveOpsBridge tables={["orders", "tables", "payments"]} fallbackIntervalMs={5000} />
+          <form action={addTableAction} className="grid w-full gap-2 rounded-2xl border border-slate-200 bg-white/80 p-2 sm:w-auto sm:grid-cols-[120px_170px_180px_auto] sm:items-center">
+            <input
+              name="tableNumber"
+              type="number"
+              min={1}
+              inputMode="numeric"
+              required
+              placeholder={translateUiText("Yeni masa no", locale)}
+              className="min-h-12 w-full rounded-2xl border border-slate-200 bg-slate-50 px-4 py-3 text-base sm:w-36 sm:text-sm"
+            />
+            <input
+              name="tableName"
+              placeholder={translateUiText("Masa adi", locale)}
+              className="min-h-12 w-full rounded-2xl border border-slate-200 bg-slate-50 px-4 py-3 text-base sm:w-44 sm:text-sm"
+            />
+            <select name="zoneId" defaultValue="__none__" className="min-h-12 w-full rounded-2xl border border-slate-200 bg-slate-50 px-4 py-3 text-base sm:w-44 sm:text-sm">
+              <option value="__none__">Bolge sec (opsiyonel)</option>
+              {zones.map((zone) => (
+                <option key={zone.id} value={zone.id}>
+                  {zone.name}
+                </option>
+              ))}
+            </select>
+            <PendingSubmitButton
+              idleLabel={translateUiText("Yeni Masa", locale)}
+              pendingLabel="Ekleniyor..."
+              className="min-h-12 w-full rounded-2xl bg-gradient-to-r from-[#ff5a34] to-[#f0b14f] px-5 py-3 text-base font-semibold text-white sm:w-auto sm:text-sm"
+            />
+          </form>
+        </>
       }
     >
       {feedback ? (
@@ -159,38 +215,276 @@ export default async function AdminTablesPage({
           <section className="rounded-[24px] border border-slate-200 bg-[#f6f7f9] p-4">
             <div className="flex items-center justify-between gap-3">
               <h2 className="text-xl font-semibold tracking-tight text-slate-900 sm:text-2xl">Bolgeler</h2>
-              <span className="inline-flex h-10 min-w-10 items-center justify-center rounded-full bg-[#ff5a34] px-3 text-sm font-bold text-white">1</span>
+              <span className="inline-flex h-10 min-w-10 items-center justify-center rounded-full bg-[#ff5a34] px-3 text-sm font-bold text-white">{zones.length}</span>
             </div>
 
-            <div className="mt-4 rounded-[22px] border border-[#ff8b73] bg-[#fff8ee] px-4 py-4">
-              <p className="text-xl font-semibold text-slate-900">Ana Salon</p>
-              <p className="mt-1 text-sm text-slate-500">{tables.length} masa</p>
+            <form action={createZoneAction} className="mt-4 grid gap-2 rounded-2xl border border-slate-200 bg-white p-3">
+              <input
+                name="zoneName"
+                required
+                minLength={2}
+                placeholder="Yeni bolge adi"
+                className="min-h-12 rounded-2xl border border-slate-300 px-4 py-3 text-base sm:text-sm"
+              />
+              <PendingSubmitButton
+                idleLabel="Bolge Ac"
+                pendingLabel="Olusturuluyor..."
+                className="min-h-12 w-full rounded-2xl bg-slate-900 px-4 py-3 text-base font-semibold text-white sm:text-sm"
+              />
+            </form>
+
+            <div className="mt-4 space-y-2">
+              <Link
+                href="/admin/tables"
+                className={`block rounded-2xl border px-4 py-4 text-base transition sm:text-sm ${!zoneFilter ? "border-[#ff8b73] bg-[#fff8ee] text-slate-900" : "border-slate-200 bg-white text-slate-600 hover:border-slate-300"}`}
+              >
+                <span className="font-semibold">Tum Bolgeler</span>
+                <span className="mt-1 block text-xs text-slate-500">{tables.length} masa</span>
+              </Link>
+              {zones.map((zone) => (
+                <div key={zone.id} className="flex items-stretch gap-2">
+                  <Link
+                    href={`/admin/tables?zone=${zone.id}`}
+                    className={`block flex-1 rounded-2xl border px-4 py-4 text-base transition sm:text-sm ${zoneFilter === zone.id ? "border-[#ff8b73] bg-[#fff8ee] text-slate-900" : "border-slate-200 bg-white text-slate-600 hover:border-slate-300"}`}
+                  >
+                    <span className="font-semibold">{zone.name}</span>
+                    <span className="mt-1 block text-xs text-slate-500">{zoneCounts.get(zone.id) ?? 0} masa</span>
+                  </Link>
+                  <form action={deleteZoneAction} className="contents">
+                    <input type="hidden" name="zoneId" value={zone.id} />
+                    <PendingSubmitButton
+                      idleLabel="Sil"
+                      pendingLabel="..."
+                      className="min-h-12 rounded-2xl border border-rose-300 bg-white px-4 py-3 text-sm font-semibold text-rose-700"
+                    />
+                  </form>
+                </div>
+              ))}
+              <Link
+                href="/admin/tables?zone=__unassigned__"
+                className={`block rounded-2xl border px-4 py-4 text-base transition sm:text-sm ${zoneFilter === "__unassigned__" ? "border-[#ff8b73] bg-[#fff8ee] text-slate-900" : "border-slate-200 bg-white text-slate-600 hover:border-slate-300"}`}
+              >
+                <span className="font-semibold">Atanmamis</span>
+                <span className="mt-1 block text-xs text-slate-500">{unassignedCount} masa</span>
+              </Link>
             </div>
+
+            {zones.length > 0 ? (
+              <form action={bulkDeleteZonesAction} className="mt-4 grid gap-2 rounded-2xl border border-rose-200 bg-rose-50/70 p-3">
+                <p className="text-xs font-bold uppercase tracking-[0.14em] text-rose-700">Toplu Bolge Silme</p>
+                <select
+                  name="zoneIds"
+                  multiple
+                  required
+                  className="min-h-28 rounded-2xl border border-rose-200 bg-white px-3 py-2 text-sm text-slate-700"
+                >
+                  {zones.map((zone) => (
+                    <option key={zone.id} value={zone.id}>
+                      {zone.name}
+                    </option>
+                  ))}
+                </select>
+                <p className="text-xs text-rose-700">Secilen bolgeler silinir; bu bolgelerdeki masalar otomatik olarak atanmamis olur.</p>
+                <PendingSubmitButton
+                  idleLabel="Secili Bolgeleri Sil"
+                  pendingLabel="Siliniyor..."
+                  className="min-h-12 w-full rounded-2xl border border-rose-300 bg-white px-4 py-3 text-sm font-semibold text-rose-700"
+                />
+              </form>
+            ) : null}
           </section>
 
           <section className="rounded-[24px] border border-slate-200 bg-[#f6f7f9] p-4">
             <div className="flex items-center justify-between gap-3">
               <div>
                 <h2 className="text-xl font-semibold tracking-tight text-slate-900 sm:text-2xl">Masalar</h2>
-                <p className="text-sm text-slate-500">Kartlar sadece hizli operasyonu gosterir; tum yonetim popup icindedir.</p>
+                <p className="text-sm text-slate-500">Secili gorunum: {selectedZoneLabel}</p>
               </div>
-              <span className="inline-flex h-10 min-w-10 items-center justify-center rounded-full bg-[#ff5a34] px-3 text-sm font-bold text-white">
-                {tables.length}
-              </span>
+              <div className="flex items-center gap-2">
+                <span className="inline-flex h-10 min-w-10 items-center justify-center rounded-full bg-[#ff5a34] px-3 text-sm font-bold text-white">
+                  {filteredTables.length}
+                </span>
+                <Link
+                  href={deleteMode ? normalModeHref : deleteModeHref}
+                  className={`inline-flex min-h-10 items-center justify-center rounded-xl border px-3 py-2 text-xs font-semibold ${
+                    deleteMode ? "border-slate-300 bg-white text-slate-700" : "border-rose-300 bg-rose-50 text-rose-700"
+                  }`}
+                >
+                  {deleteMode ? "Silme Modunu Kapat" : "Silme Modu"}
+                </Link>
+              </div>
             </div>
 
-            {tables.length === 0 ? (
+            <form action={bulkAddTablesAction} className="mt-4 grid gap-2 rounded-2xl border border-slate-200 bg-white p-3 lg:grid-cols-[120px_110px_1fr_180px_auto] lg:items-center">
+              <input
+                name="startNumber"
+                type="number"
+                min={1}
+                inputMode="numeric"
+                required
+                placeholder="Baslangic no"
+                className="min-h-12 rounded-2xl border border-slate-300 px-4 py-3 text-base sm:text-sm"
+              />
+              <input
+                name="count"
+                type="number"
+                min={1}
+                max={200}
+                inputMode="numeric"
+                required
+                placeholder="Adet"
+                className="min-h-12 rounded-2xl border border-slate-300 px-4 py-3 text-base sm:text-sm"
+              />
+              <input
+                name="namePrefix"
+                placeholder="Toplu isim on eki (opsiyonel)"
+                className="min-h-12 rounded-2xl border border-slate-300 px-4 py-3 text-base sm:text-sm"
+              />
+              <select name="zoneId" defaultValue="__none__" className="min-h-12 rounded-2xl border border-slate-300 px-4 py-3 text-base sm:text-sm">
+                <option value="__none__">Bolge sec (opsiyonel)</option>
+                {zones.map((zone) => (
+                  <option key={zone.id} value={zone.id}>
+                    {zone.name}
+                  </option>
+                ))}
+              </select>
+              <PendingSubmitButton
+                idleLabel="Toplu Masa Ac"
+                pendingLabel="Olusturuluyor..."
+                className="min-h-12 w-full rounded-2xl bg-gradient-to-r from-[#ff6a3d] to-[#f2b44f] px-4 py-3 text-base font-semibold text-white sm:text-sm lg:w-auto"
+              />
+            </form>
+
+            <form action={bulkDeleteTablesAction} className="mt-3 grid gap-2 rounded-2xl border border-rose-200 bg-rose-50/70 p-3 lg:grid-cols-[120px_120px_180px_minmax(220px,1fr)_auto] lg:items-center">
+              <input
+                name="startNumber"
+                type="number"
+                min={1}
+                inputMode="numeric"
+                required
+                placeholder="Silme baslangic"
+                className="min-h-12 rounded-2xl border border-rose-200 bg-white px-4 py-3 text-base sm:text-sm"
+              />
+              <input
+                name="endNumber"
+                type="number"
+                min={1}
+                inputMode="numeric"
+                required
+                placeholder="Silme bitis"
+                className="min-h-12 rounded-2xl border border-rose-200 bg-white px-4 py-3 text-base sm:text-sm"
+              />
+              <select
+                name="zoneId"
+                defaultValue={zoneFilter === "__unassigned__" ? "__none__" : zoneFilter && zoneById.has(zoneFilter) ? zoneFilter : "__all__"}
+                className="min-h-12 rounded-2xl border border-rose-200 bg-white px-4 py-3 text-base sm:text-sm"
+              >
+                <option value="__all__">Tum bolgeler</option>
+                <option value="__none__">Sadece atanmamis</option>
+                {zones.map((zone) => (
+                  <option key={zone.id} value={zone.id}>
+                    {zone.name}
+                  </option>
+                ))}
+              </select>
+              <label className="flex min-h-12 items-center gap-2 rounded-2xl border border-rose-200 bg-white px-3 py-2 text-sm text-rose-700">
+                <input type="checkbox" name="includeNonEmpty" value="1" className="h-4 w-4 rounded border-rose-300" />
+                Dolu/rezerve masalari da sil
+              </label>
+              <PendingSubmitButton
+                idleLabel="Toplu Masa Sil"
+                pendingLabel="Siliniyor..."
+                className="min-h-12 w-full rounded-2xl border border-rose-300 bg-white px-4 py-3 text-base font-semibold text-rose-700 sm:text-sm lg:w-auto"
+              />
+            </form>
+
+            {filteredTables.length === 0 ? (
               <div className="mt-4">
-                <EmptyPanel title="Masa Yok" description="Ilk masayi olusturunca salon grid'i burada gosterilecek." />
+                <EmptyPanel title="Masa Yok" description={`${selectedZoneLabel} icin masa bulunmuyor. Toplu acilis veya yeni masa ile devam edebilirsiniz.`} />
               </div>
+            ) : deleteMode ? (
+              <form action={bulkDeleteSelectedTablesAction} className="mt-4 space-y-3">
+                <div className="rounded-2xl border border-rose-200 bg-rose-50/80 px-4 py-3 text-sm text-rose-700">
+                  Silme modu acik. Varsayilan olarak sadece bos masalar silinir. Istersen asagidaki onay ile dolu/rezerve
+                  masalari da silebilirsin.
+                </div>
+                <div className="grid gap-4 md:grid-cols-2 xl:grid-cols-3 2xl:grid-cols-4">
+                  {filteredTables.map((table) => {
+                    const latestOrderRaw = latestOrderMap.get(table.id);
+                    const latestOrder =
+                      latestOrderRaw && !["paid", "cancelled", "refunded"].includes(latestOrderRaw.status)
+                        ? latestOrderRaw
+                        : null;
+                    const zoneLabel = table.zone_id ? zoneById.get(table.zone_id)?.name ?? "Atanmamis" : "Atanmamis";
+                    const isEmptyTable = table.status === "empty";
+                    return (
+                      <label
+                        key={table.id}
+                        className={`flex h-full cursor-pointer flex-col rounded-[24px] border bg-white p-4 shadow-[0_10px_20px_rgba(15,23,42,0.04)] ${
+                          isEmptyTable ? "border-rose-200" : "border-amber-200"
+                        }`}
+                      >
+                        <div className="flex items-start justify-between gap-3">
+                          <div>
+                            <p className="text-xl font-semibold tracking-tight text-slate-900 sm:text-2xl">{table.name || `Masa ${table.table_number}`}</p>
+                            <p className="mt-1 text-xs font-semibold uppercase tracking-[0.14em] text-slate-500">Masa {table.table_number}</p>
+                            <p className="mt-1 text-sm text-slate-500">{tableStatusLabel(table.status)}</p>
+                            <p className="mt-1 text-xs font-semibold uppercase tracking-[0.12em] text-slate-400">Bolge: {zoneLabel}</p>
+                          </div>
+                          <span className={`rounded-full px-3 py-1 text-xs font-semibold uppercase ${tableStatusTone(table.status)}`}>{tableStatusLabel(table.status)}</span>
+                        </div>
+
+                        <div className="mt-4 rounded-2xl border border-slate-200 bg-slate-50 px-3 py-3">
+                          {latestOrder ? (
+                            <>
+                              <div className="flex items-center justify-between gap-3">
+                                <div>
+                                  <p className="text-[11px] font-bold uppercase tracking-[0.16em] text-slate-500">Aktif Adisyon</p>
+                                  <p className="mt-1 text-sm font-semibold text-slate-900">#{orderRef(latestOrder)}</p>
+                                </div>
+                                <span className={`rounded-full px-3 py-1 text-xs font-semibold uppercase ${orderTone(latestOrder.status)}`}>{latestOrder.status}</span>
+                              </div>
+                              <div className="mt-3 flex items-center justify-between text-sm text-slate-600">
+                                <span>Tutar</span>
+                                <span className="font-numeric">{Number(latestOrder.final_price ?? latestOrder.total_price ?? 0).toFixed(2)} TL</span>
+                              </div>
+                            </>
+                          ) : (
+                            <p className="text-sm text-slate-500">Bu masa yeni siparis almak icin hazir.</p>
+                          )}
+                        </div>
+
+                        <div className="mt-4 rounded-2xl border border-slate-200 bg-white px-3 py-3 text-sm">
+                          <span className={`inline-flex items-center gap-2 font-semibold ${isEmptyTable ? "text-rose-700" : "text-amber-700"}`}>
+                            <input type="checkbox" name="tableIds" value={table.id} className="h-4 w-4 rounded border-rose-300" />
+                            {isEmptyTable ? "Silmek icin sec" : "Aktif/Rezerve masa (zorla silme icin sec)"}
+                          </span>
+                        </div>
+                      </label>
+                    );
+                  })}
+                </div>
+                <div className="flex flex-col gap-2 sm:flex-row sm:items-center sm:justify-between">
+                  <label className="inline-flex min-h-11 items-center gap-2 rounded-xl border border-rose-200 bg-white px-3 py-2 text-sm text-rose-700">
+                    <input type="checkbox" name="includeNonEmpty" value="1" className="h-4 w-4 rounded border-rose-300" />
+                    Dolu/rezerve masalari da sil
+                  </label>
+                  <PendingSubmitButton
+                    idleLabel="Secili Masalari Sil"
+                    pendingLabel="Siliniyor..."
+                    className="min-h-12 w-full rounded-2xl border border-rose-300 bg-white px-4 py-3 text-base font-semibold text-rose-700 sm:w-auto sm:text-sm"
+                  />
+                </div>
+              </form>
             ) : (
               <div className="mt-4 grid gap-4 md:grid-cols-2 xl:grid-cols-3 2xl:grid-cols-4">
-                {tables.map((table) => {
+                {filteredTables.map((table) => {
                   const latestOrderRaw = latestOrderMap.get(table.id);
                   const latestOrder =
                     latestOrderRaw && !["paid", "cancelled", "refunded"].includes(latestOrderRaw.status)
                       ? latestOrderRaw
                       : null;
+                  const zoneLabel = table.zone_id ? zoneById.get(table.zone_id)?.name ?? "Atanmamis" : "Atanmamis";
                   return (
                     <article
                       key={table.id}
@@ -207,6 +501,7 @@ export default async function AdminTablesPage({
                           <p className="text-xl font-semibold tracking-tight text-slate-900 sm:text-2xl">{table.name || `Masa ${table.table_number}`}</p>
                           <p className="mt-1 text-xs font-semibold uppercase tracking-[0.14em] text-slate-500">Masa {table.table_number}</p>
                           <p className="mt-1 text-sm text-slate-500">{tableStatusLabel(table.status)}</p>
+                          <p className="mt-1 text-xs font-semibold uppercase tracking-[0.12em] text-slate-400">Bolge: {zoneLabel}</p>
                         </div>
                         <span className={`rounded-full px-3 py-1 text-xs font-semibold uppercase ${tableStatusTone(table.status)}`}>{tableStatusLabel(table.status)}</span>
                       </div>
@@ -217,7 +512,7 @@ export default async function AdminTablesPage({
                             <div className="flex items-center justify-between gap-3">
                               <div>
                                 <p className="text-[11px] font-bold uppercase tracking-[0.16em] text-slate-500">Aktif Adisyon</p>
-                                <p className="mt-1 text-sm font-semibold text-slate-900">#{latestOrder.id.slice(0, 8)}</p>
+                                <p className="mt-1 text-sm font-semibold text-slate-900">#{orderRef(latestOrder)}</p>
                               </div>
                               <span className={`rounded-full px-3 py-1 text-xs font-semibold uppercase ${orderTone(latestOrder.status)}`}>{latestOrder.status}</span>
                             </div>
@@ -235,15 +530,15 @@ export default async function AdminTablesPage({
                       </div>
 
                       <div className="mt-4 grid gap-2">
-                        <Link href={`/admin/tables?table=${table.id}`} className="rounded-xl bg-gradient-to-r from-[#ff6a3d] to-[#f2b44f] px-3 py-3 text-center text-sm font-semibold text-white">
+                        <Link href={`/admin/tables?table=${table.id}${zoneFilter ? `&zone=${zoneFilter}` : ""}`} className="inline-flex min-h-11 items-center justify-center rounded-xl bg-gradient-to-r from-[#ff6a3d] to-[#f2b44f] px-3 py-3 text-center text-base font-semibold text-white sm:text-sm">
                           Masa Yonet
                         </Link>
                         {latestOrder ? (
                           <div className="grid gap-2 sm:grid-cols-2">
-                            <Link href={`/cashier?order=${latestOrder.id}`} className="rounded-xl border border-slate-200 bg-slate-50 px-3 py-3 text-center text-sm font-semibold text-slate-700">
+                            <Link href={`/cashier?order=${latestOrder.id}`} className="inline-flex min-h-11 items-center justify-center rounded-xl border border-slate-200 bg-slate-50 px-3 py-3 text-center text-base font-semibold text-slate-700 sm:text-sm">
                               Kasada Ac
                             </Link>
-                            <Link href={`/receipt/${latestOrder.id}`} className="rounded-xl border border-slate-200 bg-slate-50 px-3 py-3 text-center text-sm font-semibold text-slate-700">
+                            <Link href={`/receipt/${latestOrder.id}`} className="inline-flex min-h-11 items-center justify-center rounded-xl border border-slate-200 bg-slate-50 px-3 py-3 text-center text-base font-semibold text-slate-700 sm:text-sm">
                               Adisyon
                             </Link>
                           </div>
@@ -277,6 +572,7 @@ export default async function AdminTablesPage({
           modifierGroups={modifierGroups}
           modifierOptions={modifierOptions}
           allTables={tables}
+          zones={zones}
         />
       ) : null}
     </BackofficePage>

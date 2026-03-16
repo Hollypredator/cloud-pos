@@ -26,14 +26,22 @@ export async function GET(request: Request) {
 
   const { orders } = await getOrderHistoryByTableId(table.id, 8);
 
-  return NextResponse.json({
-    ok: true,
-    orders: orders.map((order) => ({
-      id: order.id,
-      status: order.status,
-      totalPrice: order.total_price,
-      finalPrice: order.final_price ?? order.total_price,
-      createdAt: order.created_at,
-    })),
-  });
+  return NextResponse.json(
+    {
+      ok: true,
+      orders: orders.map((order) => ({
+        id: order.id,
+        checkNumber: order.check_number ?? null,
+        status: order.status,
+        totalPrice: order.total_price,
+        finalPrice: order.final_price ?? order.total_price,
+        createdAt: order.created_at,
+      })),
+    },
+    {
+      headers: {
+        "Cache-Control": "no-store",
+      },
+    },
+  );
 }

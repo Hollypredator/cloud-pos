@@ -3,12 +3,21 @@ import { cache } from "react";
 import { getSupabaseServerClient } from "@/lib/supabase/server";
 import { getSupabaseAuthServerClient } from "@/lib/supabase/auth-server";
 import {
+  assignTableZoneImpl,
+  bulkCreateTablesImpl,
+  bulkDeleteTablesByIdsImpl,
+  bulkDeleteTablesImpl,
+  bulkDeleteTableZonesImpl,
   createTableImpl,
+  createTableZoneImpl,
   deleteTableImpl,
+  deleteTableZoneImpl,
   getOrderHistoryByTableIdImpl,
   getTableMapImpl,
+  getTableZonesImpl,
   listLatestOrdersByTableIdsImpl,
   moveTableOrderImpl,
+  updateTableStatusImpl,
   updateTableDetailsImpl,
 } from "@/lib/server/tables-data";
 import {
@@ -17,6 +26,7 @@ import {
   deleteCategoryImpl,
   deleteProductImpl,
   getProductManagementDataImpl,
+  updateCategoryPrepStationImpl,
   updateProductImpl,
 } from "@/lib/server/products-data";
 import { ALL_BRANCHES_VALUE, DEFAULT_BUSINESS_SLUG, normalizeBusinessSlug } from "@/lib/business";
@@ -61,11 +71,13 @@ import type {
   Order,
   OrderChannel,
   OrderItem,
+  OrderStationStatus,
   OrderStatus,
   PlatformAccessUser,
   PlatformPermission,
   PlatformRole,
   PaymentMethod,
+  PrepStation,
   Product,
   ProductModifierGroup,
   ProductModifierOption,
@@ -248,14 +260,284 @@ async function retryMutation<T>(
   return lastResult ?? { error: { message: "Retry failed" } };
 }
 
+function toMoney(value: number) {
+  if (!Number.isFinite(value)) {
+    return 0;
+  }
+  return Math.round(value * 100) / 100;
+}
+
+const PREP_STATIONS: PrepStation[] = ["kitchen", "bar", "dessert"];
+
+function isValidOrderStationStatus(value: unknown): value is OrderStationStatus {
+  return value === "pending" || value === "preparing" || value === "served";
+}
+
+function parseOrderStationStatuses(raw: unknown) {
+  if (!raw || typeof raw !== "object") {
+    return undefined;
+  }
+  const candidate = raw as Record<string, unknown>;
+  const parsed: Partial<Record<PrepStation, OrderStationStatus>> = {};
+  for (const station of PREP_STATIONS) {
+    const status = candidate[station];
+    if (isValidOrderStationStatus(status)) {
+      parsed[station] = status;
+    }
+  }
+  return Object.keys(parsed).length > 0 ? parsed : undefined;
+}
+
+function normalizeStationLabel(value?: string | null) {
+  return String(value ?? "")
+    .toLocaleLowerCase("tr-TR")
+    .replaceAll("Ä±", "i")
+    .replaceAll("Ã¶", "o")
+    .replaceAll("Ã¼", "u")
+    .replaceAll("ÅŸ", "s")
+    .replaceAll("Ã§", "c")
+    .replaceAll("ÄŸ", "g");
+}
+
+function inferStationByCategoryName(name?: string | null): PrepStation {
+  const normalized = normalizeStationLabel(name);
+  if (
+    normalized.includes("icecek") ||
+    normalized.includes("kahve") ||
+    normalized.includes("bar") ||
+    normalized.includes("kokteyl")
+  ) {
+    return "bar";
+  }
+  if (normalized.includes("tatli") || normalized.includes("firin") || normalized.includes("dessert")) {
+    return "dessert";
+  }
+  return "kitchen";
+}
+
+function inferStationByItemName(name?: string | null): PrepStation {
+  const normalized = normalizeStationLabel(name);
+  if (
+    normalized.includes("viski") ||
+    normalized.includes("whisky") ||
+    normalized.includes("vodka") ||
+    normalized.includes("bira") ||
+    normalized.includes("sarap") ||
+    normalized.includes("kokteyl") ||
+    normalized.includes("tequila") ||
+    normalized.includes("tekila") ||
+    normalized.includes("gin") ||
+    normalized.includes("raki") ||
+    normalized.includes("rom")
+  ) {
+    return "bar";
+  }
+  if (
+    normalized.includes("tatli") ||
+    normalized.includes("sufle") ||
+    normalized.includes("souffle") ||
+    normalized.includes("pasta") ||
+    normalized.includes("cheesecake") ||
+    normalized.includes("brownie") ||
+    normalized.includes("dondurma")
+  ) {
+    return "dessert";
+  }
+  return "kitchen";
+}
+
+function resolveStationForOrderItem(
+  item: OrderItem,
+  productCategoryMap: Map<string, string>,
+  categoryMap: Map<string, { name?: string | null; prep_station?: string | null }>,
+): PrepStation {
+  const categoryId = productCategoryMap.get(item.product_id);
+  const category = categoryId ? categoryMap.get(categoryId) : undefined;
+  if (category?.prep_station === "kitchen" || category?.prep_station === "bar" || category?.prep_station === "dessert") {
+    return category.prep_station;
+  }
+  if (category?.name) {
+    return inferStationByCategoryName(category.name);
+  }
+  return inferStationByItemName(item.name);
+}
+
+function deriveOrderStatusFromStationStatuses(
+  stationStatuses: Partial<Record<PrepStation, OrderStationStatus>>,
+  fallbackStatus: OrderStatus,
+) {
+  const statuses = PREP_STATIONS.map((station) => stationStatuses[station]).filter(
+    (status): status is OrderStationStatus => Boolean(status),
+  );
+  if (statuses.length === 0) {
+    return fallbackStatus;
+  }
+  if (statuses.includes("pending")) {
+    return "pending" as OrderStatus;
+  }
+  if (statuses.includes("preparing")) {
+    return "preparing" as OrderStatus;
+  }
+  return "served" as OrderStatus;
+}
+
+function isMissingStationStatusesColumnError(message?: string | null) {
+  return (message ?? "").toLowerCase().includes("station_statuses");
+}
+
 function resolveOrderSettlementStatus(targetAmount: number, netAmount: number, allowRefunded: boolean) {
-  if (netAmount >= targetAmount) {
+  const roundedTarget = toMoney(targetAmount);
+  const roundedNet = toMoney(netAmount);
+  if (roundedNet >= roundedTarget) {
     return "paid" as OrderStatus;
   }
-  if (allowRefunded && netAmount <= 0) {
+  if (allowRefunded && roundedNet <= 0) {
     return "refunded" as OrderStatus;
   }
   return "served" as OrderStatus;
+}
+
+type SettlementScope = {
+  businessId: string | null;
+  branchId: string | null;
+  useLegacySchema: boolean;
+};
+
+async function buildPendingStationStatusesForItems(items: OrderItem[]) {
+  if (items.length === 0) {
+    return {} as Partial<Record<PrepStation, OrderStationStatus>>;
+  }
+
+  const catalog = await getKitchenCatalogSnapshot();
+  const productCategoryMap = new Map(catalog.products.map((product) => [product.id, product.category_id]));
+  const categoryMap = new Map(
+    catalog.categories.map((category) => [category.id, { name: category.name, prep_station: category.prep_station }]),
+  );
+
+  const stationStatuses: Partial<Record<PrepStation, OrderStationStatus>> = {};
+  for (const item of items) {
+    const station = resolveStationForOrderItem(item, productCategoryMap, categoryMap);
+    stationStatuses[station] = "pending";
+  }
+  return stationStatuses;
+}
+
+async function syncOrderStationStatusesAfterOrderWrite(input: {
+  supabase: TenantSupabaseClient;
+  scope: SettlementScope;
+  orderId: string;
+  items: OrderItem[];
+}) {
+  if (input.items.length === 0) {
+    return;
+  }
+
+  let findQuery = input.supabase
+    .from("orders")
+    .select("id, status, station_statuses")
+    .eq("id", input.orderId);
+  if (!input.scope.useLegacySchema && input.scope.businessId) {
+    findQuery = findQuery.eq("business_id", input.scope.businessId);
+  }
+  if (input.scope.branchId) {
+    findQuery = findQuery.eq("branch_id", input.scope.branchId);
+  }
+
+  const { data: orderRow, error: findError } = await findQuery.maybeSingle();
+  if (findError) {
+    if (isMissingStationStatusesColumnError(findError.message)) {
+      return;
+    }
+    throw new Error(findError.message);
+  }
+  if (!orderRow) {
+    return;
+  }
+
+  const currentStatus = (orderRow.status as OrderStatus | null) ?? "pending";
+  if (currentStatus === "paid" || currentStatus === "cancelled" || currentStatus === "refunded") {
+    return;
+  }
+
+  const incomingStatuses = await buildPendingStationStatusesForItems(input.items);
+  if (Object.keys(incomingStatuses).length === 0) {
+    return;
+  }
+
+  const mergedStatuses: Partial<Record<PrepStation, OrderStationStatus>> = {
+    ...(parseOrderStationStatuses((orderRow as { station_statuses?: unknown }).station_statuses) ?? {}),
+  };
+  for (const station of PREP_STATIONS) {
+    if (incomingStatuses[station]) {
+      mergedStatuses[station] = "pending";
+    }
+  }
+
+  const aggregateStatus = deriveOrderStatusFromStationStatuses(mergedStatuses, currentStatus);
+  let updateQuery = input.supabase
+    .from("orders")
+    .update({
+      station_statuses: mergedStatuses,
+      status: aggregateStatus,
+    })
+    .eq("id", input.orderId);
+  if (!input.scope.useLegacySchema && input.scope.businessId) {
+    updateQuery = updateQuery.eq("business_id", input.scope.businessId);
+  }
+  if (input.scope.branchId) {
+    updateQuery = updateQuery.eq("branch_id", input.scope.branchId);
+  }
+  const { error: updateError } = await updateQuery;
+  if (updateError && !isMissingStationStatusesColumnError(updateError.message)) {
+    throw new Error(updateError.message);
+  }
+}
+
+async function reconcileOrderSettlementState(input: {
+  supabase: TenantSupabaseClient;
+  scope: SettlementScope;
+  orderId: string;
+  targetAmount: number;
+  tableId?: string | null;
+  allowRefunded: boolean;
+}) {
+  const latestSummary = await getOrderPaymentSummaryMap(input.supabase, [input.orderId]);
+  const amountPaid = toMoney(latestSummary.get(input.orderId)?.net ?? 0);
+  const nextStatus = resolveOrderSettlementStatus(input.targetAmount, amountPaid, input.allowRefunded);
+  const remaining = toMoney(Math.max(0, input.targetAmount - amountPaid));
+
+  const orderUpdateResult = await retryMutation(async () => {
+    let orderUpdateQuery = input.supabase.from("orders").update({ status: nextStatus }).eq("id", input.orderId);
+    if (!input.scope.useLegacySchema && input.scope.businessId) {
+      orderUpdateQuery = orderUpdateQuery.eq("business_id", input.scope.businessId);
+    }
+    if (input.scope.branchId) {
+      orderUpdateQuery = orderUpdateQuery.eq("branch_id", input.scope.branchId);
+    }
+    return orderUpdateQuery;
+  });
+  if (orderUpdateResult.error) {
+    return {
+      ok: false as const,
+      error: orderUpdateResult.error.message,
+      status: nextStatus,
+      amountPaid,
+      remaining,
+    };
+  }
+
+  if (nextStatus === "paid" && input.tableId) {
+    await retryMutation(async () =>
+      input.supabase.from("tables").update({ status: "empty" as TableStatus }).eq("id", input.tableId),
+    );
+  }
+
+  return {
+    ok: true as const,
+    status: nextStatus,
+    amountPaid,
+    remaining,
+  };
 }
 
 async function getTenantDataClient(): Promise<TenantSupabaseClient | null> {
@@ -267,9 +549,9 @@ async function getTenantDataClient(): Promise<TenantSupabaseClient | null> {
 }
 
 const demoCategories: Category[] = [
-  { id: "demo-cat-1", name: "Kahveler", sort_order: 1 },
-  { id: "demo-cat-2", name: "Soguk Icecekler", sort_order: 2 },
-  { id: "demo-cat-3", name: "Tatli ve Firin", sort_order: 3 },
+  { id: "demo-cat-1", name: "Kahveler", sort_order: 1, prep_station: "bar" },
+  { id: "demo-cat-2", name: "Soguk Icecekler", sort_order: 2, prep_station: "bar" },
+  { id: "demo-cat-3", name: "Tatli ve Firin", sort_order: 3, prep_station: "dessert" },
 ];
 
 const demoProducts: Product[] = [
@@ -386,6 +668,7 @@ const demoTables: DiningTable[] = [
 const demoOrders: Order[] = [
   {
     id: "demo-order-1",
+    check_number: "001",
     business_id: "demo-business-1",
     branch_id: "demo-branch-1",
     table_id: "demo-table-1",
@@ -421,6 +704,7 @@ const demoOrders: Order[] = [
   },
   {
     id: "demo-order-2",
+    check_number: "002",
     business_id: "demo-business-1",
     branch_id: "demo-branch-1",
     table_id: null,
@@ -465,6 +749,7 @@ const demoOrders: Order[] = [
   },
   {
     id: "demo-order-3",
+    check_number: "003",
     business_id: "demo-business-1",
     branch_id: "demo-branch-1",
     table_id: null,
@@ -497,6 +782,7 @@ const demoOrders: Order[] = [
   },
   {
     id: "demo-order-4",
+    check_number: "004",
     business_id: "demo-business-1",
     branch_id: "demo-branch-1",
     table_id: "demo-table-4",
@@ -1611,6 +1897,16 @@ async function logAuditEvent(input: {
   });
 }
 
+function fireAndForgetAuditEvent(input: {
+  actorId?: string | null;
+  entityType: string;
+  entityId: string;
+  action: string;
+  details?: Record<string, unknown>;
+}) {
+  void logAuditEvent(input).catch(() => {});
+}
+
 export async function getMenu(businessSlug?: string) {
   const supabase = getSupabaseServerClient();
   if (!supabase) {
@@ -1641,15 +1937,13 @@ export async function getMenu(businessSlug?: string) {
         return null;
       }
 
+      const categoriesQuery = useLegacySchema
+        ? innerSupabase.from("categories").select("*").order("sort_order", { ascending: true })
+        : innerSupabase.from("categories").select("*").eq("business_id", business!.id).order("sort_order", { ascending: true });
+
       const [categoryResult, productResult] = await withQueryTimeout(
         Promise.all([
-          useLegacySchema
-            ? innerSupabase.from("categories").select("id, name, sort_order").order("sort_order", { ascending: true })
-            : innerSupabase
-                .from("categories")
-                .select("id, business_id, name, sort_order")
-                .eq("business_id", business!.id)
-                .order("sort_order", { ascending: true }),
+          categoriesQuery,
           useLegacySchema
             ? innerSupabase
                 .from("products")
@@ -2014,12 +2308,13 @@ export async function resolveTableRequest(requestId: string) {
     return { ok: true, noop: true };
   }
 
-  await logAuditEvent({
+  fireAndForgetAuditEvent({
     entityType: "table_request",
     entityId: requestId,
     action: "resolve",
   });
-  revalidateOperationsCaches();
+  revalidateTag("table-requests", "max");
+  revalidateTag("dashboard-snapshot", "max");
   return { ok: true };
 }
 
@@ -2131,7 +2426,13 @@ export async function createOrder(input: {
     if (input.tableId) {
       await supabase.from("tables").update({ status: "occupied" as TableStatus }).eq("id", input.tableId);
     }
-    await logAuditEvent({
+    await syncOrderStationStatusesAfterOrderWrite({
+      supabase,
+      scope,
+      orderId: rpcOrder.order_id,
+      items: input.items,
+    }).catch(() => {});
+    fireAndForgetAuditEvent({
       entityType: "order",
       entityId: rpcOrder.order_id,
       action: rpcOrder.created_new ? "create" : "update",
@@ -2144,6 +2445,7 @@ export async function createOrder(input: {
         courierId,
       },
     });
+    revalidateOperationsCaches();
     return { ok: true, id: rpcOrder.order_id, usingDemoData: false };
   }
 
@@ -2312,7 +2614,13 @@ export async function createOrder(input: {
   if (input.tableId) {
     await supabase.from("tables").update({ status: "occupied" as TableStatus }).eq("id", input.tableId);
   }
-  await logAuditEvent({
+  await syncOrderStationStatusesAfterOrderWrite({
+    supabase,
+    scope,
+    orderId: persistedOrderId,
+    items: input.items,
+  }).catch(() => {});
+  fireAndForgetAuditEvent({
     entityType: "order",
     entityId: persistedOrderId,
     action: createdNewOrder ? "create" : "update",
@@ -2325,13 +2633,16 @@ export async function createOrder(input: {
       courierId,
     },
   });
+  revalidateOperationsCaches();
   return { ok: true, id: persistedOrderId, usingDemoData: false };
 }
 
 type OrderRow = {
   id: string;
+  check_number?: string | null;
   branch_id?: string | null;
   table_id: string | null;
+  station_statuses?: unknown;
   total_price: number;
   discount_amount?: number;
   service_fee?: number;
@@ -2382,13 +2693,13 @@ async function getOrderPaymentSummaryMap(supabase: TenantSupabaseClient | null, 
   const map = new Map<string, { paid: number; refunds: number; net: number; count: number }>();
   for (const row of (data ?? []) as Array<{ order_id: string; payment_type: "sale" | "refund"; amount: number }>) {
     const current = map.get(row.order_id) ?? { paid: 0, refunds: 0, net: 0, count: 0 };
-    const amount = Number(row.amount);
+    const amount = toMoney(Number(row.amount));
     if (row.payment_type === "refund") {
-      current.refunds += amount;
-      current.net -= amount;
+      current.refunds = toMoney(current.refunds + amount);
+      current.net = toMoney(current.net - amount);
     } else {
-      current.paid += amount;
-      current.net += amount;
+      current.paid = toMoney(current.paid + amount);
+      current.net = toMoney(current.net + amount);
       current.count += 1;
     }
     map.set(row.order_id, current);
@@ -2519,14 +2830,22 @@ function applyPaymentSummaryToOrders(
 ) {
   return orders.map((order) => {
     const summary = paymentSummary.get(order.id);
-    const amountPaid = summary?.net ?? 0;
-    const finalPrice = Number(order.final_price ?? order.total_price);
+    const amountPaid = toMoney(summary?.net ?? 0);
+    const finalPrice = toMoney(Number(order.final_price ?? order.total_price));
+    const remaining = toMoney(Math.max(0, finalPrice - amountPaid));
+    const effectiveStatus =
+      order.status === "cancelled" || order.status === "refunded"
+        ? order.status
+        : amountPaid >= finalPrice
+          ? ("paid" as OrderStatus)
+          : order.status;
 
     return {
       ...order,
       amount_paid: amountPaid,
-      remaining_balance: Math.max(0, finalPrice - amountPaid),
+      remaining_balance: remaining,
       payment_count: summary?.count ?? 0,
+      status: effectiveStatus,
     };
   });
 }
@@ -2576,6 +2895,7 @@ function mapDetailedOrders(
 ) {
   return orders.map((row) => ({
     id: row.id,
+    check_number: row.check_number ?? null,
     branch_id: row.branch_id ?? null,
     table_id: row.table_id,
     table_number: getTableNumber(row.tables),
@@ -2588,8 +2908,10 @@ function mapDetailedOrders(
     courier_name: row.courier_name ?? null,
     courier_phone: row.courier_phone ?? null,
     fulfillment_status: row.fulfillment_status ?? "not_applicable",
-    amount_paid: paymentSummary.get(row.id)?.net ?? 0,
-    remaining_balance: Math.max(0, Number(row.final_price ?? row.total_price) - (paymentSummary.get(row.id)?.net ?? 0)),
+    amount_paid: toMoney(paymentSummary.get(row.id)?.net ?? 0),
+    remaining_balance: toMoney(
+      Math.max(0, Number(row.final_price ?? row.total_price) - (paymentSummary.get(row.id)?.net ?? 0)),
+    ),
     payment_count: paymentSummary.get(row.id)?.count ?? 0,
     items: groupedItems.get(row.id) ?? [],
     total_price: Number(row.total_price),
@@ -2597,6 +2919,7 @@ function mapDetailedOrders(
     service_fee: Number(row.service_fee ?? 0),
     final_price: Number(row.final_price ?? row.total_price),
     status: row.status,
+    station_statuses: parseOrderStationStatuses(row.station_statuses),
     created_at: row.created_at,
   })) as Order[];
 }
@@ -2623,7 +2946,7 @@ async function getCachedOrderSummaryRows(input: {
 
       let ordersQuery = supabase
         .from("orders")
-        .select("id, branch_id, table_id, total_price, discount_amount, service_fee, final_price, channel, customer_name, customer_phone, delivery_address, delivery_note, courier_id, courier_name, courier_phone, fulfillment_status, status, created_at, tables(table_number)")
+        .select("id, check_number, branch_id, table_id, station_statuses, total_price, discount_amount, service_fee, final_price, channel, customer_name, customer_phone, delivery_address, delivery_note, courier_id, courier_name, courier_phone, fulfillment_status, status, created_at, tables(table_number)")
         .in("status", input.statuses)
         .order("created_at", { ascending: input.ascending });
       if (input.channels && input.channels.length > 0) {
@@ -2658,6 +2981,7 @@ async function getCachedOrderSummaryRows(input: {
       return {
         orders: orders.map((row) => ({
           id: row.id,
+          check_number: row.check_number ?? null,
           branch_id: row.branch_id ?? null,
           table_id: row.table_id,
           table_number: getTableNumber(row.tables),
@@ -2670,8 +2994,10 @@ async function getCachedOrderSummaryRows(input: {
           courier_name: row.courier_name ?? null,
           courier_phone: row.courier_phone ?? null,
           fulfillment_status: row.fulfillment_status ?? "not_applicable",
-          amount_paid: paymentSummary.get(row.id)?.net ?? 0,
-          remaining_balance: Math.max(0, Number(row.final_price ?? row.total_price) - (paymentSummary.get(row.id)?.net ?? 0)),
+          amount_paid: toMoney(paymentSummary.get(row.id)?.net ?? 0),
+          remaining_balance: toMoney(
+            Math.max(0, Number(row.final_price ?? row.total_price) - (paymentSummary.get(row.id)?.net ?? 0)),
+          ),
           payment_count: paymentSummary.get(row.id)?.count ?? 0,
           items: [],
           total_price: Number(row.total_price),
@@ -2679,13 +3005,14 @@ async function getCachedOrderSummaryRows(input: {
           service_fee: Number(row.service_fee ?? 0),
           final_price: Number(row.final_price ?? row.total_price),
           status: row.status,
+          station_statuses: parseOrderStationStatuses(row.station_statuses),
           created_at: row.created_at,
         })) as Order[],
         hasError: false,
       };
     },
     [cacheKey],
-    { revalidate: 10, tags: ["orders-summary"] },
+    { revalidate: 2, tags: ["orders-summary"] },
   );
 
   return reader();
@@ -2704,7 +3031,7 @@ async function getCachedOrderReceiptRow(input: {
 
       const { data, error } = await supabase
         .from("orders")
-        .select("id, table_id, total_price, discount_amount, service_fee, final_price, channel, customer_name, customer_phone, delivery_address, delivery_note, courier_id, courier_name, courier_phone, fulfillment_status, status, created_at, tables(table_number)")
+        .select("id, check_number, table_id, station_statuses, total_price, discount_amount, service_fee, final_price, channel, customer_name, customer_phone, delivery_address, delivery_note, courier_id, courier_name, courier_phone, fulfillment_status, status, created_at, tables(table_number)")
         .eq("id", input.orderId)
         .maybeSingle();
 
@@ -2752,6 +3079,7 @@ async function getCachedOrderReceiptRow(input: {
         hasError: false as const,
         order: {
           id: data.id as string,
+          check_number: (data.check_number as string | null) ?? null,
           table_id: (data.table_id as string | null) ?? null,
           table_number: tableNumber,
           channel: (data.channel as OrderChannel | null) ?? "dine_in",
@@ -2763,8 +3091,10 @@ async function getCachedOrderReceiptRow(input: {
           courier_name: (data.courier_name as string | null) ?? null,
           courier_phone: (data.courier_phone as string | null) ?? null,
           fulfillment_status: (data.fulfillment_status as FulfillmentStatus | null) ?? "not_applicable",
-          amount_paid: paymentSummary.get(input.orderId)?.net ?? 0,
-          remaining_balance: Math.max(0, Number(data.final_price ?? data.total_price) - (paymentSummary.get(input.orderId)?.net ?? 0)),
+          amount_paid: toMoney(paymentSummary.get(input.orderId)?.net ?? 0),
+          remaining_balance: toMoney(
+            Math.max(0, Number(data.final_price ?? data.total_price) - (paymentSummary.get(input.orderId)?.net ?? 0)),
+          ),
           payment_count: paymentSummary.get(input.orderId)?.count ?? 0,
           items: ((itemRows ?? []) as Array<{
             product_id: string | null;
@@ -2785,12 +3115,13 @@ async function getCachedOrderReceiptRow(input: {
           service_fee: Number(data.service_fee ?? 0),
           final_price: Number(data.final_price ?? data.total_price),
           status: data.status as OrderStatus,
+          station_statuses: parseOrderStationStatuses((data as { station_statuses?: unknown }).station_statuses),
           created_at: data.created_at as string,
         } as Order,
       };
     },
     [cacheKey],
-    { revalidate: 8, tags: ["order-receipt", "orders-summary"] },
+    { revalidate: 2, tags: ["order-receipt", "orders-summary"] },
   );
 
   return reader();
@@ -2812,7 +3143,7 @@ async function getCachedKitchenOrdersSnapshot(input: {
 
       let ordersQuery = supabase
         .from("orders")
-        .select("id, branch_id, table_id, channel, customer_name, delivery_address, fulfillment_status, status, created_at, tables(table_number)")
+        .select("id, check_number, branch_id, table_id, station_statuses, total_price, discount_amount, service_fee, final_price, channel, customer_name, delivery_address, fulfillment_status, status, created_at, tables(table_number)")
         .in("status", ["pending", "preparing", "served"])
         .order("created_at", { ascending: true });
 
@@ -2857,6 +3188,7 @@ async function getCachedKitchenOrdersSnapshot(input: {
       return {
         orders: orders.map((row) => ({
           id: row.id,
+          check_number: row.check_number ?? null,
           branch_id: row.branch_id ?? null,
           table_id: row.table_id,
           table_number: getTableNumber(row.tables),
@@ -2873,18 +3205,19 @@ async function getCachedKitchenOrdersSnapshot(input: {
           remaining_balance: 0,
           payment_count: 0,
           items: groupedItems.get(row.id) ?? [],
-          total_price: 0,
-          discount_amount: 0,
-          service_fee: 0,
-          final_price: 0,
+          total_price: Number(row.total_price),
+          discount_amount: Number(row.discount_amount ?? 0),
+          service_fee: Number(row.service_fee ?? 0),
+          final_price: Number(row.final_price ?? row.total_price),
           status: row.status,
+          station_statuses: parseOrderStationStatuses(row.station_statuses),
           created_at: row.created_at,
         })) as Order[],
         hasError: false,
       };
     },
     [cacheKey],
-    { revalidate: 8, tags: ["kitchen-orders", "orders-summary"] },
+    { revalidate: 2, tags: ["kitchen-orders", "orders-summary"] },
   );
 
   return reader();
@@ -2934,7 +3267,7 @@ export async function listOrders(
 
   let ordersQuery = supabase
     .from("orders")
-    .select("id, branch_id, table_id, total_price, discount_amount, service_fee, final_price, channel, customer_name, customer_phone, delivery_address, delivery_note, courier_id, courier_name, courier_phone, fulfillment_status, status, created_at, tables(table_number)")
+    .select("id, check_number, branch_id, table_id, station_statuses, total_price, discount_amount, service_fee, final_price, channel, customer_name, customer_phone, delivery_address, delivery_note, courier_id, courier_name, courier_phone, fulfillment_status, status, created_at, tables(table_number)")
     .in("status", statuses)
     .order("created_at", { ascending });
   if (channels && channels.length > 0) {
@@ -2973,6 +3306,7 @@ export async function listOrders(
     return {
       orders: orders.map((row) => ({
         id: row.id,
+        check_number: row.check_number ?? null,
         branch_id: row.branch_id ?? null,
         table_id: row.table_id,
         table_number: getTableNumber(row.tables),
@@ -2985,8 +3319,10 @@ export async function listOrders(
         courier_name: row.courier_name ?? null,
         courier_phone: row.courier_phone ?? null,
         fulfillment_status: row.fulfillment_status ?? "not_applicable",
-        amount_paid: paymentSummary.get(row.id)?.net ?? 0,
-        remaining_balance: Math.max(0, Number(row.final_price ?? row.total_price) - (paymentSummary.get(row.id)?.net ?? 0)),
+        amount_paid: toMoney(paymentSummary.get(row.id)?.net ?? 0),
+        remaining_balance: toMoney(
+          Math.max(0, Number(row.final_price ?? row.total_price) - (paymentSummary.get(row.id)?.net ?? 0)),
+        ),
         payment_count: paymentSummary.get(row.id)?.count ?? 0,
         items: [],
         total_price: Number(row.total_price),
@@ -2994,6 +3330,7 @@ export async function listOrders(
         service_fee: Number(row.service_fee ?? 0),
         final_price: Number(row.final_price ?? row.total_price),
         status: row.status,
+        station_statuses: parseOrderStationStatuses(row.station_statuses),
         created_at: row.created_at,
       })),
       usingDemoData: false,
@@ -3011,7 +3348,7 @@ export async function listOrders(
   if (itemError) {
     let fallbackQuery = supabase
         .from("orders")
-        .select("id, table_id, items, total_price, discount_amount, service_fee, final_price, channel, customer_name, customer_phone, delivery_address, delivery_note, courier_id, courier_name, courier_phone, fulfillment_status, status, created_at, tables(table_number)")
+        .select("id, check_number, table_id, station_statuses, items, total_price, discount_amount, service_fee, final_price, channel, customer_name, customer_phone, delivery_address, delivery_note, courier_id, courier_name, courier_phone, fulfillment_status, status, created_at, tables(table_number)")
         .in("status", statuses)
         .order("created_at", { ascending: true });
     if (channels && channels.length > 0) {
@@ -3037,6 +3374,7 @@ export async function listOrders(
     return {
       orders: fallback.map((row) => ({
         id: row.id,
+        check_number: row.check_number ?? null,
         branch_id: row.branch_id ?? null,
         table_id: row.table_id,
         table_number: getTableNumber(row.tables),
@@ -3049,8 +3387,10 @@ export async function listOrders(
         courier_name: row.courier_name ?? null,
         courier_phone: row.courier_phone ?? null,
         fulfillment_status: row.fulfillment_status ?? "not_applicable",
-        amount_paid: paymentSummary.get(row.id)?.net ?? 0,
-        remaining_balance: Math.max(0, Number(row.final_price ?? row.total_price) - (paymentSummary.get(row.id)?.net ?? 0)),
+        amount_paid: toMoney(paymentSummary.get(row.id)?.net ?? 0),
+        remaining_balance: toMoney(
+          Math.max(0, Number(row.final_price ?? row.total_price) - (paymentSummary.get(row.id)?.net ?? 0)),
+        ),
         payment_count: paymentSummary.get(row.id)?.count ?? 0,
         items: row.items ?? [],
         total_price: row.total_price,
@@ -3058,6 +3398,7 @@ export async function listOrders(
         service_fee: Number(row.service_fee ?? 0),
         final_price: Number(row.final_price ?? row.total_price),
         status: row.status,
+        station_statuses: parseOrderStationStatuses((row as { station_statuses?: unknown }).station_statuses),
         created_at: row.created_at,
       })),
       usingDemoData: false,
@@ -3076,6 +3417,17 @@ export async function listOrders(
 }
 
 export async function getKitchenOrdersSnapshot() {
+  async function normalizeKitchenOrders(orders: Order[]) {
+    if (orders.length === 0) {
+      return orders;
+    }
+    const supabase = await getTenantDataClient();
+    const paymentSummary = await getOrderPaymentSummaryMap(supabase, orders.map((order) => order.id));
+    return applyPaymentSummaryToOrders(orders, paymentSummary).filter(
+      (order) => order.status === "pending" || order.status === "preparing" || order.status === "served",
+    );
+  }
+
   const supabase = getSupabaseServerClient();
   if (!supabase) {
     return {
@@ -3097,12 +3449,16 @@ export async function getKitchenOrdersSnapshot() {
 
   if (cached && !cached.hasError) {
     return {
-      orders: cached.orders,
+      orders: await normalizeKitchenOrders(cached.orders),
       usingDemoData: false,
     };
   }
 
-  return listOrders(["pending", "preparing", "served"], { includePaymentSummary: false });
+  const fallback = await listOrders(["pending", "preparing", "served"], { includePaymentSummary: false });
+  return {
+    orders: await normalizeKitchenOrders(fallback.orders),
+    usingDemoData: fallback.usingDemoData,
+  };
 }
 
 export async function getCashierPageSnapshot(selectedOrderId?: string) {
@@ -3126,10 +3482,37 @@ export async function getCashierPageSnapshot(selectedOrderId?: string) {
 
   const orderIds = [...servedResult.orders, ...paidResult.orders].map((order) => order.id);
   const paymentSummary = await getOrderPaymentSummaryMap(supabase, orderIds);
+  const servedWithPayments = applyPaymentSummaryToOrders(servedResult.orders, paymentSummary);
+  const paidWithPayments = applyPaymentSummaryToOrders(paidResult.orders, paymentSummary).map((order) =>
+    order.status === "cancelled" || order.status === "refunded"
+      ? order
+      : { ...order, status: "paid" as OrderStatus },
+  );
+  const autoSettledFromOpen = servedWithPayments
+    .filter(
+      (order) =>
+        Number(order.remaining_balance ?? Number(order.final_price ?? order.total_price)) <= 0.009 &&
+        order.status !== "cancelled" &&
+        order.status !== "refunded",
+    )
+    .map((order) => ({ ...order, status: "paid" as OrderStatus }));
+  const servedOrders = servedWithPayments.filter(
+    (order) =>
+      Number(order.remaining_balance ?? Number(order.final_price ?? order.total_price)) > 0.009 &&
+      order.status !== "paid" &&
+      order.status !== "cancelled" &&
+      order.status !== "refunded",
+  );
+  const paidOrderMap = new Map<string, Order>(
+    [...paidWithPayments, ...autoSettledFromOpen].map((order) => [order.id, order]),
+  );
+  const normalizedPaidOrders = Array.from(paidOrderMap.values())
+    .sort((a, b) => b.created_at.localeCompare(a.created_at))
+    .slice(0, 8);
 
   return {
-    servedOrders: applyPaymentSummaryToOrders(servedResult.orders, paymentSummary),
-    paidOrders: applyPaymentSummaryToOrders(paidResult.orders, paymentSummary),
+    servedOrders,
+    paidOrders: normalizedPaidOrders,
     selectedOrder: selectedOrderResult.order,
     usingDemoData: servedResult.usingDemoData || paidResult.usingDemoData || selectedOrderResult.usingDemoData,
   };
@@ -3163,18 +3546,94 @@ export async function getKitchenPageSnapshot() {
   if (ordersResult.orders.length === 0) {
     return {
       orders: ordersResult.orders,
-      categories: [] as Array<Pick<Category, "id" | "name">>,
+      categories: [] as Array<Pick<Category, "id" | "name" | "prep_station">>,
       products: [] as Array<Pick<Product, "id" | "category_id">>,
       usingDemoData: ordersResult.usingDemoData,
     };
   }
 
   const catalogResult = await getKitchenCatalogSnapshot();
+  const knownProductIds = new Set(catalogResult.products.map((product) => product.id));
+  const orderedProductIds = Array.from(
+    new Set(
+      ordersResult.orders
+        .flatMap((order) => order.items.map((item) => item.product_id))
+        .filter((productId): productId is string => Boolean(productId) && productId !== "unknown-product"),
+    ),
+  );
+  const missingProductIds = orderedProductIds.filter((productId) => !knownProductIds.has(productId));
+
+  if (missingProductIds.length === 0) {
+    return {
+      orders: ordersResult.orders,
+      categories: catalogResult.categories,
+      products: catalogResult.products,
+      usingDemoData: ordersResult.usingDemoData || catalogResult.usingDemoData,
+    };
+  }
+
+  const supabase = getSupabaseServerClient();
+  if (!supabase) {
+    return {
+      orders: ordersResult.orders,
+      categories: catalogResult.categories,
+      products: catalogResult.products,
+      usingDemoData: ordersResult.usingDemoData || catalogResult.usingDemoData,
+    };
+  }
+
+  const { data: missingProducts, error: missingProductsError } = await supabase
+    .from("products")
+    .select("id, category_id")
+    .in("id", missingProductIds);
+
+  if (missingProductsError) {
+    return {
+      orders: ordersResult.orders,
+      categories: catalogResult.categories,
+      products: catalogResult.products,
+      usingDemoData: ordersResult.usingDemoData || catalogResult.usingDemoData,
+    };
+  }
+
+  const hydratedProducts = [
+    ...catalogResult.products,
+    ...((missingProducts ?? []) as Array<Pick<Product, "id" | "category_id">>).filter((product) => !knownProductIds.has(product.id)),
+  ];
+  const knownCategoryIds = new Set(catalogResult.categories.map((category) => category.id));
+  const missingCategoryIds = Array.from(
+    new Set(
+      ((missingProducts ?? []) as Array<Pick<Product, "id" | "category_id">>)
+        .map((product) => product.category_id)
+        .filter((categoryId): categoryId is string => Boolean(categoryId) && !knownCategoryIds.has(categoryId)),
+    ),
+  );
+
+  if (missingCategoryIds.length === 0) {
+    return {
+      orders: ordersResult.orders,
+      categories: catalogResult.categories,
+      products: hydratedProducts,
+      usingDemoData: ordersResult.usingDemoData || catalogResult.usingDemoData,
+    };
+  }
+
+  const { data: missingCategories, error: missingCategoriesError } = await supabase
+    .from("categories")
+    .select("id, name, prep_station")
+    .in("id", missingCategoryIds);
 
   return {
     orders: ordersResult.orders,
-    categories: catalogResult.categories,
-    products: catalogResult.products,
+    categories: missingCategoriesError
+      ? catalogResult.categories
+      : [
+          ...catalogResult.categories,
+          ...((missingCategories ?? []) as Array<Pick<Category, "id" | "name" | "prep_station">>).filter(
+            (category) => !knownCategoryIds.has(category.id),
+          ),
+        ],
+    products: hydratedProducts,
     usingDemoData: ordersResult.usingDemoData || catalogResult.usingDemoData,
   };
 }
@@ -3227,7 +3686,7 @@ export async function getOrderReceipt(orderId: string) {
 
   const { data, error } = await supabase
     .from("orders")
-    .select("id, table_id, total_price, discount_amount, service_fee, final_price, channel, customer_name, customer_phone, delivery_address, delivery_note, courier_id, courier_name, courier_phone, fulfillment_status, status, created_at, tables(table_number)")
+    .select("id, check_number, table_id, station_statuses, total_price, discount_amount, service_fee, final_price, channel, customer_name, customer_phone, delivery_address, delivery_note, courier_id, courier_name, courier_phone, fulfillment_status, status, created_at, tables(table_number)")
     .eq("id", orderId)
     .maybeSingle();
 
@@ -3273,6 +3732,7 @@ export async function getOrderReceipt(orderId: string) {
   return {
     order: {
       id: data.id as string,
+      check_number: (data.check_number as string | null) ?? null,
       table_id: (data.table_id as string | null) ?? null,
       table_number: tableNumber,
       channel: (data.channel as OrderChannel | null) ?? "dine_in",
@@ -3306,6 +3766,7 @@ export async function getOrderReceipt(orderId: string) {
       service_fee: Number(data.service_fee ?? 0),
       final_price: Number(data.final_price ?? data.total_price),
       status: data.status as OrderStatus,
+      station_statuses: parseOrderStationStatuses((data as { station_statuses?: unknown }).station_statuses),
       created_at: data.created_at as string,
     } as Order,
     usingDemoData: false,
@@ -3325,7 +3786,7 @@ function getTableNumber(
 }
 
 export async function updateOrderStatus(orderId: string, nextStatus: OrderStatus) {
-  const supabase = await getTenantDataClient();
+  const supabase = getSupabaseServerClient() ?? (await getTenantDataClient());
   if (!supabase) {
     return { ok: true, usingDemoData: true };
   }
@@ -3334,9 +3795,6 @@ export async function updateOrderStatus(orderId: string, nextStatus: OrderStatus
   let findQuery = supabase.from("orders").select("id, table_id").eq("id", orderId);
   if (!scope.useLegacySchema && scope.businessId) {
     findQuery = findQuery.eq("business_id", scope.businessId);
-  }
-  if (scope.branchId) {
-    findQuery = findQuery.eq("branch_id", scope.branchId);
   }
   if (scope.branchId) {
     findQuery = findQuery.eq("branch_id", scope.branchId);
@@ -3364,15 +3822,94 @@ export async function updateOrderStatus(orderId: string, nextStatus: OrderStatus
     }
   }
 
-  await logAuditEvent({
+  fireAndForgetAuditEvent({
     entityType: "order",
     entityId: orderId,
     action: "status_change",
     details: { nextStatus },
   });
 
-  revalidateOperationsCaches();
-  revalidateReportCaches();
+  revalidateOrderFlowCaches();
+  if (nextStatus === "paid") {
+    revalidateTag("table-map", "max");
+    revalidateReportCaches();
+  }
+  return { ok: true, usingDemoData: false };
+}
+
+export async function updateOrderStationStatus(
+  orderId: string,
+  station: PrepStation,
+  nextStationStatus: OrderStationStatus,
+) {
+  const supabase = getSupabaseServerClient() ?? (await getTenantDataClient());
+  if (!supabase) {
+    return { ok: true, usingDemoData: true };
+  }
+
+  const scope = await getDefaultBusinessScope();
+  let findQuery = supabase
+    .from("orders")
+    .select("id, status, station_statuses")
+    .eq("id", orderId);
+  if (!scope.useLegacySchema && scope.businessId) {
+    findQuery = findQuery.eq("business_id", scope.businessId);
+  }
+  if (scope.branchId) {
+    findQuery = findQuery.eq("branch_id", scope.branchId);
+  }
+
+  const { data: orderRow, error: findError } = await findQuery.maybeSingle();
+  if (findError) {
+    if (isMissingStationStatusesColumnError(findError.message)) {
+      return updateOrderStatus(orderId, nextStationStatus);
+    }
+    return { ok: false, error: findError.message };
+  }
+  if (!orderRow) {
+    return { ok: false, error: "Order not found" };
+  }
+
+  const currentStatus = (orderRow.status as OrderStatus | null) ?? "pending";
+  if (currentStatus === "paid" || currentStatus === "cancelled" || currentStatus === "refunded") {
+    return { ok: false, error: "Kapali sipariste istasyon durumu degistirilemez." };
+  }
+
+  const stationStatuses: Partial<Record<PrepStation, OrderStationStatus>> = {
+    ...(parseOrderStationStatuses((orderRow as { station_statuses?: unknown }).station_statuses) ?? {}),
+    [station]: nextStationStatus,
+  };
+  const aggregateStatus = deriveOrderStatusFromStationStatuses(stationStatuses, currentStatus);
+
+  let updateQuery = supabase
+    .from("orders")
+    .update({
+      station_statuses: stationStatuses,
+      status: aggregateStatus,
+    })
+    .eq("id", orderId);
+  if (!scope.useLegacySchema && scope.businessId) {
+    updateQuery = updateQuery.eq("business_id", scope.businessId);
+  }
+  if (scope.branchId) {
+    updateQuery = updateQuery.eq("branch_id", scope.branchId);
+  }
+  const { error: updateError } = await updateQuery;
+  if (updateError) {
+    if (isMissingStationStatusesColumnError(updateError.message)) {
+      return updateOrderStatus(orderId, nextStationStatus);
+    }
+    return { ok: false, error: updateError.message };
+  }
+
+  fireAndForgetAuditEvent({
+    entityType: "order",
+    entityId: orderId,
+    action: "station_status_change",
+    details: { station, nextStationStatus, aggregateStatus },
+  });
+
+  revalidateOrderFlowCaches();
   return { ok: true, usingDemoData: false };
 }
 
@@ -3381,7 +3918,7 @@ export async function applyOrderFinancials(input: {
   discountAmount: number;
   serviceFee: number;
 }) {
-  const supabase = await getTenantDataClient();
+  const supabase = getSupabaseServerClient() ?? (await getTenantDataClient());
   if (!supabase) {
     return { ok: false, error: "Demo modda finansal guncelleme pasif." };
   }
@@ -3423,14 +3960,15 @@ export async function applyOrderFinancials(input: {
     return { ok: false, error: error.message };
   }
 
-  await logAuditEvent({
+  fireAndForgetAuditEvent({
     entityType: "order",
     entityId: input.orderId,
     action: "financial_update",
     details: { discountAmount, serviceFee, finalPrice },
   });
 
-  revalidateOperationsCaches();
+  revalidateOrderFlowCaches();
+  revalidateTag("table-map", "max");
   revalidateReportCaches();
   return { ok: true, finalPrice };
 }
@@ -3443,7 +3981,7 @@ export async function completeOrderPayment(input: {
   createdBy?: string;
   requestKey?: string;
 }) {
-  const supabase = await getTenantDataClient();
+  const supabase = getSupabaseServerClient() ?? (await getTenantDataClient());
   if (!supabase) {
     return { ok: false, error: "Demo modda odeme islemi pasif." };
   }
@@ -3468,14 +4006,14 @@ export async function completeOrderPayment(input: {
   }
 
   const paymentSummary = await getOrderPaymentSummaryMap(supabase, [input.orderId]);
-  const alreadyPaid = paymentSummary.get(input.orderId)?.net ?? 0;
-  const targetAmount = Number(orderRow.final_price ?? orderRow.total_price);
-  const remaining = Math.max(0, targetAmount - alreadyPaid);
-  const amount = Math.max(0, Number(input.amount ?? remaining));
+  const alreadyPaid = toMoney(paymentSummary.get(input.orderId)?.net ?? 0);
+  const targetAmount = toMoney(Number(orderRow.final_price ?? orderRow.total_price));
+  const remaining = toMoney(Math.max(0, targetAmount - alreadyPaid));
+  const amount = toMoney(Math.max(0, Number(input.amount ?? remaining)));
   if (amount <= 0) {
     return { ok: false, error: "Odeme tutari sifirdan buyuk olmali." };
   }
-  if (amount > remaining) {
+  if (toMoney(amount - remaining) > 0) {
     return { ok: false, error: "Odeme tutari kalan bakiyeden buyuk olamaz." };
   }
   const requestKey = typeof input.requestKey === "string" && input.requestKey.trim() ? input.requestKey.trim() : null;
@@ -3495,14 +4033,31 @@ export async function completeOrderPayment(input: {
     }
     const { data: existingPayment, error: idempotencyError } = await idempotencyLookup.maybeSingle();
     if (!idempotencyError && existingPayment) {
-      const currentNet = paymentSummary.get(input.orderId)?.net ?? 0;
-      const currentRemaining = Math.max(0, targetAmount - currentNet);
+      const reconciled = await reconcileOrderSettlementState({
+        supabase,
+        scope,
+        orderId: input.orderId,
+        targetAmount,
+        tableId: orderRow.table_id,
+        allowRefunded: false,
+      });
+      if (!reconciled.ok) {
+        await setAlertDispatch("payment_status_reconcile_failed", {
+          orderId: input.orderId,
+          flow: "complete_payment_idempotent",
+          nextStatus: reconciled.status,
+          targetAmount,
+          nextPaidTotal: reconciled.amountPaid,
+          error: reconciled.error,
+          at: new Date().toISOString(),
+        });
+      }
       return {
         ok: true,
         idempotent: true,
-        status: currentNet >= targetAmount ? ("paid" as OrderStatus) : ("served" as OrderStatus),
-        amountPaid: currentNet,
-        remaining: currentRemaining,
+        status: reconciled.status,
+        amountPaid: reconciled.amountPaid,
+        remaining: reconciled.remaining,
       };
     }
   }
@@ -3537,61 +4092,70 @@ export async function completeOrderPayment(input: {
   const paymentError = paymentInsert.error;
   if (paymentError) {
     if (paymentError.message.toLowerCase().includes("duplicate key") && requestKey) {
-      const latestSummary = await getOrderPaymentSummaryMap(supabase, [input.orderId]);
-      const latestNet = latestSummary.get(input.orderId)?.net ?? 0;
+      const reconciled = await reconcileOrderSettlementState({
+        supabase,
+        scope,
+        orderId: input.orderId,
+        targetAmount,
+        tableId: orderRow.table_id,
+        allowRefunded: false,
+      });
+      if (!reconciled.ok) {
+        await setAlertDispatch("payment_status_reconcile_failed", {
+          orderId: input.orderId,
+          flow: "complete_payment_duplicate",
+          nextStatus: reconciled.status,
+          targetAmount,
+          nextPaidTotal: reconciled.amountPaid,
+          error: reconciled.error,
+          at: new Date().toISOString(),
+        });
+      }
       return {
         ok: true,
         idempotent: true,
-        status: latestNet >= targetAmount ? ("paid" as OrderStatus) : ("served" as OrderStatus),
-        amountPaid: latestNet,
-        remaining: Math.max(0, targetAmount - latestNet),
+        status: reconciled.status,
+        amountPaid: reconciled.amountPaid,
+        remaining: reconciled.remaining,
       };
     }
     return { ok: false, error: paymentError.message };
   }
 
-  const latestSummary = await getOrderPaymentSummaryMap(supabase, [input.orderId]);
-  const nextPaidTotal = Math.max(0, latestSummary.get(input.orderId)?.net ?? alreadyPaid + amount);
-  const nextStatus = resolveOrderSettlementStatus(targetAmount, nextPaidTotal, false);
-  const orderUpdateResult = await retryMutation(async () => {
-    let orderUpdateQuery = supabase.from("orders").update({ status: nextStatus }).eq("id", input.orderId);
-    if (!scope.useLegacySchema && scope.businessId) {
-      orderUpdateQuery = orderUpdateQuery.eq("business_id", scope.businessId);
-    }
-    if (scope.branchId) {
-      orderUpdateQuery = orderUpdateQuery.eq("branch_id", scope.branchId);
-    }
-    return orderUpdateQuery;
+  const reconciled = await reconcileOrderSettlementState({
+    supabase,
+    scope,
+    orderId: input.orderId,
+    targetAmount,
+    tableId: orderRow.table_id,
+    allowRefunded: false,
   });
-  if (orderUpdateResult.error) {
+  if (!reconciled.ok) {
     await setAlertDispatch("payment_status_reconcile_failed", {
       orderId: input.orderId,
       flow: "complete_payment",
-      nextStatus,
+      nextStatus: reconciled.status,
       targetAmount,
-      nextPaidTotal,
-      error: orderUpdateResult.error.message,
+      nextPaidTotal: reconciled.amountPaid,
+      error: reconciled.error,
       at: new Date().toISOString(),
     });
-    return { ok: false, error: orderUpdateResult.error.message };
+    return { ok: false, error: reconciled.error };
   }
-
-  if (nextStatus === "paid" && orderRow.table_id) {
-    await retryMutation(async () => supabase.from("tables").update({ status: "empty" as TableStatus }).eq("id", orderRow.table_id));
-  }
-  await logAuditEvent({
+  fireAndForgetAuditEvent({
     entityType: "payment",
     entityId: input.orderId,
     action: "complete_payment",
-    details: { method: input.method, amount, nextPaidTotal, remaining: Math.max(0, targetAmount - nextPaidTotal) },
+    details: { method: input.method, amount, nextPaidTotal: reconciled.amountPaid, remaining: reconciled.remaining },
   });
-  revalidateOperationsCaches();
+  revalidateOrderFlowCaches();
+  revalidateTag("table-map", "max");
   revalidateReportCaches();
-  return { ok: true, status: nextStatus, amountPaid: nextPaidTotal, remaining: Math.max(0, targetAmount - nextPaidTotal) };
+  return { ok: true, status: reconciled.status, amountPaid: reconciled.amountPaid, remaining: reconciled.remaining };
 }
 
 export async function cancelOrder(orderId: string, note?: string, requestKey?: string) {
-  const supabase = await getTenantDataClient();
+  const supabase = getSupabaseServerClient() ?? (await getTenantDataClient());
   if (!supabase) {
     return { ok: false, error: "Demo modda iptal pasif." };
   }
@@ -3689,13 +4253,14 @@ export async function cancelOrder(orderId: string, note?: string, requestKey?: s
       await supabase.from("payments").insert(fallbackPayment);
     }
   }
-  await logAuditEvent({
+  fireAndForgetAuditEvent({
     entityType: "order",
     entityId: orderId,
     action: "cancel",
     details: { note: note ?? null },
   });
-  revalidateOperationsCaches();
+  revalidateOrderFlowCaches();
+  revalidateTag("table-map", "max");
   revalidateReportCaches();
   return { ok: true };
 }
@@ -3708,7 +4273,7 @@ export async function refundOrder(input: {
   createdBy?: string;
   requestKey?: string;
 }) {
-  const supabase = await getTenantDataClient();
+  const supabase = getSupabaseServerClient() ?? (await getTenantDataClient());
   if (!supabase) {
     return { ok: false, error: "Demo modda iade pasif." };
   }
@@ -3730,19 +4295,20 @@ export async function refundOrder(input: {
   }
   const paymentSummary = await getOrderPaymentSummaryMap(supabase, [input.orderId]);
   const summary = paymentSummary.get(input.orderId) ?? { paid: 0, refunds: 0, net: 0, count: 0 };
-  const refundableBalance = Math.max(0, summary.paid - summary.refunds);
+  const refundableBalance = toMoney(Math.max(0, summary.paid - summary.refunds));
   if (refundableBalance <= 0) {
     return { ok: false, error: "Iade edilebilir tahsilat bulunamadi." };
   }
 
-  const amount = Math.max(0, Number(input.amount ?? refundableBalance));
+  const amount = toMoney(Math.max(0, Number(input.amount ?? refundableBalance)));
   if (amount <= 0) {
     return { ok: false, error: "Iade tutari sifirdan buyuk olmali." };
   }
-  if (amount > refundableBalance) {
+  if (toMoney(amount - refundableBalance) > 0) {
     return { ok: false, error: "Iade tutari iade edilebilir bakiyeden buyuk olamaz." };
   }
 
+  const targetAmount = toMoney(Number(orderRow.final_price ?? orderRow.total_price));
   const requestKey = typeof input.requestKey === "string" && input.requestKey.trim() ? input.requestKey.trim() : null;
   if (requestKey) {
     let idempotencyLookup = supabase
@@ -3760,7 +4326,25 @@ export async function refundOrder(input: {
     }
     const { data: existingPayment, error: idempotencyError } = await idempotencyLookup.maybeSingle();
     if (!idempotencyError && existingPayment) {
-      return { ok: true, idempotent: true };
+      const reconciled = await reconcileOrderSettlementState({
+        supabase,
+        scope,
+        orderId: input.orderId,
+        targetAmount,
+        allowRefunded: true,
+      });
+      if (!reconciled.ok) {
+        await setAlertDispatch("payment_status_reconcile_failed", {
+          orderId: input.orderId,
+          flow: "refund_idempotent",
+          nextStatus: reconciled.status,
+          targetAmount,
+          nextNet: reconciled.amountPaid,
+          error: reconciled.error,
+          at: new Date().toISOString(),
+        });
+      }
+      return { ok: true, idempotent: true, status: reconciled.status };
     }
   }
 
@@ -3794,48 +4378,60 @@ export async function refundOrder(input: {
   const paymentError = paymentInsert.error;
   if (paymentError) {
     if (paymentError.message.toLowerCase().includes("duplicate key") && requestKey) {
-      return { ok: true, idempotent: true };
+      const reconciled = await reconcileOrderSettlementState({
+        supabase,
+        scope,
+        orderId: input.orderId,
+        targetAmount,
+        allowRefunded: true,
+      });
+      if (!reconciled.ok) {
+        await setAlertDispatch("payment_status_reconcile_failed", {
+          orderId: input.orderId,
+          flow: "refund_duplicate",
+          nextStatus: reconciled.status,
+          targetAmount,
+          nextNet: reconciled.amountPaid,
+          error: reconciled.error,
+          at: new Date().toISOString(),
+        });
+      }
+      return { ok: true, idempotent: true, status: reconciled.status };
     }
     return { ok: false, error: paymentError.message };
   }
 
-  const latestSummary = await getOrderPaymentSummaryMap(supabase, [input.orderId]);
-  const targetAmount = Number(orderRow.final_price ?? orderRow.total_price);
-  const nextNet = Math.max(0, latestSummary.get(input.orderId)?.net ?? summary.net - amount);
-  const nextStatus = resolveOrderSettlementStatus(targetAmount, nextNet, true);
-  const refundUpdateResult = await retryMutation(async () => {
-    let refundUpdateQuery = supabase.from("orders").update({ status: nextStatus }).eq("id", input.orderId);
-    if (!scope.useLegacySchema && scope.businessId) {
-      refundUpdateQuery = refundUpdateQuery.eq("business_id", scope.businessId);
-    }
-    if (scope.branchId) {
-      refundUpdateQuery = refundUpdateQuery.eq("branch_id", scope.branchId);
-    }
-    return refundUpdateQuery;
+  const reconciled = await reconcileOrderSettlementState({
+    supabase,
+    scope,
+    orderId: input.orderId,
+    targetAmount,
+    allowRefunded: true,
   });
-  if (refundUpdateResult.error) {
+  if (!reconciled.ok) {
     await setAlertDispatch("payment_status_reconcile_failed", {
       orderId: input.orderId,
       flow: "refund",
-      nextStatus,
+      nextStatus: reconciled.status,
       targetAmount,
-      nextNet,
-      error: refundUpdateResult.error.message,
+      nextNet: reconciled.amountPaid,
+      error: reconciled.error,
       at: new Date().toISOString(),
     });
-    return { ok: false, error: refundUpdateResult.error.message };
+    return { ok: false, error: reconciled.error };
   }
 
-  await logAuditEvent({
+  fireAndForgetAuditEvent({
     entityType: "payment",
     entityId: input.orderId,
     action: "refund",
-    details: { method: input.method, amount, note: input.note ?? null, refundableBalance, nextStatus },
+    details: { method: input.method, amount, note: input.note ?? null, refundableBalance, nextStatus: reconciled.status },
   });
 
-  revalidateOperationsCaches();
+  revalidateOrderFlowCaches();
+  revalidateTag("table-map", "max");
   revalidateReportCaches();
-  return { ok: true, status: nextStatus };
+  return { ok: true, status: reconciled.status };
 }
 
 export async function assignOrderCourier(input: {
@@ -3844,7 +4440,7 @@ export async function assignOrderCourier(input: {
   courierName: string;
   courierPhone?: string | null;
 }) {
-  const supabase = await getTenantDataClient();
+  const supabase = getSupabaseServerClient() ?? (await getTenantDataClient());
   if (!supabase) {
     return { ok: false, error: "Demo modda kurye atama pasif." };
   }
@@ -3899,7 +4495,7 @@ export async function assignOrderCourier(input: {
     return { ok: false, error: "Siparis mevcut durumunda kurye atamasi kabul etmiyor." };
   }
 
-  await logAuditEvent({
+  fireAndForgetAuditEvent({
     entityType: "order",
     entityId: input.orderId,
     action: "assign_courier",
@@ -3910,12 +4506,13 @@ export async function assignOrderCourier(input: {
     },
   });
 
-  revalidateOperationsCaches();
+  revalidateOrderFlowCaches();
+  revalidateTag("couriers", "max");
   return { ok: true };
 }
 
 export async function markDeliveryCompleted(orderId: string) {
-  const supabase = await getTenantDataClient();
+  const supabase = getSupabaseServerClient() ?? (await getTenantDataClient());
   if (!supabase) {
     return { ok: false, error: "Demo modda teslimat tamamlama pasif." };
   }
@@ -3969,13 +4566,13 @@ export async function markDeliveryCompleted(orderId: string) {
     return { ok: true, noop: true };
   }
 
-  await logAuditEvent({
+  fireAndForgetAuditEvent({
     entityType: "order",
     entityId: orderId,
     action: "delivery_completed",
   });
 
-  revalidateOperationsCaches();
+  revalidateOrderFlowCaches();
   return { ok: true };
 }
 
@@ -3989,8 +4586,58 @@ export async function getTableMap() {
   });
 }
 
-export async function createTable(tableNumber: number, name?: string) {
-  return createTableImpl(tableNumber, name, {
+export async function getTableZones() {
+  return getTableZonesImpl({
+    getDefaultBusinessScope,
+    getOrderPaymentSummaryMap,
+    withQueryTimeout,
+    demoOrders,
+    demoTables,
+  });
+}
+
+export async function createTable(tableNumber: number, name?: string, options?: { zoneId?: string | null }) {
+  return createTableImpl(tableNumber, name, options?.zoneId, {
+    getDefaultBusinessScope,
+    logAuditEvent,
+    revalidateOperationsCaches,
+  });
+}
+
+export async function createTableZone(name: string) {
+  return createTableZoneImpl(name, {
+    getDefaultBusinessScope,
+    logAuditEvent,
+    revalidateOperationsCaches,
+  });
+}
+
+export async function assignTableZone(input: { tableId: string; zoneId: string | null }) {
+  return assignTableZoneImpl(input, {
+    getDefaultBusinessScope,
+    logAuditEvent,
+    revalidateOperationsCaches,
+  });
+}
+
+export async function bulkCreateTables(input: { startNumber: number; count: number; namePrefix?: string; zoneId?: string | null }) {
+  return bulkCreateTablesImpl(input, {
+    getDefaultBusinessScope,
+    logAuditEvent,
+    revalidateOperationsCaches,
+  });
+}
+
+export async function bulkDeleteTables(input: { startNumber: number; endNumber: number; zoneId?: string | null; includeNonEmpty?: boolean }) {
+  return bulkDeleteTablesImpl(input, {
+    getDefaultBusinessScope,
+    logAuditEvent,
+    revalidateOperationsCaches,
+  });
+}
+
+export async function bulkDeleteTablesByIds(input: { tableIds: string[]; includeNonEmpty?: boolean }) {
+  return bulkDeleteTablesByIdsImpl(input, {
     getDefaultBusinessScope,
     logAuditEvent,
     revalidateOperationsCaches,
@@ -4005,8 +4652,32 @@ export async function updateTableDetails(input: { tableId: string; tableNumber: 
   });
 }
 
+export async function updateTableStatus(input: { tableId: string; status: TableStatus }) {
+  return updateTableStatusImpl(input, {
+    getDefaultBusinessScope,
+    logAuditEvent,
+    revalidateOperationsCaches,
+  });
+}
+
 export async function deleteTable(tableId: string) {
   return deleteTableImpl(tableId, {
+    getDefaultBusinessScope,
+    logAuditEvent,
+    revalidateOperationsCaches,
+  });
+}
+
+export async function deleteTableZone(zoneId: string) {
+  return deleteTableZoneImpl(zoneId, {
+    getDefaultBusinessScope,
+    logAuditEvent,
+    revalidateOperationsCaches,
+  });
+}
+
+export async function bulkDeleteTableZones(input: { zoneIds: string[] }) {
+  return bulkDeleteTableZonesImpl(input, {
     getDefaultBusinessScope,
     logAuditEvent,
     revalidateOperationsCaches,
@@ -4033,8 +4704,16 @@ function revalidateReportCaches() {
   revalidateTag("financial-insights", "max");
 }
 
+function revalidateOrderFlowCaches() {
+  revalidateTag("orders-summary", "max");
+  revalidateTag("kitchen-orders", "max");
+  revalidateTag("order-receipt", "max");
+  revalidateTag("dashboard-snapshot", "max");
+}
+
 function revalidateOperationsCaches() {
   revalidateTag("table-map", "max");
+  revalidateTag("table-zones", "max");
   revalidateTag("dashboard-snapshot", "max");
   revalidateTag("orders-summary", "max");
   revalidateTag("kitchen-orders", "max");
@@ -4062,10 +4741,14 @@ export async function getProductManagementData(
 }
 
 export async function getKitchenCatalogSnapshot() {
-  const supabase = await getTenantDataClient();
+  const supabase = getSupabaseServerClient();
   if (!supabase) {
     return {
-      categories: demoCategories,
+      categories: demoCategories.map((category) => ({
+        id: category.id,
+        name: category.name,
+        prep_station: category.prep_station ?? "kitchen",
+      })),
       products: demoProducts.map((product) => ({
         id: product.id,
         category_id: product.category_id,
@@ -4077,7 +4760,7 @@ export async function getKitchenCatalogSnapshot() {
   const scope = await getDefaultBusinessScope();
   if (!scope.useLegacySchema && !scope.businessId) {
     return {
-      categories: [] as Pick<Category, "id" | "name">[],
+      categories: [] as Pick<Category, "id" | "name" | "prep_station">[],
       products: [] as Pick<Product, "id" | "category_id">[],
       usingDemoData: false,
     };
@@ -4085,12 +4768,15 @@ export async function getKitchenCatalogSnapshot() {
   const cacheKey = `kitchen-catalog:${scope.businessId ?? "none"}:${scope.useLegacySchema ? "legacy" : "scoped"}`;
   const reader = unstable_cache(
     async () => {
-      const innerSupabase = await getTenantDataClient();
+      const innerSupabase = getSupabaseServerClient();
       if (!innerSupabase) {
         return null;
       }
 
-      let categoriesQuery = innerSupabase.from("categories").select("id, name").order("sort_order", { ascending: true });
+      let categoriesQuery = innerSupabase
+        .from("categories")
+        .select("id, name, prep_station")
+        .order("sort_order", { ascending: true });
       let productsQuery = innerSupabase.from("products").select("id, category_id");
 
       if (!scope.useLegacySchema && scope.businessId) {
@@ -4100,12 +4786,12 @@ export async function getKitchenCatalogSnapshot() {
 
       const [categoryResult, productResult] = await withQueryTimeout(Promise.all([categoriesQuery, productsQuery]));
       if (categoryResult.error || productResult.error) {
-        return { hasError: true as const, categories: [] as Array<Pick<Category, "id" | "name">>, products: [] as Array<Pick<Product, "id" | "category_id">> };
+        return { hasError: true as const, categories: [] as Array<Pick<Category, "id" | "name" | "prep_station">>, products: [] as Array<Pick<Product, "id" | "category_id">> };
       }
 
       return {
         hasError: false as const,
-        categories: (categoryResult.data ?? []) as Array<Pick<Category, "id" | "name">>,
+        categories: (categoryResult.data ?? []) as Array<Pick<Category, "id" | "name" | "prep_station">>,
         products: (productResult.data ?? []) as Array<Pick<Product, "id" | "category_id">>,
       };
     },
@@ -4117,7 +4803,11 @@ export async function getKitchenCatalogSnapshot() {
     const cached = await reader();
     if (!cached || cached.hasError) {
       return {
-        categories: demoCategories,
+        categories: demoCategories.map((category) => ({
+          id: category.id,
+          name: category.name,
+          prep_station: category.prep_station ?? "kitchen",
+        })),
         products: demoProducts.map((product) => ({
           id: product.id,
           category_id: product.category_id,
@@ -4133,7 +4823,11 @@ export async function getKitchenCatalogSnapshot() {
     };
   } catch {
     return {
-      categories: demoCategories,
+      categories: demoCategories.map((category) => ({
+        id: category.id,
+        name: category.name,
+        prep_station: category.prep_station ?? "kitchen",
+      })),
       products: demoProducts.map((product) => ({
         id: product.id,
         category_id: product.category_id,
@@ -4150,7 +4844,7 @@ export async function createProductModifierGroup(input: {
   maxSelect?: number;
   isRequired?: boolean;
 }) {
-  const supabase = await getTenantDataClient();
+  const supabase = getSupabaseServerClient() ?? (await getTenantDataClient());
   if (!supabase) {
     return { ok: false, error: "Demo modda modifier grubu eklenemez." };
   }
@@ -4171,7 +4865,7 @@ export async function createProductModifierGroup(input: {
     return { ok: false, error: error.message };
   }
 
-  await logAuditEvent({
+  fireAndForgetAuditEvent({
     entityType: "product_modifier_group",
     entityId: String(data?.id ?? ""),
     action: "create",
@@ -4188,7 +4882,7 @@ export async function createProductModifierOption(input: {
   priceDelta?: number;
   isDefault?: boolean;
 }) {
-  const supabase = await getTenantDataClient();
+  const supabase = getSupabaseServerClient() ?? (await getTenantDataClient());
   if (!supabase) {
     return { ok: false, error: "Demo modda modifier opsiyonu eklenemez." };
   }
@@ -4208,7 +4902,7 @@ export async function createProductModifierOption(input: {
     return { ok: false, error: error.message };
   }
 
-  await logAuditEvent({
+  fireAndForgetAuditEvent({
     entityType: "product_modifier_option",
     entityId: String(data?.id ?? ""),
     action: "create",
@@ -4220,7 +4914,7 @@ export async function createProductModifierOption(input: {
 }
 
 export async function deleteProductModifierGroup(groupId: string) {
-  const supabase = await getTenantDataClient();
+  const supabase = getSupabaseServerClient() ?? (await getTenantDataClient());
   if (!supabase) {
     return { ok: false, error: "Demo modda modifier grubu silinemez." };
   }
@@ -4235,7 +4929,7 @@ export async function deleteProductModifierGroup(groupId: string) {
 }
 
 export async function deleteProductModifierOption(optionId: string) {
-  const supabase = await getTenantDataClient();
+  const supabase = getSupabaseServerClient() ?? (await getTenantDataClient());
   if (!supabase) {
     return { ok: false, error: "Demo modda modifier opsiyonu silinemez." };
   }
@@ -4309,7 +5003,7 @@ export async function deleteProduct(productId: string) {
 }
 
 export async function createIngredient(name: string, unit: string) {
-  const supabase = await getTenantDataClient();
+  const supabase = getSupabaseServerClient() ?? (await getTenantDataClient());
   if (!supabase) {
     return { ok: false, error: "Demo modda malzeme ekleme pasif." };
   }
@@ -4332,7 +5026,7 @@ export async function createIngredient(name: string, unit: string) {
 }
 
 export async function deleteIngredient(ingredientId: string) {
-  const supabase = await getTenantDataClient();
+  const supabase = getSupabaseServerClient() ?? (await getTenantDataClient());
   if (!supabase) {
     return { ok: false, error: "Demo modda malzeme silme pasif." };
   }
@@ -4355,7 +5049,7 @@ export async function attachIngredientToProduct(input: {
   ingredientId: string;
   quantity: number;
 }) {
-  const supabase = await getTenantDataClient();
+  const supabase = getSupabaseServerClient() ?? (await getTenantDataClient());
   if (!supabase) {
     return { ok: false, error: "Demo modda urun malzemesi duzenleme pasif." };
   }
@@ -4395,7 +5089,7 @@ export async function attachIngredientToProduct(input: {
 }
 
 export async function detachIngredientFromProduct(productId: string, ingredientId: string) {
-  const supabase = await getTenantDataClient();
+  const supabase = getSupabaseServerClient() ?? (await getTenantDataClient());
   if (!supabase) {
     return { ok: false, error: "Demo modda urun malzemesi duzenleme pasif." };
   }
@@ -5187,8 +5881,22 @@ export async function createDemoStaffSet() {
   return { ok: true, count: results.length };
 }
 
-export async function createCategory(name: string, sortOrder: number) {
-  return createCategoryImpl(name, sortOrder, {
+export async function createCategory(name: string, sortOrder: number, prepStation: PrepStation = "kitchen") {
+  return createCategoryImpl(name, sortOrder, prepStation, {
+    getDefaultBusinessScope,
+    logAuditEvent,
+    revalidateProductManagementCaches,
+    demoCategories,
+    demoProducts,
+    demoIngredients,
+    demoModifierGroups,
+    demoModifierOptions,
+    demoProductIngredients,
+  });
+}
+
+export async function updateCategoryPrepStation(categoryId: string, prepStation: PrepStation) {
+  return updateCategoryPrepStationImpl({ categoryId, prepStation }, {
     getDefaultBusinessScope,
     logAuditEvent,
     revalidateProductManagementCaches,
@@ -5984,6 +6692,28 @@ export async function closeCashSession(input: {
     return { ok: false, error: sessionError?.message ?? "Kasa oturumu bulunamadi." };
   }
 
+  const { settings: applicationSettings } = await getApplicationSettings();
+  if (applicationSettings.requireNoOpenChecksForSessionClose) {
+    let openOrdersQuery = supabase
+      .from("orders")
+      .select("id")
+      .in("status", ["pending", "preparing", "served"])
+      .limit(1);
+    if (!scope.useLegacySchema && scope.businessId) {
+      openOrdersQuery = openOrdersQuery.eq("business_id", scope.businessId);
+    }
+    if (scope.branchId) {
+      openOrdersQuery = openOrdersQuery.eq("branch_id", scope.branchId);
+    }
+    const { data: openOrderRows, error: openOrderError } = await openOrdersQuery;
+    if (openOrderError) {
+      return { ok: false, error: openOrderError.message };
+    }
+    if ((openOrderRows?.length ?? 0) > 0) {
+      return { ok: false, error: "Gun sonu kapatilamadi. Acik adisyon bulunuyor." };
+    }
+  }
+
   let cashQuery = supabase
     .from("payments")
     .select("amount, payment_type")
@@ -6322,6 +7052,7 @@ export async function getOpsPageSnapshot(options?: { includeSetup?: boolean }) {
     },
     recentOrders: ((recentOrderRows ?? []) as OrderRow[]).map((row) => ({
       id: row.id,
+      check_number: row.check_number ?? null,
       table_id: row.table_id,
       table_number: getTableNumber(row.tables),
       channel: row.channel ?? "dine_in",
@@ -6409,6 +7140,7 @@ export async function getDashboardData() {
 
   const recentOrders = ((recentOrderRows ?? []) as OrderRow[]).map((row) => ({
     id: row.id,
+    check_number: row.check_number ?? null,
     table_id: row.table_id,
     table_number: getTableNumber(row.tables),
     channel: row.channel ?? "dine_in",
@@ -6769,20 +7501,20 @@ async function getCachedOpsPageRow(input: {
           ? (input.branchId
               ? supabase
                   .from("orders")
-                  .select("id, table_id, total_price, final_price, channel, customer_name, status, created_at, tables(table_number)")
+                  .select("id, check_number, table_id, total_price, final_price, channel, customer_name, status, created_at, tables(table_number)")
                   .eq("business_id", input.businessId)
                   .eq("branch_id", input.branchId)
                   .order("created_at", { ascending: false })
                   .limit(recentOrderLimit)
               : supabase
                   .from("orders")
-                  .select("id, table_id, total_price, final_price, channel, customer_name, status, created_at, tables(table_number)")
+                  .select("id, check_number, table_id, total_price, final_price, channel, customer_name, status, created_at, tables(table_number)")
                   .eq("business_id", input.businessId)
                   .order("created_at", { ascending: false })
                   .limit(recentOrderLimit))
           : supabase
               .from("orders")
-              .select("id, table_id, total_price, final_price, channel, customer_name, status, created_at, tables(table_number)")
+              .select("id, check_number, table_id, total_price, final_price, channel, customer_name, status, created_at, tables(table_number)")
               .order("created_at", { ascending: false })
               .limit(recentOrderLimit),
         !input.useLegacySchema && input.businessId
@@ -6816,7 +7548,7 @@ async function getCachedOpsPageRow(input: {
       };
     },
     [cacheKey],
-    { revalidate: 10, tags: ["dashboard-snapshot"] },
+    { revalidate: 2, tags: ["dashboard-snapshot"] },
   );
 
   return reader();

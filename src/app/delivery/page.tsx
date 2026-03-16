@@ -156,6 +156,10 @@ function timelineLabel(order: Order) {
   return "Kurye atamasi bekliyor";
 }
 
+function orderRef(order: { id: string; check_number?: string | null }) {
+  return order.check_number?.trim() ? order.check_number : order.id.slice(0, 8);
+}
+
 function renderOrderCard(
   order: Order,
   kind: "awaiting" | "travel" | "done",
@@ -166,7 +170,7 @@ function renderOrderCard(
       <div className="flex flex-col items-start justify-between gap-3 sm:flex-row">
         <div>
           <p className="text-xs font-bold uppercase tracking-[0.16em] text-slate-500">Delivery Order</p>
-          <h3 className="mt-2 text-xl font-semibold tracking-tight text-slate-900">Siparis #{order.id.slice(0, 8)}</h3>
+          <h3 className="mt-2 text-xl font-semibold tracking-tight text-slate-900">Siparis #{orderRef(order)}</h3>
           <p className="mt-1 text-sm text-slate-500">{order.customer_name ?? "Musteri belirtilmedi"}</p>
           {order.customer_phone ? <p className="mt-1 text-sm text-slate-500">{order.customer_phone}</p> : null}
         </div>
@@ -487,7 +491,7 @@ export default async function DeliveryPage({
               <div>
                 <p className="text-xs font-bold uppercase tracking-[0.16em] text-slate-500">Teslimat Detayi</p>
                 <h2 className="font-display mt-2 text-2xl font-semibold tracking-tight text-slate-900 sm:text-3xl">
-                  Siparis #{selectedOrder.id.slice(0, 8)}
+                  Siparis #{orderRef(selectedOrder)}
                 </h2>
                 <p className="mt-1 text-sm text-slate-500">Adres, not, urunler ve teslim akisini ayni sayfada yonet.</p>
               </div>
@@ -657,7 +661,7 @@ export default async function DeliveryPage({
                       <article key={order.id} className="rounded-[22px] border border-slate-200 bg-slate-50 p-4">
                         <div className="flex flex-wrap items-start justify-between gap-3">
                           <div>
-                            <p className="text-lg font-semibold text-slate-900">Siparis #{order.id.slice(0, 8)}</p>
+                            <p className="text-lg font-semibold text-slate-900">Siparis #{orderRef(order)}</p>
                             <p className="mt-1 text-sm text-slate-500">{order.customer_name ?? "Musteri yok"}</p>
                             <p className="mt-1 text-sm text-slate-500">{order.delivery_address ?? "Adres yok"}</p>
                           </div>

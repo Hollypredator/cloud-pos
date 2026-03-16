@@ -17,6 +17,10 @@ function orderSourceLabel(order: {
   return `Masa ${order.table_number ?? "-"}`;
 }
 
+function orderRef(order: { id: string; check_number?: string | null }) {
+  return order.check_number?.trim() ? order.check_number : order.id.slice(0, 8);
+}
+
 export default async function ReceiptPage({
   params,
   searchParams,
@@ -64,7 +68,7 @@ export default async function ReceiptPage({
           </div>
           {businessPhone ? <p className={`${compact ? "text-[10px]" : "text-xs"} text-slate-600`}>Tel: {businessPhone}</p> : null}
           {businessAddress ? <p className={`${compact ? "text-[10px]" : "text-xs"} break-words text-slate-600`}>{businessAddress}</p> : null}
-          <p className={`${compact ? "text-[11px]" : "text-sm"} break-words text-slate-600`}>Siparis #{order.id.slice(0, 8)} - {orderSourceLabel(order)}</p>
+          <p className={`${compact ? "text-[11px]" : "text-sm"} break-words text-slate-600`}>Siparis #{orderRef(order)} - {orderSourceLabel(order)}</p>
           {order.customer_phone ? <p className={`${compact ? "text-[10px]" : "text-xs"} text-slate-600`}>Telefon: {order.customer_phone}</p> : null}
           {order.delivery_address ? <p className={`${compact ? "text-[10px] leading-tight" : "text-xs"} break-words text-slate-600`}>{order.delivery_address}</p> : null}
           <p className={`${compact ? "text-[10px]" : "text-xs"} text-slate-500`}>{new Date(order.created_at).toLocaleString("tr-TR")}</p>

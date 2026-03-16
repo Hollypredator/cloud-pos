@@ -2,17 +2,18 @@
 
 import Image from "next/image";
 import Link from "next/link";
-import { useRef, useState } from "react";
+import { useCallback, useEffect, useRef, useState } from "react";
 import { AdminOrderEntry } from "@/components/admin-order-entry";
 import { EmptyPanel } from "@/components/backoffice-ui";
 import { PendingSubmitButton } from "@/components/pending-submit-button";
 import { normalizeLocale, translateUiText } from "@/lib/i18n";
-import type { Category, DiningTable, Order, Product, ProductModifierGroup, ProductModifierOption } from "@/lib/types";
-import { deleteTableAction, moveTableOrderAction, updateTableAction } from "./actions";
+import type { Category, DiningTable, Order, Product, ProductModifierGroup, ProductModifierOption, TableZone } from "@/lib/types";
+import { assignTableZoneAction, deleteTableAction, moveTableOrderAction, updateTableAction, updateTableStatusAction } from "./actions";
 import { orderTone, tableStatusLabel } from "./helpers";
 
 type TableOrderSummary = {
   id: string;
+  check_number?: string | null;
   final_price?: number;
   total_price: number;
   status: string;
@@ -21,6 +22,7 @@ type TableOrderSummary = {
 
 type TableOrderHistoryItem = {
   id: string;
+  check_number?: string | null;
   created_at: string;
   status: string;
   final_price?: number;
@@ -30,6 +32,32 @@ type TableOrderHistoryItem = {
 };
 
 type ModalTab = "order" | "history" | "ops";
+type LiveHistoryResponse = {
+  ok: boolean;
+  latestOrder: {
+    id: string;
+    checkNumber?: string | null;
+    status: string;
+    totalPrice: number;
+    finalPrice: number;
+    remainingBalance: number;
+    createdAt: string;
+  } | null;
+  orders: Array<{
+    id: string;
+    checkNumber?: string | null;
+    status: string;
+    totalPrice: number;
+    finalPrice: number;
+    amountPaid: number;
+    remainingBalance: number;
+    createdAt: string;
+  }>;
+};
+
+function orderRef(order: { id: string; check_number?: string | null }) {
+  return order.check_number?.trim() ? order.check_number : order.id.slice(0, 8);
+}
 
 export function TableManagementModal({
   table,
@@ -44,6 +72,7 @@ export function TableManagementModal({
   modifierGroups,
   modifierOptions,
   allTables,
+  zones,
   receiptDetailsByOrderId,
 }: {
   table: DiningTable;
@@ -58,11 +87,17 @@ export function TableManagementModal({
   modifierGroups: ProductModifierGroup[];
   modifierOptions: ProductModifierOption[];
   allTables: DiningTable[];
+  zones: TableZone[];
   receiptDetailsByOrderId: Record<string, Order>;
 }) {
   const locale = normalizeLocale(document.documentElement.lang || "tr");
   const [activeTab, setActiveTab] = useState<ModalTab>("order");
   const [previewOrderId, setPreviewOrderId] = useState<string | null>(null);
+  const [liveLatestOrder, setLiveLatestOrder] = useState<TableOrderSummary | null>(latestOrder);
+  const [historyOrders, setHistoryOrders] = useState<TableOrderHistoryItem[]>(orders);
+  const [receiptDetails, setReceiptDetails] = useState<Record<string, Order>>(receiptDetailsByOrderId);
+  const [historyLoading, setHistoryLoading] = useState(false);
+  const [receiptLoadingOrderId, setReceiptLoadingOrderId] = useState<string | null>(null);
   const receiptPreviewRef = useRef<HTMLDivElement | null>(null);
   const handlePreviewPrint = () => {
     if (!receiptPreviewRef.current) {
@@ -75,16 +110,126 @@ export function TableManagementModal({
     window.setTimeout(clear, 500);
   };
 
+  const refreshOrderData = useCallback(async (silent = true) => {
+    if (!silent) {
+      setHistoryLoading(true);
+    }
+    try {
+      const response = await fetch(`/api/admin/tables/${encodeURIComponent(table.id)}/history?limit=8`, {
+        cache: "no-store",
+      });
+      if (!response.ok) {
+        return;
+      }
+      const data = (await response.json()) as LiveHistoryResponse;
+      if (!data.ok) {
+        return;
+      }
+      setLiveLatestOrder(
+        data.latestOrder
+          ? {
+              id: data.latestOrder.id,
+              check_number: data.latestOrder.checkNumber ?? null,
+              status: data.latestOrder.status,
+              total_price: Number(data.latestOrder.totalPrice),
+              final_price: Number(data.latestOrder.finalPrice),
+              remaining_balance: Number(data.latestOrder.remainingBalance),
+            }
+          : null,
+      );
+      setHistoryOrders(
+        data.orders.map((order) => ({
+          id: order.id,
+          check_number: order.checkNumber ?? null,
+          status: order.status,
+          total_price: Number(order.totalPrice),
+          final_price: Number(order.finalPrice),
+          amount_paid: Number(order.amountPaid),
+          remaining_balance: Number(order.remainingBalance),
+          created_at: order.createdAt,
+        })),
+      );
+    } finally {
+      if (!silent) {
+        setHistoryLoading(false);
+      }
+    }
+  }, [table.id]);
+
+  async function openReceiptPreview(orderId: string) {
+    setPreviewOrderId(orderId);
+    if (receiptDetails[orderId]) {
+      return;
+    }
+
+    setReceiptLoadingOrderId(orderId);
+    try {
+      const response = await fetch(`/api/admin/orders/${encodeURIComponent(orderId)}/receipt`, {
+        cache: "no-store",
+      });
+      if (!response.ok) {
+        return;
+      }
+      const data = (await response.json()) as { ok: boolean; order?: Order };
+      if (!data.ok || !data.order) {
+        return;
+      }
+      setReceiptDetails((prev) => ({ ...prev, [orderId]: data.order as Order }));
+    } finally {
+      setReceiptLoadingOrderId(null);
+    }
+  }
+
+  useEffect(() => {
+    let active = true;
+    let timer: ReturnType<typeof setTimeout> | null = null;
+
+    const runSync = async (silent = true) => {
+      if (!active) {
+        return;
+      }
+      await refreshOrderData(silent);
+      if (!active) {
+        return;
+      }
+      timer = setTimeout(() => {
+        void runSync(true);
+      }, document.hidden ? 12000 : 3500);
+    };
+
+    const handleAttentionRefresh = () => {
+      if (document.hidden) {
+        return;
+      }
+      void refreshOrderData(true);
+    };
+
+    void runSync(true);
+    window.addEventListener("focus", handleAttentionRefresh);
+    document.addEventListener("visibilitychange", handleAttentionRefresh);
+    window.addEventListener("live-ops:update", handleAttentionRefresh);
+
+    return () => {
+      active = false;
+      if (timer) {
+        clearTimeout(timer);
+      }
+      window.removeEventListener("focus", handleAttentionRefresh);
+      document.removeEventListener("visibilitychange", handleAttentionRefresh);
+      window.removeEventListener("live-ops:update", handleAttentionRefresh);
+    };
+  }, [refreshOrderData]);
+
   return (
     <div className="fixed inset-0 z-50 flex items-end justify-center bg-slate-950/42 p-0 backdrop-blur-[2px] sm:items-center sm:p-4">
-      <div className="panel-surface h-[100dvh] w-full max-w-6xl overflow-auto rounded-none p-4 sm:max-h-[92vh] sm:h-auto sm:rounded-[32px] sm:p-6">
+      <div className="panel-surface h-[100dvh] w-full max-w-6xl overflow-auto overscroll-y-contain rounded-none p-4 pb-[max(1rem,env(safe-area-inset-bottom))] sm:max-h-[92vh] sm:h-auto sm:rounded-[32px] sm:p-6">
         <div className="mb-5 flex flex-wrap items-start justify-between gap-4 border-b border-slate-200 pb-5">
           <div>
             <p className="text-xs font-bold uppercase tracking-[0.16em] text-slate-500">{translateUiText("Masa Yonetimi", locale)}</p>
             <h2 className="font-display mt-2 text-2xl font-semibold tracking-tight text-slate-900 sm:text-3xl">{table.name || `Masa ${table.table_number}`}</h2>
             <p className="mt-1 text-sm text-slate-500">{translateUiText("Tum islemler popup icinde hizli yonetim icin sekmeli yapida.", locale)}</p>
           </div>
-          <Link href="/admin/tables" className="rounded-2xl border border-slate-200 bg-white px-4 py-3 text-sm font-semibold text-slate-700">
+          <Link href="/admin/tables" className="inline-flex min-h-12 items-center justify-center rounded-2xl border border-slate-200 bg-white px-4 py-3 text-base font-semibold text-slate-700 sm:text-sm">
             {translateUiText("Kapat", locale)}
           </Link>
         </div>
@@ -97,12 +242,12 @@ export function TableManagementModal({
           </article>
           <article className="rounded-[24px] border border-slate-200 bg-[linear-gradient(130deg,rgba(255,106,61,0.1),rgba(255,255,255,0.95)_65%)] p-4">
             <p className="text-xs font-bold uppercase tracking-[0.16em] text-slate-500">{translateUiText("Aktif Adisyon", locale)}</p>
-            <p className="font-display mt-3 text-2xl font-semibold text-slate-900">{latestOrder ? `#${latestOrder.id.slice(0, 8)}` : translateUiText("Yok", locale)}</p>
-            <p className="mt-2 text-sm text-slate-500">{latestOrder ? latestOrder.status : translateUiText("Bu masa icin acik siparis bulunmuyor", locale)}</p>
+            <p className="font-display mt-3 text-2xl font-semibold text-slate-900">{liveLatestOrder ? `#${orderRef(liveLatestOrder)}` : translateUiText("Yok", locale)}</p>
+            <p className="mt-2 text-sm text-slate-500">{liveLatestOrder ? liveLatestOrder.status : translateUiText("Bu masa icin acik siparis bulunmuyor", locale)}</p>
           </article>
           <article className="rounded-[24px] border border-slate-200 bg-[linear-gradient(130deg,rgba(16,185,129,0.1),rgba(255,255,255,0.95)_65%)] p-4">
             <p className="text-xs font-bold uppercase tracking-[0.16em] text-slate-500">{translateUiText("Kalan Bakiye", locale)}</p>
-            <p className="font-display font-numeric mt-3 text-2xl font-semibold text-emerald-700">{Number(latestOrder?.remaining_balance ?? 0).toFixed(2)} TL</p>
+            <p className="font-display font-numeric mt-3 text-2xl font-semibold text-emerald-700">{Number(liveLatestOrder?.remaining_balance ?? 0).toFixed(2)} TL</p>
             <p className="mt-2 text-sm text-slate-500">{translateUiText("Aktif siparis uzerinden hesaplanir", locale)}</p>
           </article>
         </div>
@@ -111,21 +256,21 @@ export function TableManagementModal({
           <button
             type="button"
             onClick={() => setActiveTab("order")}
-            className={`rounded-xl px-4 py-3 text-sm font-semibold ${activeTab === "order" ? "bg-gradient-to-r from-[#ff6a3d] to-[#f2b44f] text-white shadow-[0_12px_22px_rgba(255,106,61,0.2)]" : "bg-white text-slate-700"}`}
+            className={`min-h-12 rounded-xl px-4 py-3 text-base font-semibold sm:text-sm ${activeTab === "order" ? "bg-gradient-to-r from-[#ff6a3d] to-[#f2b44f] text-white shadow-[0_12px_22px_rgba(255,106,61,0.2)]" : "bg-white text-slate-700"}`}
           >
             {translateUiText("Siparis Girisi", locale)}
           </button>
           <button
             type="button"
             onClick={() => setActiveTab("history")}
-            className={`rounded-xl px-4 py-3 text-sm font-semibold ${activeTab === "history" ? "bg-gradient-to-r from-[#ff6a3d] to-[#f2b44f] text-white shadow-[0_12px_22px_rgba(255,106,61,0.2)]" : "bg-white text-slate-700"}`}
+            className={`min-h-12 rounded-xl px-4 py-3 text-base font-semibold sm:text-sm ${activeTab === "history" ? "bg-gradient-to-r from-[#ff6a3d] to-[#f2b44f] text-white shadow-[0_12px_22px_rgba(255,106,61,0.2)]" : "bg-white text-slate-700"}`}
           >
             {translateUiText("Son Siparisler", locale)}
           </button>
           <button
             type="button"
             onClick={() => setActiveTab("ops")}
-            className={`rounded-xl px-4 py-3 text-sm font-semibold ${activeTab === "ops" ? "bg-gradient-to-r from-[#ff6a3d] to-[#f2b44f] text-white shadow-[0_12px_22px_rgba(255,106,61,0.2)]" : "bg-white text-slate-700"}`}
+            className={`min-h-12 rounded-xl px-4 py-3 text-base font-semibold sm:text-sm ${activeTab === "ops" ? "bg-gradient-to-r from-[#ff6a3d] to-[#f2b44f] text-white shadow-[0_12px_22px_rgba(255,106,61,0.2)]" : "bg-white text-slate-700"}`}
           >
             {translateUiText("Masa Islemleri", locale)}
           </button>
@@ -150,6 +295,10 @@ export function TableManagementModal({
               tables={allTables}
               initialTableId={table.id}
               lockedTableId={table.id}
+              onOrderCreated={() => {
+                void refreshOrderData(false);
+                setActiveTab("history");
+              }}
             />
           </section>
         ) : null}
@@ -162,10 +311,10 @@ export function TableManagementModal({
                 <p className="mt-1 text-sm text-slate-500">{translateUiText("Bu masa icin son olusan adisyonlar ve tahsilat durumlari", locale)}</p>
               </div>
               <div className="flex flex-wrap gap-2">
-                <Link href="/cashier" className="rounded-2xl border border-slate-200 bg-slate-50 px-4 py-3 text-sm font-semibold text-slate-700">
+                <Link href="/cashier" className="inline-flex min-h-11 items-center justify-center rounded-2xl border border-slate-200 bg-slate-50 px-4 py-3 text-base font-semibold text-slate-700 sm:text-sm">
                   {translateUiText("Kasaya Git", locale)}
                 </Link>
-                <Link href="/tables" className="rounded-2xl border border-slate-200 bg-slate-50 px-4 py-3 text-sm font-semibold text-slate-700">
+                <Link href="/tables" className="inline-flex min-h-11 items-center justify-center rounded-2xl border border-slate-200 bg-slate-50 px-4 py-3 text-base font-semibold text-slate-700 sm:text-sm">
                   {translateUiText("Masa Ekrani", locale)}
                 </Link>
               </div>
@@ -174,34 +323,34 @@ export function TableManagementModal({
             {previewOrderId ? (
               <div className="mt-4 rounded-2xl border border-slate-200 bg-slate-50 p-3">
                 <div className="mb-3 flex items-center justify-between gap-2">
-                  <p className="text-sm font-semibold text-slate-800">#{previewOrderId.slice(0, 8)} {translateUiText("adisyon onizleme", locale)}</p>
+                  <p className="text-sm font-semibold text-slate-800">#{orderRef(receiptDetails[previewOrderId] ?? { id: previewOrderId })} {translateUiText("adisyon onizleme", locale)}</p>
                   <div className="no-print flex items-center gap-2">
                     <button
                       type="button"
                       onClick={handlePreviewPrint}
-                      className="rounded-xl bg-gradient-to-r from-[#ff6a3d] to-[#f2b44f] px-3 py-2 text-xs font-semibold text-white"
+                      className="min-h-11 rounded-xl bg-gradient-to-r from-[#ff6a3d] to-[#f2b44f] px-4 py-2.5 text-sm font-semibold text-white"
                     >
                       Yazdir / PDF
                     </button>
                     <button
                       type="button"
                       onClick={() => setPreviewOrderId(null)}
-                      className="rounded-xl border border-slate-300 bg-white px-3 py-2 text-xs font-semibold text-slate-700"
+                      className="min-h-11 rounded-xl border border-slate-300 bg-white px-4 py-2.5 text-sm font-semibold text-slate-700"
                     >
                       {translateUiText("Kapat", locale)}
                     </button>
                   </div>
                 </div>
-                {receiptDetailsByOrderId[previewOrderId] ? (
+                {receiptDetails[previewOrderId] ? (
                   <div ref={receiptPreviewRef} className="receipt-preview-print receipt-inline-sheet max-h-[68vh] overflow-auto rounded-xl border border-slate-200 bg-white p-4">
                     <div className="border-b border-slate-200 pb-3">
                       <p className="text-xs font-bold uppercase tracking-[0.16em] text-slate-500">Siparis Ozeti</p>
                       <p className="mt-2 text-sm text-slate-600">
-                        {new Date(receiptDetailsByOrderId[previewOrderId].created_at).toLocaleString("tr-TR")}
+                        {new Date(receiptDetails[previewOrderId].created_at).toLocaleString("tr-TR")}
                       </p>
                     </div>
                     <div className="mt-3 space-y-2">
-                      {receiptDetailsByOrderId[previewOrderId].items.map((item, index) => (
+                      {receiptDetails[previewOrderId].items.map((item, index) => (
                         <div key={`${previewOrderId}-${item.product_id}-${index}`} className="rounded-xl border border-slate-200 bg-slate-50 px-3 py-2">
                           <div className="flex items-start justify-between gap-3">
                             <p className="text-sm font-semibold text-slate-900">
@@ -220,29 +369,33 @@ export function TableManagementModal({
                     <div className="mt-4 space-y-1 border-t border-slate-200 pt-3 text-sm">
                       <p className="flex justify-between text-slate-600">
                         <span>Ara Toplam</span>
-                        <span>{Number(receiptDetailsByOrderId[previewOrderId].total_price).toFixed(2)} TL</span>
+                        <span>{Number(receiptDetails[previewOrderId].total_price).toFixed(2)} TL</span>
                       </p>
                       <p className="flex justify-between text-slate-600">
                         <span>Indirim</span>
-                        <span>-{Number(receiptDetailsByOrderId[previewOrderId].discount_amount ?? 0).toFixed(2)} TL</span>
+                        <span>-{Number(receiptDetails[previewOrderId].discount_amount ?? 0).toFixed(2)} TL</span>
                       </p>
                       <p className="flex justify-between text-slate-600">
                         <span>Servis Ucreti</span>
-                        <span>+{Number(receiptDetailsByOrderId[previewOrderId].service_fee ?? 0).toFixed(2)} TL</span>
+                        <span>+{Number(receiptDetails[previewOrderId].service_fee ?? 0).toFixed(2)} TL</span>
                       </p>
                       <p className="flex justify-between text-base font-semibold text-slate-900">
                         <span>Toplam</span>
-                        <span>{Number(receiptDetailsByOrderId[previewOrderId].final_price ?? receiptDetailsByOrderId[previewOrderId].total_price).toFixed(2)} TL</span>
+                        <span>{Number(receiptDetails[previewOrderId].final_price ?? receiptDetails[previewOrderId].total_price).toFixed(2)} TL</span>
                       </p>
                       <p className="flex justify-between text-emerald-700">
                         <span>Odenen</span>
-                        <span>{Number(receiptDetailsByOrderId[previewOrderId].amount_paid ?? 0).toFixed(2)} TL</span>
+                        <span>{Number(receiptDetails[previewOrderId].amount_paid ?? 0).toFixed(2)} TL</span>
                       </p>
                       <p className="flex justify-between font-semibold text-[#ff5a34]">
                         <span>Kalan</span>
-                        <span>{Number(receiptDetailsByOrderId[previewOrderId].remaining_balance ?? 0).toFixed(2)} TL</span>
+                        <span>{Number(receiptDetails[previewOrderId].remaining_balance ?? 0).toFixed(2)} TL</span>
                       </p>
                     </div>
+                  </div>
+                ) : receiptLoadingOrderId === previewOrderId ? (
+                  <div className="rounded-xl border border-slate-200 bg-white px-4 py-6 text-sm text-slate-500">
+                    Adisyon detayi yukleniyor...
                   </div>
                 ) : (
                   <div className="rounded-xl border border-amber-200 bg-amber-50 px-4 py-3 text-sm text-amber-900">
@@ -253,10 +406,14 @@ export function TableManagementModal({
             ) : null}
 
             <div className="mt-4 space-y-3">
-              {orders.length === 0 ? (
+              {historyLoading && historyOrders.length === 0 ? (
+                <div className="rounded-2xl border border-slate-200 bg-slate-50 px-4 py-4 text-sm text-slate-600">
+                  Son siparisler guncelleniyor...
+                </div>
+              ) : historyOrders.length === 0 ? (
                 <EmptyPanel title={translateUiText("Gecmis Siparis Yok", locale)} description={translateUiText("Bu masa icin daha once acilmis siparis kaydi bulunmuyor.", locale)} />
               ) : (
-                orders.map((order) => {
+                historyOrders.map((order) => {
                   const total = Number(order.final_price ?? order.total_price);
                   const paid = Number(order.amount_paid ?? 0);
                   const remaining = Number(order.remaining_balance ?? total);
@@ -265,7 +422,7 @@ export function TableManagementModal({
                       <div className="flex flex-wrap items-start justify-between gap-3">
                         <div>
                           <p className="text-xs font-bold uppercase tracking-[0.16em] text-slate-500">{translateUiText("Siparis", locale)}</p>
-                          <p className="mt-2 text-lg font-semibold text-slate-900">#{order.id.slice(0, 8)}</p>
+                          <p className="mt-2 text-lg font-semibold text-slate-900">#{orderRef(order)}</p>
                           <p className="mt-1 text-sm text-slate-500">{new Date(order.created_at).toLocaleString("tr-TR")}</p>
                         </div>
                         <span className={`rounded-full px-3 py-1 text-xs font-semibold uppercase ${orderTone(order.status)}`}>{order.status}</span>
@@ -287,12 +444,14 @@ export function TableManagementModal({
                       <div className="mt-4 flex flex-wrap gap-2">
                         <button
                           type="button"
-                          onClick={() => setPreviewOrderId(order.id)}
-                          className="w-full rounded-2xl border border-slate-200 bg-white px-4 py-3 text-center text-sm font-semibold text-slate-700 sm:w-auto"
+                          onClick={() => {
+                            void openReceiptPreview(order.id);
+                          }}
+                          className="min-h-11 w-full rounded-2xl border border-slate-200 bg-white px-4 py-3 text-center text-base font-semibold text-slate-700 sm:w-auto sm:text-sm"
                         >
                           {translateUiText("Adisyonu Gor", locale)}
                         </button>
-                        <Link href={`/cashier?order=${order.id}`} className="w-full rounded-2xl bg-gradient-to-r from-[#ff6a3d] to-[#f2b44f] px-4 py-3 text-center text-sm font-semibold text-white sm:w-auto">
+                        <Link href={`/cashier?order=${order.id}`} className="inline-flex min-h-11 w-full items-center justify-center rounded-2xl bg-gradient-to-r from-[#ff6a3d] to-[#f2b44f] px-4 py-3 text-center text-base font-semibold text-white sm:w-auto sm:text-sm">
                           {translateUiText("Popup Tahsilat", locale)}
                         </Link>
                       </div>
@@ -312,18 +471,59 @@ export function TableManagementModal({
                 <form action={updateTableAction} className="mt-4 grid gap-3">
                   <input type="hidden" name="tableId" value={table.id} />
                   <div className="grid gap-3 md:grid-cols-[160px_1fr]">
-                    <input name="tableNumber" type="number" min={1} defaultValue={table.table_number} className="rounded-2xl border border-slate-300 px-4 py-3 text-sm" />
-                    <input name="tableName" defaultValue={table.name ?? ""} placeholder={translateUiText("Masa adi", locale)} className="rounded-2xl border border-slate-300 px-4 py-3 text-sm" />
+                    <input name="tableNumber" type="number" min={1} inputMode="numeric" defaultValue={table.table_number} className="min-h-12 rounded-2xl border border-slate-300 px-4 py-3 text-base sm:text-sm" />
+                    <input name="tableName" defaultValue={table.name ?? ""} placeholder={translateUiText("Masa adi", locale)} className="min-h-12 rounded-2xl border border-slate-300 px-4 py-3 text-base sm:text-sm" />
                   </div>
                   <PendingSubmitButton
                     idleLabel={translateUiText("Masa Bilgilerini Kaydet", locale)}
                     pendingLabel="Kaydediliyor..."
-                    className="w-full rounded-2xl bg-slate-900 px-4 py-3 text-sm font-semibold text-white sm:w-auto"
+                    className="min-h-12 w-full rounded-2xl bg-slate-900 px-4 py-3 text-base font-semibold text-white sm:w-auto sm:text-sm"
                   />
                 </form>
               </article>
 
-              {latestOrder ? (
+              <article className="rounded-[28px] border border-slate-200 bg-white p-5">
+                <h3 className="font-display text-2xl font-semibold tracking-tight text-slate-900">Bolge Atama</h3>
+                <p className="mt-2 text-sm text-slate-600">Masanin hangi bolgede gorunecegini secin.</p>
+                <form action={assignTableZoneAction} className="mt-4 grid gap-3">
+                  <input type="hidden" name="tableId" value={table.id} />
+                  <select name="zoneId" defaultValue={table.zone_id ?? "__none__"} className="min-h-12 rounded-2xl border border-slate-300 px-4 py-3 text-base sm:text-sm">
+                    <option value="__none__">Atanmamis</option>
+                    {zones.map((zone) => (
+                      <option key={zone.id} value={zone.id}>
+                        {zone.name}
+                      </option>
+                    ))}
+                  </select>
+                  <PendingSubmitButton
+                    idleLabel="Bolgeyi Guncelle"
+                    pendingLabel="Guncelleniyor..."
+                    className="min-h-12 w-full rounded-2xl bg-slate-900 px-4 py-3 text-base font-semibold text-white sm:w-auto sm:text-sm"
+                  />
+                </form>
+              </article>
+
+              <article className="rounded-[28px] border border-slate-200 bg-white p-5">
+                <h3 className="font-display text-2xl font-semibold tracking-tight text-slate-900">Rezervasyon</h3>
+                <p className="mt-2 text-sm text-slate-600">
+                  Bu masayi tek tikla rezerveye alabilir veya tekrar bos duruma getirebilirsin.
+                </p>
+                <form action={updateTableStatusAction} className="mt-4">
+                  <input type="hidden" name="tableId" value={table.id} />
+                  <input type="hidden" name="status" value={table.status === "reserved" ? "empty" : "reserved"} />
+                  <PendingSubmitButton
+                    idleLabel={table.status === "reserved" ? "Rezerveden Cikar (Bos)" : "Masayi Rezerve Yap"}
+                    pendingLabel="Guncelleniyor..."
+                    disabled={table.status === "occupied"}
+                    className="min-h-12 w-full rounded-2xl border border-sky-300 bg-white px-4 py-3 text-base font-semibold text-sky-700 disabled:cursor-not-allowed disabled:opacity-50 sm:w-auto sm:text-sm"
+                  />
+                </form>
+                {table.status === "occupied" ? (
+                  <p className="mt-3 text-sm text-slate-500">Dolu masada aktif adisyon oldugu icin rezervasyon degisikligi kilitli.</p>
+                ) : null}
+              </article>
+
+              {liveLatestOrder ? (
                 <article className="rounded-[28px] border border-slate-200 bg-white p-5">
                   <h3 className="font-display text-2xl font-semibold tracking-tight text-slate-900">{translateUiText("Adisyonu Tas", locale)}</h3>
                   <p className="mt-2 text-sm text-slate-600">{translateUiText("Aktif adisyonu bos bir masaya tasiyarak eski masayi aninda kapat.", locale)}</p>
@@ -332,7 +532,7 @@ export function TableManagementModal({
                     <select
                       name="targetTableId"
                       required
-                      className="rounded-2xl border border-slate-300 px-4 py-3 text-sm"
+                      className="min-h-12 rounded-2xl border border-slate-300 px-4 py-3 text-base sm:text-sm"
                       defaultValue=""
                     >
                       <option value="" disabled>
@@ -348,7 +548,7 @@ export function TableManagementModal({
                       idleLabel={translateUiText("Adisyonu Bu Masaya Tas", locale)}
                       pendingLabel="Tasiniyor..."
                       disabled={movableTables.length === 0}
-                      className="w-full rounded-2xl border border-slate-200 bg-slate-900 px-4 py-3 text-sm font-semibold text-white disabled:cursor-not-allowed disabled:opacity-50 sm:w-auto"
+                      className="min-h-12 w-full rounded-2xl border border-slate-200 bg-slate-900 px-4 py-3 text-base font-semibold text-white disabled:cursor-not-allowed disabled:opacity-50 sm:w-auto sm:text-sm"
                     />
                   </form>
                   {movableTables.length === 0 ? (
@@ -366,7 +566,7 @@ export function TableManagementModal({
                     idleLabel={translateUiText("Masayi Sil", locale)}
                     pendingLabel="Siliniyor..."
                     disabled={table.status !== "empty"}
-                    className="w-full rounded-2xl border border-rose-300 bg-white px-4 py-3 text-sm font-semibold text-rose-700 disabled:cursor-not-allowed disabled:opacity-50 sm:w-auto"
+                    className="min-h-12 w-full rounded-2xl border border-rose-300 bg-white px-4 py-3 text-base font-semibold text-rose-700 disabled:cursor-not-allowed disabled:opacity-50 sm:w-auto sm:text-sm"
                   />
                 </form>
               </article>
@@ -383,16 +583,16 @@ export function TableManagementModal({
                   <p className="mt-1 break-all text-sm text-slate-700">{qrTarget}</p>
                 </div>
                 <div className="mt-4 grid gap-2 sm:grid-cols-2">
-                  <a href={qrImage} download={`masa-${table.table_number}-qr.png`} className="rounded-2xl border border-slate-200 bg-slate-50 px-4 py-3 text-center text-sm font-semibold text-slate-700">
+                  <a href={qrImage} download={`masa-${table.table_number}-qr.png`} className="inline-flex min-h-11 items-center justify-center rounded-2xl border border-slate-200 bg-slate-50 px-4 py-3 text-center text-base font-semibold text-slate-700 sm:text-sm">
                     {translateUiText("QR Indir", locale)}
                   </a>
-                  <a href={`/admin/tables/${table.id}/print`} target="_blank" rel="noreferrer" className="rounded-2xl border border-slate-200 bg-slate-50 px-4 py-3 text-center text-sm font-semibold text-slate-700">
+                  <a href={`/admin/tables/${table.id}/print`} target="_blank" rel="noreferrer" className="inline-flex min-h-11 items-center justify-center rounded-2xl border border-slate-200 bg-slate-50 px-4 py-3 text-center text-base font-semibold text-slate-700 sm:text-sm">
                     {translateUiText("Yazdir", locale)}
                   </a>
-                  <a href={qrTarget} target="_blank" rel="noreferrer" className="rounded-2xl border border-slate-200 bg-slate-50 px-4 py-3 text-center text-sm font-semibold text-slate-700">
+                  <a href={qrTarget} target="_blank" rel="noreferrer" className="inline-flex min-h-11 items-center justify-center rounded-2xl border border-slate-200 bg-slate-50 px-4 py-3 text-center text-base font-semibold text-slate-700 sm:text-sm">
                     {translateUiText("QR Sayfasini Ac", locale)}
                   </a>
-                  <Link href="/tables" className="rounded-2xl border border-slate-200 bg-slate-50 px-4 py-3 text-center text-sm font-semibold text-slate-700">
+                  <Link href="/tables" className="inline-flex min-h-11 items-center justify-center rounded-2xl border border-slate-200 bg-slate-50 px-4 py-3 text-center text-base font-semibold text-slate-700 sm:text-sm">
                     {translateUiText("Masa Ekrani", locale)}
                   </Link>
                 </div>

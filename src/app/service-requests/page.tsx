@@ -1,4 +1,5 @@
 import Link from "next/link";
+import { revalidatePath } from "next/cache";
 import { BackofficePage, ContentCard, EmptyPanel, SidebarPanel, SummaryCard, WorkflowGuide } from "@/components/backoffice-ui";
 import { LiveOpsBridge } from "@/components/live-ops-bridge";
 import { PendingSubmitButton } from "@/components/pending-submit-button";
@@ -16,6 +17,8 @@ async function resolveAction(formData: FormData) {
   }
 
   await resolveTableRequest(requestId);
+  revalidatePath("/service-requests");
+  revalidatePath("/ops");
 }
 
 function toLabel(type: string) {

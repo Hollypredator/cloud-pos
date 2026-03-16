@@ -14,6 +14,8 @@ export type PaymentType = "sale" | "refund";
 export type CashSessionStatus = "open" | "closed";
 export type TableRequestType = "call_waiter" | "request_bill";
 export type TableRequestStatus = "open" | "resolved";
+export type PrepStation = "kitchen" | "bar" | "dessert";
+export type OrderStationStatus = "pending" | "preparing" | "served";
 export type SalesLeadStatus = "new" | "contacted" | "qualified" | "won" | "lost";
 export type StudioRole = "owner" | "editor";
 export type SupportRole = "support_admin" | "support_agent" | "billing_agent" | "read_only";
@@ -54,6 +56,7 @@ export type Category = {
   business_id?: string;
   name: string;
   sort_order: number;
+  prep_station?: PrepStation | null;
 };
 
 export type Branch = {
@@ -82,10 +85,22 @@ export type DiningTable = {
   id: string;
   business_id?: string;
   branch_id?: string | null;
+  zone_id?: string | null;
+  zone_name?: string | null;
   table_number: number;
   name?: string | null;
   status: TableStatus;
   qr_code_identifier: string;
+};
+
+export type TableZone = {
+  id: string;
+  business_id?: string | null;
+  branch_id?: string | null;
+  name: string;
+  sort_order: number;
+  created_at: string;
+  updated_at: string;
 };
 
 export type OrderItem = {
@@ -108,6 +123,9 @@ export type OrderItemModifierSelection = {
 
 export type Order = {
   id: string;
+  check_number?: string | null;
+  check_sequence?: number | null;
+  check_date?: string | null;
   business_id?: string;
   branch_id?: string | null;
   table_id: string | null;
@@ -129,6 +147,7 @@ export type Order = {
   remaining_balance?: number;
   payment_count?: number;
   status: OrderStatus;
+  station_statuses?: Partial<Record<PrepStation, OrderStationStatus>> | null;
   created_at: string;
   table_number?: number;
 };
