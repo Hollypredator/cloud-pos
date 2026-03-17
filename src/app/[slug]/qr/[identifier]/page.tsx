@@ -25,7 +25,6 @@ export default async function BusinessQrPage({
         </div>
       ) : null}
       <QrOrderingClient
-        qrCodeIdentifier={identifier}
         categories={categories}
         products={products}
         modifierGroups={modifierGroups}

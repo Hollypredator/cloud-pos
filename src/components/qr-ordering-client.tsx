@@ -4,13 +4,11 @@ import { useMemo, useState } from "react";
 import type { Category, Product, ProductModifierGroup, ProductModifierOption } from "@/lib/types";
 
 export function QrOrderingClient({
-  qrCodeIdentifier,
   categories,
   products,
   modifierGroups,
   modifierOptions,
 }: {
-  qrCodeIdentifier: string;
   categories: Category[];
   products: Product[];
   modifierGroups: ProductModifierGroup[];
@@ -65,25 +63,9 @@ export function QrOrderingClient({
   const visibleProducts = grouped.get(activeCategoryId) ?? [];
 
   return (
-    <div className="mx-auto flex w-full max-w-6xl flex-col gap-6 px-4 py-6 md:px-8">
-      <header className="rounded-2xl bg-slate-900 p-5 text-white">
-        <p className="text-sm text-slate-300">QR Menu</p>
-        <h1 className="text-2xl font-semibold">Masa: {qrCodeIdentifier}</h1>
-        <p className="mt-3 text-sm text-slate-300">
-          Bu ekranda sadece menu goruntulenir. Siparis ve adisyon islemleri isletme personeli tarafindan yonetilir.
-        </p>
-      </header>
-
-      <section className="rounded-2xl border border-slate-200 bg-white p-4">
-        <div className="mb-4 flex flex-wrap items-center justify-between gap-3">
-          <div>
-            <h2 className="text-xl font-semibold text-slate-900">Menu</h2>
-            <p className="text-sm text-slate-500">Kategoriyi secip urun detayini kart icinde acabilirsiniz.</p>
-          </div>
-          <div className="rounded-xl border border-amber-200 bg-amber-50 px-4 py-2 text-sm text-amber-900">QR uzerinden siparis alinmiyor</div>
-        </div>
-
-        <div className="mb-4 overflow-x-auto pb-1">
+    <div className="mx-auto flex w-full max-w-5xl flex-col gap-4 bg-[radial-gradient(circle_at_top,#1f2c56_0%,#0b1224_52%,#090f1f_100%)] px-3 py-4 md:px-6 md:py-6">
+      <section className="rounded-3xl border border-white/10 bg-slate-900/65 p-3 shadow-[0_18px_35px_rgba(2,6,23,0.45)] backdrop-blur">
+        <div className="mb-3 overflow-x-auto pb-1">
           <div className="flex min-w-max gap-2">
             {orderedCategories.map((category) => {
               const isActive = category.id === activeCategoryId;
@@ -96,7 +78,9 @@ export function QrOrderingClient({
                     setExpandedProductId(null);
                   }}
                   className={`rounded-2xl px-4 py-2 text-sm font-semibold transition ${
-                    isActive ? "bg-slate-900 text-white" : "border border-slate-200 bg-slate-50 text-slate-700"
+                    isActive
+                      ? "bg-[linear-gradient(135deg,#ff6d3d_0%,#f0b04f_100%)] text-white shadow-[0_10px_20px_rgba(255,109,61,0.28)]"
+                      : "border border-white/15 bg-white/5 text-slate-200"
                   }`}
                 >
                   {category.name}
@@ -107,7 +91,7 @@ export function QrOrderingClient({
         </div>
 
         {visibleProducts.length === 0 ? (
-          <p className="rounded-2xl border border-slate-200 bg-slate-50 px-4 py-5 text-sm text-slate-500">
+          <p className="rounded-2xl border border-white/10 bg-white/5 px-4 py-5 text-sm text-slate-300">
             Bu kategori icin urun bulunmuyor.
           </p>
         ) : (
@@ -117,40 +101,42 @@ export function QrOrderingClient({
               const modifierGroupsForProduct = groupsByProduct.get(product.id) ?? [];
 
               return (
-                <article key={product.id} className="rounded-2xl border border-slate-200 bg-slate-50">
+                <article key={product.id} className="overflow-hidden rounded-2xl border border-white/10 bg-[linear-gradient(180deg,#1b233f_0%,#141c33_100%)]">
                   <button
                     type="button"
                     onClick={() => setExpandedProductId((prev) => (prev === product.id ? null : product.id))}
                     className="flex w-full items-center gap-3 p-3 text-left"
                   >
                     {product.image_url ? (
-                      <img src={product.image_url} alt={product.name} className="h-16 w-16 rounded-xl object-cover" />
+                      <img src={product.image_url} alt={product.name} className="h-16 w-16 rounded-xl border border-white/10 object-cover" />
                     ) : (
-                      <div className="flex h-16 w-16 items-center justify-center rounded-xl border border-dashed border-slate-300 bg-white text-[10px] font-semibold uppercase tracking-[0.12em] text-slate-500">
+                      <div className="flex h-16 w-16 items-center justify-center rounded-xl border border-dashed border-white/20 bg-white/5 text-[10px] font-semibold uppercase tracking-[0.12em] text-slate-300">
                         Gorsel Yok
                       </div>
                     )}
                     <div className="min-w-0 flex-1">
-                      <p className="truncate text-base font-semibold text-slate-900">{product.name}</p>
-                      <p className="mt-1 text-sm text-slate-600">{product.description ?? "Aciklama bulunmuyor."}</p>
-                      <p className="mt-2 text-sm font-semibold text-emerald-700">{Number(product.price).toFixed(2)} TL</p>
+                      <p className="truncate text-base font-semibold text-white">{product.name}</p>
+                      <p className="mt-1 text-sm text-slate-300">{product.description ?? "Aciklama bulunmuyor."}</p>
+                      <p className="mt-2 text-sm font-semibold text-amber-300">{Number(product.price).toFixed(2)} TL</p>
                     </div>
-                    <span className="rounded-lg bg-slate-900 px-3 py-2 text-xs font-medium text-white">{isExpanded ? "Kapat" : "Detay"}</span>
+                    <span className="rounded-lg border border-white/15 bg-white/5 px-3 py-2 text-xs font-medium text-slate-100">
+                      {isExpanded ? "Kapat" : "Detay"}
+                    </span>
                   </button>
 
                   {isExpanded ? (
-                    <div className="space-y-3 border-t border-slate-200 bg-white p-4">
-                      <p className="text-sm text-slate-600">{product.description ?? "Aciklama bulunmuyor."}</p>
+                    <div className="space-y-3 border-t border-white/10 bg-slate-950/30 p-4">
+                      <p className="text-sm text-slate-200">{product.description ?? "Aciklama bulunmuyor."}</p>
                       {modifierGroupsForProduct.length > 0 ? (
                         <div className="space-y-3">
                           {modifierGroupsForProduct.map((group) => (
-                            <div key={group.id} className="rounded-xl border border-slate-200 bg-slate-50 p-3">
-                              <p className="font-semibold text-slate-900">{group.name}</p>
+                            <div key={group.id} className="rounded-xl border border-white/10 bg-white/5 p-3">
+                              <p className="font-semibold text-white">{group.name}</p>
                               <div className="mt-2 grid gap-2 sm:grid-cols-2">
                                 {(optionsByGroup.get(group.id) ?? []).map((option) => (
-                                  <div key={option.id} className="rounded-lg border border-slate-200 bg-white px-3 py-2 text-sm text-slate-700">
+                                  <div key={option.id} className="rounded-lg border border-white/10 bg-slate-900/40 px-3 py-2 text-sm text-slate-100">
                                     <p className="font-medium">{option.name}</p>
-                                    <p className="text-xs text-slate-500">
+                                    <p className="text-xs text-slate-300">
                                       {Number(option.price_delta) > 0 ? `+${Number(option.price_delta).toFixed(2)} TL` : "Dahil"}
                                     </p>
                                   </div>
@@ -160,7 +146,7 @@ export function QrOrderingClient({
                           ))}
                         </div>
                       ) : (
-                        <p className="text-sm text-slate-500">Bu urun icin secenek bilgisi bulunmuyor.</p>
+                        <p className="text-sm text-slate-300">Bu urun icin secenek bilgisi bulunmuyor.</p>
                       )}
                     </div>
                   ) : null}
@@ -169,6 +155,7 @@ export function QrOrderingClient({
             })}
           </div>
         )}
+        <p className="mt-4 text-center text-xs text-slate-400">QR ekrani menu goruntuleme icindir. Siparisler personel tarafindan acilir.</p>
       </section>
     </div>
   );
