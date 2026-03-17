@@ -18,9 +18,6 @@ export default async function BusinessQrPage({
 
   const { categories, products, modifierGroups, modifierOptions, usingDemoData } = await getMenu(businessSlug);
   const qrAccessToken = createQrAccessToken({ qrCodeIdentifier: identifier, businessSlug });
-  if (!qrAccessToken) {
-    throw new Error("QR_ACCESS_SECRET tanimli olmadan QR operasyon API'leri acilamaz.");
-  }
 
   return (
     <div className="min-h-screen bg-slate-100">

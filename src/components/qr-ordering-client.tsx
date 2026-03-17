@@ -21,7 +21,7 @@ export function QrOrderingClient({
 }: {
   businessSlug?: string;
   qrCodeIdentifier: string;
-  qrAccessToken: string;
+  qrAccessToken: string | null;
   tableId: string;
   categories: Category[];
   products: Product[];
@@ -79,10 +79,16 @@ export function QrOrderingClient({
         </p>
       </header>
 
-      <div className="grid gap-4 lg:grid-cols-2">
-        <OrderStatusWidget businessSlug={businessSlug} qrCodeIdentifier={qrCodeIdentifier} qrAccessToken={qrAccessToken} />
-        <OrderHistoryWidget businessSlug={businessSlug} qrCodeIdentifier={qrCodeIdentifier} qrAccessToken={qrAccessToken} />
-      </div>
+      {qrAccessToken ? (
+        <div className="grid gap-4 lg:grid-cols-2">
+          <OrderStatusWidget businessSlug={businessSlug} qrCodeIdentifier={qrCodeIdentifier} qrAccessToken={qrAccessToken} />
+          <OrderHistoryWidget businessSlug={businessSlug} qrCodeIdentifier={qrCodeIdentifier} qrAccessToken={qrAccessToken} />
+        </div>
+      ) : (
+        <section className="rounded-2xl border border-amber-200 bg-amber-50 p-4 text-sm text-amber-900">
+          Anlik adisyon durumu su an gosterilemiyor. Isletme ayarlarinda `QR_ACCESS_SECRET` tanimlandiginda bu alan otomatik acilir.
+        </section>
+      )}
 
       {activeProduct ? (
         <section className="rounded-2xl border border-slate-200 bg-white p-4">
