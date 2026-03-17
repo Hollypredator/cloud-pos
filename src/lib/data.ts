@@ -378,23 +378,146 @@ function deriveOrderStatusFromStationStatuses(
   if (statuses.includes("preparing")) {
     return "preparing" as OrderStatus;
   }
-  return "served" as OrderStatus;
+  return "ready" as OrderStatus;
 }
 
 function isMissingStationStatusesColumnError(message?: string | null) {
   return (message ?? "").toLowerCase().includes("station_statuses");
 }
 
-function resolveOrderSettlementStatus(targetAmount: number, netAmount: number, allowRefunded: boolean) {
+function isMissingLockVersionColumnError(message?: string | null) {
+  return (message ?? "").toLowerCase().includes("lock_version");
+}
+
+function isMissingRpcFunctionError(message?: string | null, rpcName?: string) {
+  const normalized = (message ?? "").toLowerCase();
+  if (!normalized) {
+    return false;
+  }
+  if (rpcName && normalized.includes(rpcName.toLowerCase()) && normalized.includes("does not exist")) {
+    return true;
+  }
+  return normalized.includes("function") && normalized.includes("does not exist");
+}
+
+const ORDER_STATUS_TRANSITIONS: Record<OrderStatus, ReadonlySet<OrderStatus>> = {
+  pending: new Set(["preparing", "ready", "served", "cancelled"]),
+  preparing: new Set(["pending", "ready", "served", "cancelled"]),
+  ready: new Set(["preparing", "served", "partially_paid", "paid", "cancelled"]),
+  served: new Set(["ready", "partially_paid", "paid", "cancelled"]),
+  partially_paid: new Set(["partially_paid", "paid", "partially_refunded", "refunded"]),
+  paid: new Set(["partially_refunded", "refunded"]),
+  partially_refunded: new Set(["partially_refunded", "refunded"]),
+  cancelled: new Set([]),
+  refunded: new Set([]),
+};
+
+function isAllowedOrderStatusTransition(currentStatus: OrderStatus, nextStatus: OrderStatus) {
+  if (currentStatus === nextStatus) {
+    return true;
+  }
+  return ORDER_STATUS_TRANSITIONS[currentStatus]?.has(nextStatus) ?? false;
+}
+
+function resolveOrderSettlementStatus(
+  targetAmount: number,
+  netAmount: number,
+  allowRefunded: boolean,
+  currentStatus: OrderStatus,
+) {
   const roundedTarget = toMoney(targetAmount);
   const roundedNet = toMoney(netAmount);
   if (roundedNet >= roundedTarget) {
     return "paid" as OrderStatus;
   }
+  if (allowRefunded && roundedNet > 0) {
+    return "partially_refunded" as OrderStatus;
+  }
   if (allowRefunded && roundedNet <= 0) {
     return "refunded" as OrderStatus;
   }
+  if (roundedNet > 0) {
+    return "partially_paid" as OrderStatus;
+  }
+  if (currentStatus === "pending" || currentStatus === "preparing") {
+    return "ready" as OrderStatus;
+  }
+  if (currentStatus === "cancelled" || currentStatus === "refunded") {
+    return currentStatus;
+  }
   return "served" as OrderStatus;
+}
+
+function mapPaymentMutationConflictToMessage(conflictReason: string, paymentType: "sale" | "refund") {
+  if (conflictReason === "ORDER_NOT_FOUND") {
+    return "Siparis bulunamadi.";
+  }
+  if (conflictReason === "INVALID_AMOUNT") {
+    return paymentType === "sale" ? "Odeme tutari sifirdan buyuk olmali." : "Iade tutari sifirdan buyuk olmali.";
+  }
+  if (conflictReason === "ORDER_CANCELLED") {
+    return paymentType === "sale"
+      ? "Iptal edilmis siparise odeme eklenemez."
+      : "Iptal edilmis siparise iade eklenemez.";
+  }
+  if (conflictReason === "ORDER_REFUNDED" && paymentType === "sale") {
+    return "Iade edilmis siparise odeme eklenemez.";
+  }
+  if (conflictReason === "OVERPAYMENT") {
+    return "Odeme tutari kalan bakiyeden buyuk olamaz.";
+  }
+  if (conflictReason === "OVER_REFUND") {
+    return "Iade tutari iade edilebilir bakiyeden buyuk olamaz.";
+  }
+  if (conflictReason === "NO_REFUNDABLE_BALANCE") {
+    return "Iade edilebilir tahsilat bulunamadi.";
+  }
+  if (conflictReason === "STATUS_TRANSITION_BLOCKED") {
+    return "Siparis durum gecisi dogrulanamadi.";
+  }
+  if (conflictReason === "CONCURRENT_UPDATE") {
+    return "Siparis baska bir terminalde guncellendi. Lutfen tekrar deneyin.";
+  }
+  return paymentType === "sale" ? "Odeme islemi tamamlanamadi." : "Iade islemi tamamlanamadi.";
+}
+
+function parsePaymentMutationRpcRow(raw: unknown) {
+  if (!raw || typeof raw !== "object") {
+    return null;
+  }
+  const row = raw as Record<string, unknown>;
+  return {
+    applied: row.applied === true,
+    idempotent: row.idempotent === true,
+    paymentId: typeof row.payment_id === "string" ? row.payment_id : null,
+    nextStatus: typeof row.next_status === "string" ? (row.next_status as OrderStatus) : null,
+    amountPaid: toMoney(Number(row.amount_paid ?? 0)),
+    remainingBalance: toMoney(Number(row.remaining_balance ?? 0)),
+    conflictReason: typeof row.conflict_reason === "string" ? row.conflict_reason : null,
+  };
+}
+
+function resolvePaymentMutationOutcome(input: {
+  row: ReturnType<typeof parsePaymentMutationRpcRow>;
+  paymentType: "sale" | "refund";
+}) {
+  const row = input.row;
+  if (!row) {
+    return { ok: false as const, error: mapPaymentMutationConflictToMessage("UNKNOWN", input.paymentType) };
+  }
+  if (row.applied || row.idempotent) {
+    return {
+      ok: true as const,
+      idempotent: row.idempotent,
+      status: row.nextStatus ?? "served",
+      amountPaid: row.amountPaid,
+      remaining: row.remainingBalance,
+    };
+  }
+  return {
+    ok: false as const,
+    error: mapPaymentMutationConflictToMessage(row.conflictReason ?? "UNKNOWN", input.paymentType),
+  };
 }
 
 type SettlementScope = {
@@ -473,7 +596,10 @@ async function syncOrderStationStatusesAfterOrderWrite(input: {
     }
   }
 
-  const aggregateStatus = deriveOrderStatusFromStationStatuses(mergedStatuses, currentStatus);
+  const aggregateStatus =
+    currentStatus === "partially_paid" || currentStatus === "partially_refunded"
+      ? currentStatus
+      : deriveOrderStatusFromStationStatuses(mergedStatuses, currentStatus);
   let updateQuery = input.supabase
     .from("orders")
     .update({
@@ -503,7 +629,27 @@ async function reconcileOrderSettlementState(input: {
 }) {
   const latestSummary = await getOrderPaymentSummaryMap(input.supabase, [input.orderId]);
   const amountPaid = toMoney(latestSummary.get(input.orderId)?.net ?? 0);
-  const nextStatus = resolveOrderSettlementStatus(input.targetAmount, amountPaid, input.allowRefunded);
+  let currentOrderQuery = input.supabase
+    .from("orders")
+    .select("id, status")
+    .eq("id", input.orderId);
+  if (!input.scope.useLegacySchema && input.scope.businessId) {
+    currentOrderQuery = currentOrderQuery.eq("business_id", input.scope.businessId);
+  }
+  if (input.scope.branchId) {
+    currentOrderQuery = currentOrderQuery.eq("branch_id", input.scope.branchId);
+  }
+  const { data: currentOrderRow } = await currentOrderQuery.maybeSingle();
+  const currentStatus = ((currentOrderRow as { status?: OrderStatus } | null)?.status ?? "served") as OrderStatus;
+  const nextStatusCandidate = resolveOrderSettlementStatus(
+    input.targetAmount,
+    amountPaid,
+    input.allowRefunded,
+    currentStatus,
+  );
+  const nextStatus = isAllowedOrderStatusTransition(currentStatus, nextStatusCandidate)
+    ? nextStatusCandidate
+    : currentStatus;
   const remaining = toMoney(Math.max(0, input.targetAmount - amountPaid));
 
   const orderUpdateResult = await retryMutation(async () => {
@@ -2448,6 +2594,9 @@ export async function createOrder(input: {
     revalidateOperationsCaches();
     return { ok: true, id: rpcOrder.order_id, usingDemoData: false };
   }
+  if (rpcResult.error && !isMissingRpcFunctionError(rpcResult.error.message, "create_or_append_order")) {
+    return { ok: false, error: rpcResult.error.message };
+  }
 
   type OrderMergeCandidate = {
     id: string;
@@ -2455,6 +2604,8 @@ export async function createOrder(input: {
     final_price: number | null;
     items: OrderItem[] | null;
     status: OrderStatus | null;
+    updated_at?: string | null;
+    lock_version?: number | null;
   };
 
   let orderId: string | null = null;
@@ -2470,10 +2621,10 @@ export async function createOrder(input: {
   if (channel === "dine_in" && input.tableId) {
     let mergeQuery = supabase
       .from("orders")
-      .select("id, total_price, final_price, items, status")
+      .select("id, total_price, final_price, items, status, updated_at, lock_version")
       .eq("table_id", input.tableId)
       .eq("channel", "dine_in")
-      .in("status", ["pending", "preparing", "served"])
+      .in("status", ["pending", "preparing", "ready", "served", "partially_paid"])
       .order("created_at", { ascending: false })
       .limit(1);
 
@@ -2502,18 +2653,42 @@ export async function createOrder(input: {
         status: (mergeRow.status ?? "pending") as OrderStatus,
       };
 
-      const { error: updateExistingError } = await supabase
+      let updateExistingQuery = supabase
         .from("orders")
         .update({
           items: mergedItems,
           total_price: updatedTotal,
           final_price: updatedFinal,
           status: "pending",
+          lock_version: Math.max(0, Number(mergeRow.lock_version ?? 0)) + 1,
         })
-        .eq("id", mergeRow.id);
+        .eq("id", mergeRow.id)
+        .select("id");
+      if (mergeRow.updated_at) {
+        updateExistingQuery = updateExistingQuery.eq("updated_at", mergeRow.updated_at);
+      }
+      if (typeof mergeRow.lock_version === "number") {
+        updateExistingQuery = updateExistingQuery.eq("lock_version", mergeRow.lock_version);
+      }
+      const { data: updatedExistingRows, error: updateExistingError } = await updateExistingQuery;
 
-      if (updateExistingError) {
+      if (updateExistingError && isMissingLockVersionColumnError(updateExistingError.message)) {
+        const fallbackUpdate = await supabase
+          .from("orders")
+          .update({
+            items: mergedItems,
+            total_price: updatedTotal,
+            final_price: updatedFinal,
+            status: "pending",
+          })
+          .eq("id", mergeRow.id);
+        if (fallbackUpdate.error) {
+          return { ok: false, error: fallbackUpdate.error.message };
+        }
+      } else if (updateExistingError) {
         return { ok: false, error: updateExistingError.message };
+      } else if (!updatedExistingRows || updatedExistingRows.length === 0) {
+        return { ok: false, error: "Siparis baska bir kullanici tarafindan guncellendi. Lutfen tekrar deneyin." };
       }
 
       orderId = mergeRow.id;
@@ -3132,7 +3307,7 @@ async function getCachedKitchenOrdersSnapshot(input: {
   branchId: string | null;
   useLegacySchema: boolean;
 }) {
-  const statusKey = ["pending", "preparing", "served"].join(",");
+  const statusKey = ["pending", "preparing", "ready", "served", "partially_paid"].join(",");
   const cacheKey = `kitchen-orders:${input.businessId ?? "none"}:${input.branchId ?? "all"}:${statusKey}:${input.useLegacySchema ? "legacy" : "scoped"}`;
   const reader = unstable_cache(
     async () => {
@@ -3144,7 +3319,7 @@ async function getCachedKitchenOrdersSnapshot(input: {
       let ordersQuery = supabase
         .from("orders")
         .select("id, check_number, branch_id, table_id, station_statuses, total_price, discount_amount, service_fee, final_price, channel, customer_name, delivery_address, fulfillment_status, status, created_at, tables(table_number)")
-        .in("status", ["pending", "preparing", "served"])
+        .in("status", ["pending", "preparing", "ready", "served", "partially_paid"])
         .order("created_at", { ascending: true });
 
       if (!input.useLegacySchema && input.businessId) {
@@ -3424,14 +3599,19 @@ export async function getKitchenOrdersSnapshot() {
     const supabase = await getTenantDataClient();
     const paymentSummary = await getOrderPaymentSummaryMap(supabase, orders.map((order) => order.id));
     return applyPaymentSummaryToOrders(orders, paymentSummary).filter(
-      (order) => order.status === "pending" || order.status === "preparing" || order.status === "served",
+      (order) =>
+        order.status === "pending" ||
+        order.status === "preparing" ||
+        order.status === "ready" ||
+        order.status === "served" ||
+        order.status === "partially_paid",
     );
   }
 
   const supabase = getSupabaseServerClient();
   if (!supabase) {
     return {
-      orders: demoOrders.filter((order) => ["pending", "preparing", "served"].includes(order.status)),
+      orders: demoOrders.filter((order) => ["pending", "preparing", "ready", "served", "partially_paid"].includes(order.status)),
       usingDemoData: true,
     };
   }
@@ -3454,7 +3634,7 @@ export async function getKitchenOrdersSnapshot() {
     };
   }
 
-  const fallback = await listOrders(["pending", "preparing", "served"], { includePaymentSummary: false });
+  const fallback = await listOrders(["pending", "preparing", "ready", "served", "partially_paid"], { includePaymentSummary: false });
   return {
     orders: await normalizeKitchenOrders(fallback.orders),
     usingDemoData: fallback.usingDemoData,
@@ -3463,17 +3643,19 @@ export async function getKitchenOrdersSnapshot() {
 
 export async function getCashierPageSnapshot(selectedOrderId?: string) {
   const cashierOpenScope = (process.env.CASHIER_OPEN_SCOPE ?? "all").toLowerCase();
+  const cashierOpenLimit = Math.max(20, Number.parseInt(process.env.CASHIER_OPEN_LIMIT ?? "40", 10) || 40);
+  const cashierPaidLimit = Math.max(6, Number.parseInt(process.env.CASHIER_PAID_LIMIT ?? "8", 10) || 8);
   const openStatuses: OrderStatus[] =
-    cashierOpenScope === "served_only" ? ["served"] : ["pending", "preparing", "served"];
+    cashierOpenScope === "served_only" ? ["ready", "served", "partially_paid"] : ["pending", "preparing", "ready", "served", "partially_paid"];
 
   const [servedResult, paidResult, selectedOrderResult, supabase] = await Promise.all([
     listOrders(openStatuses, {
       includeItems: false,
       includePaymentSummary: false,
-      limit: 60,
+      limit: cashierOpenLimit,
       ascending: false,
     }),
-    listOrders(["paid"], { includeItems: false, includePaymentSummary: false, limit: 8, ascending: false }),
+    listOrders(["paid"], { includeItems: false, includePaymentSummary: false, limit: cashierPaidLimit, ascending: false }),
     typeof selectedOrderId === "string"
       ? getOrderReceipt(selectedOrderId)
       : Promise.resolve({ order: null as Order | null, usingDemoData: false }),
@@ -3519,12 +3701,13 @@ export async function getCashierPageSnapshot(selectedOrderId?: string) {
 }
 
 export async function getDeliveryPageSnapshot(selectedOrderId?: string) {
+  const deliveryBoardLimit = Math.max(20, Number.parseInt(process.env.DELIVERY_BOARD_LIMIT ?? "50", 10) || 50);
   const [ordersResult, couriersResult, selectedOrderResult] = await Promise.all([
-    listOrders(["pending", "preparing", "served"], {
+    listOrders(["pending", "preparing", "ready", "served"], {
       includeItems: false,
       includePaymentSummary: false,
       channels: ["delivery"],
-      limit: 80,
+      limit: deliveryBoardLimit,
       ascending: false,
     }),
     listCouriers(),
@@ -3792,7 +3975,7 @@ export async function updateOrderStatus(orderId: string, nextStatus: OrderStatus
   }
 
   const scope = await getDefaultBusinessScope();
-  let findQuery = supabase.from("orders").select("id, table_id").eq("id", orderId);
+  let findQuery = supabase.from("orders").select("id, table_id, status, lock_version").eq("id", orderId);
   if (!scope.useLegacySchema && scope.businessId) {
     findQuery = findQuery.eq("business_id", scope.businessId);
   }
@@ -3804,16 +3987,41 @@ export async function updateOrderStatus(orderId: string, nextStatus: OrderStatus
     return { ok: false, error: findError?.message ?? "Order not found" };
   }
 
-  let updateQuery = supabase.from("orders").update({ status: nextStatus }).eq("id", orderId);
+  const currentStatus = (orderRow.status as OrderStatus | null) ?? "pending";
+  if (!isAllowedOrderStatusTransition(currentStatus, nextStatus)) {
+    return { ok: false, error: `Gecersiz siparis gecisi: ${currentStatus} -> ${nextStatus}` };
+  }
+
+  const expectedLockVersion = Number((orderRow as { lock_version?: number | null }).lock_version ?? 0);
+  let updateQuery = supabase
+    .from("orders")
+    .update({ status: nextStatus, lock_version: expectedLockVersion + 1 })
+    .eq("id", orderId)
+    .eq("lock_version", expectedLockVersion)
+    .select("id");
   if (!scope.useLegacySchema && scope.businessId) {
     updateQuery = updateQuery.eq("business_id", scope.businessId);
   }
   if (scope.branchId) {
     updateQuery = updateQuery.eq("branch_id", scope.branchId);
   }
-  const { error } = await updateQuery;
-  if (error) {
+  const { data: updatedRows, error } = await updateQuery;
+  if (error && isMissingLockVersionColumnError(error.message)) {
+    let fallbackUpdateQuery = supabase.from("orders").update({ status: nextStatus }).eq("id", orderId);
+    if (!scope.useLegacySchema && scope.businessId) {
+      fallbackUpdateQuery = fallbackUpdateQuery.eq("business_id", scope.businessId);
+    }
+    if (scope.branchId) {
+      fallbackUpdateQuery = fallbackUpdateQuery.eq("branch_id", scope.branchId);
+    }
+    const fallbackResult = await fallbackUpdateQuery;
+    if (fallbackResult.error) {
+      return { ok: false, error: fallbackResult.error.message };
+    }
+  } else if (error) {
     return { ok: false, error: error.message };
+  } else if (!updatedRows || updatedRows.length === 0) {
+    return { ok: false, error: "Siparis baska bir kullanici tarafindan guncellendi. Lutfen tekrar deneyin." };
   }
 
   if (nextStatus === "paid") {
@@ -3850,7 +4058,7 @@ export async function updateOrderStationStatus(
   const scope = await getDefaultBusinessScope();
   let findQuery = supabase
     .from("orders")
-    .select("id, status, station_statuses")
+    .select("id, status, station_statuses, lock_version")
     .eq("id", orderId);
   if (!scope.useLegacySchema && scope.businessId) {
     findQuery = findQuery.eq("business_id", scope.businessId);
@@ -3879,27 +4087,67 @@ export async function updateOrderStationStatus(
     ...(parseOrderStationStatuses((orderRow as { station_statuses?: unknown }).station_statuses) ?? {}),
     [station]: nextStationStatus,
   };
-  const aggregateStatus = deriveOrderStatusFromStationStatuses(stationStatuses, currentStatus);
+  const aggregateStatus =
+    currentStatus === "partially_paid" || currentStatus === "partially_refunded"
+      ? currentStatus
+      : deriveOrderStatusFromStationStatuses(stationStatuses, currentStatus);
+  if (!isAllowedOrderStatusTransition(currentStatus, aggregateStatus)) {
+    return { ok: false, error: `Gecersiz siparis gecisi: ${currentStatus} -> ${aggregateStatus}` };
+  }
+  const expectedLockVersion = Number((orderRow as { lock_version?: number | null }).lock_version ?? 0);
 
   let updateQuery = supabase
     .from("orders")
     .update({
       station_statuses: stationStatuses,
       status: aggregateStatus,
+      lock_version: expectedLockVersion + 1,
     })
-    .eq("id", orderId);
+    .eq("id", orderId)
+    .eq("lock_version", expectedLockVersion)
+    .select("id");
   if (!scope.useLegacySchema && scope.businessId) {
     updateQuery = updateQuery.eq("business_id", scope.businessId);
   }
   if (scope.branchId) {
     updateQuery = updateQuery.eq("branch_id", scope.branchId);
   }
-  const { error: updateError } = await updateQuery;
+  const { data: updatedRows, error: updateError } = await updateQuery;
   if (updateError) {
     if (isMissingStationStatusesColumnError(updateError.message)) {
       return updateOrderStatus(orderId, nextStationStatus);
     }
+    if (isMissingLockVersionColumnError(updateError.message)) {
+      let fallbackUpdateQuery = supabase
+        .from("orders")
+        .update({
+          station_statuses: stationStatuses,
+          status: aggregateStatus,
+        })
+        .eq("id", orderId);
+      if (!scope.useLegacySchema && scope.businessId) {
+        fallbackUpdateQuery = fallbackUpdateQuery.eq("business_id", scope.businessId);
+      }
+      if (scope.branchId) {
+        fallbackUpdateQuery = fallbackUpdateQuery.eq("branch_id", scope.branchId);
+      }
+      const fallbackResult = await fallbackUpdateQuery;
+      if (fallbackResult.error) {
+        return { ok: false, error: fallbackResult.error.message };
+      }
+      fireAndForgetAuditEvent({
+        entityType: "order",
+        entityId: orderId,
+        action: "station_status_change",
+        details: { station, nextStationStatus, aggregateStatus },
+      });
+      revalidateOrderFlowCaches();
+      return { ok: true, usingDemoData: false };
+    }
     return { ok: false, error: updateError.message };
+  }
+  if (!updatedRows || updatedRows.length === 0) {
+    return { ok: false, error: "Siparis baska bir kullanici tarafindan guncellendi. Lutfen tekrar deneyin." };
   }
 
   fireAndForgetAuditEvent({
@@ -3924,7 +4172,7 @@ export async function applyOrderFinancials(input: {
   }
 
   const scope = await getDefaultBusinessScope();
-  let findQuery = supabase.from("orders").select("id, total_price").eq("id", input.orderId);
+  let findQuery = supabase.from("orders").select("id, total_price, lock_version").eq("id", input.orderId);
   if (!scope.useLegacySchema && scope.businessId) {
     findQuery = findQuery.eq("business_id", scope.businessId);
   }
@@ -3947,17 +4195,41 @@ export async function applyOrderFinancials(input: {
       discount_amount: discountAmount,
       service_fee: serviceFee,
       final_price: finalPrice,
+      lock_version: Number((orderRow as { lock_version?: number | null }).lock_version ?? 0) + 1,
     })
-    .eq("id", input.orderId);
+    .eq("id", input.orderId)
+    .eq("lock_version", Number((orderRow as { lock_version?: number | null }).lock_version ?? 0))
+    .select("id");
   if (!scope.useLegacySchema && scope.businessId) {
     financialQuery = financialQuery.eq("business_id", scope.businessId);
   }
   if (scope.branchId) {
     financialQuery = financialQuery.eq("branch_id", scope.branchId);
   }
-  const { error } = await financialQuery;
-  if (error) {
+  const { data: financialRows, error } = await financialQuery;
+  if (error && isMissingLockVersionColumnError(error.message)) {
+    let fallbackFinancialQuery = supabase
+      .from("orders")
+      .update({
+        discount_amount: discountAmount,
+        service_fee: serviceFee,
+        final_price: finalPrice,
+      })
+      .eq("id", input.orderId);
+    if (!scope.useLegacySchema && scope.businessId) {
+      fallbackFinancialQuery = fallbackFinancialQuery.eq("business_id", scope.businessId);
+    }
+    if (scope.branchId) {
+      fallbackFinancialQuery = fallbackFinancialQuery.eq("branch_id", scope.branchId);
+    }
+    const fallbackResult = await fallbackFinancialQuery;
+    if (fallbackResult.error) {
+      return { ok: false, error: fallbackResult.error.message };
+    }
+  } else if (error) {
     return { ok: false, error: error.message };
+  } else if (!financialRows || financialRows.length === 0) {
+    return { ok: false, error: "Siparis baska bir kullanici tarafindan guncellendi. Lutfen tekrar deneyin." };
   }
 
   fireAndForgetAuditEvent({
@@ -4001,8 +4273,78 @@ export async function completeOrderPayment(input: {
   if (findError || !orderRow) {
     return { ok: false, error: findError?.message ?? "Siparis bulunamadi." };
   }
-  if (orderRow.status === "cancelled" || orderRow.status === "refunded") {
+  if (orderRow.status === "cancelled" || orderRow.status === "refunded" || orderRow.status === "partially_refunded") {
     return { ok: false, error: "Iptal veya iade edilmis siparise odeme eklenemez." };
+  }
+  const requestKey = typeof input.requestKey === "string" && input.requestKey.trim() ? input.requestKey.trim() : null;
+  const requestedAmount = Number.isFinite(Number(input.amount))
+    ? toMoney(Math.max(0, Number(input.amount)))
+    : null;
+  if (requestedAmount !== null && requestedAmount <= 0) {
+    return { ok: false, error: "Odeme tutari sifirdan buyuk olmali." };
+  }
+
+  const paymentMutationRpcResult = await supabase.rpc("apply_order_payment_mutation", {
+    p_order_id: input.orderId,
+    p_payment_type: "sale",
+    p_method: input.method,
+    p_amount: requestedAmount,
+    p_note: input.note ?? null,
+    p_created_by: input.createdBy ?? null,
+    p_idempotency_key: requestKey,
+    p_business_id: scope.businessId,
+    p_branch_id: scope.branchId,
+  });
+  const rpcPaymentRow = parsePaymentMutationRpcRow(
+    ((paymentMutationRpcResult.data as Array<Record<string, unknown>> | null) ?? [])[0] ?? null,
+  );
+  if (!paymentMutationRpcResult.error && rpcPaymentRow) {
+    const outcome = resolvePaymentMutationOutcome({ row: rpcPaymentRow, paymentType: "sale" });
+    if (!outcome.ok) {
+      if (rpcPaymentRow.conflictReason === "CONCURRENT_UPDATE") {
+        await setAlertDispatch("duplicate_payment_counter", {
+          orderId: input.orderId,
+          reason: rpcPaymentRow.conflictReason,
+          at: new Date().toISOString(),
+        });
+      }
+      return { ok: false, error: outcome.error };
+    }
+
+    if (outcome.idempotent) {
+      await setAlertDispatch("duplicate_payment_counter", {
+        orderId: input.orderId,
+        requestKey,
+        status: outcome.status,
+        amountPaid: outcome.amountPaid,
+        remaining: outcome.remaining,
+        at: new Date().toISOString(),
+      });
+    }
+    fireAndForgetAuditEvent({
+      entityType: "payment",
+      entityId: input.orderId,
+      action: outcome.idempotent ? "complete_payment_idempotent" : "complete_payment",
+      details: {
+        method: input.method,
+        amount: requestedAmount,
+        nextPaidTotal: outcome.amountPaid,
+        remaining: outcome.remaining,
+      },
+    });
+    revalidateOrderFlowCaches();
+    revalidateTag("table-map", "max");
+    revalidateReportCaches();
+    return {
+      ok: true,
+      idempotent: outcome.idempotent,
+      status: outcome.status,
+      amountPaid: outcome.amountPaid,
+      remaining: outcome.remaining,
+    };
+  }
+  if (paymentMutationRpcResult.error && !isMissingRpcFunctionError(paymentMutationRpcResult.error.message, "apply_order_payment_mutation")) {
+    return { ok: false, error: paymentMutationRpcResult.error.message };
   }
 
   const paymentSummary = await getOrderPaymentSummaryMap(supabase, [input.orderId]);
@@ -4016,7 +4358,6 @@ export async function completeOrderPayment(input: {
   if (toMoney(amount - remaining) > 0) {
     return { ok: false, error: "Odeme tutari kalan bakiyeden buyuk olamaz." };
   }
-  const requestKey = typeof input.requestKey === "string" && input.requestKey.trim() ? input.requestKey.trim() : null;
   if (requestKey) {
     let idempotencyLookup = supabase
       .from("payments")
@@ -4193,7 +4534,7 @@ export async function cancelOrder(orderId: string, note?: string, requestKey?: s
       return { ok: true, idempotent: true };
     }
   }
-  if (orderRow.status === "paid") {
+  if (orderRow.status === "paid" || orderRow.status === "partially_paid" || orderRow.status === "partially_refunded") {
     return { ok: false, error: "Odeme alinmis siparis iptal edilemez. Iade akisini kullanin." };
   }
   const paymentSummary = await getOrderPaymentSummaryMap(supabase, [orderId]);
@@ -4293,6 +4634,73 @@ export async function refundOrder(input: {
   if (orderRow.status === "cancelled") {
     return { ok: false, error: "Iptal edilmis siparise iade eklenemez." };
   }
+  const requestKey = typeof input.requestKey === "string" && input.requestKey.trim() ? input.requestKey.trim() : null;
+  const requestedAmount = Number.isFinite(Number(input.amount))
+    ? toMoney(Math.max(0, Number(input.amount)))
+    : null;
+  if (requestedAmount !== null && requestedAmount <= 0) {
+    return { ok: false, error: "Iade tutari sifirdan buyuk olmali." };
+  }
+
+  const paymentMutationRpcResult = await supabase.rpc("apply_order_payment_mutation", {
+    p_order_id: input.orderId,
+    p_payment_type: "refund",
+    p_method: input.method,
+    p_amount: requestedAmount,
+    p_note: input.note ?? null,
+    p_created_by: input.createdBy ?? null,
+    p_idempotency_key: requestKey,
+    p_business_id: scope.businessId,
+    p_branch_id: scope.branchId,
+  });
+  const rpcPaymentRow = parsePaymentMutationRpcRow(
+    ((paymentMutationRpcResult.data as Array<Record<string, unknown>> | null) ?? [])[0] ?? null,
+  );
+  if (!paymentMutationRpcResult.error && rpcPaymentRow) {
+    const outcome = resolvePaymentMutationOutcome({ row: rpcPaymentRow, paymentType: "refund" });
+    if (!outcome.ok) {
+      if (rpcPaymentRow.conflictReason === "OVER_REFUND") {
+        await setAlertDispatch("over_refund_alarm", {
+          orderId: input.orderId,
+          requestKey,
+          attemptedAmount: requestedAmount,
+          at: new Date().toISOString(),
+        });
+      }
+      return { ok: false, error: outcome.error };
+    }
+    if (outcome.idempotent) {
+      await setAlertDispatch("duplicate_refund_counter", {
+        orderId: input.orderId,
+        requestKey,
+        status: outcome.status,
+        amountPaid: outcome.amountPaid,
+        remaining: outcome.remaining,
+        at: new Date().toISOString(),
+      });
+    }
+
+    fireAndForgetAuditEvent({
+      entityType: "payment",
+      entityId: input.orderId,
+      action: outcome.idempotent ? "refund_idempotent" : "refund",
+      details: {
+        method: input.method,
+        amount: requestedAmount,
+        note: input.note ?? null,
+        nextStatus: outcome.status,
+      },
+    });
+
+    revalidateOrderFlowCaches();
+    revalidateTag("table-map", "max");
+    revalidateReportCaches();
+    return { ok: true, idempotent: outcome.idempotent, status: outcome.status };
+  }
+  if (paymentMutationRpcResult.error && !isMissingRpcFunctionError(paymentMutationRpcResult.error.message, "apply_order_payment_mutation")) {
+    return { ok: false, error: paymentMutationRpcResult.error.message };
+  }
+
   const paymentSummary = await getOrderPaymentSummaryMap(supabase, [input.orderId]);
   const summary = paymentSummary.get(input.orderId) ?? { paid: 0, refunds: 0, net: 0, count: 0 };
   const refundableBalance = toMoney(Math.max(0, summary.paid - summary.refunds));
@@ -4309,7 +4717,6 @@ export async function refundOrder(input: {
   }
 
   const targetAmount = toMoney(Number(orderRow.final_price ?? orderRow.total_price));
-  const requestKey = typeof input.requestKey === "string" && input.requestKey.trim() ? input.requestKey.trim() : null;
   if (requestKey) {
     let idempotencyLookup = supabase
       .from("payments")
@@ -4541,7 +4948,7 @@ export async function markDeliveryCompleted(orderId: string) {
     return { ok: true, noop: true };
   }
 
-  const immutableStatuses = new Set<OrderStatus>(["paid", "refunded", "cancelled"]);
+  const immutableStatuses = new Set<OrderStatus>(["paid", "partially_paid", "partially_refunded", "refunded", "cancelled"]);
   const nextStatus: OrderStatus = immutableStatuses.has(currentOrder.status) ? currentOrder.status : "served";
 
   let updateQuery = supabase
@@ -6393,7 +6800,13 @@ async function getCachedFinancialInsightsRow(input: {
         if (order.status === "cancelled") {
           cancelledCount += 1;
         }
-        if (order.status === "pending" || order.status === "preparing" || order.status === "served") {
+        if (
+          order.status === "pending" ||
+          order.status === "preparing" ||
+          order.status === "ready" ||
+          order.status === "served" ||
+          order.status === "partially_paid"
+        ) {
           const finalAmount = Number(order.final_price ?? order.total_price);
           const orderNet = aggregation.orderNetMap.get(order.id) ?? 0;
           outstandingReceivables += Math.max(0, finalAmount - orderNet);
@@ -6697,7 +7110,7 @@ export async function closeCashSession(input: {
     let openOrdersQuery = supabase
       .from("orders")
       .select("id")
-      .in("status", ["pending", "preparing", "served"])
+      .in("status", ["pending", "preparing", "ready", "served", "partially_paid"])
       .limit(1);
     if (!scope.useLegacySchema && scope.businessId) {
       openOrdersQuery = openOrdersQuery.eq("business_id", scope.businessId);
@@ -6851,7 +7264,7 @@ export async function getOpsSummary() {
   const supabase = getSupabaseServerClient();
   if (!supabase) {
     return {
-      openOrders: demoOrders.filter((order) => ["pending", "preparing", "served"].includes(order.status)).length,
+      openOrders: demoOrders.filter((order) => ["pending", "preparing", "ready", "served", "partially_paid"].includes(order.status)).length,
       pendingCount: demoOrders.filter((order) => order.status === "pending").length,
       todayRevenue: 0,
       usingDemoData: true,
@@ -6865,7 +7278,7 @@ export async function getOpsSummary() {
   const openBase = supabase
     .from("orders")
     .select("id", { count: "exact", head: true })
-    .in("status", ["pending", "preparing", "served"]);
+    .in("status", ["pending", "preparing", "ready", "served", "partially_paid"]);
   const pendingBase = supabase.from("orders").select("id", { count: "exact", head: true }).eq("status", "pending");
 
   const [{ count: openOrdersCount }, { count: pendingCount }, paymentResult] = await Promise.all([
@@ -6950,7 +7363,9 @@ export async function getOpsMetricsSnapshot() {
   const criticalKitchenOrders = pendingKitchenOrders.filter((order) => isKitchenOrderCritical(order)).length;
   const pendingOrders = orders.filter((order) => order.status === "pending").length;
   const preparingOrders = orders.filter((order) => order.status === "preparing").length;
-  const servedOrders = orders.filter((order) => order.status === "served").length;
+  const servedOrders = orders.filter(
+    (order) => order.status === "served" || order.status === "ready" || order.status === "partially_paid",
+  ).length;
   const occupiedTables = tableRows.filter((row) => row.status === "occupied").length;
   const emptyTables = tableRows.filter((row) => row.status === "empty").length;
   const todayRevenue = ((paymentRows ?? []) as Array<{ amount: number; payment_type: "sale" | "refund" }>).reduce((sum, row) => {
@@ -7038,7 +7453,9 @@ export async function getOpsPageSnapshot(options?: { includeSetup?: boolean }) {
   const openOrderRows = (orders ?? []) as Array<{ status?: OrderStatus }>;
   const pendingCount = openOrderRows.filter((row) => row.status === "pending").length;
   const preparingCount = openOrderRows.filter((row) => row.status === "preparing").length;
-  const servedCount = openOrderRows.filter((row) => row.status === "served").length;
+  const servedCount = openOrderRows.filter(
+    (row) => row.status === "served" || row.status === "ready" || row.status === "partially_paid",
+  ).length;
   const dashboard = {
     usingDemoData: false,
     metrics: {
@@ -7091,7 +7508,9 @@ export async function getDashboardData() {
   if (!supabase) {
     const pending = demoOrders.filter((order) => order.status === "pending").length;
     const preparing = demoOrders.filter((order) => order.status === "preparing").length;
-    const served = demoOrders.filter((order) => order.status === "served").length;
+    const served = demoOrders.filter(
+      (order) => order.status === "served" || order.status === "ready" || order.status === "partially_paid",
+    ).length;
     const occupiedTables = demoTables.filter((table) => table.status === "occupied").length;
     const emptyTables = demoTables.filter((table) => table.status === "empty").length;
     const lowStockProducts = demoProducts
@@ -7136,7 +7555,9 @@ export async function getDashboardData() {
   const openOrderRows = (openRows ?? []) as Array<{ status?: OrderStatus }>;
   const pendingCount = openOrderRows.filter((row) => row.status === "pending").length;
   const preparingCount = openOrderRows.filter((row) => row.status === "preparing").length;
-  const servedCount = openOrderRows.filter((row) => row.status === "served").length;
+  const servedCount = openOrderRows.filter(
+    (row) => row.status === "served" || row.status === "ready" || row.status === "partially_paid",
+  ).length;
 
   const recentOrders = ((recentOrderRows ?? []) as OrderRow[]).map((row) => ({
     id: row.id,
@@ -7484,9 +7905,9 @@ async function getCachedOpsPageRow(input: {
                   .select("status, created_at")
                   .eq("business_id", input.businessId)
                   .eq("branch_id", input.branchId)
-                  .in("status", ["pending", "preparing", "served"])
-              : supabase.from("orders").select("status, created_at").eq("business_id", input.businessId).in("status", ["pending", "preparing", "served"]))
-          : supabase.from("orders").select("status, created_at").in("status", ["pending", "preparing", "served"]),
+                  .in("status", ["pending", "preparing", "ready", "served", "partially_paid"])
+              : supabase.from("orders").select("status, created_at").eq("business_id", input.businessId).in("status", ["pending", "preparing", "ready", "served", "partially_paid"]))
+          : supabase.from("orders").select("status, created_at").in("status", ["pending", "preparing", "ready", "served", "partially_paid"]),
         !input.useLegacySchema && input.businessId
           ? (input.branchId
               ? supabase.from("payments").select("amount, payment_type").eq("business_id", input.businessId).eq("branch_id", input.branchId).gte("created_at", todayStart.toISOString())

@@ -98,6 +98,8 @@ export function TableManagementModal({
   const [receiptDetails, setReceiptDetails] = useState<Record<string, Order>>(receiptDetailsByOrderId);
   const [historyLoading, setHistoryLoading] = useState(false);
   const [receiptLoadingOrderId, setReceiptLoadingOrderId] = useState<string | null>(null);
+  const syncInFlightRef = useRef(false);
+  const lastSyncedAtRef = useRef(0);
   const receiptPreviewRef = useRef<HTMLDivElement | null>(null);
   const handlePreviewPrint = () => {
     if (!receiptPreviewRef.current) {
@@ -111,6 +113,13 @@ export function TableManagementModal({
   };
 
   const refreshOrderData = useCallback(async (silent = true) => {
+    if (syncInFlightRef.current) {
+      return;
+    }
+    if (silent && Date.now() - lastSyncedAtRef.current < 1200) {
+      return;
+    }
+    syncInFlightRef.current = true;
     if (!silent) {
       setHistoryLoading(true);
     }
@@ -149,7 +158,9 @@ export function TableManagementModal({
           created_at: order.createdAt,
         })),
       );
+      lastSyncedAtRef.current = Date.now();
     } finally {
+      syncInFlightRef.current = false;
       if (!silent) {
         setHistoryLoading(false);
       }
@@ -197,8 +208,12 @@ export function TableManagementModal({
       }, document.hidden ? 12000 : 3500);
     };
 
-    const handleAttentionRefresh = () => {
+    const handleAttentionRefresh = (event?: Event) => {
       if (document.hidden) {
+        return;
+      }
+      const detail = (event as CustomEvent<{ tables?: string[] }> | undefined)?.detail;
+      if (detail && Array.isArray(detail.tables) && !detail.tables.some((tableName) => tableName === "orders" || tableName === "payments")) {
         return;
       }
       void refreshOrderData(true);

@@ -3,7 +3,7 @@
 import { useRouter } from "next/navigation";
 import { getSupabaseAuthBrowserClient } from "@/lib/supabase/auth-browser";
 
-export function LogoutButton() {
+export function LogoutButton({ redirectPath = "/login" }: { redirectPath?: string }) {
   const router = useRouter();
 
   async function onLogout() {
@@ -11,8 +11,23 @@ export function LogoutButton() {
     if (!supabase) {
       return;
     }
+    try {
+      const storage = window.sessionStorage;
+      const keysToDelete: string[] = [];
+      for (let index = 0; index < storage.length; index += 1) {
+        const key = storage.key(index);
+        if (typeof key === "string" && key.startsWith("app-shell-cache")) {
+          keysToDelete.push(key);
+        }
+      }
+      for (const key of keysToDelete) {
+        storage.removeItem(key);
+      }
+    } catch {}
+
     await supabase.auth.signOut();
-    router.push("/login");
+    window.dispatchEvent(new CustomEvent("app-shell:refresh"));
+    router.replace(redirectPath);
     router.refresh();
   }
 
@@ -26,4 +41,3 @@ export function LogoutButton() {
     </button>
   );
 }
-

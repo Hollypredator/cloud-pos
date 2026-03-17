@@ -2,7 +2,16 @@
 
 import { useEffect, useEffectEvent, useRef, useState } from "react";
 
-type OrderStatus = "pending" | "preparing" | "served" | "paid" | "cancelled" | "refunded";
+type OrderStatus =
+  | "pending"
+  | "preparing"
+  | "ready"
+  | "served"
+  | "partially_paid"
+  | "paid"
+  | "partially_refunded"
+  | "cancelled"
+  | "refunded";
 
 type LatestOrder = {
   id: string;
@@ -21,8 +30,11 @@ function orderRef(order: Pick<LatestOrder, "id" | "checkNumber">) {
 function statusLabel(status: OrderStatus) {
   if (status === "pending") return "Siparis alindi";
   if (status === "preparing") return "Hazirlaniyor";
+  if (status === "ready") return "Servise hazir";
   if (status === "served") return "Servise hazir";
+  if (status === "partially_paid") return "Kismi odeme";
   if (status === "paid") return "Odeme tamamlandi";
+  if (status === "partially_refunded") return "Kismi iade";
   if (status === "cancelled") return "Iptal edildi";
   if (status === "refunded") return "Iade edildi";
   return status;
@@ -31,8 +43,11 @@ function statusLabel(status: OrderStatus) {
 function statusClass(status: OrderStatus) {
   if (status === "pending") return "bg-amber-100 text-amber-800";
   if (status === "preparing") return "bg-sky-100 text-sky-800";
+  if (status === "ready") return "bg-emerald-100 text-emerald-800";
   if (status === "served") return "bg-emerald-100 text-emerald-800";
+  if (status === "partially_paid") return "bg-blue-100 text-blue-700";
   if (status === "paid") return "bg-slate-100 text-slate-700";
+  if (status === "partially_refunded") return "bg-rose-100 text-rose-700";
   return "bg-rose-100 text-rose-700";
 }
 
@@ -48,8 +63,17 @@ export function OrderStatusWidget({
   const [order, setOrder] = useState<LatestOrder | null>(null);
   const [loading, setLoading] = useState(true);
   const timerRef = useRef<ReturnType<typeof setTimeout> | null>(null);
+  const inFlightRef = useRef(false);
+  const lastFetchedAtRef = useRef(0);
 
-  const fetchLatest = useEffectEvent(async () => {
+  const fetchLatest = useEffectEvent(async (force = false) => {
+    if (inFlightRef.current) {
+      return;
+    }
+    if (!force && Date.now() - lastFetchedAtRef.current < 1200) {
+      return;
+    }
+    inFlightRef.current = true;
     try {
       const response = await fetch(
         `/api/orders/latest?qr=${encodeURIComponent(qrCodeIdentifier)}${businessSlug ? `&b=${encodeURIComponent(businessSlug)}` : ""}&t=${encodeURIComponent(qrAccessToken)}`,
@@ -60,7 +84,9 @@ export function OrderStatusWidget({
       const data = (await response.json()) as { ok: boolean; order: LatestOrder | null };
       if (!data.ok) return;
       setOrder(data.order);
+      lastFetchedAtRef.current = Date.now();
     } finally {
+      inFlightRef.current = false;
       setLoading(false);
     }
   });
@@ -82,11 +108,15 @@ export function OrderStatusWidget({
       timerRef.current = setTimeout(syncLatest, document.hidden ? 15000 : 8000);
     }
 
-    function handleAttentionRefresh() {
+    function handleAttentionRefresh(event?: Event) {
       if (document.hidden) {
         return;
       }
-      void fetchLatest();
+      const detail = (event as CustomEvent<{ tables?: string[] }> | undefined)?.detail;
+      if (detail && Array.isArray(detail.tables) && !detail.tables.includes("orders")) {
+        return;
+      }
+      void fetchLatest(true);
     }
 
     void syncLatest();
@@ -134,11 +164,12 @@ function StatusTimeline({ status }: { status: OrderStatus }) {
   const steps: Array<{ key: OrderStatus | "done"; label: string }> = [
     { key: "pending", label: "Alindi" },
     { key: "preparing", label: "Hazirlaniyor" },
-    { key: "served", label: "Servis" },
+    { key: "ready", label: "Hazir" },
     { key: "paid", label: "Odeme" },
   ];
-  const order = ["pending", "preparing", "served", "paid"] as const;
-  const currentIdx = order.indexOf(status as (typeof order)[number]);
+  const timelineStatus: OrderStatus = status === "served" ? "ready" : status;
+  const order = ["pending", "preparing", "ready", "paid"] as const;
+  const currentIdx = order.indexOf(timelineStatus as (typeof order)[number]);
 
   return (
     <div className="mt-1 grid grid-cols-2 gap-2 sm:grid-cols-4">
@@ -155,7 +186,15 @@ function StatusTimeline({ status }: { status: OrderStatus }) {
 }
 
 function estimateEta(status: OrderStatus, createdAt: string) {
-  if (status === "served" || status === "paid" || status === "cancelled" || status === "refunded") {
+  if (
+    status === "ready" ||
+    status === "served" ||
+    status === "paid" ||
+    status === "partially_paid" ||
+    status === "cancelled" ||
+    status === "refunded" ||
+    status === "partially_refunded"
+  ) {
     return "0 dk";
   }
   const baseMinutes = status === "pending" ? 20 : 10;

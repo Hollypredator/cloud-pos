@@ -11,6 +11,7 @@ import {
   WorkflowGuide,
 } from "@/components/backoffice-ui";
 import { LiveOpsBridge } from "@/components/live-ops-bridge";
+import { LiveRouteRefresh } from "@/components/live-route-refresh";
 import { ReceiptPreviewLauncher } from "@/components/receipt-preview-launcher";
 import { getAppBaseUrl } from "@/lib/app-url";
 import { requireRole } from "@/lib/auth";
@@ -54,6 +55,9 @@ function orderRef(order: { id: string; check_number?: string | null }) {
 
 function statusTone(status: string) {
   if (status === "paid") return "bg-emerald-100 text-emerald-700";
+  if (status === "partially_paid") return "bg-blue-100 text-blue-700";
+  if (status === "partially_refunded") return "bg-rose-100 text-rose-700";
+  if (status === "ready") return "bg-[#fff2ee] text-[#ff5a34]";
   if (status === "served") return "bg-[#fff2ee] text-[#ff5a34]";
   if (status === "preparing") return "bg-sky-100 text-sky-700";
   return "bg-slate-100 text-slate-700";
@@ -238,6 +242,7 @@ export default async function CashierPage({
       actions={
         <>
           <LiveOpsBridge tables={["orders", "tables", "payments", "cash_register_sessions"]} />
+          <LiveRouteRefresh tables={["orders", "payments", "cash_register_sessions"]} />
           <Link href="/cashier/session" className="w-full rounded-2xl border border-slate-200 bg-white px-5 py-3 text-center text-sm font-semibold text-slate-800 sm:w-auto">
             Gun Islemleri
           </Link>

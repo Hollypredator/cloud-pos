@@ -169,7 +169,7 @@ export async function listLatestOrdersByTableIdsImpl(tableIds: string[], deps: Q
 
   const scope = await deps.getDefaultBusinessScope();
   const sortedTableIds = [...tableIds].sort();
-  const cacheKey = `latest-orders-by-table:${scope.businessId ?? "none"}:${scope.useLegacySchema ? "legacy" : "scoped"}:${sortedTableIds.join(",")}`;
+  const cacheKey = `latest-orders-by-table:${scope.businessId ?? "none"}:${scope.branchId ?? "all"}:${scope.useLegacySchema ? "legacy" : "scoped"}:${sortedTableIds.join(",")}`;
   const reader = unstable_cache(
     async () => {
       const innerSupabase = getSupabaseServerClient();
@@ -181,9 +181,13 @@ export async function listLatestOrdersByTableIdsImpl(tableIds: string[], deps: Q
         .from("orders")
         .select("id, check_number, table_id, total_price, final_price, status, created_at")
         .in("table_id", sortedTableIds)
+        .in("status", ["pending", "preparing", "ready", "served", "partially_paid"])
         .order("created_at", { ascending: false });
       if (!scope.useLegacySchema && scope.businessId) {
         query = query.eq("business_id", scope.businessId);
+      }
+      if (scope.branchId) {
+        query = query.eq("branch_id", scope.branchId);
       }
 
       const result = await query;
@@ -245,7 +249,8 @@ export async function getOrderHistoryByTableIdImpl(tableId: string, limit: numbe
     return { orders: history, usingDemoData: true };
   }
 
-  const cacheKey = `order-history:${tableId}:${limit}`;
+  const scope = await deps.getDefaultBusinessScope();
+  const cacheKey = `order-history:${scope.businessId ?? "none"}:${scope.branchId ?? "all"}:${scope.useLegacySchema ? "legacy" : "scoped"}:${tableId}:${limit}`;
   const reader = unstable_cache(
     async () => {
       const innerSupabase = getSupabaseServerClient();
@@ -253,12 +258,20 @@ export async function getOrderHistoryByTableIdImpl(tableId: string, limit: numbe
         return null;
       }
 
-      const result = await innerSupabase
+      let query = innerSupabase
         .from("orders")
         .select("id, check_number, table_id, total_price, final_price, status, created_at")
         .eq("table_id", tableId)
         .order("created_at", { ascending: false })
         .limit(limit);
+      if (!scope.useLegacySchema && scope.businessId) {
+        query = query.eq("business_id", scope.businessId);
+      }
+      if (scope.branchId) {
+        query = query.eq("branch_id", scope.branchId);
+      }
+
+      const result = await query;
 
       return {
         data: result.data as Array<{
@@ -1210,7 +1223,7 @@ export async function updateTableStatusImpl(
       .from("orders")
       .select("id")
       .eq("table_id", input.tableId)
-      .in("status", ["pending", "preparing", "served"])
+      .in("status", ["pending", "preparing", "ready", "served", "partially_paid"])
       .order("created_at", { ascending: false })
       .limit(1);
 
@@ -1319,7 +1332,7 @@ export async function moveTableOrderImpl(
     .from("orders")
     .select("id, status, table_id")
     .eq("table_id", input.sourceTableId)
-    .in("status", ["pending", "preparing", "served"])
+    .in("status", ["pending", "preparing", "ready", "served", "partially_paid"])
     .order("created_at", { ascending: false })
     .limit(1);
   if (!scope.useLegacySchema && scope.businessId) {
@@ -1354,6 +1367,26 @@ export async function moveTableOrderImpl(
     return { ok: false, error: "Adisyon sadece bos bir masaya tasinabilir." };
   }
 
+  let claimTargetQuery = supabase
+    .from("tables")
+    .update({ status: "occupied" as TableStatus })
+    .eq("id", input.targetTableId)
+    .eq("status", "empty")
+    .select("id");
+  if (!scope.useLegacySchema && scope.businessId) {
+    claimTargetQuery = claimTargetQuery.eq("business_id", scope.businessId);
+  }
+  if (targetBranchId) {
+    claimTargetQuery = claimTargetQuery.eq("branch_id", targetBranchId);
+  }
+  const { data: claimedTargetRows, error: claimTargetError } = await claimTargetQuery;
+  if (claimTargetError) {
+    return { ok: false, error: claimTargetError.message };
+  }
+  if (!claimedTargetRows || claimedTargetRows.length === 0) {
+    return { ok: false, error: "Hedef masa az once baska bir islem tarafindan dolduruldu." };
+  }
+
   let updateOrderQuery = supabase
     .from("orders")
     .update({ table_id: input.targetTableId })
@@ -1367,11 +1400,14 @@ export async function moveTableOrderImpl(
 
   const { error: updateOrderError } = await updateOrderQuery;
   if (updateOrderError) {
+    await supabase
+      .from("tables")
+      .update({ status: "empty" as TableStatus })
+      .eq("id", input.targetTableId);
     return { ok: false, error: updateOrderError.message };
   }
 
   await supabase.from("tables").update({ status: "empty" as TableStatus }).eq("id", input.sourceTableId);
-  await supabase.from("tables").update({ status: "occupied" as TableStatus }).eq("id", input.targetTableId);
 
   await deps.logAuditEvent({
     entityType: "order",

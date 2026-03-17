@@ -23,6 +23,8 @@ import { orderTone, tableStatusLabel, tableStatusTone } from "./helpers";
 import { buildQrImage, buildQrTarget } from "./qr-helpers-server";
 import { TableManagementModal } from "./table-management-modal";
 
+type MenuSnapshot = Awaited<ReturnType<typeof getMenu>>;
+
 function orderRef(order: { id: string; check_number?: string | null }) {
   return order.check_number?.trim() ? order.check_number : order.id.slice(0, 8);
 }
@@ -39,37 +41,50 @@ export default async function AdminTablesPage({
   const { tables, usingDemoData } = tableMapResult.value;
   const zonesResult = await measureAsync("table_zones", () => getTableZones());
   const { zones } = zonesResult.value;
-  const businessScopeResult = await measureAsync("business_scope", () => getBusinessScopeContext());
-  const businessSlug = businessScopeResult.value.activeSlug;
-  const menuResult = await measureAsync("menu_for_table_modal_order_entry", () => getMenu(businessSlug));
-  const { categories, products, modifierGroups, modifierOptions } = menuResult.value;
-
-  const targetResult = await measureAsync("qr_targets", () => Promise.all(
-    tables.map(async (table) => ({
-      id: table.id,
-      target: await buildQrTarget(table.qr_code_identifier),
-      image: await buildQrImage(table.qr_code_identifier),
-    })),
-  ));
-  const targetMap = new Map(targetResult.value.map((row) => [row.id, row]));
   const latestOrdersResult = await measureAsync("latest_orders_by_table", () => listLatestOrdersByTableIds(tables.map((table) => table.id)));
   const { ordersByTableId } = latestOrdersResult.value;
   const latestOrderMap = ordersByTableId;
   const selectedTable = selectedTableId ? tables.find((table) => table.id === selectedTableId) ?? null : null;
-  const selectedHistoryResult = selectedTable
-    ? await measureAsync("selected_table_history", () => getOrderHistoryByTableId(selectedTable.id, 8))
-    : null;
-  const { orders: selectedTableHistory } = selectedHistoryResult?.value ?? { orders: [] };
+
+  const perfSegments: Array<{ label: string; ms: number; value?: unknown }> = [tableMapResult, zonesResult, latestOrdersResult];
+  let businessSlug = "";
+  let categories: MenuSnapshot["categories"] = [];
+  let products: MenuSnapshot["products"] = [];
+  let modifierGroups: MenuSnapshot["modifierGroups"] = [];
+  let modifierOptions: MenuSnapshot["modifierOptions"] = [];
+  let selectedTableHistory: Order[] = [];
+  let selectedTableQrTarget = "#";
+  let selectedTableQrImage = "#";
+
+  if (selectedTable) {
+    const businessScopeResult = await measureAsync("business_scope", () => getBusinessScopeContext());
+    businessSlug = businessScopeResult.value.activeSlug;
+    perfSegments.push(businessScopeResult);
+
+    const menuResult = await measureAsync("menu_for_table_modal_order_entry", () => getMenu(businessSlug));
+    categories = menuResult.value.categories;
+    products = menuResult.value.products;
+    modifierGroups = menuResult.value.modifierGroups;
+    modifierOptions = menuResult.value.modifierOptions;
+    perfSegments.push(menuResult);
+
+    const selectedHistoryResult = await measureAsync("selected_table_history", () => getOrderHistoryByTableId(selectedTable.id, 8));
+    selectedTableHistory = selectedHistoryResult.value.orders;
+    perfSegments.push(selectedHistoryResult);
+
+    const selectedTableQrTargetResult = await measureAsync("selected_table_qr_target", () => buildQrTarget(selectedTable.qr_code_identifier));
+    selectedTableQrTarget = selectedTableQrTargetResult.value;
+    perfSegments.push(selectedTableQrTargetResult);
+
+    const selectedTableQrImageResult = await measureAsync("selected_table_qr_image", () =>
+      buildQrImage(selectedTable.qr_code_identifier, selectedTableQrTarget),
+    );
+    selectedTableQrImage = selectedTableQrImageResult.value;
+    perfSegments.push(selectedTableQrImageResult);
+  }
+
   const selectedReceiptDetailsByOrderId: Record<string, Order> = {};
-  logServerPerf("/admin/tables", [
-    tableMapResult,
-    zonesResult,
-    businessScopeResult,
-    menuResult,
-    targetResult,
-    latestOrdersResult,
-    ...(selectedHistoryResult ? [selectedHistoryResult] : []),
-  ]);
+  logServerPerf("/admin/tables", perfSegments);
   const zoneById = new Map(zones.map((zone) => [zone.id, zone]));
   const movableTables = selectedTable
     ? tables
@@ -563,8 +578,8 @@ export default async function AdminTablesPage({
           latestOrder={latestOrderMap.get(selectedTable.id) ?? null}
           orders={selectedTableHistory}
           receiptDetailsByOrderId={selectedReceiptDetailsByOrderId}
-          qrTarget={targetMap.get(selectedTable.id)?.target ?? "#"}
-          qrImage={targetMap.get(selectedTable.id)?.image ?? "#"}
+          qrTarget={selectedTableQrTarget}
+          qrImage={selectedTableQrImage}
           movableTables={movableTables}
           businessSlug={businessSlug}
           categories={categories}

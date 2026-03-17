@@ -4,6 +4,7 @@
   "private": true,
   "scripts": {
     "dev": "next dev",
+    "dev:webpack": "next dev --webpack",
     "build": "next build",
     "start": "next start",
     "lint": "eslint src/app/api src/lib/auth.ts src/lib/data.ts src/lib/domains src/lib/platform-owner.ts src/lib/qr-access.ts src/components/order-status-widget.tsx src/components/order-history-widget.tsx src/components/qr-ordering-client.tsx scripts middleware.ts next.config.ts",
@@ -22,7 +23,8 @@
     "perf:sla": "node scripts/perf-sla-check.mjs",
     "monitor:synthetic": "node scripts/synthetic-health-check.mjs",
     "phase7:uat": "node scripts/phase7-uat-gate-check.mjs",
-    "phase8:pilot": "node scripts/phase8-pilot-readiness-check.mjs"
+    "phase8:pilot": "node scripts/phase8-pilot-readiness-check.mjs",
+    "phase9:concurrency": "node scripts/phase9-concurrency-regression-check.mjs"
   },
   "dependencies": {
     "@supabase/ssr": "^0.8.0",

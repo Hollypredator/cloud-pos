@@ -14,8 +14,8 @@ export default async function PrintCenterPage() {
 
   const [{ settings }, { orders }, { orders: kitchenOrders }, { session }] = await Promise.all([
     getApplicationSettings(),
-    listOrders(["served", "paid", "preparing", "pending"], { includeItems: false, limit: 3, ascending: false }),
-    listOrders(["pending", "preparing", "served"], { includeItems: false, limit: 1, ascending: false }),
+    listOrders(["ready", "served", "paid", "partially_paid", "preparing", "pending"], { includeItems: false, limit: 3, ascending: false }),
+    listOrders(["pending", "preparing", "ready", "served"], { includeItems: false, limit: 1, ascending: false }),
     getCurrentCashSession(),
   ]);
 

@@ -5,6 +5,9 @@ export type AppShellPayload = {
   role: AppRole | null;
   hasUser: boolean;
   usingDemoData: boolean;
+  sessionUserId: string | null;
+  sessionBusinessId: string | null;
+  sessionBranchId: string | null;
   activeBusinessSlug: string;
   businesses: Array<{ slug: string; name: string }>;
   activeBranchId: string;

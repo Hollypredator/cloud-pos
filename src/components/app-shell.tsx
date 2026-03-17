@@ -1,19 +1,11 @@
 "use client";
 
-import { useEffect, useEffectEvent, useMemo, useState } from "react";
+import { useEffect, useEffectEvent, useMemo, useRef, useState } from "react";
 import { usePathname } from "next/navigation";
 import { AppNav } from "@/components/app-nav";
 import type { AppShellPayload } from "@/lib/app-shell";
 
 const shellPrefixes = ["/ops", "/kitchen", "/cashier", "/service-requests", "/tables", "/delivery", "/admin"];
-
-const APP_SHELL_CACHE_KEY = "app-shell-cache";
-const APP_SHELL_CACHE_TTL_MS = 300_000;
-
-type AppShellCacheEntry = {
-  data: AppShellPayload;
-  updatedAt: number;
-};
 
 export function AppShell({
   children,
@@ -25,6 +17,7 @@ export function AppShell({
   const pathname = usePathname();
   const [shellData, setShellData] = useState<AppShellPayload | null>(initialData ?? null);
   const [loading, setLoading] = useState(false);
+  const hasRequestedInitialRef = useRef(false);
 
   const showShell = useMemo(
     () => (pathname ? shellPrefixes.some((prefix) => pathname === prefix || pathname.startsWith(`${prefix}/`)) : false),
@@ -47,61 +40,48 @@ export function AppShell({
         return;
       }
       const data = (await response.json()) as AppShellPayload;
-      setShellData(data);
-      try {
-        const cacheEntry: AppShellCacheEntry = { data, updatedAt: Date.now() };
-        window.sessionStorage.setItem(APP_SHELL_CACHE_KEY, JSON.stringify(cacheEntry));
-      } catch {}
+      setShellData((prev) => {
+        if (!prev) {
+          return data;
+        }
+        if (
+          prev.sessionUserId === data.sessionUserId &&
+          prev.sessionBusinessId === data.sessionBusinessId &&
+          prev.sessionBranchId === data.sessionBranchId &&
+          prev.role === data.role &&
+          prev.hasUser === data.hasUser &&
+          prev.activeBusinessSlug === data.activeBusinessSlug &&
+          prev.activeBranchId === data.activeBranchId &&
+          prev.sidebarTheme === data.sidebarTheme &&
+          prev.sidebarAccentColor === data.sidebarAccentColor &&
+          prev.brandName === data.brandName &&
+          prev.logoUrl === data.logoUrl &&
+          prev.currentPlan === data.currentPlan
+        ) {
+          return prev;
+        }
+        return data;
+      });
     } finally {
       setLoading(false);
     }
   });
 
   useEffect(() => {
-    if (!initialData) {
-      return;
-    }
-
-    try {
-      const cacheEntry: AppShellCacheEntry = { data: initialData, updatedAt: Date.now() };
-      window.sessionStorage.setItem(APP_SHELL_CACHE_KEY, JSON.stringify(cacheEntry));
-    } catch {}
-  }, [initialData]);
-
-  useEffect(() => {
     if (!showShell) {
-      setShellData(null);
       return;
     }
-
-    let usedCachedEntry = false;
-    try {
-      const cached = window.sessionStorage.getItem(APP_SHELL_CACHE_KEY);
-      if (cached) {
-        const parsed = JSON.parse(cached) as AppShellPayload | AppShellCacheEntry;
-        if ("data" in parsed && "updatedAt" in parsed) {
-          if (Date.now() - parsed.updatedAt < APP_SHELL_CACHE_TTL_MS) {
-            setShellData(parsed.data);
-            usedCachedEntry = true;
-          }
-        } else {
-          setShellData(parsed);
-          usedCachedEntry = true;
-        }
-      }
-    } catch {}
-
-    if (usedCachedEntry) {
-      // Revalidate in the background to avoid showing stale auth state after a fresh login/logout.
-      void loadShellData();
+    if (initialData) {
+      setShellData(initialData);
+      hasRequestedInitialRef.current = true;
       return;
     }
-
-    setShellData(initialData ?? null);
-    if (!initialData) {
-      void loadShellData();
+    if (hasRequestedInitialRef.current) {
+      return;
     }
-  }, [initialData, pathname, showShell]);
+    hasRequestedInitialRef.current = true;
+    void loadShellData(true);
+  }, [initialData, loadShellData, showShell]);
 
   useEffect(() => {
     if (!showShell || shellData) {

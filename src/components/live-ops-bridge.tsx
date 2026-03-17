@@ -1,7 +1,8 @@
 "use client";
 
-import { startTransition, useEffect, useEffectEvent, useMemo, useRef, useState } from "react";
-import { usePathname, useRouter } from "next/navigation";
+import { useEffect, useEffectEvent, useMemo, useRef, useState } from "react";
+import { usePathname } from "next/navigation";
+import { emitLivePosEvent, type LivePosEvent } from "@/lib/live-events";
 import { getSupabaseAuthBrowserClient } from "@/lib/supabase/auth-browser";
 
 type LiveOpsBridgeProps = {
@@ -14,42 +15,33 @@ const LIVE_REFRESH_DEBOUNCE_MS = 300;
 const LIVE_REFRESH_MIN_INTERVAL_MS = 1200;
 const OPS_REFRESH_DEBOUNCE_MS = 700;
 const OPS_REFRESH_MIN_INTERVAL_MS = 3500;
-const LIVE_POLL_VISIBLE_MS = 2800;
-const LIVE_POLL_HIDDEN_MS = 9000;
-const OPS_POLL_VISIBLE_MS = 5000;
-const OPS_POLL_HIDDEN_MS = 12000;
 
 function getRefreshProfile(pathname: string | null) {
   if (pathname === "/ops") {
     return {
       debounceMs: OPS_REFRESH_DEBOUNCE_MS,
       minIntervalMs: OPS_REFRESH_MIN_INTERVAL_MS,
-      pollVisibleMs: OPS_POLL_VISIBLE_MS,
-      pollHiddenMs: OPS_POLL_HIDDEN_MS,
     };
   }
 
   return {
     debounceMs: LIVE_REFRESH_DEBOUNCE_MS,
     minIntervalMs: LIVE_REFRESH_MIN_INTERVAL_MS,
-    pollVisibleMs: LIVE_POLL_VISIBLE_MS,
-    pollHiddenMs: LIVE_POLL_HIDDEN_MS,
   };
 }
 
-export function LiveOpsBridge({ tables, enableSound = false, fallbackIntervalMs }: LiveOpsBridgeProps) {
-  const router = useRouter();
+export function LiveOpsBridge({ tables, enableSound = false }: LiveOpsBridgeProps) {
   const pathname = usePathname();
   const timeoutRef = useRef<ReturnType<typeof setTimeout> | null>(null);
-  const pollTimerRef = useRef<ReturnType<typeof setTimeout> | null>(null);
-  const isRefreshingRef = useRef(false);
-  const lastRefreshAtRef = useRef(0);
+  const lastRealtimeFingerprintRef = useRef<string | null>(null);
+  const lastRealtimeEventAtRef = useRef(0);
+  const lastDispatchAtRef = useRef(0);
   const [connected, setConnected] = useState(false);
   const channelKey = useMemo(() => [...tables].sort().join("-"), [tables]);
   const refreshProfile = useMemo(() => getRefreshProfile(pathname), [pathname]);
 
-  const queueRefresh = useEffectEvent(() => {
-    const elapsed = Date.now() - lastRefreshAtRef.current;
+  const queueLiveEvent = useEffectEvent((event?: LivePosEvent) => {
+    const elapsed = Date.now() - lastDispatchAtRef.current;
     const waitMs = Math.max(refreshProfile.debounceMs, refreshProfile.minIntervalMs - elapsed);
 
     if (timeoutRef.current) {
@@ -57,35 +49,30 @@ export function LiveOpsBridge({ tables, enableSound = false, fallbackIntervalMs 
     }
 
     timeoutRef.current = setTimeout(() => {
-      if (isRefreshingRef.current) {
-        return;
+      const now = Date.now();
+      const isHeartbeat = !event;
+      const payload: LivePosEvent =
+        event ??
+        ({
+          type: "heartbeat",
+          sourceTable: "poller",
+          sourceEvent: "POLL",
+          at: now,
+        } satisfies LivePosEvent);
+      lastDispatchAtRef.current = now;
+      emitLivePosEvent(payload);
+      if (!isHeartbeat) {
+        window.dispatchEvent(
+          new CustomEvent("live-ops:update", {
+            detail: {
+              pathname,
+              tables,
+              at: now,
+            },
+          }),
+        );
       }
-
-      isRefreshingRef.current = true;
-      lastRefreshAtRef.current = Date.now();
-      window.dispatchEvent(new CustomEvent("live-ops:update", { detail: { pathname, tables } }));
-      startTransition(() => {
-        router.refresh();
-      });
-      window.setTimeout(() => {
-        isRefreshingRef.current = false;
-      }, 500);
     }, waitMs);
-  });
-
-  const schedulePollRefresh = useEffectEvent(() => {
-    const intervalMs = document.hidden
-      ? refreshProfile.pollHiddenMs
-      : (fallbackIntervalMs && fallbackIntervalMs > 0 ? fallbackIntervalMs : refreshProfile.pollVisibleMs);
-
-    if (pollTimerRef.current) {
-      clearTimeout(pollTimerRef.current);
-    }
-
-    pollTimerRef.current = setTimeout(() => {
-      queueRefresh();
-      schedulePollRefresh();
-    }, intervalMs);
   });
 
   useEffect(() => {
@@ -99,6 +86,22 @@ export function LiveOpsBridge({ tables, enableSound = false, fallbackIntervalMs 
           "postgres_changes",
           { event: "*", schema: "public", table },
           (payload) => {
+            const rowId =
+              String(
+                (payload.new as { id?: string } | undefined)?.id ??
+                (payload.old as { id?: string } | undefined)?.id ??
+                "",
+              ) || "no-id";
+            const fingerprint = `${table}:${payload.eventType}:${rowId}`;
+            const now = Date.now();
+            if (
+              fingerprint === lastRealtimeFingerprintRef.current &&
+              now - lastRealtimeEventAtRef.current < refreshProfile.minIntervalMs
+            ) {
+              return;
+            }
+            lastRealtimeFingerprintRef.current = fingerprint;
+            lastRealtimeEventAtRef.current = now;
             if (typeof document !== "undefined" && document.hidden) {
               return;
             }
@@ -108,7 +111,7 @@ export function LiveOpsBridge({ tables, enableSound = false, fallbackIntervalMs 
             if (enableSound && table === "orders" && payload.eventType === "INSERT") {
               playAlertTone();
             }
-            queueRefresh();
+            queueLiveEvent(mapRealtimeEvent(table, payload));
           },
         );
       }
@@ -120,22 +123,15 @@ export function LiveOpsBridge({ tables, enableSound = false, fallbackIntervalMs 
       setConnected(false);
     }
 
-    // Bust stale prefetch payloads after route transitions without requiring manual F5.
-    queueRefresh();
-    schedulePollRefresh();
-
     return () => {
       if (timeoutRef.current) {
         clearTimeout(timeoutRef.current);
-      }
-      if (pollTimerRef.current) {
-        clearTimeout(pollTimerRef.current);
       }
       if (supabase && channel) {
         supabase.removeChannel(channel);
       }
     };
-  }, [channelKey, enableSound, pathname, refreshProfile, tables, fallbackIntervalMs]);
+  }, [channelKey, enableSound, pathname, queueLiveEvent, refreshProfile, tables]);
 
   return (
     <span
@@ -146,6 +142,59 @@ export function LiveOpsBridge({ tables, enableSound = false, fallbackIntervalMs 
       {connected ? "Realtime Acik" : "Realtime Kapali"}
     </span>
   );
+}
+
+function mapRealtimeEvent(
+  table: string,
+  payload: {
+    eventType: "INSERT" | "UPDATE" | "DELETE";
+    new?: Record<string, unknown>;
+    old?: Record<string, unknown>;
+  },
+): LivePosEvent {
+  const row = (payload.new ?? payload.old ?? {}) as Record<string, unknown>;
+  const status = typeof row.status === "string" ? row.status : undefined;
+  const paymentType = row.payment_type === "sale" || row.payment_type === "refund" ? row.payment_type : undefined;
+  const orderId =
+    typeof row.order_id === "string"
+      ? row.order_id
+      : table === "orders" && typeof row.id === "string"
+        ? row.id
+        : undefined;
+  const tableId =
+    table === "tables"
+      ? (typeof row.id === "string" ? row.id : undefined)
+      : (typeof row.table_id === "string" ? row.table_id : undefined);
+  let type: LivePosEvent["type"] = "heartbeat";
+  if (table === "orders") {
+    if (payload.eventType === "INSERT") {
+      type = "order_created";
+    } else if (status === "paid" || status === "partially_paid") {
+      type = "order_paid";
+    } else if (status === "refunded" || status === "partially_refunded") {
+      type = "order_refunded";
+    } else if (status === "pending" || status === "preparing" || status === "ready" || status === "served") {
+      type = "kitchen_status_changed";
+    } else {
+      type = "order_updated";
+    }
+  } else if (table === "payments") {
+    type = paymentType === "refund" ? "order_refunded" : "order_paid";
+  } else if (table === "tables") {
+    type = "table_updated";
+  }
+
+  return {
+    type,
+    sourceTable: table,
+    sourceEvent: payload.eventType,
+    at: Date.now(),
+    orderId,
+    tableId,
+    status,
+    paymentType,
+    payload: row,
+  };
 }
 
 function playAlertTone() {

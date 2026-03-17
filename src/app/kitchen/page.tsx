@@ -2,6 +2,7 @@ import Link from "next/link";
 import { revalidatePath } from "next/cache";
 import { BackofficePage, ContentCard, EmptyPanel, FeatureLockedState, SummaryCard, WorkflowGuide } from "@/components/backoffice-ui";
 import { LiveOpsBridge } from "@/components/live-ops-bridge";
+import { LiveRouteRefresh } from "@/components/live-route-refresh";
 import { PendingSubmitButton } from "@/components/pending-submit-button";
 import { requireRole } from "@/lib/auth";
 import { getKitchenPageSnapshot, updateOrderStationStatus } from "@/lib/data";
@@ -129,12 +130,14 @@ function stationTone(station: KitchenStation) {
 }
 
 function statusTone(status: string) {
+  if (status === "ready") return "bg-emerald-100 text-emerald-700";
   if (status === "served") return "bg-emerald-100 text-emerald-700";
   if (status === "preparing") return "bg-sky-100 text-sky-700";
   return "bg-[#fff2ee] text-[#ff5a34]";
 }
 
 function statusLabel(status: string) {
+  if (status === "ready") return "Servise Hazir";
   if (status === "served") return "Servise Hazir";
   if (status === "preparing") return "Hazirlaniyor";
   return "Bekliyor";
@@ -152,8 +155,11 @@ function resolveStationStatus(order: Order, station: KitchenStation): StationPro
   if (stationStatus === "pending" || stationStatus === "preparing" || stationStatus === "served") {
     return stationStatus;
   }
-  if (order.status === "pending" || order.status === "preparing" || order.status === "served") {
+  if (order.status === "pending" || order.status === "preparing") {
     return order.status;
+  }
+  if (order.status === "ready" || order.status === "served" || order.status === "partially_paid") {
+    return "served";
   }
   return "pending";
 }
@@ -203,7 +209,7 @@ export default async function KitchenPage() {
   const criticalCount = orders.filter((order) => getDelayLevel(order.status, order.created_at).critical).length;
   const preparingCount = orders.filter((order) => order.status === "preparing").length;
   const pendingCount = orders.filter((order) => order.status === "pending").length;
-  const servedCount = orders.filter((order) => order.status === "served").length;
+  const servedCount = orders.filter((order) => order.status === "served" || order.status === "ready").length;
 
   const productCategoryMap = new Map(products.map((product) => [product.id, product.category_id]));
   const categoryMap = new Map(categories.map((category) => [category.id, { name: category.name, prep_station: category.prep_station }]));
@@ -232,6 +238,7 @@ export default async function KitchenPage() {
       actions={
         <>
           <LiveOpsBridge tables={["orders"]} enableSound />
+          <LiveRouteRefresh tables={["orders"]} />
           <Link href="/ops" className="w-full rounded-2xl border border-slate-200 bg-white px-5 py-3 text-center text-sm font-semibold text-slate-800 sm:w-auto">
             Panele Don
           </Link>

@@ -7,9 +7,14 @@ function fail(message) {
   throw new Error(`[phase5:consistency] ${message}`);
 }
 
-function expectedStatus(finalAmount, netAmount) {
+function expectedStatus(finalAmount, salesAmount, refundAmount, currentStatus) {
+  const netAmount = salesAmount - refundAmount;
   if (netAmount >= finalAmount - 0.0001) return "paid";
-  if (netAmount <= 0.0001) return "refunded";
+  if (refundAmount > 0 && netAmount <= 0.0001) return "refunded";
+  if (refundAmount > 0 && netAmount > 0.0001) return "partially_refunded";
+  if (netAmount > 0.0001) return "partially_paid";
+  if (currentStatus === "pending" || currentStatus === "preparing") return "ready";
+  if (currentStatus === "ready") return "ready";
   return "served";
 }
 
@@ -30,23 +35,29 @@ async function run() {
   if (ordersError) fail(`orders okunamadi: ${ordersError.message}`);
   if (paymentsError) fail(`payments okunamadi: ${paymentsError.message}`);
 
-  const netByOrder = new Map();
+  const totalsByOrder = new Map();
   for (const row of payments ?? []) {
     const orderId = String(row.order_id);
     const amount = Number(row.amount ?? 0);
-    const current = netByOrder.get(orderId) ?? 0;
-    netByOrder.set(orderId, current + (row.payment_type === "refund" ? -amount : amount));
+    const current = totalsByOrder.get(orderId) ?? { sales: 0, refunds: 0 };
+    if (row.payment_type === "refund") {
+      current.refunds += amount;
+    } else {
+      current.sales += amount;
+    }
+    totalsByOrder.set(orderId, current);
   }
 
   const violations = [];
   for (const order of orders ?? []) {
     const id = String(order.id);
     const status = String(order.status);
-    if (!["served", "paid", "refunded"].includes(status)) continue;
+    if (!["ready", "served", "partially_paid", "paid", "partially_refunded", "refunded"].includes(status)) continue;
 
     const finalAmount = Number(order.final_price ?? order.total_price ?? 0);
-    const net = Math.max(0, Number(netByOrder.get(id) ?? 0));
-    const shouldBe = expectedStatus(finalAmount, net);
+    const totals = totalsByOrder.get(id) ?? { sales: 0, refunds: 0 };
+    const net = Math.max(0, Number(totals.sales - totals.refunds));
+    const shouldBe = expectedStatus(finalAmount, totals.sales, totals.refunds, status);
 
     if (status !== shouldBe) {
       violations.push(`${id}:${status}->${shouldBe}(net=${net.toFixed(2)},final=${finalAmount.toFixed(2)})`);

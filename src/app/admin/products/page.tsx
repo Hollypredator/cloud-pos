@@ -23,9 +23,11 @@ import {
 import { requireRole } from "@/lib/auth";
 import { BackofficePage, ContentCard, EmptyPanel, NoticeBanner, SummaryCard, WorkspaceTabs } from "@/components/backoffice-ui";
 import { CategorySortManager } from "@/components/category-sort-manager";
+import { FileDropInput } from "@/components/file-drop-input";
 import { translateUiText } from "@/lib/i18n";
 import { getCurrentLocale } from "@/lib/i18n-server";
 import { logServerPerf, measureAsync } from "@/lib/perf";
+import { uploadMediaFile } from "@/lib/data";
 
 function normalizePrepStation(value: FormDataEntryValue | null) {
   const station = typeof value === "string" ? value : "";
@@ -65,6 +67,28 @@ async function resolveProductsFeedbackPath(tone: "success" | "error", feedback: 
 function actionErrorMessage(result: { ok: boolean; error?: string | null }, fallback: string) {
   const message = (result.error ?? "").trim();
   return message || fallback;
+}
+
+async function resolveProductImageUrl(input: {
+  formData: FormData;
+  currentImageUrl?: string;
+}) {
+  const clearImage = input.formData.get("clearImage") === "on";
+  let imageUrl = input.currentImageUrl?.trim() || undefined;
+  if (clearImage) {
+    imageUrl = undefined;
+  }
+
+  const imageFile = input.formData.get("imageFile");
+  if (imageFile instanceof File && imageFile.size > 0) {
+    const uploadResult = await uploadMediaFile(imageFile);
+    if (!uploadResult.ok) {
+      return { ok: false as const, error: uploadResult.error };
+    }
+    imageUrl = uploadResult.fileUrl;
+  }
+
+  return { ok: true as const, imageUrl };
 }
 
 async function addCategoryAction(formData: FormData) {
@@ -137,10 +161,14 @@ async function addProductAction(formData: FormData) {
   const price = Number(formData.get("price"));
   const stockCount = Number(formData.get("stockCount"));
   const description = formData.get("description");
-  const imageUrl = formData.get("imageUrl");
 
   if (typeof categoryId !== "string" || typeof name !== "string" || !Number.isFinite(price) || !Number.isFinite(stockCount)) {
     redirect(await resolveProductsFeedbackPath("error", "Urun bilgileri gecersiz."));
+  }
+
+  const imageResult = await resolveProductImageUrl({ formData });
+  if (!imageResult.ok) {
+    redirect(await resolveProductsFeedbackPath("error", imageResult.error || "Gorsel yuklenemedi."));
   }
 
   const result = await createProduct({
@@ -149,7 +177,7 @@ async function addProductAction(formData: FormData) {
     price,
     stockCount,
     description: typeof description === "string" ? description : undefined,
-    imageUrl: typeof imageUrl === "string" ? imageUrl : undefined,
+    imageUrl: imageResult.imageUrl,
     isAvailable: true,
   });
   if (!result.ok) {
@@ -168,7 +196,7 @@ async function updateProductAction(formData: FormData) {
   const price = Number(formData.get("price"));
   const stockCount = Number(formData.get("stockCount"));
   const description = formData.get("description");
-  const imageUrl = formData.get("imageUrl");
+  const currentImageUrl = String(formData.get("currentImageUrl") ?? "");
   const isAvailable = formData.get("isAvailable") === "on";
 
   if (
@@ -181,6 +209,11 @@ async function updateProductAction(formData: FormData) {
     redirect(await resolveProductsFeedbackPath("error", "Urun guncelleme bilgileri gecersiz."));
   }
 
+  const imageResult = await resolveProductImageUrl({ formData, currentImageUrl });
+  if (!imageResult.ok) {
+    redirect(await resolveProductsFeedbackPath("error", imageResult.error || "Gorsel yuklenemedi."));
+  }
+
   const result = await updateProduct({
     productId,
     categoryId,
@@ -188,7 +221,7 @@ async function updateProductAction(formData: FormData) {
     price,
     stockCount,
     description: typeof description === "string" ? description : undefined,
-    imageUrl: typeof imageUrl === "string" ? imageUrl : undefined,
+    imageUrl: imageResult.imageUrl,
     isAvailable,
   });
   if (!result.ok) {
@@ -437,7 +470,12 @@ export default async function AdminProductsPage({
           <input name="name" required placeholder={translateUiText("Yeni Urun", locale)} className="w-full min-w-0 rounded-2xl border border-slate-200 bg-slate-50 px-4 py-3 text-sm sm:flex-1" />
           <input name="price" type="number" min="0" step="0.01" required placeholder="Fiyat" className="w-full rounded-2xl border border-slate-200 bg-slate-50 px-4 py-3 text-sm sm:w-28" />
           <input name="stockCount" type="number" min="0" required placeholder="Stok" className="w-full rounded-2xl border border-slate-200 bg-slate-50 px-4 py-3 text-sm sm:w-28" />
-          <input name="imageUrl" type="url" placeholder="Gorsel URL (opsiyonel)" className="w-full rounded-2xl border border-slate-200 bg-slate-50 px-4 py-3 text-sm sm:w-56" />
+          <FileDropInput
+            name="imageFile"
+            label="Urun gorseli"
+            helper="Masaustunden surukle birak ile ekleyebilirsin."
+            className="w-full sm:min-w-[280px] sm:flex-1"
+          />
           <button type="submit" className="w-full rounded-2xl bg-gradient-to-r from-[#ff5a34] to-[#f0b14f] px-5 py-3 text-sm font-semibold text-white sm:w-auto">
             {translateUiText("Yeni Urun", locale)}
           </button>
@@ -568,148 +606,170 @@ export default async function AdminProductsPage({
                 <div className="mt-4 grid gap-4 lg:grid-cols-2 2xl:grid-cols-3">
                   {visibleProducts.map((product) => (
                     <article key={product.id} className="min-w-0 rounded-[22px] border border-slate-200 bg-white p-4">
-                      <div className="flex flex-col items-start justify-between gap-3 sm:flex-row">
-                        <div className="min-w-0">
-                          <p className="text-xs font-bold uppercase tracking-[0.14em] text-slate-500">
-                            {orderedCategories.find((category) => category.id === product.category_id)?.name ?? "Kategori"}
-                          </p>
-                          <h3 className="mt-2 text-xl font-semibold tracking-tight text-slate-900 sm:text-2xl">{product.name}</h3>
-                          <p className="mt-2 text-sm text-slate-500">{product.description ?? "Aciklama girilmedi."}</p>
-                        </div>
-                        <form action={deleteProductAction} className="w-full sm:w-auto">
-                          <input type="hidden" name="productId" value={product.id} />
-                          <button type="submit" className="w-full rounded-xl border border-rose-200 bg-rose-50 px-3 py-2 text-xs font-semibold text-rose-700 sm:w-auto">
-                            Sil
-                          </button>
-                        </form>
-                      </div>
-
-                      <form action={updateProductAction} className="mt-4 space-y-3">
-                        <input type="hidden" name="productId" value={product.id} />
-                        <select name="categoryId" defaultValue={product.category_id} className="w-full rounded-2xl border border-slate-200 bg-slate-50 px-4 py-3 text-sm">
-                          {orderedCategories.map((category) => (
-                            <option key={category.id} value={category.id}>
-                              {category.name}
-                            </option>
-                          ))}
-                        </select>
-                        <input name="name" defaultValue={product.name} className="w-full rounded-2xl border border-slate-200 bg-slate-50 px-4 py-3 text-sm" />
-                        <div className="grid gap-3 md:grid-cols-2">
-                          <input name="price" type="number" step="0.01" min="0" defaultValue={product.price} className="rounded-2xl border border-slate-200 bg-slate-50 px-4 py-3 text-sm" />
-                          <input name="stockCount" type="number" min="0" defaultValue={product.stock_count} className="rounded-2xl border border-slate-200 bg-slate-50 px-4 py-3 text-sm" />
-                        </div>
-                        <input name="imageUrl" defaultValue={product.image_url ?? ""} placeholder="Gorsel URL" className="w-full rounded-2xl border border-slate-200 bg-slate-50 px-4 py-3 text-sm" />
-                        <textarea name="description" rows={2} defaultValue={product.description ?? ""} className="w-full rounded-2xl border border-slate-200 bg-slate-50 px-4 py-3 text-sm" />
-                        <label className="flex items-center gap-2 text-sm font-medium text-slate-700">
-                          <input name="isAvailable" type="checkbox" defaultChecked={product.is_available} />
-                          Satisa acik
-                        </label>
-                        <button type="submit" className="w-full rounded-2xl bg-[#ff5a34] px-4 py-3 text-sm font-semibold text-white sm:w-auto">
-                          Kaydet
-                        </button>
-                      </form>
-
-                      <div className="mt-4 space-y-3 rounded-[20px] bg-slate-50 p-3">
-                        <p className="text-sm font-semibold text-slate-900">Recete</p>
-                        {(ingredientsByProduct.get(product.id) ?? []).length === 0 ? <p className="text-sm text-slate-500">Malzeme baglanmamis.</p> : null}
-                        {(ingredientsByProduct.get(product.id) ?? []).map((item) => (
-                          <div key={`${product.id}-${item.ingredient_id}`} className="flex flex-col items-start justify-between gap-3 rounded-xl border border-slate-200 bg-white px-3 py-2 text-sm sm:flex-row sm:items-center">
-                            <span className="min-w-0 break-words text-slate-700">
-                              {item.ingredientName} - {item.quantity} {item.unit}
+                      <details>
+                        <summary className="cursor-pointer list-none">
+                          <div className="flex flex-col items-start justify-between gap-3 sm:flex-row">
+                            <div className="min-w-0">
+                              <p className="text-xs font-bold uppercase tracking-[0.14em] text-slate-500">
+                                {orderedCategories.find((category) => category.id === product.category_id)?.name ?? "Kategori"}
+                              </p>
+                              <h3 className="mt-2 text-xl font-semibold tracking-tight text-slate-900 sm:text-2xl">{product.name}</h3>
+                              <p className="mt-2 text-sm text-slate-500">{product.description ?? "Aciklama girilmedi."}</p>
+                              <p className="mt-2 text-sm font-semibold text-slate-700">{Number(product.price).toFixed(2)} TL</p>
+                            </div>
+                            <span className={`inline-flex w-full justify-center rounded-full px-3 py-1 text-xs font-semibold sm:w-auto ${product.is_available ? "bg-emerald-100 text-emerald-700" : "bg-slate-100 text-slate-600"}`}>
+                              {product.is_available ? "Aktif" : "Pasif"}
                             </span>
-                            <form action={detachIngredientAction} className="w-full sm:w-auto">
+                          </div>
+                        </summary>
+
+                        <div className="mt-4">
+                          <form action={deleteProductAction} className="mb-4 w-full sm:w-auto">
+                            <input type="hidden" name="productId" value={product.id} />
+                            <button type="submit" className="w-full rounded-xl border border-rose-200 bg-rose-50 px-3 py-2 text-xs font-semibold text-rose-700 sm:w-auto">
+                              Sil
+                            </button>
+                          </form>
+
+                          <form action={updateProductAction} className="space-y-3">
+                            <input type="hidden" name="productId" value={product.id} />
+                            <input type="hidden" name="currentImageUrl" value={product.image_url ?? ""} />
+                            <select name="categoryId" defaultValue={product.category_id} className="w-full rounded-2xl border border-slate-200 bg-slate-50 px-4 py-3 text-sm">
+                              {orderedCategories.map((category) => (
+                                <option key={category.id} value={category.id}>
+                                  {category.name}
+                                </option>
+                              ))}
+                            </select>
+                            <input name="name" defaultValue={product.name} className="w-full rounded-2xl border border-slate-200 bg-slate-50 px-4 py-3 text-sm" />
+                            <div className="grid gap-3 md:grid-cols-2">
+                              <input name="price" type="number" step="0.01" min="0" defaultValue={product.price} className="rounded-2xl border border-slate-200 bg-slate-50 px-4 py-3 text-sm" />
+                              <input name="stockCount" type="number" min="0" defaultValue={product.stock_count} className="rounded-2xl border border-slate-200 bg-slate-50 px-4 py-3 text-sm" />
+                            </div>
+                            <FileDropInput
+                              name="imageFile"
+                              label="Urun gorseli"
+                              helper={product.image_url ? "Yeni dosya birakirsan mevcut gorselin uzerine yazilir." : "Masaustunden surukle birak ile gorsel ekle."}
+                            />
+                            {product.image_url ? (
+                              <label className="flex items-center gap-2 text-sm font-medium text-slate-700">
+                                <input name="clearImage" type="checkbox" />
+                                Mevcut gorseli kaldir
+                              </label>
+                            ) : null}
+                            <textarea name="description" rows={2} defaultValue={product.description ?? ""} className="w-full rounded-2xl border border-slate-200 bg-slate-50 px-4 py-3 text-sm" />
+                            <label className="flex items-center gap-2 text-sm font-medium text-slate-700">
+                              <input name="isAvailable" type="checkbox" defaultChecked={product.is_available} />
+                              Satisa acik
+                            </label>
+                            <button type="submit" className="w-full rounded-2xl bg-[#ff5a34] px-4 py-3 text-sm font-semibold text-white sm:w-auto">
+                              Kaydet
+                            </button>
+                          </form>
+
+                          <div className="mt-4 space-y-3 rounded-[20px] bg-slate-50 p-3">
+                            <p className="text-sm font-semibold text-slate-900">Recete</p>
+                            {(ingredientsByProduct.get(product.id) ?? []).length === 0 ? <p className="text-sm text-slate-500">Malzeme baglanmamis.</p> : null}
+                            {(ingredientsByProduct.get(product.id) ?? []).map((item) => (
+                              <div key={`${product.id}-${item.ingredient_id}`} className="flex flex-col items-start justify-between gap-3 rounded-xl border border-slate-200 bg-white px-3 py-2 text-sm sm:flex-row sm:items-center">
+                                <span className="min-w-0 break-words text-slate-700">
+                                  {item.ingredientName} - {item.quantity} {item.unit}
+                                </span>
+                                <form action={detachIngredientAction} className="w-full sm:w-auto">
+                                  <input type="hidden" name="productId" value={product.id} />
+                                  <input type="hidden" name="ingredientId" value={item.ingredient_id} />
+                                  <button type="submit" className="w-full text-left text-xs font-semibold text-rose-700 sm:w-auto sm:text-right">
+                                    Cikar
+                                  </button>
+                                </form>
+                              </div>
+                            ))}
+                            <form action={attachIngredientAction} className="grid gap-2">
                               <input type="hidden" name="productId" value={product.id} />
-                              <input type="hidden" name="ingredientId" value={item.ingredient_id} />
-                              <button type="submit" className="w-full text-left text-xs font-semibold text-rose-700 sm:w-auto sm:text-right">
-                                Cikar
-                              </button>
+                              <select name="ingredientId" required className="rounded-xl border border-slate-200 bg-white px-3 py-2 text-sm">
+                                <option value="">Malzeme sec</option>
+                                {ingredients.map((ingredient) => (
+                                  <option key={ingredient.id} value={ingredient.id}>
+                                    {ingredient.name} ({ingredient.unit})
+                                  </option>
+                                ))}
+                              </select>
+                              <div className="grid gap-2 sm:grid-cols-[1fr_auto]">
+                                <input name="quantity" type="number" min="0.01" step="0.01" required placeholder="Miktar" className="flex-1 rounded-xl border border-slate-200 bg-white px-3 py-2 text-sm" />
+                                <button type="submit" className="rounded-xl border border-slate-200 bg-white px-3 py-2 text-sm font-semibold text-slate-800">
+                                  Ekle
+                                </button>
+                              </div>
                             </form>
                           </div>
-                        ))}
-                        <form action={attachIngredientAction} className="grid gap-2">
-                          <input type="hidden" name="productId" value={product.id} />
-                          <select name="ingredientId" required className="rounded-xl border border-slate-200 bg-white px-3 py-2 text-sm">
-                            <option value="">Malzeme sec</option>
-                            {ingredients.map((ingredient) => (
-                              <option key={ingredient.id} value={ingredient.id}>
-                                {ingredient.name} ({ingredient.unit})
-                              </option>
-                            ))}
-                          </select>
-                          <div className="grid gap-2 sm:grid-cols-[1fr_auto]">
-                            <input name="quantity" type="number" min="0.01" step="0.01" required placeholder="Miktar" className="flex-1 rounded-xl border border-slate-200 bg-white px-3 py-2 text-sm" />
-                            <button type="submit" className="rounded-xl border border-slate-200 bg-white px-3 py-2 text-sm font-semibold text-slate-800">
-                              Ekle
-                            </button>
-                          </div>
-                        </form>
-                      </div>
 
-                      <div className="mt-4 space-y-3 rounded-[20px] bg-slate-50 p-3">
-                        <p className="text-sm font-semibold text-slate-900">Modifier Gruplari</p>
-                        {(groupsByProduct.get(product.id) ?? []).map((group) => (
-                          <div key={group.id} className="rounded-xl border border-slate-200 bg-white p-3">
-                            <div className="flex flex-col items-start justify-between gap-3 sm:flex-row">
-                              <div className="min-w-0">
-                                <p className="font-semibold text-slate-900">{group.name}</p>
-                                <p className="text-xs text-slate-500">
-                                  min {group.min_select} / max {group.max_select} {group.is_required ? "- zorunlu" : ""}
-                                </p>
-                              </div>
-                              <form action={deleteModifierGroupAction} className="w-full sm:w-auto">
-                                <input type="hidden" name="groupId" value={group.id} />
-                                <button type="submit" className="w-full text-left text-xs font-semibold text-rose-700 sm:w-auto sm:text-right">
-                                  Sil
-                                </button>
-                              </form>
-                            </div>
-                            <div className="mt-3 space-y-2">
-                              {(optionsByGroup.get(group.id) ?? []).map((option) => (
-                                <div key={option.id} className="flex flex-col items-start justify-between gap-3 rounded-xl border border-slate-200 bg-slate-50 px-3 py-2 text-sm sm:flex-row sm:items-center">
-                                  <span className="min-w-0 break-words">
-                                    {option.name} {Number(option.price_delta) > 0 ? `(+${Number(option.price_delta).toFixed(2)} TL)` : ""}
-                                  </span>
-                                  <form action={deleteModifierOptionAction} className="w-full sm:w-auto">
-                                    <input type="hidden" name="optionId" value={option.id} />
+                          <div className="mt-4 space-y-3 rounded-[20px] bg-slate-50 p-3">
+                            <p className="text-sm font-semibold text-slate-900">Modifier Gruplari</p>
+                            {(groupsByProduct.get(product.id) ?? []).map((group) => (
+                              <div key={group.id} className="rounded-xl border border-slate-200 bg-white p-3">
+                                <div className="flex flex-col items-start justify-between gap-3 sm:flex-row">
+                                  <div className="min-w-0">
+                                    <p className="font-semibold text-slate-900">{group.name}</p>
+                                    <p className="text-xs text-slate-500">
+                                      min {group.min_select} / max {group.max_select} {group.is_required ? "- zorunlu" : ""}
+                                    </p>
+                                  </div>
+                                  <form action={deleteModifierGroupAction} className="w-full sm:w-auto">
+                                    <input type="hidden" name="groupId" value={group.id} />
                                     <button type="submit" className="w-full text-left text-xs font-semibold text-rose-700 sm:w-auto sm:text-right">
                                       Sil
                                     </button>
                                   </form>
                                 </div>
-                              ))}
-                            </div>
-                            <form action={addModifierOptionAction} className="mt-3 grid gap-2">
-                              <input type="hidden" name="groupId" value={group.id} />
-                              <input name="name" required placeholder="Opsiyon adi" className="rounded-xl border border-slate-200 bg-slate-50 px-3 py-2 text-sm" />
-                              <div className="grid gap-2 sm:grid-cols-[1fr_auto]">
-                                <input name="priceDelta" type="number" step="0.01" defaultValue={0} className="flex-1 rounded-xl border border-slate-200 bg-slate-50 px-3 py-2 text-sm" />
-                                <label className="flex items-center gap-2 rounded-xl border border-slate-200 bg-slate-50 px-3 py-2 text-xs font-medium text-slate-700">
-                                  <input name="isDefault" type="checkbox" />
-                                  Varsayilan
+                                <div className="mt-3 space-y-2">
+                                  {(optionsByGroup.get(group.id) ?? []).map((option) => (
+                                    <div key={option.id} className="flex flex-col items-start justify-between gap-3 rounded-xl border border-slate-200 bg-slate-50 px-3 py-2 text-sm sm:flex-row sm:items-center">
+                                      <span className="min-w-0 break-words">
+                                        {option.name} {Number(option.price_delta) > 0 ? `(+${Number(option.price_delta).toFixed(2)} TL)` : ""}
+                                      </span>
+                                      <form action={deleteModifierOptionAction} className="w-full sm:w-auto">
+                                        <input type="hidden" name="optionId" value={option.id} />
+                                        <button type="submit" className="w-full text-left text-xs font-semibold text-rose-700 sm:w-auto sm:text-right">
+                                          Sil
+                                        </button>
+                                      </form>
+                                    </div>
+                                  ))}
+                                </div>
+                                <form action={addModifierOptionAction} className="mt-3 grid gap-2">
+                                  <input type="hidden" name="groupId" value={group.id} />
+                                  <input name="name" required placeholder="Opsiyon adi" className="rounded-xl border border-slate-200 bg-slate-50 px-3 py-2 text-sm" />
+                                  <div className="grid gap-2 sm:grid-cols-[1fr_auto]">
+                                    <input name="priceDelta" type="number" step="0.01" defaultValue={0} className="flex-1 rounded-xl border border-slate-200 bg-slate-50 px-3 py-2 text-sm" />
+                                    <label className="flex items-center gap-2 rounded-xl border border-slate-200 bg-slate-50 px-3 py-2 text-xs font-medium text-slate-700">
+                                      <input name="isDefault" type="checkbox" />
+                                      Varsayilan
+                                    </label>
+                                  </div>
+                                  <button type="submit" className="w-full rounded-xl border border-slate-200 bg-white px-3 py-2 text-sm font-semibold text-slate-800 sm:w-auto">
+                                    Opsiyon Ekle
+                                  </button>
+                                </form>
+                              </div>
+                            ))}
+                            <form action={addModifierGroupAction} className="grid gap-2">
+                              <input type="hidden" name="productId" value={product.id} />
+                              <input name="name" required placeholder="Yeni grup" className="rounded-xl border border-slate-200 bg-white px-3 py-2 text-sm" />
+                              <div className="grid gap-2 md:grid-cols-3">
+                                <input name="minSelect" type="number" min="0" defaultValue={0} className="rounded-xl border border-slate-200 bg-white px-3 py-2 text-sm" />
+                                <input name="maxSelect" type="number" min="1" defaultValue={1} className="rounded-xl border border-slate-200 bg-white px-3 py-2 text-sm" />
+                                <label className="flex items-center gap-2 rounded-xl border border-slate-200 bg-white px-3 py-2 text-xs font-medium text-slate-700">
+                                  <input name="isRequired" type="checkbox" />
+                                  Zorunlu
                                 </label>
                               </div>
                               <button type="submit" className="w-full rounded-xl border border-slate-200 bg-white px-3 py-2 text-sm font-semibold text-slate-800 sm:w-auto">
-                                Opsiyon Ekle
+                                Grup Ekle
                               </button>
                             </form>
                           </div>
-                        ))}
-                        <form action={addModifierGroupAction} className="grid gap-2">
-                          <input type="hidden" name="productId" value={product.id} />
-                          <input name="name" required placeholder="Yeni grup" className="rounded-xl border border-slate-200 bg-white px-3 py-2 text-sm" />
-                          <div className="grid gap-2 md:grid-cols-3">
-                            <input name="minSelect" type="number" min="0" defaultValue={0} className="rounded-xl border border-slate-200 bg-white px-3 py-2 text-sm" />
-                            <input name="maxSelect" type="number" min="1" defaultValue={1} className="rounded-xl border border-slate-200 bg-white px-3 py-2 text-sm" />
-                            <label className="flex items-center gap-2 rounded-xl border border-slate-200 bg-white px-3 py-2 text-xs font-medium text-slate-700">
-                              <input name="isRequired" type="checkbox" />
-                              Zorunlu
-                            </label>
-                          </div>
-                          <button type="submit" className="w-full rounded-xl border border-slate-200 bg-white px-3 py-2 text-sm font-semibold text-slate-800 sm:w-auto">
-                            Grup Ekle
-                          </button>
-                        </form>
-                      </div>
+                        </div>
+                      </details>
                     </article>
                   ))}
                 </div>
@@ -833,14 +893,15 @@ export default async function AdminProductsPage({
                       <input type="hidden" name="price" value={String(product.price)} />
                       <input type="hidden" name="stockCount" value={String(product.stock_count)} />
                       <input type="hidden" name="description" value={product.description ?? ""} />
+                      <input type="hidden" name="currentImageUrl" value={product.image_url ?? ""} />
                       <input type="hidden" name="isAvailable" value={product.is_available ? "on" : "off"} />
-                      <input
-                        name="imageUrl"
-                        type="url"
-                        defaultValue={product.image_url ?? ""}
-                        placeholder="Gorsel URL ekle"
-                        className="w-full rounded-2xl border border-slate-200 bg-slate-50 px-4 py-3 text-sm"
-                      />
+                      <FileDropInput name="imageFile" label="Urun gorseli" helper="Dosyayi surukleyip birak veya sec." />
+                      {product.image_url ? (
+                        <label className="flex items-center gap-2 text-sm font-medium text-slate-700">
+                          <input name="clearImage" type="checkbox" />
+                          Mevcut gorseli kaldir
+                        </label>
+                      ) : null}
                       <button type="submit" className="w-full rounded-2xl border border-slate-200 bg-slate-50 px-4 py-3 text-sm font-semibold text-slate-700">
                         Gorseli Kaydet
                       </button>

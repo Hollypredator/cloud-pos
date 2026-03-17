@@ -3,7 +3,7 @@
 import Link from "next/link";
 import Image from "next/image";
 import { usePathname, useRouter, useSearchParams } from "next/navigation";
-import { useEffect, useState } from "react";
+import { useEffect, useMemo, useState } from "react";
 import { LogoutButton } from "@/components/logout-button";
 import { ALL_BRANCHES_VALUE } from "@/lib/business";
 import { getPlanLabel, getRequiredPlan, hasFeature } from "@/lib/features";
@@ -95,6 +95,24 @@ function getLocale() {
   return normalizeLocale(document.documentElement.lang || "tr");
 }
 
+function resolveActiveHref(pathname: string | null, hrefs: string[]) {
+  if (!pathname) {
+    return null;
+  }
+  let bestMatch: string | null = null;
+  for (const href of hrefs) {
+    const exact = pathname === href;
+    const nested = pathname.startsWith(`${href}/`);
+    if (!exact && !nested) {
+      continue;
+    }
+    if (!bestMatch || href.length > bestMatch.length) {
+      bestMatch = href;
+    }
+  }
+  return bestMatch;
+}
+
 export function AppNav({
   role,
   hasUser,
@@ -136,21 +154,19 @@ export function AppNav({
   const [isSwitching, setIsSwitching] = useState(false);
   const [collapsed, setCollapsed] = useState(false);
   const [mobileOpen, setMobileOpen] = useState(false);
+  const [sidebarHydrated, setSidebarHydrated] = useState(false);
   const locale = getLocale();
 
   useEffect(() => {
     try {
       setCollapsed(window.localStorage.getItem("gopos_nav_collapsed") === "1");
     } catch {}
+    setSidebarHydrated(true);
   }, []);
 
   useEffect(() => {
     setMobileOpen(false);
   }, [pathname]);
-
-  function isActive(href: string) {
-    return pathname === href || pathname.startsWith(`${href}/`);
-  }
 
   function toggleCollapsed() {
     setCollapsed((prev) => {
@@ -207,22 +223,30 @@ export function AppNav({
     allowAll || (!!role && (roles.includes(role) || (role === "owner" && roles.includes("admin"))));
   const theme = sidebarThemes[sidebarTheme] ?? sidebarThemes.ember;
   const resolvedOrder = role === "owner" ? ownerSidebarOrder : adminSidebarOrder;
-  const orderPreset: string[] =
-    resolvedOrder.length > 0
-      ? [...resolvedOrder]
-      : role === "owner"
-        ? [...defaultOwnerSidebarOrder]
-        : [...defaultAdminSidebarOrder];
+  const orderPreset: string[] = useMemo(
+    () =>
+      resolvedOrder.length > 0
+        ? [...resolvedOrder]
+        : role === "owner"
+          ? [...defaultOwnerSidebarOrder]
+          : [...defaultAdminSidebarOrder],
+    [resolvedOrder, role],
+  );
   const accentBase = /^#[0-9a-fA-F]{6}$/.test(sidebarAccentColor) ? sidebarAccentColor : "#ff7848";
   const accentBright = mixHex(accentBase, 0.28);
   const accentDark = mixHex(accentBase, -0.18);
-  const visibleLinks = operationLinks
-    .filter((link) => canAccess(link.roles) && (!link.requiresBusinessScope || branchAccessScope === "business"))
-    .sort((a, b) => {
-      const aIndex = orderPreset.indexOf(a.href);
-      const bIndex = orderPreset.indexOf(b.href);
-      return (aIndex === -1 ? Number.MAX_SAFE_INTEGER : aIndex) - (bIndex === -1 ? Number.MAX_SAFE_INTEGER : bIndex);
-    });
+  const visibleLinks = useMemo(
+    () =>
+      operationLinks
+        .filter((link) => canAccess(link.roles) && (!link.requiresBusinessScope || branchAccessScope === "business"))
+        .sort((a, b) => {
+          const aIndex = orderPreset.indexOf(a.href);
+          const bIndex = orderPreset.indexOf(b.href);
+          return (aIndex === -1 ? Number.MAX_SAFE_INTEGER : aIndex) - (bIndex === -1 ? Number.MAX_SAFE_INTEGER : bIndex);
+        }),
+    [branchAccessScope, orderPreset, role, usingDemoData],
+  );
+  const activeHref = resolveActiveHref(pathname, visibleLinks.map((link) => link.href));
   const mobilePrimaryLinks = visibleLinks.slice(0, 4);
 
   return (
@@ -304,9 +328,9 @@ export function AppNav({
                     <Link
                       key={link.href}
                       href={link.href}
-                      prefetch={false}
+                      onClick={() => setMobileOpen(false)}
                       className={`flex items-center gap-3 rounded-2xl px-3 py-2.5 text-sm font-semibold ${
-                        isActive(link.href) ? "bg-slate-950 text-white" : "border border-slate-200 bg-white text-slate-800"
+                        activeHref === link.href ? "bg-slate-950 text-white" : "border border-slate-200 bg-white text-slate-800"
                       }`}
                     >
                       <span className="inline-flex h-8 w-8 items-center justify-center rounded-xl bg-slate-100 text-sm text-slate-700">
@@ -329,9 +353,8 @@ export function AppNav({
               <Link
                 key={link.href}
                 href={link.href}
-                prefetch={false}
                 className={`flex min-h-[56px] flex-col items-center justify-center rounded-2xl px-2 py-1.5 text-center text-[10px] font-semibold leading-tight ${
-                  isActive(link.href) ? "bg-slate-950 text-white" : "bg-slate-100 text-slate-700"
+                  activeHref === link.href ? "bg-slate-950 text-white" : "bg-slate-100 text-slate-700"
                 }`}
               >
                 <span className="mb-1 text-[13px]">{link.icon}</span>
@@ -343,11 +366,11 @@ export function AppNav({
       ) : null}
 
       <aside
-        className={`hidden min-h-screen shrink-0 flex-col border-r text-white transition-all md:flex ${
+        className={`hidden min-h-screen shrink-0 flex-col border-r text-white md:flex ${
           theme.asideClassName
         } ${
           collapsed ? "w-[88px]" : "w-[252px]"
-        }`}
+        } ${sidebarHydrated ? "transition-[width] duration-200 ease-out" : ""}`}
         style={{ backgroundImage: theme.backgroundImage }}
       >
         <div className="border-b border-white/10 px-4 py-6">
@@ -434,7 +457,7 @@ export function AppNav({
           <div className="space-y-1.5">
             {visibleLinks.map((link) => {
               const locked = !!link.feature && !hasFeature(currentPlan, link.feature);
-              const isLinkActive = !locked && isActive(link.href);
+              const isLinkActive = !locked && activeHref === link.href;
               const className = `group flex items-center gap-3 rounded-2xl px-3 py-3 text-sm font-medium transition ${
                 locked
                   ? "cursor-not-allowed border border-white/10 bg-white/5 text-white/40"
@@ -469,7 +492,6 @@ export function AppNav({
                 <Link
                   key={link.href}
                   href={link.href}
-                  prefetch={false}
                   title={collapsed ? translateUiText(link.label, locale) : undefined}
                   className={className}
                   style={

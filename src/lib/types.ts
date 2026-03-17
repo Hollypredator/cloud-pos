@@ -2,8 +2,11 @@ export type TableStatus = "empty" | "occupied" | "reserved";
 export type OrderStatus =
   | "pending"
   | "preparing"
+  | "ready"
   | "served"
+  | "partially_paid"
   | "paid"
+  | "partially_refunded"
   | "cancelled"
   | "refunded";
 export type OrderChannel = "dine_in" | "pickup" | "delivery";

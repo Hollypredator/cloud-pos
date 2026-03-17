@@ -46,8 +46,11 @@ function tableStatusLabel(status: TableStatus) {
 function orderStatusLabel(status: string) {
   if (status === "pending") return "Bekliyor";
   if (status === "preparing") return "Hazirlaniyor";
+  if (status === "ready") return "Servise Hazir";
   if (status === "served") return "Servise Hazir";
+  if (status === "partially_paid") return "Kismi Odeme";
   if (status === "paid") return "Kapandi";
+  if (status === "partially_refunded") return "Kismi Iade";
   if (status === "cancelled") return "Iptal";
   if (status === "refunded") return "Iade";
   return status;
@@ -58,7 +61,7 @@ function orderRef(order: { id: string; check_number?: string | null }) {
 }
 
 function isOpenOrderStatus(status: string) {
-  return status === "pending" || status === "preparing" || status === "served";
+  return status === "pending" || status === "preparing" || status === "ready" || status === "served" || status === "partially_paid";
 }
 
 function formatMoney(value: number) {
@@ -127,7 +130,7 @@ export default async function TablesPage({
     { zones, usingDemoData: usingZonesDemo },
   ] = await Promise.all([
     listLatestOrdersByTableIds(tableIds),
-    listTableRequests("open", { limit: 200, page: 1 }),
+    listTableRequests("open", { limit: 80, page: 1 }),
     getTableZones(),
   ]);
 

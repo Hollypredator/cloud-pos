@@ -11,16 +11,22 @@ import { logServerPerf, measureAsync } from "@/lib/perf";
 function statusTone(status: string) {
   if (status === "pending") return "bg-amber-100 text-amber-800";
   if (status === "preparing") return "bg-sky-100 text-sky-800";
+  if (status === "ready") return "bg-emerald-100 text-emerald-800";
   if (status === "served") return "bg-emerald-100 text-emerald-800";
+  if (status === "partially_paid") return "bg-blue-100 text-blue-700";
   if (status === "paid") return "bg-slate-200 text-slate-700";
+  if (status === "partially_refunded") return "bg-rose-100 text-rose-700";
   return "bg-slate-100 text-slate-700";
 }
 
 function statusLabel(status: string, locale: "tr" | "en" | "fr") {
   if (status === "pending") return translateUiText("Bekliyor", locale);
   if (status === "preparing") return translateUiText("Hazirlaniyor", locale);
+  if (status === "ready") return translateUiText("Servise Hazir", locale);
   if (status === "served") return translateUiText("Servise Hazir", locale);
+  if (status === "partially_paid") return translateUiText("Kismi Odeme", locale);
   if (status === "paid") return translateUiText("Kapandi", locale);
+  if (status === "partially_refunded") return translateUiText("Kismi Iade", locale);
   return status;
 }
 

@@ -7,8 +7,7 @@ export async function buildQrTarget(identifier: string) {
   return `${base}/${businessSlug}/qr/${identifier}`;
 }
 
-export async function buildQrImage(identifier: string) {
-  const target = encodeURIComponent(await buildQrTarget(identifier));
+export async function buildQrImage(identifier: string, prebuiltTarget?: string) {
+  const target = encodeURIComponent(prebuiltTarget ?? (await buildQrTarget(identifier)));
   return `https://api.qrserver.com/v1/create-qr-code/?size=220x220&data=${target}`;
 }
-

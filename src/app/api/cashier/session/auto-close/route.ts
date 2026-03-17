@@ -3,7 +3,7 @@ import { getApplicationSettings } from "@/lib/data";
 import { getCorrelationId, logApiEvent, withCorrelationId } from "@/lib/observability";
 import { getSupabaseServerClient } from "@/lib/supabase/server";
 
-const OPEN_ORDER_STATUSES = ["pending", "preparing", "served"] as const;
+const OPEN_ORDER_STATUSES = ["pending", "preparing", "ready", "served", "partially_paid"] as const;
 const DEFAULT_TIMEZONE = "Europe/Istanbul";
 
 type OpenSessionRow = {

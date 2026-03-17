@@ -54,7 +54,7 @@ export default async function AdminMediaPage() {
 
         {usingDemoData ? <p className="rounded-lg bg-amber-100 px-3 py-2 text-sm text-amber-900">Demo medya kayitlari gosteriliyor.</p> : null}
 
-        <form action={createMediaAssetAction} encType="multipart/form-data" className="rounded-2xl bg-white p-6 shadow-sm">
+        <form action={createMediaAssetAction} className="rounded-2xl bg-white p-6 shadow-sm">
           <div className="grid gap-4 md:grid-cols-2">
             <input name="title" placeholder="Baslik" className="rounded-xl border border-slate-300 px-4 py-3 text-sm" />
             <select name="kind" className="rounded-xl border border-slate-300 px-4 py-3 text-sm">

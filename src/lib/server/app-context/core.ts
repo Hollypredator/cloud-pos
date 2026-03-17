@@ -433,6 +433,9 @@ export const getDefaultBusinessScope = cache(async () => {
 export const getAppShellSnapshot = cache(async () => {
   const context = await getRequestAppContext();
   return {
+    sessionUserId: context.user?.id ?? null,
+    sessionBusinessId: context.businessId ?? null,
+    sessionBranchId: context.branchId ?? null,
     role: context.role,
     hasUser: context.hasUser,
     usingDemoData: context.usingDemoData,

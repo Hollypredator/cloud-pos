@@ -27,8 +27,17 @@ export function OrderHistoryWidget({
   const [orders, setOrders] = useState<HistoryOrder[]>([]);
   const [loading, setLoading] = useState(true);
   const timerRef = useRef<ReturnType<typeof setTimeout> | null>(null);
+  const inFlightRef = useRef(false);
+  const lastFetchedAtRef = useRef(0);
 
-  const fetchHistory = useEffectEvent(async () => {
+  const fetchHistory = useEffectEvent(async (force = false) => {
+    if (inFlightRef.current) {
+      return;
+    }
+    if (!force && Date.now() - lastFetchedAtRef.current < 1200) {
+      return;
+    }
+    inFlightRef.current = true;
     try {
       const response = await fetch(
         `/api/orders/history?qr=${encodeURIComponent(qrCodeIdentifier)}${businessSlug ? `&b=${encodeURIComponent(businessSlug)}` : ""}&t=${encodeURIComponent(qrAccessToken)}`,
@@ -39,7 +48,9 @@ export function OrderHistoryWidget({
       const data = (await response.json()) as { ok: boolean; orders: HistoryOrder[] };
       if (!data.ok) return;
       setOrders(data.orders);
+      lastFetchedAtRef.current = Date.now();
     } finally {
+      inFlightRef.current = false;
       setLoading(false);
     }
   });
@@ -61,11 +72,15 @@ export function OrderHistoryWidget({
       timerRef.current = setTimeout(syncHistory, document.hidden ? 20000 : 10000);
     }
 
-    function handleAttentionRefresh() {
+    function handleAttentionRefresh(event?: Event) {
       if (document.hidden) {
         return;
       }
-      void fetchHistory();
+      const detail = (event as CustomEvent<{ tables?: string[] }> | undefined)?.detail;
+      if (detail && Array.isArray(detail.tables) && !detail.tables.includes("orders")) {
+        return;
+      }
+      void fetchHistory(true);
     }
 
     void syncHistory();

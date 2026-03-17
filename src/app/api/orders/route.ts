@@ -1,4 +1,5 @@
 import { NextResponse } from "next/server";
+import { performance } from "node:perf_hooks";
 import { getCurrentUserWithRole, hasRoleAccess } from "@/lib/auth";
 import { createOrder, getBusinessContextBySlug, getTableById, getTableByQr } from "@/lib/domains/orders";
 import { getCorrelationId, logApiEvent, withCorrelationId } from "@/lib/observability";
@@ -35,9 +36,13 @@ type Body = {
 };
 
 export async function POST(request: Request) {
+  const startedAt = performance.now();
   const correlationId = getCorrelationId(request);
-  const json = (body: unknown, init?: ResponseInit) =>
-    withCorrelationId(NextResponse.json(body, init), correlationId);
+  const json = (body: unknown, init?: ResponseInit) => {
+    const response = withCorrelationId(NextResponse.json(body, init), correlationId);
+    response.headers.set("x-operation-ms", Math.round(performance.now() - startedAt).toString());
+    return response;
+  };
 
   try {
     const auth = await getCurrentUserWithRole();
