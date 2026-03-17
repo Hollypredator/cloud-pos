@@ -18,7 +18,7 @@ export default async function BusinessQrPage({
   const { categories, products, modifierGroups, modifierOptions, usingDemoData } = await getMenu(businessSlug);
 
   return (
-    <div className="min-h-screen bg-slate-100">
+    <div className="min-h-screen bg-[radial-gradient(circle_at_top,#1f2c56_0%,#0b1224_52%,#090f1f_100%)]">
       {usingDemoData ? (
         <div className="bg-amber-100 px-4 py-2 text-center text-sm text-amber-900">
           Demo veri modu aktif. Supabase env degiskenlerini ekleyince canli veriye gecer.

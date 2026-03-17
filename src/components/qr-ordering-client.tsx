@@ -63,7 +63,7 @@ export function QrOrderingClient({
   const visibleProducts = grouped.get(activeCategoryId) ?? [];
 
   return (
-    <div className="mx-auto flex w-full max-w-5xl flex-col gap-4 bg-[radial-gradient(circle_at_top,#1f2c56_0%,#0b1224_52%,#090f1f_100%)] px-3 py-4 md:px-6 md:py-6">
+    <div className="mx-auto flex min-h-screen w-full max-w-5xl flex-col gap-4 px-3 py-4 md:px-6 md:py-6">
       <section className="rounded-3xl border border-white/10 bg-slate-900/65 p-3 shadow-[0_18px_35px_rgba(2,6,23,0.45)] backdrop-blur">
         <div className="mb-3 overflow-x-auto pb-1">
           <div className="flex min-w-max gap-2">
