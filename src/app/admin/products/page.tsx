@@ -437,6 +437,7 @@ export default async function AdminProductsPage({
           <input name="name" required placeholder={translateUiText("Yeni Urun", locale)} className="w-full min-w-0 rounded-2xl border border-slate-200 bg-slate-50 px-4 py-3 text-sm sm:flex-1" />
           <input name="price" type="number" min="0" step="0.01" required placeholder="Fiyat" className="w-full rounded-2xl border border-slate-200 bg-slate-50 px-4 py-3 text-sm sm:w-28" />
           <input name="stockCount" type="number" min="0" required placeholder="Stok" className="w-full rounded-2xl border border-slate-200 bg-slate-50 px-4 py-3 text-sm sm:w-28" />
+          <input name="imageUrl" type="url" placeholder="Gorsel URL (opsiyonel)" className="w-full rounded-2xl border border-slate-200 bg-slate-50 px-4 py-3 text-sm sm:w-56" />
           <button type="submit" className="w-full rounded-2xl bg-gradient-to-r from-[#ff5a34] to-[#f0b14f] px-5 py-3 text-sm font-semibold text-white sm:w-auto">
             {translateUiText("Yeni Urun", locale)}
           </button>
@@ -803,17 +804,47 @@ export default async function AdminProductsPage({
               <div className="mt-4 grid gap-4 lg:grid-cols-2 2xl:grid-cols-3">
                 {visibleProducts.map((product) => (
                   <article key={product.id} className="min-w-0 rounded-[22px] border border-slate-200 bg-white p-4">
-                    <p className="text-xs font-bold uppercase tracking-[0.14em] text-slate-500">
-                      {orderedCategories.find((category) => category.id === product.category_id)?.name ?? "Kategori"}
-                    </p>
-                    <p className="mt-2 text-xl font-semibold text-slate-900">{product.name}</p>
-                    <p className="mt-2 text-sm text-slate-500">{product.description ?? "Aciklama girilmedi."}</p>
+                    <div className="flex items-start gap-3">
+                      {product.image_url ? (
+                        <img src={product.image_url} alt={product.name} className="h-16 w-16 rounded-xl object-cover" />
+                      ) : (
+                        <div className="flex h-16 w-16 items-center justify-center rounded-xl border border-dashed border-slate-300 bg-slate-50 text-[10px] font-semibold uppercase tracking-[0.1em] text-slate-500">
+                          Gorsel Yok
+                        </div>
+                      )}
+                      <div className="min-w-0">
+                        <p className="text-xs font-bold uppercase tracking-[0.14em] text-slate-500">
+                          {orderedCategories.find((category) => category.id === product.category_id)?.name ?? "Kategori"}
+                        </p>
+                        <p className="mt-1 text-xl font-semibold text-slate-900">{product.name}</p>
+                        <p className="mt-1 text-sm text-slate-500">{product.description ?? "Aciklama girilmedi."}</p>
+                      </div>
+                    </div>
                     <div className="mt-4 flex flex-col items-start justify-between gap-3 text-sm sm:flex-row sm:items-center">
                       <span className="font-semibold text-slate-900">{Number(product.price).toFixed(2)} TL</span>
                       <span className={`inline-flex w-full justify-center rounded-full px-3 py-1 text-xs font-semibold sm:w-auto ${product.is_available ? "bg-emerald-100 text-emerald-700" : "bg-slate-100 text-slate-600"}`}>
                         {product.is_available ? "Aktif" : "Pasif"}
                       </span>
                     </div>
+                    <form action={updateProductAction} className="mt-4 grid gap-2">
+                      <input type="hidden" name="productId" value={product.id} />
+                      <input type="hidden" name="categoryId" value={product.category_id} />
+                      <input type="hidden" name="name" value={product.name} />
+                      <input type="hidden" name="price" value={String(product.price)} />
+                      <input type="hidden" name="stockCount" value={String(product.stock_count)} />
+                      <input type="hidden" name="description" value={product.description ?? ""} />
+                      <input type="hidden" name="isAvailable" value={product.is_available ? "on" : "off"} />
+                      <input
+                        name="imageUrl"
+                        type="url"
+                        defaultValue={product.image_url ?? ""}
+                        placeholder="Gorsel URL ekle"
+                        className="w-full rounded-2xl border border-slate-200 bg-slate-50 px-4 py-3 text-sm"
+                      />
+                      <button type="submit" className="w-full rounded-2xl border border-slate-200 bg-slate-50 px-4 py-3 text-sm font-semibold text-slate-700">
+                        Gorseli Kaydet
+                      </button>
+                    </form>
                   </article>
                 ))}
               </div>

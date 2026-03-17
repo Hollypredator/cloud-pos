@@ -1,12 +1,7 @@
 "use client";
 
 import { useMemo, useState } from "react";
-import type {
-  Category,
-  Product,
-  ProductModifierGroup,
-  ProductModifierOption,
-} from "@/lib/types";
+import type { Category, Product, ProductModifierGroup, ProductModifierOption } from "@/lib/types";
 
 export function QrOrderingClient({
   qrCodeIdentifier,
@@ -21,12 +16,19 @@ export function QrOrderingClient({
   modifierGroups: ProductModifierGroup[];
   modifierOptions: ProductModifierOption[];
 }) {
-  const [activeProductId, setActiveProductId] = useState<string | null>(null);
+  const orderedCategories = useMemo(
+    () => [...categories].sort((a, b) => Number(a.sort_order ?? 0) - Number(b.sort_order ?? 0)),
+    [categories],
+  );
+  const [selectedCategoryId, setSelectedCategoryId] = useState<string>(() => orderedCategories[0]?.id ?? "");
+  const [expandedProductId, setExpandedProductId] = useState<string | null>(null);
+  const activeCategoryId = orderedCategories.some((category) => category.id === selectedCategoryId)
+    ? selectedCategoryId
+    : (orderedCategories[0]?.id ?? "");
 
-  const productById = useMemo(() => new Map(products.map((product) => [product.id, product])), [products]);
   const grouped = useMemo(() => {
     const byCategory = new Map<string, Product[]>();
-    for (const category of categories) {
+    for (const category of orderedCategories) {
       byCategory.set(category.id, []);
     }
     for (const product of products) {
@@ -36,7 +38,7 @@ export function QrOrderingClient({
       byCategory.get(product.category_id)?.push(product);
     }
     return byCategory;
-  }, [categories, products]);
+  }, [orderedCategories, products]);
 
   const groupsByProduct = useMemo(() => {
     const map = new Map<string, ProductModifierGroup[]>();
@@ -60,7 +62,7 @@ export function QrOrderingClient({
     return map;
   }, [modifierOptions]);
 
-  const activeProduct = activeProductId ? productById.get(activeProductId) ?? null : null;
+  const visibleProducts = grouped.get(activeCategoryId) ?? [];
 
   return (
     <div className="mx-auto flex w-full max-w-6xl flex-col gap-6 px-4 py-6 md:px-8">
@@ -72,80 +74,101 @@ export function QrOrderingClient({
         </p>
       </header>
 
-      {activeProduct ? (
-        <section className="rounded-2xl border border-slate-200 bg-white p-4">
-          <div className="flex flex-col items-start justify-between gap-3 sm:flex-row sm:items-center">
-            <div>
-              <p className="text-xs uppercase tracking-[0.24em] text-slate-500">Urun Detayi</p>
-              <h2 className="mt-2 text-xl font-semibold text-slate-900">{activeProduct.name}</h2>
-              <p className="mt-2 text-sm text-slate-600">{activeProduct.description ?? "Aciklama bulunmuyor."}</p>
-            </div>
-            <button
-              type="button"
-              onClick={() => setActiveProductId(null)}
-              className="w-full rounded-lg border border-slate-300 px-3 py-2 text-sm text-slate-700 sm:w-auto"
-            >
-              Kapat
-            </button>
-          </div>
-          {(groupsByProduct.get(activeProduct.id) ?? []).length > 0 ? (
-            <div className="mt-4 space-y-4">
-              {(groupsByProduct.get(activeProduct.id) ?? []).map((group) => (
-                <div key={group.id} className="rounded-xl bg-slate-50 p-4">
-                  <p className="font-semibold text-slate-900">{group.name}</p>
-                  <div className="mt-3 grid gap-2 sm:grid-cols-2">
-                    {(optionsByGroup.get(group.id) ?? []).map((option) => (
-                      <div key={option.id} className="rounded-lg border border-slate-200 bg-white px-3 py-3 text-sm text-slate-700">
-                        <span className="block font-medium">{option.name}</span>
-                        <span className="mt-1 block text-xs text-slate-500">
-                          {Number(option.price_delta) > 0 ? `+${Number(option.price_delta).toFixed(2)} TL` : "Dahil"}
-                        </span>
-                      </div>
-                    ))}
-                  </div>
-                </div>
-              ))}
-            </div>
-          ) : null}
-        </section>
-      ) : null}
-
       <section className="rounded-2xl border border-slate-200 bg-white p-4">
         <div className="mb-4 flex flex-wrap items-center justify-between gap-3">
           <div>
             <h2 className="text-xl font-semibold text-slate-900">Menu</h2>
-            <p className="text-sm text-slate-500">Urunleri inceleyin. Siparisiniz personel tarafindan adisyona eklenir.</p>
+            <p className="text-sm text-slate-500">Kategoriyi secip urun detayini kart icinde acabilirsiniz.</p>
           </div>
-          <div className="rounded-xl border border-amber-200 bg-amber-50 px-4 py-2 text-sm text-amber-900">
-            QR uzerinden siparis alinmiyor
+          <div className="rounded-xl border border-amber-200 bg-amber-50 px-4 py-2 text-sm text-amber-900">QR uzerinden siparis alinmiyor</div>
+        </div>
+
+        <div className="mb-4 overflow-x-auto pb-1">
+          <div className="flex min-w-max gap-2">
+            {orderedCategories.map((category) => {
+              const isActive = category.id === activeCategoryId;
+              return (
+                <button
+                  key={category.id}
+                  type="button"
+                  onClick={() => {
+                    setSelectedCategoryId(category.id);
+                    setExpandedProductId(null);
+                  }}
+                  className={`rounded-2xl px-4 py-2 text-sm font-semibold transition ${
+                    isActive ? "bg-slate-900 text-white" : "border border-slate-200 bg-slate-50 text-slate-700"
+                  }`}
+                >
+                  {category.name}
+                </button>
+              );
+            })}
           </div>
         </div>
-        <div className="space-y-6">
-          {categories.map((category) => (
-            <article key={category.id} className="rounded-2xl border border-slate-200 bg-slate-50 p-4">
-              <h3 className="mb-3 text-xl font-semibold text-slate-900">{category.name}</h3>
-              <div className="grid gap-3 sm:grid-cols-2">
-                {(grouped.get(category.id) ?? []).map((product) => (
+
+        {visibleProducts.length === 0 ? (
+          <p className="rounded-2xl border border-slate-200 bg-slate-50 px-4 py-5 text-sm text-slate-500">
+            Bu kategori icin urun bulunmuyor.
+          </p>
+        ) : (
+          <div className="space-y-3">
+            {visibleProducts.map((product) => {
+              const isExpanded = expandedProductId === product.id;
+              const modifierGroupsForProduct = groupsByProduct.get(product.id) ?? [];
+
+              return (
+                <article key={product.id} className="rounded-2xl border border-slate-200 bg-slate-50">
                   <button
-                    key={product.id}
                     type="button"
-                    onClick={() => setActiveProductId(product.id)}
-                    className="rounded-xl border border-slate-200 bg-white p-3 text-left"
+                    onClick={() => setExpandedProductId((prev) => (prev === product.id ? null : product.id))}
+                    className="flex w-full items-center gap-3 p-3 text-left"
                   >
-                    <p className="font-semibold text-slate-900">{product.name}</p>
-                    <p className="mt-1 text-sm text-slate-600">{product.description ?? "Lezzetli secenek"}</p>
-                    <div className="mt-3 flex items-center justify-between gap-3">
-                      <span className="font-semibold text-emerald-700">{Number(product.price).toFixed(2)} TL</span>
-                      <span className="rounded-lg bg-slate-900 px-3 py-2 text-xs font-medium text-white">
-                        Detay
-                      </span>
+                    {product.image_url ? (
+                      <img src={product.image_url} alt={product.name} className="h-16 w-16 rounded-xl object-cover" />
+                    ) : (
+                      <div className="flex h-16 w-16 items-center justify-center rounded-xl border border-dashed border-slate-300 bg-white text-[10px] font-semibold uppercase tracking-[0.12em] text-slate-500">
+                        Gorsel Yok
+                      </div>
+                    )}
+                    <div className="min-w-0 flex-1">
+                      <p className="truncate text-base font-semibold text-slate-900">{product.name}</p>
+                      <p className="mt-1 text-sm text-slate-600">{product.description ?? "Aciklama bulunmuyor."}</p>
+                      <p className="mt-2 text-sm font-semibold text-emerald-700">{Number(product.price).toFixed(2)} TL</p>
                     </div>
+                    <span className="rounded-lg bg-slate-900 px-3 py-2 text-xs font-medium text-white">{isExpanded ? "Kapat" : "Detay"}</span>
                   </button>
-                ))}
-              </div>
-            </article>
-          ))}
-        </div>
+
+                  {isExpanded ? (
+                    <div className="space-y-3 border-t border-slate-200 bg-white p-4">
+                      <p className="text-sm text-slate-600">{product.description ?? "Aciklama bulunmuyor."}</p>
+                      {modifierGroupsForProduct.length > 0 ? (
+                        <div className="space-y-3">
+                          {modifierGroupsForProduct.map((group) => (
+                            <div key={group.id} className="rounded-xl border border-slate-200 bg-slate-50 p-3">
+                              <p className="font-semibold text-slate-900">{group.name}</p>
+                              <div className="mt-2 grid gap-2 sm:grid-cols-2">
+                                {(optionsByGroup.get(group.id) ?? []).map((option) => (
+                                  <div key={option.id} className="rounded-lg border border-slate-200 bg-white px-3 py-2 text-sm text-slate-700">
+                                    <p className="font-medium">{option.name}</p>
+                                    <p className="text-xs text-slate-500">
+                                      {Number(option.price_delta) > 0 ? `+${Number(option.price_delta).toFixed(2)} TL` : "Dahil"}
+                                    </p>
+                                  </div>
+                                ))}
+                              </div>
+                            </div>
+                          ))}
+                        </div>
+                      ) : (
+                        <p className="text-sm text-slate-500">Bu urun icin secenek bilgisi bulunmuyor.</p>
+                      )}
+                    </div>
+                  ) : null}
+                </article>
+              );
+            })}
+          </div>
+        )}
       </section>
     </div>
   );
