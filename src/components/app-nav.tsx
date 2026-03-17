@@ -3,7 +3,7 @@
 import Link from "next/link";
 import Image from "next/image";
 import { usePathname, useRouter, useSearchParams } from "next/navigation";
-import { useEffect, useMemo, useState } from "react";
+import { useEffect, useMemo, useRef, useState } from "react";
 import { LogoutButton } from "@/components/logout-button";
 import { ALL_BRANCHES_VALUE } from "@/lib/business";
 import { getPlanLabel, getRequiredPlan, hasFeature } from "@/lib/features";
@@ -148,6 +148,7 @@ export function AppNav({
   ownerSidebarOrder: ApplicationSettings["ownerSidebarOrder"];
   adminSidebarOrder: ApplicationSettings["adminSidebarOrder"];
 }) {
+  const sidebarScrollRef = useRef<HTMLDivElement | null>(null);
   const pathname = usePathname();
   const router = useRouter();
   const searchParams = useSearchParams();
@@ -167,6 +168,28 @@ export function AppNav({
   useEffect(() => {
     setMobileOpen(false);
   }, [pathname]);
+
+  useEffect(() => {
+    const node = sidebarScrollRef.current;
+    if (!node) {
+      return;
+    }
+    try {
+      const raw = window.sessionStorage.getItem("app-nav-scroll-y");
+      const restored = raw ? Number.parseInt(raw, 10) : 0;
+      if (Number.isFinite(restored) && restored > 0) {
+        node.scrollTop = restored;
+      }
+    } catch {}
+
+    const handleScroll = () => {
+      try {
+        window.sessionStorage.setItem("app-nav-scroll-y", String(node.scrollTop));
+      } catch {}
+    };
+    node.addEventListener("scroll", handleScroll, { passive: true });
+    return () => node.removeEventListener("scroll", handleScroll);
+  }, []);
 
   function toggleCollapsed() {
     setCollapsed((prev) => {
@@ -328,6 +351,7 @@ export function AppNav({
                     <Link
                       key={link.href}
                       href={link.href}
+                      scroll={false}
                       onClick={() => setMobileOpen(false)}
                       className={`flex items-center gap-3 rounded-2xl px-3 py-2.5 text-sm font-semibold ${
                         activeHref === link.href ? "bg-slate-950 text-white" : "border border-slate-200 bg-white text-slate-800"
@@ -353,6 +377,7 @@ export function AppNav({
               <Link
                 key={link.href}
                 href={link.href}
+                scroll={false}
                 className={`flex min-h-[56px] flex-col items-center justify-center rounded-2xl px-2 py-1.5 text-center text-[10px] font-semibold leading-tight ${
                   activeHref === link.href ? "bg-slate-950 text-white" : "bg-slate-100 text-slate-700"
                 }`}
@@ -407,7 +432,7 @@ export function AppNav({
           </div>
         </div>
 
-        <div className="flex-1 overflow-y-auto px-2 py-4">
+        <div ref={sidebarScrollRef} className="flex-1 overflow-y-auto px-2 py-4">
           {!collapsed ? (
             <>
               <div className="mb-4 rounded-[22px] border border-white/10 bg-[rgba(255,255,255,0.06)] p-3 backdrop-blur">
@@ -492,6 +517,7 @@ export function AppNav({
                 <Link
                   key={link.href}
                   href={link.href}
+                  scroll={false}
                   title={collapsed ? translateUiText(link.label, locale) : undefined}
                   className={className}
                   style={

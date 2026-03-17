@@ -5003,6 +5003,310 @@ export async function getTableZones() {
   });
 }
 
+export async function listAssignableWaiters() {
+  const authClient = await getSupabaseAuthServerClient();
+  if (!authClient) {
+    return {
+      waiters: [] as Array<{ id: string; full_name: string | null }>,
+      usingDemoData: true,
+    };
+  }
+
+  const scope = await getDefaultBusinessScope();
+  if (!scope.businessId) {
+    return {
+      waiters: [] as Array<{ id: string; full_name: string | null }>,
+      usingDemoData: false,
+    };
+  }
+
+  const cacheKey = `assignable-waiters:${scope.businessId}:${scope.branchId ?? "all"}:${scope.useLegacySchema ? "legacy" : "scoped"}`;
+  const reader = unstable_cache(
+    async () => {
+      const innerAuthClient = await getSupabaseAuthServerClient();
+      if (!innerAuthClient) {
+        return null;
+      }
+
+      let accessQuery = innerAuthClient
+        .from("staff_branch_access")
+        .select("profile_id, branch_id")
+        .eq("business_id", scope.businessId);
+      if (scope.branchId) {
+        accessQuery = accessQuery.eq("branch_id", scope.branchId);
+      }
+
+      const { data: accessRows, error: accessError } = await accessQuery;
+      if (accessError) {
+        return {
+          hasError: true as const,
+          waiters: [] as Array<{ id: string; full_name: string | null }>,
+        };
+      }
+
+      const profileIds = [
+        ...new Set(((accessRows ?? []) as Array<{ profile_id: string | null }>).map((row) => row.profile_id).filter(Boolean)),
+      ] as string[];
+
+      if (profileIds.length === 0) {
+        return {
+          hasError: false as const,
+          waiters: [] as Array<{ id: string; full_name: string | null }>,
+        };
+      }
+
+      const { data: profileRows, error: profilesError } = await innerAuthClient
+        .from("profiles")
+        .select("id, full_name, role")
+        .in("id", profileIds)
+        .eq("role", "waiter")
+        .order("full_name", { ascending: true });
+
+      if (profilesError) {
+        return {
+          hasError: true as const,
+          waiters: [] as Array<{ id: string; full_name: string | null }>,
+        };
+      }
+
+      return {
+        hasError: false as const,
+        waiters: ((profileRows ?? []) as Array<{ id: string; full_name: string | null }>),
+      };
+    },
+    [cacheKey],
+    { revalidate: 20, tags: ["profiles", "staff-access"] },
+  );
+
+  const cached = await reader();
+  if (!cached || cached.hasError) {
+    return {
+      waiters: [] as Array<{ id: string; full_name: string | null }>,
+      usingDemoData: false,
+    };
+  }
+
+  return {
+    waiters: cached.waiters,
+    usingDemoData: false,
+  };
+}
+
+export async function listTableSupervisors() {
+  const supabase = getSupabaseServerClient();
+  if (!supabase) {
+    return {
+      assignments: [] as Array<{ table_id: string; profile_id: string; full_name: string | null }>,
+      usingDemoData: true,
+    };
+  }
+
+  const scope = await getDefaultBusinessScope();
+  if (!scope.useLegacySchema && !scope.businessId) {
+    return {
+      assignments: [] as Array<{ table_id: string; profile_id: string; full_name: string | null }>,
+      usingDemoData: false,
+    };
+  }
+
+  const cacheKey = `table-supervisors:${scope.businessId ?? "none"}:${scope.branchId ?? "all"}:${scope.useLegacySchema ? "legacy" : "scoped"}`;
+  const reader = unstable_cache(
+    async () => {
+      const innerSupabase = getSupabaseServerClient();
+      if (!innerSupabase) {
+        return null;
+      }
+
+      const runQuery = async (scoped: boolean) => {
+        let query = innerSupabase.from("table_supervisors").select("table_id, profile_id, profiles(full_name)");
+        if (scoped && !scope.useLegacySchema && scope.businessId) {
+          query = query.eq("business_id", scope.businessId);
+        }
+        if (scoped && scope.branchId) {
+          query = query.eq("branch_id", scope.branchId);
+        }
+        return query;
+      };
+
+      let result = await runQuery(true);
+      if (result.error && (result.error.message.toLowerCase().includes("business_id") || result.error.message.toLowerCase().includes("branch_id"))) {
+        result = await runQuery(false);
+      }
+
+      return {
+        data: result.data as Array<{
+          table_id: string;
+          profile_id: string;
+          profiles?: { full_name?: string | null } | Array<{ full_name?: string | null }> | null;
+        }> | null,
+        error: result.error as { message: string } | null,
+      };
+    },
+    [cacheKey],
+    { revalidate: 5, tags: ["table-supervisors", "table-map"] },
+  );
+
+  const cached = await reader();
+  if (!cached) {
+    return {
+      assignments: [] as Array<{ table_id: string; profile_id: string; full_name: string | null }>,
+      usingDemoData: false,
+    };
+  }
+
+  if (cached.error) {
+    const normalized = cached.error.message.toLowerCase();
+    if (normalized.includes("table_supervisors")) {
+      return {
+        assignments: [] as Array<{ table_id: string; profile_id: string; full_name: string | null }>,
+        usingDemoData: false,
+      };
+    }
+    return {
+      assignments: [] as Array<{ table_id: string; profile_id: string; full_name: string | null }>,
+      usingDemoData: false,
+    };
+  }
+
+  return {
+    assignments: ((cached.data ?? []) as Array<{
+      table_id: string;
+      profile_id: string;
+      profiles?: { full_name?: string | null } | Array<{ full_name?: string | null }> | null;
+    }>).map((row) => ({
+      table_id: row.table_id,
+      profile_id: row.profile_id,
+      full_name: Array.isArray(row.profiles)
+        ? (row.profiles[0]?.full_name ?? null)
+        : (row.profiles?.full_name ?? null),
+    })),
+    usingDemoData: false,
+  };
+}
+
+export async function setTableSupervisor(input: {
+  tableId: string;
+  profileId: string | null;
+}) {
+  const supabase = getSupabaseServerClient() ?? (await getTenantDataClient());
+  if (!supabase) {
+    return { ok: false, error: "Demo modda sorumlu garson atamasi pasif." };
+  }
+
+  const scope = await getDefaultBusinessScope();
+  if (!scope.useLegacySchema && !scope.businessId) {
+    return { ok: false, error: "Aktif isletme bulunamadi." };
+  }
+
+  let tableQuery = supabase
+    .from("tables")
+    .select("id, business_id, branch_id")
+    .eq("id", input.tableId);
+  if (!scope.useLegacySchema && scope.businessId) {
+    tableQuery = tableQuery.eq("business_id", scope.businessId);
+  }
+  if (scope.branchId) {
+    tableQuery = tableQuery.eq("branch_id", scope.branchId);
+  }
+
+  const { data: tableRow, error: tableError } = await tableQuery.maybeSingle();
+  if (tableError || !tableRow) {
+    return { ok: false, error: tableError?.message ?? "Masa bulunamadi." };
+  }
+
+  const targetBusinessId = (tableRow as { business_id?: string | null }).business_id ?? scope.businessId ?? null;
+  const targetBranchId = (tableRow as { branch_id?: string | null }).branch_id ?? null;
+
+  if (!input.profileId) {
+    let deleteQuery = supabase.from("table_supervisors").delete().eq("table_id", input.tableId);
+    if (!scope.useLegacySchema && targetBusinessId) {
+      deleteQuery = deleteQuery.eq("business_id", targetBusinessId);
+    }
+    if (targetBranchId) {
+      deleteQuery = deleteQuery.eq("branch_id", targetBranchId);
+    }
+
+    const { error } = await deleteQuery;
+    if (error) {
+      if (error.message.toLowerCase().includes("table_supervisors")) {
+        return { ok: false, error: "Sorumlu garson tablosu bulunamadi. Son migration'i calistirin." };
+      }
+      return { ok: false, error: error.message };
+    }
+
+    await logAuditEvent({
+      entityType: "table",
+      entityId: input.tableId,
+      action: "clear_supervisor",
+      details: {},
+    });
+
+    revalidateOperationsCaches();
+    return { ok: true };
+  }
+
+  const { data: profileRow, error: profileError } = await supabase
+    .from("profiles")
+    .select("id, role")
+    .eq("id", input.profileId)
+    .maybeSingle();
+
+  if (profileError || !profileRow) {
+    return { ok: false, error: profileError?.message ?? "Garson profili bulunamadi." };
+  }
+  if ((profileRow as { role?: AppRole | null }).role !== "waiter") {
+    return { ok: false, error: "Sadece garson rolundeki kullanicilar sorumlu olarak atanabilir." };
+  }
+
+  let accessQuery = supabase
+    .from("staff_branch_access")
+    .select("profile_id")
+    .eq("profile_id", input.profileId);
+  if (!scope.useLegacySchema && targetBusinessId) {
+    accessQuery = accessQuery.eq("business_id", targetBusinessId);
+  }
+
+  const { data: accessRows, error: accessError } = await accessQuery.limit(1);
+  if (accessError) {
+    return { ok: false, error: accessError.message };
+  }
+  if (!accessRows || accessRows.length === 0) {
+    return { ok: false, error: "Secilen garson aktif isletme kapsaminda degil." };
+  }
+
+  const { error } = await supabase
+    .from("table_supervisors")
+    .upsert(
+      {
+        business_id: targetBusinessId,
+        branch_id: targetBranchId,
+        table_id: input.tableId,
+        profile_id: input.profileId,
+        updated_at: new Date().toISOString(),
+      },
+      { onConflict: "table_id" },
+    );
+
+  if (error) {
+    if (error.message.toLowerCase().includes("table_supervisors")) {
+      return { ok: false, error: "Sorumlu garson tablosu bulunamadi. Son migration'i calistirin." };
+    }
+    return { ok: false, error: error.message };
+  }
+
+  await logAuditEvent({
+    entityType: "table",
+    entityId: input.tableId,
+    action: "set_supervisor",
+    details: {
+      profileId: input.profileId,
+    },
+  });
+
+  revalidateOperationsCaches();
+  return { ok: true };
+}
+
 export async function createTable(tableNumber: number, name?: string, options?: { zoneId?: string | null }) {
   return createTableImpl(tableNumber, name, options?.zoneId, {
     getDefaultBusinessScope,
@@ -5121,6 +5425,7 @@ function revalidateOrderFlowCaches() {
 function revalidateOperationsCaches() {
   revalidateTag("table-map", "max");
   revalidateTag("table-zones", "max");
+  revalidateTag("table-supervisors", "max");
   revalidateTag("dashboard-snapshot", "max");
   revalidateTag("orders-summary", "max");
   revalidateTag("kitchen-orders", "max");

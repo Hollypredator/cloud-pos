@@ -4,7 +4,7 @@ import { PendingSubmitButton } from "@/components/pending-submit-button";
 import { BackofficePage, EmptyPanel, NoticeBanner, SummaryCard, WorkflowGuide, WorkspaceTabs } from "@/components/backoffice-ui";
 import { requireRole } from "@/lib/auth";
 import { getMenu } from "@/lib/domains/orders";
-import { getOrderHistoryByTableId, getTableMap, getTableZones, listLatestOrdersByTableIds } from "@/lib/domains/tables";
+import { getOrderHistoryByTableId, getTableMap, getTableZones, listAssignableWaiters, listLatestOrdersByTableIds, listTableSupervisors } from "@/lib/domains/tables";
 import { translateUiText } from "@/lib/i18n";
 import { getCurrentLocale } from "@/lib/i18n-server";
 import { logServerPerf, measureAsync } from "@/lib/perf";
@@ -18,6 +18,7 @@ import {
   bulkDeleteZonesAction,
   createZoneAction,
   deleteZoneAction,
+  setTableSupervisorAction,
 } from "./actions";
 import { orderTone, tableStatusLabel, tableStatusTone } from "./helpers";
 import { buildQrImage, buildQrTarget } from "./qr-helpers-server";
@@ -43,10 +44,15 @@ export default async function AdminTablesPage({
   const { zones } = zonesResult.value;
   const latestOrdersResult = await measureAsync("latest_orders_by_table", () => listLatestOrdersByTableIds(tables.map((table) => table.id)));
   const { ordersByTableId } = latestOrdersResult.value;
+  const waitersResult = await measureAsync("assignable_waiters", () => listAssignableWaiters());
+  const { waiters } = waitersResult.value;
+  const supervisorsResult = await measureAsync("table_supervisors", () => listTableSupervisors());
+  const { assignments: tableSupervisors } = supervisorsResult.value;
+  const supervisorByTableId = new Map(tableSupervisors.map((assignment) => [assignment.table_id, assignment]));
   const latestOrderMap = ordersByTableId;
   const selectedTable = selectedTableId ? tables.find((table) => table.id === selectedTableId) ?? null : null;
 
-  const perfSegments: Array<{ label: string; ms: number; value?: unknown }> = [tableMapResult, zonesResult, latestOrdersResult];
+  const perfSegments: Array<{ label: string; ms: number; value?: unknown }> = [tableMapResult, zonesResult, latestOrdersResult, waitersResult, supervisorsResult];
   let businessSlug = "";
   let categories: MenuSnapshot["categories"] = [];
   let products: MenuSnapshot["products"] = [];
@@ -431,6 +437,7 @@ export default async function AdminTablesPage({
                         ? latestOrderRaw
                         : null;
                     const zoneLabel = table.zone_id ? zoneById.get(table.zone_id)?.name ?? "Atanmamis" : "Atanmamis";
+                    const supervisor = supervisorByTableId.get(table.id);
                     const isEmptyTable = table.status === "empty";
                     return (
                       <label
@@ -445,6 +452,9 @@ export default async function AdminTablesPage({
                             <p className="mt-1 text-xs font-semibold uppercase tracking-[0.14em] text-slate-500">Masa {table.table_number}</p>
                             <p className="mt-1 text-sm text-slate-500">{tableStatusLabel(table.status)}</p>
                             <p className="mt-1 text-xs font-semibold uppercase tracking-[0.12em] text-slate-400">Bolge: {zoneLabel}</p>
+                            <p className="mt-1 text-xs text-slate-500">
+                              Sorumlu garson: <span className="font-semibold text-slate-700">{supervisor?.full_name ?? "Atanmamis"}</span>
+                            </p>
                           </div>
                           <span className={`rounded-full px-3 py-1 text-xs font-semibold uppercase ${tableStatusTone(table.status)}`}>{tableStatusLabel(table.status)}</span>
                         </div>
@@ -500,6 +510,7 @@ export default async function AdminTablesPage({
                       ? latestOrderRaw
                       : null;
                   const zoneLabel = table.zone_id ? zoneById.get(table.zone_id)?.name ?? "Atanmamis" : "Atanmamis";
+                  const supervisor = supervisorByTableId.get(table.id);
                   return (
                     <article
                       key={table.id}
@@ -517,6 +528,9 @@ export default async function AdminTablesPage({
                           <p className="mt-1 text-xs font-semibold uppercase tracking-[0.14em] text-slate-500">Masa {table.table_number}</p>
                           <p className="mt-1 text-sm text-slate-500">{tableStatusLabel(table.status)}</p>
                           <p className="mt-1 text-xs font-semibold uppercase tracking-[0.12em] text-slate-400">Bolge: {zoneLabel}</p>
+                          <p className="mt-1 text-xs text-slate-500">
+                            Sorumlu garson: <span className="font-semibold text-slate-700">{supervisor?.full_name ?? "Atanmamis"}</span>
+                          </p>
                         </div>
                         <span className={`rounded-full px-3 py-1 text-xs font-semibold uppercase ${tableStatusTone(table.status)}`}>{tableStatusLabel(table.status)}</span>
                       </div>
@@ -545,6 +559,26 @@ export default async function AdminTablesPage({
                       </div>
 
                       <div className="mt-4 grid gap-2">
+                        <form action={setTableSupervisorAction} className="grid gap-2 rounded-xl border border-slate-200 bg-slate-50 px-3 py-3">
+                          <input type="hidden" name="tableId" value={table.id} />
+                          <select
+                            name="profileId"
+                            defaultValue={supervisor?.profile_id ?? "__none__"}
+                            className="min-h-11 rounded-xl border border-slate-300 bg-white px-3 py-2 text-sm text-slate-700"
+                          >
+                            <option value="__none__">Sorumlu garson yok</option>
+                            {waiters.map((waiter) => (
+                              <option key={waiter.id} value={waiter.id}>
+                                {waiter.full_name?.trim() || `Garson ${waiter.id.slice(0, 6)}`}
+                              </option>
+                            ))}
+                          </select>
+                          <PendingSubmitButton
+                            idleLabel="Sorumlu Kaydet"
+                            pendingLabel="Kaydediliyor..."
+                            className="min-h-11 w-full rounded-xl border border-slate-200 bg-white px-3 py-2 text-sm font-semibold text-slate-700"
+                          />
+                        </form>
                         <Link href={`/admin/tables?table=${table.id}${zoneFilter ? `&zone=${zoneFilter}` : ""}`} className="inline-flex min-h-11 items-center justify-center rounded-xl bg-gradient-to-r from-[#ff6a3d] to-[#f2b44f] px-3 py-3 text-center text-base font-semibold text-white sm:text-sm">
                           Masa Yonet
                         </Link>

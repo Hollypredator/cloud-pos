@@ -14,6 +14,7 @@ import {
   deleteTable,
   deleteTableZone,
   moveTableOrder,
+  setTableSupervisor,
   updateTableStatus,
   updateTableDetails,
 } from "@/lib/domains/tables";
@@ -189,6 +190,30 @@ export async function assignTableZoneAction(formData: FormData) {
     redirect(feedbackHref("success", "Masa bolgesi guncellendi."));
   } catch {
     redirect(feedbackHref("error", "Masa bolgesi guncellenemedi."));
+  }
+}
+
+export async function setTableSupervisorAction(formData: FormData) {
+  await requireRole(["admin"], "/admin/tables");
+
+  const tableId = String(formData.get("tableId") ?? "").trim();
+  const rawProfileId = String(formData.get("profileId") ?? "").trim();
+  const profileId = !rawProfileId || rawProfileId === "__none__" ? null : rawProfileId;
+
+  if (!tableId) {
+    redirect(feedbackHref("error", "Sorumlu atamasi icin masa bulunamadi."));
+  }
+
+  try {
+    const result = await setTableSupervisor({ tableId, profileId });
+    if (!result.ok) {
+      redirect(feedbackHref("error", result.error ?? "Sorumlu garson guncellenemedi."));
+    }
+    revalidatePath("/admin/tables");
+    revalidatePath("/tables");
+    redirect(feedbackHref("success", profileId ? "Sorumlu garson guncellendi." : "Sorumlu garson etiketi kaldirildi."));
+  } catch {
+    redirect(feedbackHref("error", "Sorumlu garson guncellenemedi."));
   }
 }
 

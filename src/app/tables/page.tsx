@@ -5,7 +5,7 @@ import { BackofficePage, ContentCard, EmptyPanel, NoticeBanner, SidebarPanel, Su
 import { LiveOpsBridge } from "@/components/live-ops-bridge";
 import { PendingSubmitButton } from "@/components/pending-submit-button";
 import { getCurrentUserWithRole, hasRoleAccess, requireRole } from "@/lib/auth";
-import { getTableMap, getTableZones, listLatestOrdersByTableIds, listTableRequests, updateTableStatus } from "@/lib/domains/tables";
+import { getTableMap, getTableZones, listLatestOrdersByTableIds, listTableRequests, listTableSupervisors, updateTableStatus } from "@/lib/domains/tables";
 import type { TableStatus } from "@/lib/types";
 
 const statusStyles: Record<TableStatus, string> = {
@@ -128,14 +128,17 @@ export default async function TablesPage({
     { ordersByTableId, usingDemoData: usingOrdersDemo },
     { requests: openRequests, hasNextPage: hasMoreOpenRequests, usingDemoData: usingRequestsDemo },
     { zones, usingDemoData: usingZonesDemo },
+    { assignments: tableSupervisors, usingDemoData: usingSupervisorsDemo },
   ] = await Promise.all([
     listLatestOrdersByTableIds(tableIds),
     listTableRequests("open", { limit: 80, page: 1 }),
     getTableZones(),
+    listTableSupervisors(),
   ]);
 
-  const usingDemoData = usingTablesDemo || usingOrdersDemo || usingRequestsDemo || usingZonesDemo;
+  const usingDemoData = usingTablesDemo || usingOrdersDemo || usingRequestsDemo || usingZonesDemo || usingSupervisorsDemo;
   const zoneNameById = new Map(zones.map((zone) => [zone.id, zone.name]));
+  const supervisorByTableId = new Map(tableSupervisors.map((assignment) => [assignment.table_id, assignment]));
   const requestCountByTableId = new Map<string, number>();
   for (const request of openRequests) {
     const currentCount = requestCountByTableId.get(request.table_id) ?? 0;
@@ -261,6 +264,7 @@ export default async function TablesPage({
               const latestOrder = ordersByTableId.get(table.id);
               const requestCount = requestCountByTableId.get(table.id) ?? 0;
               const zoneName = table.zone_id ? zoneNameById.get(table.zone_id) ?? "Bolge silinmis" : "Bolgesiz";
+              const supervisor = supervisorByTableId.get(table.id);
               const hasOpenOrder = latestOrder ? isOpenOrderStatus(latestOrder.status) : false;
 
               return (
@@ -277,6 +281,7 @@ export default async function TablesPage({
 
                   <div className="mt-3 space-y-1 text-sm text-slate-500">
                     <p>Bolge: <span className="font-medium text-slate-700">{zoneName}</span></p>
+                    <p>Sorumlu garson: <span className="font-medium text-slate-700">{supervisor?.full_name ?? "Atanmamis"}</span></p>
                     <p className="break-all">QR: <span className="font-medium text-slate-700">{table.qr_code_identifier}</span></p>
                   </div>
 
