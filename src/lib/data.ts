@@ -5004,190 +5004,217 @@ export async function getTableZones() {
 }
 
 export async function listAssignableWaiters() {
-  const authClient = await getSupabaseAuthServerClient();
-  if (!authClient) {
-    return {
-      waiters: [] as Array<{ id: string; full_name: string | null }>,
-      usingDemoData: true,
-    };
-  }
-
-  const scope = await getDefaultBusinessScope();
-  if (!scope.businessId) {
-    return {
-      waiters: [] as Array<{ id: string; full_name: string | null }>,
-      usingDemoData: false,
-    };
-  }
-
-  const cacheKey = `assignable-waiters:${scope.businessId}:${scope.branchId ?? "all"}:${scope.useLegacySchema ? "legacy" : "scoped"}`;
-  const reader = unstable_cache(
-    async () => {
-      const innerAuthClient = await getSupabaseAuthServerClient();
-      if (!innerAuthClient) {
-        return null;
-      }
-
-      let accessQuery = innerAuthClient
-        .from("staff_branch_access")
-        .select("profile_id, branch_id")
-        .eq("business_id", scope.businessId);
-      if (scope.branchId) {
-        accessQuery = accessQuery.eq("branch_id", scope.branchId);
-      }
-
-      const { data: accessRows, error: accessError } = await accessQuery;
-      if (accessError) {
-        return {
-          hasError: true as const,
-          waiters: [] as Array<{ id: string; full_name: string | null }>,
-        };
-      }
-
-      const profileIds = [
-        ...new Set(((accessRows ?? []) as Array<{ profile_id: string | null }>).map((row) => row.profile_id).filter(Boolean)),
-      ] as string[];
-
-      if (profileIds.length === 0) {
-        return {
-          hasError: false as const,
-          waiters: [] as Array<{ id: string; full_name: string | null }>,
-        };
-      }
-
-      const { data: profileRows, error: profilesError } = await innerAuthClient
-        .from("profiles")
-        .select("id, full_name, role")
-        .in("id", profileIds)
-        .eq("role", "waiter")
-        .order("full_name", { ascending: true });
-
-      if (profilesError) {
-        return {
-          hasError: true as const,
-          waiters: [] as Array<{ id: string; full_name: string | null }>,
-        };
-      }
-
+  try {
+    const authClient = await getSupabaseAuthServerClient();
+    if (!authClient) {
       return {
-        hasError: false as const,
-        waiters: ((profileRows ?? []) as Array<{ id: string; full_name: string | null }>),
+        waiters: [] as Array<{ id: string; full_name: string | null }>,
+        usingDemoData: true,
       };
-    },
-    [cacheKey],
-    { revalidate: 20, tags: ["profiles", "staff-access"] },
-  );
+    }
 
-  const cached = await reader();
-  if (!cached || cached.hasError) {
-    return {
-      waiters: [] as Array<{ id: string; full_name: string | null }>,
-      usingDemoData: false,
-    };
-  }
-
-  return {
-    waiters: cached.waiters,
-    usingDemoData: false,
-  };
-}
-
-export async function listTableSupervisors() {
-  const supabase = getSupabaseServerClient();
-  if (!supabase) {
-    return {
-      assignments: [] as Array<{ table_id: string; profile_id: string; full_name: string | null }>,
-      available: false,
-      usingDemoData: true,
-    };
-  }
-
-  const scope = await getDefaultBusinessScope();
-  if (!scope.useLegacySchema && !scope.businessId) {
-    return {
-      assignments: [] as Array<{ table_id: string; profile_id: string; full_name: string | null }>,
-      available: true,
-      usingDemoData: false,
-    };
-  }
-
-  const cacheKey = `table-supervisors:${scope.businessId ?? "none"}:${scope.branchId ?? "all"}:${scope.useLegacySchema ? "legacy" : "scoped"}`;
-  const reader = unstable_cache(
-    async () => {
-      const innerSupabase = getSupabaseServerClient();
-      if (!innerSupabase) {
-        return null;
-      }
-
-      const runQuery = async (scoped: boolean) => {
-        let query = innerSupabase.from("table_supervisors").select("table_id, profile_id, profiles(full_name)");
-        if (scoped && !scope.useLegacySchema && scope.businessId) {
-          query = query.eq("business_id", scope.businessId);
-        }
-        if (scoped && scope.branchId) {
-          query = query.eq("branch_id", scope.branchId);
-        }
-        return query;
-      };
-
-      let result = await runQuery(true);
-      if (result.error && (result.error.message.toLowerCase().includes("business_id") || result.error.message.toLowerCase().includes("branch_id"))) {
-        result = await runQuery(false);
-      }
-
+    const scope = await getDefaultBusinessScope();
+    if (!scope.businessId) {
       return {
-        data: result.data as Array<{
-          table_id: string;
-          profile_id: string;
-          profiles?: { full_name?: string | null } | Array<{ full_name?: string | null }> | null;
-        }> | null,
-        error: result.error as { message: string } | null,
-      };
-    },
-    [cacheKey],
-    { revalidate: 5, tags: ["table-supervisors", "table-map"] },
-  );
-
-  const cached = await reader();
-  if (!cached) {
-    return {
-      assignments: [] as Array<{ table_id: string; profile_id: string; full_name: string | null }>,
-      available: true,
-      usingDemoData: false,
-    };
-  }
-
-  if (cached.error) {
-    const normalized = cached.error.message.toLowerCase();
-    if (normalized.includes("table_supervisors")) {
-      return {
-        assignments: [] as Array<{ table_id: string; profile_id: string; full_name: string | null }>,
-        available: false,
+        waiters: [] as Array<{ id: string; full_name: string | null }>,
         usingDemoData: false,
       };
     }
+
+    const cacheKey = `assignable-waiters:${scope.businessId}:${scope.branchId ?? "all"}:${scope.useLegacySchema ? "legacy" : "scoped"}`;
+    const reader = unstable_cache(
+      async () => {
+        const innerAuthClient = await getSupabaseAuthServerClient();
+        if (!innerAuthClient) {
+          return null;
+        }
+
+        let accessQuery = innerAuthClient
+          .from("staff_branch_access")
+          .select("profile_id, branch_id")
+          .eq("business_id", scope.businessId);
+        if (scope.branchId) {
+          accessQuery = accessQuery.eq("branch_id", scope.branchId);
+        }
+
+        const { data: accessRows, error: accessError } = await accessQuery;
+        if (accessError) {
+          return {
+            hasError: true as const,
+            waiters: [] as Array<{ id: string; full_name: string | null }>,
+          };
+        }
+
+        const profileIds = [
+          ...new Set(((accessRows ?? []) as Array<{ profile_id: string | null }>).map((row) => row.profile_id).filter(Boolean)),
+        ] as string[];
+
+        if (profileIds.length === 0) {
+          return {
+            hasError: false as const,
+            waiters: [] as Array<{ id: string; full_name: string | null }>,
+          };
+        }
+
+        const { data: profileRows, error: profilesError } = await innerAuthClient
+          .from("profiles")
+          .select("id, full_name, role")
+          .in("id", profileIds)
+          .eq("role", "waiter")
+          .order("full_name", { ascending: true });
+
+        if (profilesError) {
+          return {
+            hasError: true as const,
+            waiters: [] as Array<{ id: string; full_name: string | null }>,
+          };
+        }
+
+        return {
+          hasError: false as const,
+          waiters: ((profileRows ?? []) as Array<{ id: string; full_name: string | null }>),
+        };
+      },
+      [cacheKey],
+      { revalidate: 20, tags: ["profiles", "staff-access"] },
+    );
+
+    const cached = await reader();
+    if (!cached || cached.hasError) {
+      return {
+        waiters: [] as Array<{ id: string; full_name: string | null }>,
+        usingDemoData: false,
+      };
+    }
+
+    return {
+      waiters: cached.waiters,
+      usingDemoData: false,
+    };
+  } catch {
+    return {
+      waiters: [] as Array<{ id: string; full_name: string | null }>,
+      usingDemoData: false,
+    };
+  }
+}
+
+export async function listTableSupervisors() {
+  try {
+    const supabase = getSupabaseServerClient();
+    if (!supabase) {
+      return {
+        assignments: [] as Array<{ table_id: string; profile_id: string; full_name: string | null }>,
+        available: false,
+        usingDemoData: true,
+      };
+    }
+
+    const scope = await getDefaultBusinessScope();
+    if (!scope.useLegacySchema && !scope.businessId) {
+      return {
+        assignments: [] as Array<{ table_id: string; profile_id: string; full_name: string | null }>,
+        available: true,
+        usingDemoData: false,
+      };
+    }
+
+    const cacheKey = `table-supervisors:${scope.businessId ?? "none"}:${scope.branchId ?? "all"}:${scope.useLegacySchema ? "legacy" : "scoped"}`;
+    const reader = unstable_cache(
+      async () => {
+        const innerSupabase = getSupabaseServerClient();
+        if (!innerSupabase) {
+          return null;
+        }
+
+        const runQuery = async (scoped: boolean) => {
+          let query = innerSupabase.from("table_supervisors").select("table_id, profile_id");
+          if (scoped && !scope.useLegacySchema && scope.businessId) {
+            query = query.eq("business_id", scope.businessId);
+          }
+          if (scoped && scope.branchId) {
+            query = query.eq("branch_id", scope.branchId);
+          }
+          return query;
+        };
+
+        let assignmentResult = await runQuery(true);
+        if (
+          assignmentResult.error &&
+          (assignmentResult.error.message.toLowerCase().includes("business_id") ||
+            assignmentResult.error.message.toLowerCase().includes("branch_id"))
+        ) {
+          assignmentResult = await runQuery(false);
+        }
+
+        const assignments = (assignmentResult.data ?? []) as Array<{ table_id: string; profile_id: string }>;
+        const profileIds = [...new Set(assignments.map((row) => row.profile_id).filter(Boolean))];
+        let profileNameById = new Map<string, string | null>();
+        if (profileIds.length > 0) {
+          const profileResult = await innerSupabase
+            .from("profiles")
+            .select("id, full_name")
+            .in("id", profileIds);
+          if (!profileResult.error) {
+            profileNameById = new Map(
+              ((profileResult.data ?? []) as Array<{ id: string; full_name: string | null }>).map((profile) => [
+                profile.id,
+                profile.full_name ?? null,
+              ]),
+            );
+          }
+        }
+
+        return {
+          data: assignments.map((row) => ({
+            table_id: row.table_id,
+            profile_id: row.profile_id,
+            full_name: profileNameById.get(row.profile_id) ?? null,
+          })),
+          error: assignmentResult.error as { message: string } | null,
+        };
+      },
+      [cacheKey],
+      { revalidate: 5, tags: ["table-supervisors", "table-map"] },
+    );
+
+    const cached = await reader();
+    if (!cached) {
+      return {
+        assignments: [] as Array<{ table_id: string; profile_id: string; full_name: string | null }>,
+        available: true,
+        usingDemoData: false,
+      };
+    }
+
+    if (cached.error) {
+      const normalized = cached.error.message.toLowerCase();
+      if (normalized.includes("table_supervisors")) {
+        return {
+          assignments: [] as Array<{ table_id: string; profile_id: string; full_name: string | null }>,
+          available: false,
+          usingDemoData: false,
+        };
+      }
+      return {
+        assignments: [] as Array<{ table_id: string; profile_id: string; full_name: string | null }>,
+        available: true,
+        usingDemoData: false,
+      };
+    }
+
+    return {
+      assignments: (cached.data ?? []) as Array<{ table_id: string; profile_id: string; full_name: string | null }>,
+      available: true,
+      usingDemoData: false,
+    };
+  } catch {
     return {
       assignments: [] as Array<{ table_id: string; profile_id: string; full_name: string | null }>,
       available: true,
       usingDemoData: false,
     };
   }
-
-  return {
-    assignments: ((cached.data ?? []) as Array<{
-      table_id: string;
-      profile_id: string;
-      profiles?: { full_name?: string | null } | Array<{ full_name?: string | null }> | null;
-    }>).map((row) => ({
-      table_id: row.table_id,
-      profile_id: row.profile_id,
-      full_name: Array.isArray(row.profiles)
-        ? (row.profiles[0]?.full_name ?? null)
-        : (row.profiles?.full_name ?? null),
-    })),
-    available: true,
-    usingDemoData: false,
-  };
 }
 
 export async function setTableSupervisor(input: {
