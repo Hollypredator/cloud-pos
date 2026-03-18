@@ -5097,6 +5097,7 @@ export async function listTableSupervisors() {
   if (!supabase) {
     return {
       assignments: [] as Array<{ table_id: string; profile_id: string; full_name: string | null }>,
+      available: false,
       usingDemoData: true,
     };
   }
@@ -5105,6 +5106,7 @@ export async function listTableSupervisors() {
   if (!scope.useLegacySchema && !scope.businessId) {
     return {
       assignments: [] as Array<{ table_id: string; profile_id: string; full_name: string | null }>,
+      available: true,
       usingDemoData: false,
     };
   }
@@ -5150,6 +5152,7 @@ export async function listTableSupervisors() {
   if (!cached) {
     return {
       assignments: [] as Array<{ table_id: string; profile_id: string; full_name: string | null }>,
+      available: true,
       usingDemoData: false,
     };
   }
@@ -5159,11 +5162,13 @@ export async function listTableSupervisors() {
     if (normalized.includes("table_supervisors")) {
       return {
         assignments: [] as Array<{ table_id: string; profile_id: string; full_name: string | null }>,
+        available: false,
         usingDemoData: false,
       };
     }
     return {
       assignments: [] as Array<{ table_id: string; profile_id: string; full_name: string | null }>,
+      available: true,
       usingDemoData: false,
     };
   }
@@ -5180,6 +5185,7 @@ export async function listTableSupervisors() {
         ? (row.profiles[0]?.full_name ?? null)
         : (row.profiles?.full_name ?? null),
     })),
+    available: true,
     usingDemoData: false,
   };
 }

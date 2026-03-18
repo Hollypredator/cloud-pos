@@ -149,6 +149,8 @@ export function AppNav({
   adminSidebarOrder: ApplicationSettings["adminSidebarOrder"];
 }) {
   const sidebarScrollRef = useRef<HTMLDivElement | null>(null);
+  const lastPathRef = useRef<string | null>(null);
+  const linkRefs = useRef<Record<string, HTMLAnchorElement | null>>({});
   const pathname = usePathname();
   const router = useRouter();
   const searchParams = useSearchParams();
@@ -271,6 +273,48 @@ export function AppNav({
   );
   const activeHref = resolveActiveHref(pathname, visibleLinks.map((link) => link.href));
   const mobilePrimaryLinks = visibleLinks.slice(0, 4);
+
+  useEffect(() => {
+    if (!pathname) {
+      return;
+    }
+    const previousPath = lastPathRef.current;
+    lastPathRef.current = pathname;
+
+    const node = sidebarScrollRef.current;
+    if (!node) {
+      return;
+    }
+
+    try {
+      const raw = window.sessionStorage.getItem("app-nav-scroll-y");
+      const restored = raw ? Number.parseInt(raw, 10) : 0;
+      if (Number.isFinite(restored) && restored >= 0) {
+        node.scrollTop = restored;
+      }
+    } catch {}
+
+    if (!previousPath || previousPath === pathname) {
+      return;
+    }
+
+    const activeNode = linkRefs.current[activeHref ?? ""] ?? null;
+    if (!activeNode) {
+      return;
+    }
+
+    const nodeTop = node.scrollTop;
+    const nodeBottom = nodeTop + node.clientHeight;
+    const itemTop = activeNode.offsetTop;
+    const itemBottom = itemTop + activeNode.offsetHeight;
+    if (itemTop < nodeTop || itemBottom > nodeBottom) {
+      const target = Math.max(0, itemTop - Math.floor(node.clientHeight * 0.3));
+      node.scrollTop = target;
+      try {
+        window.sessionStorage.setItem("app-nav-scroll-y", String(target));
+      } catch {}
+    }
+  }, [activeHref, pathname]);
 
   return (
     <>
@@ -518,6 +562,18 @@ export function AppNav({
                   key={link.href}
                   href={link.href}
                   scroll={false}
+                  ref={(node) => {
+                    linkRefs.current[link.href] = node;
+                  }}
+                  onClick={() => {
+                    const node = sidebarScrollRef.current;
+                    if (!node) {
+                      return;
+                    }
+                    try {
+                      window.sessionStorage.setItem("app-nav-scroll-y", String(node.scrollTop));
+                    } catch {}
+                  }}
                   title={collapsed ? translateUiText(link.label, locale) : undefined}
                   className={className}
                   style={

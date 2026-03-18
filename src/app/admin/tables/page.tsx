@@ -47,7 +47,7 @@ export default async function AdminTablesPage({
   const waitersResult = await measureAsync("assignable_waiters", () => listAssignableWaiters());
   const { waiters } = waitersResult.value;
   const supervisorsResult = await measureAsync("table_supervisors", () => listTableSupervisors());
-  const { assignments: tableSupervisors } = supervisorsResult.value;
+  const { assignments: tableSupervisors, available: supervisorFeatureAvailable } = supervisorsResult.value;
   const supervisorByTableId = new Map(tableSupervisors.map((assignment) => [assignment.table_id, assignment]));
   const latestOrderMap = ordersByTableId;
   const selectedTable = selectedTableId ? tables.find((table) => table.id === selectedTableId) ?? null : null;
@@ -559,26 +559,32 @@ export default async function AdminTablesPage({
                       </div>
 
                       <div className="mt-4 grid gap-2">
-                        <form action={setTableSupervisorAction} className="grid gap-2 rounded-xl border border-slate-200 bg-slate-50 px-3 py-3">
-                          <input type="hidden" name="tableId" value={table.id} />
-                          <select
-                            name="profileId"
-                            defaultValue={supervisor?.profile_id ?? "__none__"}
-                            className="min-h-11 rounded-xl border border-slate-300 bg-white px-3 py-2 text-sm text-slate-700"
-                          >
-                            <option value="__none__">Sorumlu garson yok</option>
-                            {waiters.map((waiter) => (
-                              <option key={waiter.id} value={waiter.id}>
-                                {waiter.full_name?.trim() || `Garson ${waiter.id.slice(0, 6)}`}
-                              </option>
-                            ))}
-                          </select>
-                          <PendingSubmitButton
-                            idleLabel="Sorumlu Kaydet"
-                            pendingLabel="Kaydediliyor..."
-                            className="min-h-11 w-full rounded-xl border border-slate-200 bg-white px-3 py-2 text-sm font-semibold text-slate-700"
-                          />
-                        </form>
+                        {supervisorFeatureAvailable ? (
+                          <form action={setTableSupervisorAction} className="grid gap-2 rounded-xl border border-slate-200 bg-slate-50 px-3 py-3">
+                            <input type="hidden" name="tableId" value={table.id} />
+                            <select
+                              name="profileId"
+                              defaultValue={supervisor?.profile_id ?? "__none__"}
+                              className="min-h-11 rounded-xl border border-slate-300 bg-white px-3 py-2 text-sm text-slate-700"
+                            >
+                              <option value="__none__">Sorumlu garson yok</option>
+                              {waiters.map((waiter) => (
+                                <option key={waiter.id} value={waiter.id}>
+                                  {waiter.full_name?.trim() || `Garson ${waiter.id.slice(0, 6)}`}
+                                </option>
+                              ))}
+                            </select>
+                            <PendingSubmitButton
+                              idleLabel="Sorumlu Kaydet"
+                              pendingLabel="Kaydediliyor..."
+                              className="min-h-11 w-full rounded-xl border border-slate-200 bg-white px-3 py-2 text-sm font-semibold text-slate-700"
+                            />
+                          </form>
+                        ) : (
+                          <div className="rounded-xl border border-amber-200 bg-amber-50 px-3 py-3 text-xs text-amber-800">
+                            Sorumlu garson atamasi icin son migration henuz uygulanmamis.
+                          </div>
+                        )}
                         <Link href={`/admin/tables?table=${table.id}${zoneFilter ? `&zone=${zoneFilter}` : ""}`} className="inline-flex min-h-11 items-center justify-center rounded-xl bg-gradient-to-r from-[#ff6a3d] to-[#f2b44f] px-3 py-3 text-center text-base font-semibold text-white sm:text-sm">
                           Masa Yonet
                         </Link>
