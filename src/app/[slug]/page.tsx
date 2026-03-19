@@ -9,7 +9,11 @@ export default async function ManagedSitePage({
   params: Promise<{ slug: string }>;
 }) {
   const { slug } = await params;
-  const [locale, { content, found }, { settings }] = await Promise.all([getCurrentLocale(), getSitePageContent(slug), getGeneralSettings()]);
+  const [locale, { content, found }, { settings }] = await Promise.all([
+    getCurrentLocale(),
+    getSitePageContent(slug),
+    getGeneralSettings(),
+  ]);
 
   if (!found) {
     notFound();

@@ -124,7 +124,7 @@ export default async function AdminContentPage({
 
   return (
     <div className="min-h-screen bg-slate-100 px-4 py-6 md:px-6">
-      <main className="mx-auto w-full max-w-[1600px] space-y-6">
+      <main className="mx-auto w-full max-w-[2240px] space-y-6">
         <header className="flex flex-wrap items-center justify-between gap-3">
           <div>
             <p className="text-sm text-slate-500">Studio CMS</p>

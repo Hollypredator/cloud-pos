@@ -43,7 +43,13 @@ export type LandingSection =
       title: string;
       body: string;
       primaryCtaLabel: string;
+      primaryCtaHref: string;
       secondaryCtaLabel: string;
+      secondaryCtaHref: string;
+      heroVisualMode: "mockup" | "image";
+      heroImageUrl: string;
+      heroImageAlt: string;
+      heroImageFit: "contain" | "cover";
     })
   | (LandingSectionBase & {
       type: "feature_grid";
@@ -116,7 +122,13 @@ export const defaultLandingContent: LandingContent = {
       body:
         "Cloud POS; masa, adisyon, mutfak, kasa ve yonetsel raporlari ayni sistemde toplar. Musteri menuyu kendi telefonunda gorur, siparis ve operasyon akisi personel tarafindan yonetilir.",
       primaryCtaLabel: "Panele Giris",
+      primaryCtaHref: "/login",
       secondaryCtaLabel: "Demo Incele",
+      secondaryCtaHref: "/demo",
+      heroVisualMode: "mockup",
+      heroImageUrl: "",
+      heroImageAlt: "Cloud POS urun gorseli",
+      heroImageFit: "contain",
     },
     {
       id: "feature-grid-main",
@@ -364,11 +376,13 @@ function modernizeLandingSection(section: LandingSection): LandingSection {
       ...section,
       badge: modernizeLandingText(section.badge),
       title: modernizeLandingText(section.title),
-      body: modernizeLandingText(section.body),
-      primaryCtaLabel: modernizeLandingText(section.primaryCtaLabel),
-      secondaryCtaLabel: modernizeLandingText(section.secondaryCtaLabel),
-    };
-  }
+        body: modernizeLandingText(section.body),
+        primaryCtaLabel: modernizeLandingText(section.primaryCtaLabel),
+        secondaryCtaLabel: modernizeLandingText(section.secondaryCtaLabel),
+        primaryCtaHref: sanitizeText(section.primaryCtaHref, "/login"),
+        secondaryCtaHref: sanitizeText(section.secondaryCtaHref, "/demo"),
+      };
+    }
 
   if (section.type === "feature_grid") {
     return {
@@ -458,7 +472,18 @@ function normalizeSection(section: unknown, index: number): LandingSection | nul
         title: sanitizeText(sectionRecord.title, fallback.title),
         body: sanitizeText(sectionRecord.body, fallback.body),
         primaryCtaLabel: sanitizeText(sectionRecord.primaryCtaLabel, fallback.primaryCtaLabel),
+        primaryCtaHref: sanitizeText(sectionRecord.primaryCtaHref, fallback.primaryCtaHref),
         secondaryCtaLabel: sanitizeText(sectionRecord.secondaryCtaLabel, fallback.secondaryCtaLabel),
+        secondaryCtaHref: sanitizeText(sectionRecord.secondaryCtaHref, fallback.secondaryCtaHref),
+        heroVisualMode: sectionRecord.heroVisualMode === "image" || sectionRecord.heroVisualMode === "mockup"
+          ? sectionRecord.heroVisualMode
+          : fallback.heroVisualMode,
+        heroImageUrl: sanitizeText(sectionRecord.heroImageUrl, fallback.heroImageUrl),
+        heroImageAlt: sanitizeText(sectionRecord.heroImageAlt, fallback.heroImageAlt),
+        heroImageFit:
+          sectionRecord.heroImageFit === "cover" || sectionRecord.heroImageFit === "contain"
+            ? sectionRecord.heroImageFit
+            : fallback.heroImageFit,
       };
     }
     case "feature_grid": {
@@ -566,7 +591,13 @@ function buildSectionsFromLegacy(input: LegacyLandingContentShape) {
         title: sanitizeText(input.heroTitle, heroFallback.title),
         body: sanitizeText(input.heroBody, heroFallback.body),
         primaryCtaLabel: sanitizeText(input.primaryCtaLabel, heroFallback.primaryCtaLabel),
+        primaryCtaHref: heroFallback.primaryCtaHref,
         secondaryCtaLabel: sanitizeText(input.secondaryCtaLabel, heroFallback.secondaryCtaLabel),
+        secondaryCtaHref: heroFallback.secondaryCtaHref,
+        heroVisualMode: heroFallback.heroVisualMode,
+        heroImageUrl: heroFallback.heroImageUrl,
+        heroImageAlt: heroFallback.heroImageAlt,
+        heroImageFit: heroFallback.heroImageFit,
       };
     }
 
@@ -620,7 +651,13 @@ export function createLandingSectionTemplate(type: LandingSection["type"]): Land
       title: "Baslik girin",
       body: "Bu hero blokunu studio icinden duzenleyin.",
       primaryCtaLabel: "Giris Yap",
+      primaryCtaHref: "/login",
       secondaryCtaLabel: "Demo Ac",
+      secondaryCtaHref: "/demo",
+      heroVisualMode: "mockup",
+      heroImageUrl: "",
+      heroImageAlt: "Hero gorseli",
+      heroImageFit: "contain",
     };
   }
 

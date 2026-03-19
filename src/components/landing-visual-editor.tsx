@@ -133,6 +133,12 @@ export function LandingVisualEditor({
   const [businessPhone, setBusinessPhone] = useState(content.businessPhone);
   const [sections, setSections] = useState<LandingSection[]>(content.sections);
   const [selectedId, setSelectedId] = useState<string | null>(content.sections[0]?.id ?? null);
+  const [isPropertiesOpen, setIsPropertiesOpen] = useState(true);
+  const [heroUploadState, setHeroUploadState] = useState<{
+    tone: "idle" | "loading" | "success" | "error";
+    message: string;
+    sectionId: string | null;
+  }>({ tone: "idle", message: "", sectionId: null });
 
   const selectedSection = useMemo(
     () => sections.find((section) => section.id === selectedId) ?? sections[0] ?? null,
@@ -202,6 +208,58 @@ export function LandingVisualEditor({
         [field]: value,
       },
     }));
+  }
+
+  function inferAltText(filename: string) {
+    const base = filename.replace(/\.[a-z0-9]+$/i, "").replace(/[-_]+/g, " ").trim();
+    return base || "Hero gorseli";
+  }
+
+  async function uploadHeroImage(file: File, index: number, sectionId: string) {
+    if (!file.type.startsWith("image/")) {
+      setHeroUploadState({ tone: "error", message: "Lutfen gorsel dosyasi birakin.", sectionId });
+      return;
+    }
+
+    if (file.size > 10 * 1024 * 1024) {
+      setHeroUploadState({ tone: "error", message: "Dosya boyutu 10MB altinda olmali.", sectionId });
+      return;
+    }
+
+    setHeroUploadState({ tone: "loading", message: "Gorsel yukleniyor...", sectionId });
+    const formData = new FormData();
+    formData.set("file", file);
+    formData.set("title", inferAltText(file.name));
+    formData.set("kind", "image");
+    formData.set("altText", inferAltText(file.name));
+
+    try {
+      const response = await fetch("/api/studio/media/upload", {
+        method: "POST",
+        body: formData,
+      });
+      const payload = (await response.json().catch(() => null)) as
+        | { ok: true; fileUrl: string; altText?: string }
+        | { ok: false; error?: string }
+        | null;
+
+      if (!response.ok || !payload?.ok || !payload.fileUrl) {
+        throw new Error((payload && "error" in payload && payload.error) || "Gorsel yuklenemedi.");
+      }
+
+      updateSection(index, (current) => ({
+        ...current,
+        heroVisualMode: "image",
+        heroImageUrl: payload.fileUrl,
+        heroImageAlt:
+          (current as Extract<LandingSection, { type: "hero" }>).heroImageAlt?.trim() || payload.altText || inferAltText(file.name),
+      } as LandingSection));
+
+      setHeroUploadState({ tone: "success", message: "Gorsel yuklendi ve hero alanina eklendi.", sectionId });
+    } catch (error) {
+      const message = error instanceof Error ? error.message : "Gorsel yuklenemedi.";
+      setHeroUploadState({ tone: "error", message, sectionId });
+    }
   }
 
   function renderSelectedSectionEditor(section: LandingSection) {
@@ -291,6 +349,95 @@ export function LandingVisualEditor({
           <div className="grid gap-4 md:grid-cols-2">
             <TextInput label="Ana CTA" value={section.primaryCtaLabel} onChange={(value) => updateSection(index, (current) => ({ ...current, primaryCtaLabel: value } as LandingSection))} />
             <TextInput label="Ikinci CTA" value={section.secondaryCtaLabel} onChange={(value) => updateSection(index, (current) => ({ ...current, secondaryCtaLabel: value } as LandingSection))} />
+          </div>
+          <div className="grid gap-4 md:grid-cols-2">
+            <TextInput label="Ana CTA Link" value={section.primaryCtaHref} onChange={(value) => updateSection(index, (current) => ({ ...current, primaryCtaHref: value } as LandingSection))} />
+            <TextInput label="Ikinci CTA Link" value={section.secondaryCtaHref} onChange={(value) => updateSection(index, (current) => ({ ...current, secondaryCtaHref: value } as LandingSection))} />
+          </div>
+          <div className="rounded-2xl border border-slate-200 bg-slate-50 p-4">
+            <p className="text-[11px] font-semibold uppercase tracking-[0.24em] text-slate-500">Hero Gorseli</p>
+            <div className="mt-4 grid gap-4">
+              <SelectInput
+                label="Sag alan modu"
+                value={section.heroVisualMode}
+                options={[
+                  { label: "Taslak gorunum", value: "mockup" },
+                  { label: "Gorsel kullan", value: "image" },
+                ]}
+                onChange={(value) =>
+                  updateSection(index, (current) => ({
+                    ...current,
+                    heroVisualMode: value === "image" ? "image" : "mockup",
+                  } as LandingSection))
+                }
+              />
+              <TextInput
+                label="Gorsel URL"
+                value={section.heroImageUrl}
+                onChange={(value) => updateSection(index, (current) => ({ ...current, heroImageUrl: value } as LandingSection))}
+              />
+              <TextInput
+                label="Gorsel alt metni"
+                value={section.heroImageAlt}
+                onChange={(value) => updateSection(index, (current) => ({ ...current, heroImageAlt: value } as LandingSection))}
+              />
+              <SelectInput
+                label="Gorsel yerlestirme"
+                value={section.heroImageFit}
+                options={[
+                  { label: "Sigdir (contain)", value: "contain" },
+                  { label: "Kapla (cover)", value: "cover" },
+                ]}
+                onChange={(value) =>
+                  updateSection(index, (current) => ({
+                    ...current,
+                    heroImageFit: value === "cover" ? "cover" : "contain",
+                  } as LandingSection))
+                }
+              />
+              <div
+                onDragOver={(event) => event.preventDefault()}
+                onDrop={(event) => {
+                  event.preventDefault();
+                  const dropped = event.dataTransfer?.files?.[0];
+                  if (dropped) {
+                    void uploadHeroImage(dropped, index, section.id);
+                  }
+                }}
+                className="rounded-xl border border-dashed border-slate-300 bg-white px-4 py-4 text-sm text-slate-600"
+              >
+                <p className="font-semibold text-slate-800">Drag & drop ile gorsel birak</p>
+                <p className="mt-1 text-xs text-slate-500">veya dosya secerek yukle (max 10MB).</p>
+                <label className="mt-3 inline-flex cursor-pointer rounded-lg border border-slate-300 bg-slate-50 px-3 py-2 text-xs font-semibold text-slate-700">
+                  Dosya Sec
+                  <input
+                    type="file"
+                    accept="image/*"
+                    className="hidden"
+                    onChange={(event) => {
+                      const selected = event.currentTarget.files?.[0];
+                      if (selected) {
+                        void uploadHeroImage(selected, index, section.id);
+                        event.currentTarget.value = "";
+                      }
+                    }}
+                  />
+                </label>
+              </div>
+              {heroUploadState.sectionId === section.id && heroUploadState.tone !== "idle" ? (
+                <p
+                  className={`text-xs ${
+                    heroUploadState.tone === "success"
+                      ? "text-emerald-700"
+                      : heroUploadState.tone === "error"
+                        ? "text-rose-700"
+                        : "text-slate-600"
+                  }`}
+                >
+                  {heroUploadState.message}
+                </p>
+              ) : null}
+            </div>
           </div>
         </div>
       );
@@ -451,7 +598,12 @@ export function LandingVisualEditor({
   };
 
   return (
-    <form action={action} className="grid min-h-[calc(100vh-8rem)] gap-6 xl:grid-cols-[minmax(0,1fr)_360px]">
+    <form
+      action={action}
+      className={`grid min-h-[calc(100vh-8rem)] gap-5 ${
+        isPropertiesOpen ? "xl:grid-cols-[minmax(0,1fr)_280px] 2xl:grid-cols-[minmax(0,1fr)_300px]" : "grid-cols-1"
+      }`}
+    >
       <input type="hidden" name="pageTitle" value={pageTitle} />
       <input type="hidden" name="pageSlug" value={pageSlug} />
       <input type="hidden" name="topLoginLabel" value={topLoginLabel} />
@@ -476,6 +628,13 @@ export function LandingVisualEditor({
                 + {type}
               </button>
             ))}
+            <button
+              type="button"
+              onClick={() => setIsPropertiesOpen((current) => !current)}
+              className="rounded-lg border border-slate-300 bg-white px-3 py-2 text-xs font-semibold text-slate-700"
+            >
+              {isPropertiesOpen ? "Properties Gizle" : "Properties Goster"}
+            </button>
           </div>
         </div>
 
@@ -488,67 +647,69 @@ export function LandingVisualEditor({
         </div>
       </section>
 
-      <aside className="sticky top-6 h-fit rounded-[2rem] border border-slate-200 bg-white p-5 shadow-[0_20px_60px_rgba(15,23,42,0.10)]">
-        <p className="text-xs font-semibold uppercase tracking-[0.24em] text-slate-500">Properties</p>
-        <h2 className="mt-2 text-xl font-semibold text-slate-900">
-          {selectedSection ? `${selectedSection.type} ayarlari` : "Blok sec"}
-        </h2>
-        <p className="mt-2 text-sm leading-6 text-slate-600">
-          Soldaki landing canvas uzerinden blok sec. Alanlari degistirdikce sayfa aninda guncellenir.
-        </p>
+      {isPropertiesOpen ? (
+        <aside className="sticky top-6 h-fit rounded-[2rem] border border-slate-200 bg-white p-5 shadow-[0_20px_60px_rgba(15,23,42,0.10)]">
+          <p className="text-xs font-semibold uppercase tracking-[0.24em] text-slate-500">Properties</p>
+          <h2 className="mt-2 text-xl font-semibold text-slate-900">
+            {selectedSection ? `${selectedSection.type} ayarlari` : "Blok sec"}
+          </h2>
+          <p className="mt-2 text-sm leading-6 text-slate-600">
+            Soldaki landing canvas uzerinden blok sec. Alanlari degistirdikce sayfa aninda guncellenir.
+          </p>
 
-        <div className="mt-5 rounded-2xl border border-slate-200 bg-slate-50 p-4">
-          <p className="text-[11px] font-semibold uppercase tracking-[0.24em] text-slate-500">Global</p>
-          <div className="mt-4 grid gap-4">
-            <TextInput label="Sayfa basligi" value={pageTitle} onChange={setPageTitle} />
-            <TextInput label="Ust login butonu" value={topLoginLabel} onChange={setTopLoginLabel} />
-            <TextInput label="Ust demo butonu" value={topDemoLabel} onChange={setTopDemoLabel} />
-            <TextInput label="Telefon / WhatsApp" value={businessPhone} onChange={setBusinessPhone} />
-          </div>
-        </div>
-
-        {selectedSection ? (
-          <div className="mt-5">
-            <div className="mb-3 flex flex-wrap gap-2">
-              <button
-                type="button"
-                onClick={() => moveSection(sections.findIndex((item) => item.id === selectedSection.id), -1)}
-                className="rounded-lg border border-slate-300 px-3 py-2 text-xs font-semibold text-slate-700"
-              >
-                Yukari
-              </button>
-              <button
-                type="button"
-                onClick={() => moveSection(sections.findIndex((item) => item.id === selectedSection.id), 1)}
-                className="rounded-lg border border-slate-300 px-3 py-2 text-xs font-semibold text-slate-700"
-              >
-                Asagi
-              </button>
-              <button
-                type="button"
-                onClick={() => duplicateSection(sections.findIndex((item) => item.id === selectedSection.id))}
-                className="rounded-lg border border-slate-300 px-3 py-2 text-xs font-semibold text-slate-700"
-              >
-                Kopyala
-              </button>
-              <button
-                type="button"
-                onClick={() => removeSection(sections.findIndex((item) => item.id === selectedSection.id))}
-                className="rounded-lg border border-rose-200 bg-rose-50 px-3 py-2 text-xs font-semibold text-rose-700"
-              >
-                Sil
-              </button>
+          <div className="mt-5 rounded-2xl border border-slate-200 bg-slate-50 p-4">
+            <p className="text-[11px] font-semibold uppercase tracking-[0.24em] text-slate-500">Global</p>
+            <div className="mt-4 grid gap-4">
+              <TextInput label="Sayfa basligi" value={pageTitle} onChange={setPageTitle} />
+              <TextInput label="Ust login butonu" value={topLoginLabel} onChange={setTopLoginLabel} />
+              <TextInput label="Ust demo butonu" value={topDemoLabel} onChange={setTopDemoLabel} />
+              <TextInput label="Telefon / WhatsApp" value={businessPhone} onChange={setBusinessPhone} />
             </div>
-            <div className="space-y-4">{renderSelectedSectionEditor(selectedSection)}</div>
           </div>
-        ) : null}
 
-        <div className="mt-6">
-          <button type="submit" className="w-full rounded-xl bg-slate-950 px-5 py-3 text-sm font-semibold text-white">
-            Degisiklikleri Kaydet
-          </button>
-        </div>
-      </aside>
+          {selectedSection ? (
+            <div className="mt-5">
+              <div className="mb-3 flex flex-wrap gap-2">
+                <button
+                  type="button"
+                  onClick={() => moveSection(sections.findIndex((item) => item.id === selectedSection.id), -1)}
+                  className="rounded-lg border border-slate-300 px-3 py-2 text-xs font-semibold text-slate-700"
+                >
+                  Yukari
+                </button>
+                <button
+                  type="button"
+                  onClick={() => moveSection(sections.findIndex((item) => item.id === selectedSection.id), 1)}
+                  className="rounded-lg border border-slate-300 px-3 py-2 text-xs font-semibold text-slate-700"
+                >
+                  Asagi
+                </button>
+                <button
+                  type="button"
+                  onClick={() => duplicateSection(sections.findIndex((item) => item.id === selectedSection.id))}
+                  className="rounded-lg border border-slate-300 px-3 py-2 text-xs font-semibold text-slate-700"
+                >
+                  Kopyala
+                </button>
+                <button
+                  type="button"
+                  onClick={() => removeSection(sections.findIndex((item) => item.id === selectedSection.id))}
+                  className="rounded-lg border border-rose-200 bg-rose-50 px-3 py-2 text-xs font-semibold text-rose-700"
+                >
+                  Sil
+                </button>
+              </div>
+              <div className="space-y-4">{renderSelectedSectionEditor(selectedSection)}</div>
+            </div>
+          ) : null}
+
+          <div className="mt-6">
+            <button type="submit" className="w-full rounded-xl bg-slate-950 px-5 py-3 text-sm font-semibold text-white">
+              Degisiklikleri Kaydet
+            </button>
+          </div>
+        </aside>
+      ) : null}
     </form>
   );
 }

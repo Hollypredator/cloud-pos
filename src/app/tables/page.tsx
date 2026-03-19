@@ -131,7 +131,7 @@ export default async function TablesPage({
     { assignments: tableSupervisors, usingDemoData: usingSupervisorsDemo },
   ] = await Promise.all([
     listLatestOrdersByTableIds(tableIds),
-    listTableRequests("open", { limit: 80, page: 1 }),
+    listTableRequests("open", { limit: 80, page: 1, includeTableNumber: false }),
     getTableZones(),
     listTableSupervisors(),
   ]);

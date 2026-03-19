@@ -191,13 +191,41 @@ export async function listLatestOrdersByTableIdsImpl(tableIds: string[], deps: Q
       }
 
       const result = await query;
+      const rows = (result.data ?? []) as Array<{ id: string; check_number?: string | null; table_id: string; total_price: number; final_price: number | null; status: OrderStatus; created_at: string }>;
+      const latestRows = new Map<string, { id: string; check_number?: string | null; table_id: string; total_price: number; final_price: number | null; status: OrderStatus; created_at: string }>();
+      for (const row of rows) {
+        if (!latestRows.has(row.table_id)) {
+          latestRows.set(row.table_id, row);
+        }
+      }
+
+      const orderIds = [...latestRows.values()].map((row) => row.id);
+      const paymentSummary = await deps.getOrderPaymentSummaryMap(innerSupabase, orderIds);
+      const normalizedRows = [...latestRows.values()].map((row) => {
+        const finalPrice = toMoney(Number(row.final_price ?? row.total_price));
+        const amountPaid = toMoney(paymentSummary.get(row.id)?.net ?? 0);
+        const remainingBalance = toMoney(Math.max(0, finalPrice - amountPaid));
+        return {
+          id: row.id,
+          check_number: row.check_number ?? null,
+          table_id: row.table_id,
+          total_price: Number(row.total_price),
+          final_price: finalPrice,
+          amount_paid: amountPaid,
+          remaining_balance: remainingBalance,
+          payment_count: paymentSummary.get(row.id)?.count ?? 0,
+          status: resolveEffectiveOrderStatus(row.status, remainingBalance),
+          created_at: row.created_at,
+        };
+      });
+
       return {
-        data: result.data as Array<{ id: string; check_number?: string | null; table_id: string; total_price: number; final_price: number | null; status: OrderStatus; created_at: string }> | null,
+        data: normalizedRows,
         error: result.error as { message: string } | null,
       };
     },
     [cacheKey],
-    { revalidate: 2, tags: ["orders-summary", "table-map"] },
+    { revalidate: 5, tags: ["orders-summary", "table-map"] },
   );
 
   const cached = await reader();
@@ -207,31 +235,19 @@ export async function listLatestOrdersByTableIdsImpl(tableIds: string[], deps: Q
     return { ordersByTableId: new Map<string, Order>(), usingDemoData: false };
   }
 
-  const latestRows = new Map<string, { id: string; check_number?: string | null; table_id: string; total_price: number; final_price: number | null; status: OrderStatus; created_at: string }>();
-  for (const row of (data ?? []) as Array<{ id: string; check_number?: string | null; table_id: string; total_price: number; final_price: number | null; status: OrderStatus; created_at: string }>) {
-    if (!latestRows.has(row.table_id)) {
-      latestRows.set(row.table_id, row);
-    }
-  }
-
-  const orderIds = [...latestRows.values()].map((row) => row.id);
-  const paymentSummary = await deps.getOrderPaymentSummaryMap(supabase, orderIds);
   const ordersByTableId = new Map<string, Order>();
-  for (const row of latestRows.values()) {
-    const finalPrice = toMoney(Number(row.final_price ?? row.total_price));
-    const amountPaid = toMoney(paymentSummary.get(row.id)?.net ?? 0);
-    const remainingBalance = toMoney(Math.max(0, finalPrice - amountPaid));
+  for (const row of (data ?? []) as Array<{ id: string; check_number?: string | null; table_id: string; total_price: number; final_price: number; amount_paid: number; remaining_balance: number; payment_count: number; status: OrderStatus; created_at: string }>) {
     ordersByTableId.set(row.table_id, {
       id: row.id,
       check_number: row.check_number ?? null,
       table_id: row.table_id,
       items: [],
       total_price: Number(row.total_price),
-      final_price: finalPrice,
-      amount_paid: amountPaid,
-      remaining_balance: remainingBalance,
-      payment_count: paymentSummary.get(row.id)?.count ?? 0,
-      status: resolveEffectiveOrderStatus(row.status, remainingBalance),
+      final_price: Number(row.final_price),
+      amount_paid: Number(row.amount_paid),
+      remaining_balance: Number(row.remaining_balance),
+      payment_count: Number(row.payment_count),
+      status: row.status,
       created_at: row.created_at,
     });
   }
@@ -272,22 +288,42 @@ export async function getOrderHistoryByTableIdImpl(tableId: string, limit: numbe
       }
 
       const result = await query;
+      const rows = (result.data ?? []) as Array<{
+        id: string;
+        check_number?: string | null;
+        table_id: string;
+        total_price: number;
+        final_price?: number;
+        status: OrderStatus;
+        created_at: string;
+      }>;
+      const orderIds = rows.map((row) => row.id);
+      const paymentSummary = await deps.getOrderPaymentSummaryMap(innerSupabase, orderIds);
+      const normalizedRows = rows.map((row) => {
+        const finalPrice = toMoney(Number(row.final_price ?? row.total_price));
+        const amountPaid = toMoney(paymentSummary.get(row.id)?.net ?? 0);
+        const remainingBalance = toMoney(Math.max(0, finalPrice - amountPaid));
+        return {
+          id: row.id,
+          check_number: row.check_number ?? null,
+          table_id: row.table_id,
+          total_price: Number(row.total_price),
+          final_price: finalPrice,
+          amount_paid: amountPaid,
+          remaining_balance: remainingBalance,
+          payment_count: paymentSummary.get(row.id)?.count ?? 0,
+          status: resolveEffectiveOrderStatus(row.status, remainingBalance),
+          created_at: row.created_at,
+        };
+      });
 
       return {
-        data: result.data as Array<{
-          id: string;
-          check_number?: string | null;
-          table_id: string;
-          total_price: number;
-          final_price?: number;
-          status: OrderStatus;
-          created_at: string;
-        }> | null,
+        data: normalizedRows,
         error: result.error as { message: string } | null,
       };
     },
     [cacheKey],
-    { revalidate: 2, tags: ["orders-summary", "table-map"] },
+    { revalidate: 5, tags: ["orders-summary", "table-map"] },
   );
 
   const cached = await reader();
@@ -297,36 +333,31 @@ export async function getOrderHistoryByTableIdImpl(tableId: string, limit: numbe
     return { orders: [] as Order[], usingDemoData: false };
   }
 
-  const orderIds = ((data ?? []) as Array<{ id: string }>).map((row) => row.id);
-  const paymentSummary = await deps.getOrderPaymentSummaryMap(supabase, orderIds);
-
   return {
     orders: ((data ?? []) as Array<{
       id: string;
       check_number?: string | null;
       table_id: string;
       total_price: number;
-      final_price?: number;
+      final_price: number;
+      amount_paid: number;
+      remaining_balance: number;
+      payment_count: number;
       status: OrderStatus;
       created_at: string;
-    }>).map((row) => {
-      const finalPrice = toMoney(Number(row.final_price ?? row.total_price));
-      const amountPaid = toMoney(paymentSummary.get(row.id)?.net ?? 0);
-      const remainingBalance = toMoney(Math.max(0, finalPrice - amountPaid));
-      return {
-        id: row.id,
-        check_number: row.check_number ?? null,
-        table_id: row.table_id,
-        items: [],
-        total_price: Number(row.total_price),
-        final_price: finalPrice,
-        amount_paid: amountPaid,
-        remaining_balance: remainingBalance,
-        payment_count: paymentSummary.get(row.id)?.count ?? 0,
-        status: resolveEffectiveOrderStatus(row.status, remainingBalance),
-        created_at: row.created_at,
-      };
-    }),
+    }>).map((row) => ({
+      id: row.id,
+      check_number: row.check_number ?? null,
+      table_id: row.table_id,
+      items: [],
+      total_price: Number(row.total_price),
+      final_price: Number(row.final_price),
+      amount_paid: Number(row.amount_paid),
+      remaining_balance: Number(row.remaining_balance),
+      payment_count: Number(row.payment_count),
+      status: row.status,
+      created_at: row.created_at,
+    })),
     usingDemoData: false,
   };
 }
@@ -375,7 +406,7 @@ export async function getTableMapImpl(deps: QueryDeps) {
       }
     },
     [cacheKey],
-    { revalidate: 2, tags: ["table-map"] },
+    { revalidate: 5, tags: ["table-map"] },
   );
 
   const cached = await reader();

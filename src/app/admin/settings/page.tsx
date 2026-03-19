@@ -60,7 +60,7 @@ async function createPlanRequestAction(formData: FormData) {
 async function updateGeneralSettingsAction(formData: FormData) {
   "use server";
   await requireExactRole(["owner"], "/admin/settings");
-  const { settings: currentSettings } = await getGeneralSettings();
+  const { settings: currentSettings } = await getGeneralSettings({ scope: "active-business" });
 
   await updateGeneralSettings({
     siteName: readString(formData, "siteName"),
@@ -71,7 +71,7 @@ async function updateGeneralSettingsAction(formData: FormData) {
     address: readString(formData, "address"),
     logoUrl: readString(formData, "logoUrl"),
     footerNote: currentSettings.footerNote,
-  });
+  }, { scope: "active-business" });
 
   revalidatePath("/");
   revalidatePath("/admin/settings");
@@ -244,7 +244,7 @@ export default async function AdminSettingsPage() {
     );
   }
   const [{ settings: generalSettings, usingDemoData }, { settings: applicationSettings }, planContext] = await Promise.all([
-    getGeneralSettings(),
+    getGeneralSettings({ scope: "active-business" }),
     getApplicationSettings(),
     getActiveBusinessPlanContext(),
   ]);

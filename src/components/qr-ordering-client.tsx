@@ -19,7 +19,7 @@ export function QrOrderingClient({
     [categories],
   );
   const [selectedCategoryId, setSelectedCategoryId] = useState<string>(() => orderedCategories[0]?.id ?? "");
-  const [expandedProductId, setExpandedProductId] = useState<string | null>(null);
+  const [selectedProductId, setSelectedProductId] = useState<string | null>(null);
   const activeCategoryId = orderedCategories.some((category) => category.id === selectedCategoryId)
     ? selectedCategoryId
     : (orderedCategories[0]?.id ?? "");
@@ -61,32 +61,37 @@ export function QrOrderingClient({
   }, [modifierOptions]);
 
   const visibleProducts = grouped.get(activeCategoryId) ?? [];
+  const selectedProduct = selectedProductId ? visibleProducts.find((item) => item.id === selectedProductId) ?? null : null;
+  const selectedProductGroups = selectedProduct ? groupsByProduct.get(selectedProduct.id) ?? [] : [];
+  const formatPrice = (value: number) => `${Number(value).toFixed(2)} TL`;
 
   return (
     <div className="mx-auto flex min-h-screen w-full max-w-5xl flex-col gap-4 px-3 py-4 md:px-6 md:py-6">
       <section className="rounded-3xl border border-white/10 bg-slate-900/65 p-3 shadow-[0_18px_35px_rgba(2,6,23,0.45)] backdrop-blur">
-        <div className="mb-3 overflow-x-auto pb-1">
-          <div className="flex min-w-max gap-2">
-            {orderedCategories.map((category) => {
-              const isActive = category.id === activeCategoryId;
-              return (
-                <button
-                  key={category.id}
-                  type="button"
-                  onClick={() => {
-                    setSelectedCategoryId(category.id);
-                    setExpandedProductId(null);
-                  }}
-                  className={`rounded-2xl px-4 py-2 text-sm font-semibold transition ${
-                    isActive
-                      ? "bg-[linear-gradient(135deg,#ff6d3d_0%,#f0b04f_100%)] text-white shadow-[0_10px_20px_rgba(255,109,61,0.28)]"
-                      : "border border-white/15 bg-white/5 text-slate-200"
-                  }`}
-                >
-                  {category.name}
-                </button>
-              );
-            })}
+        <div className="sticky top-3 z-20 mb-3 rounded-2xl border border-white/10 bg-slate-900/95 px-2 py-2 shadow-[0_10px_20px_rgba(2,6,23,0.35)] backdrop-blur">
+          <div className="overflow-x-auto pb-1">
+            <div className="flex min-w-max gap-2">
+              {orderedCategories.map((category) => {
+                const isActive = category.id === activeCategoryId;
+                return (
+                  <button
+                    key={category.id}
+                    type="button"
+                    onClick={() => {
+                      setSelectedCategoryId(category.id);
+                      setSelectedProductId(null);
+                    }}
+                    className={`rounded-2xl px-4 py-2 text-sm font-semibold transition ${
+                      isActive
+                        ? "bg-[linear-gradient(135deg,#ff6d3d_0%,#f0b04f_100%)] text-white shadow-[0_10px_20px_rgba(255,109,61,0.28)]"
+                        : "border border-white/15 bg-white/5 text-slate-200"
+                    }`}
+                  >
+                    {category.name}
+                  </button>
+                );
+              })}
+            </div>
           </div>
         </div>
 
@@ -95,66 +100,68 @@ export function QrOrderingClient({
             Bu kategori icin urun bulunmuyor.
           </p>
         ) : (
-          <div className="space-y-3">
+          <div className="grid grid-cols-2 gap-3 md:grid-cols-3 lg:grid-cols-4">
             {visibleProducts.map((product) => {
-              const isExpanded = expandedProductId === product.id;
-              const modifierGroupsForProduct = groupsByProduct.get(product.id) ?? [];
+              const isSelected = selectedProductId === product.id;
 
               return (
-                <article key={product.id} className="overflow-hidden rounded-2xl border border-white/10 bg-[linear-gradient(180deg,#1b233f_0%,#141c33_100%)]">
-                  <button
-                    type="button"
-                    onClick={() => setExpandedProductId((prev) => (prev === product.id ? null : product.id))}
-                    className="flex w-full items-center gap-3 p-3 text-left"
-                  >
-                    {product.image_url ? (
-                      <img src={product.image_url} alt={product.name} className="h-16 w-16 rounded-xl border border-white/10 object-cover" />
-                    ) : (
-                      <div className="flex h-16 w-16 items-center justify-center rounded-xl border border-dashed border-white/20 bg-white/5 text-[10px] font-semibold uppercase tracking-[0.12em] text-slate-300">
-                        Gorsel Yok
-                      </div>
-                    )}
-                    <div className="min-w-0 flex-1">
-                      <p className="truncate text-base font-semibold text-white">{product.name}</p>
-                      <p className="mt-1 text-sm text-slate-300">{product.description ?? "Aciklama bulunmuyor."}</p>
-                      <p className="mt-2 text-sm font-semibold text-amber-300">{Number(product.price).toFixed(2)} TL</p>
+                <button
+                  key={product.id}
+                  type="button"
+                  onClick={() => setSelectedProductId((prev) => (prev === product.id ? null : product.id))}
+                  className={`overflow-hidden rounded-[10px] border text-left transition ${
+                    isSelected
+                      ? "border-amber-300/80 bg-[#11233d] shadow-[0_14px_26px_rgba(2,6,23,0.45)]"
+                      : "border-[#1e3356] bg-[#10213a] shadow-[0_8px_20px_rgba(2,6,23,0.35)] hover:border-[#325386]"
+                  }`}
+                >
+                  {product.image_url ? (
+                    <img src={product.image_url} alt={product.name} className="h-[104px] w-full object-cover sm:h-28" />
+                  ) : (
+                    <div className="flex h-[104px] w-full items-center justify-center bg-[#1a2d4a] text-[10px] font-semibold uppercase tracking-[0.12em] text-slate-300 sm:h-28">
+                      Gorsel Yok
                     </div>
-                    <span className="rounded-lg border border-white/15 bg-white/5 px-3 py-2 text-xs font-medium text-slate-100">
-                      {isExpanded ? "Kapat" : "Detay"}
-                    </span>
-                  </button>
-
-                  {isExpanded ? (
-                    <div className="space-y-3 border-t border-white/10 bg-slate-950/30 p-4">
-                      <p className="text-sm text-slate-200">{product.description ?? "Aciklama bulunmuyor."}</p>
-                      {modifierGroupsForProduct.length > 0 ? (
-                        <div className="space-y-3">
-                          {modifierGroupsForProduct.map((group) => (
-                            <div key={group.id} className="rounded-xl border border-white/10 bg-white/5 p-3">
-                              <p className="font-semibold text-white">{group.name}</p>
-                              <div className="mt-2 grid gap-2 sm:grid-cols-2">
-                                {(optionsByGroup.get(group.id) ?? []).map((option) => (
-                                  <div key={option.id} className="rounded-lg border border-white/10 bg-slate-900/40 px-3 py-2 text-sm text-slate-100">
-                                    <p className="font-medium">{option.name}</p>
-                                    <p className="text-xs text-slate-300">
-                                      {Number(option.price_delta) > 0 ? `+${Number(option.price_delta).toFixed(2)} TL` : "Dahil"}
-                                    </p>
-                                  </div>
-                                ))}
-                              </div>
-                            </div>
-                          ))}
-                        </div>
-                      ) : (
-                        <p className="text-sm text-slate-300">Bu urun icin secenek bilgisi bulunmuyor.</p>
-                      )}
-                    </div>
-                  ) : null}
-                </article>
+                  )}
+                  <div className="px-2.5 py-2.5">
+                    <p className="text-[15px] font-semibold leading-5 text-white">{product.name}</p>
+                    <p className="mt-1 text-[14px] font-medium text-slate-100">{formatPrice(product.price)}</p>
+                  </div>
+                </button>
               );
             })}
           </div>
         )}
+
+        {selectedProduct ? (
+          <div className="mt-4 space-y-3 rounded-2xl border border-white/10 bg-slate-950/35 p-4">
+            <div>
+              <p className="text-base font-semibold text-white">{selectedProduct.name}</p>
+              <p className="mt-1 text-sm text-slate-300">{selectedProduct.description ?? "Aciklama bulunmuyor."}</p>
+            </div>
+            {selectedProductGroups.length > 0 ? (
+              <div className="space-y-3">
+                {selectedProductGroups.map((group) => (
+                  <div key={group.id} className="rounded-xl border border-white/10 bg-white/5 p-3">
+                    <p className="font-semibold text-white">{group.name}</p>
+                    <div className="mt-2 grid gap-2 sm:grid-cols-2">
+                      {(optionsByGroup.get(group.id) ?? []).map((option) => (
+                        <div key={option.id} className="rounded-lg border border-white/10 bg-slate-900/40 px-3 py-2 text-sm text-slate-100">
+                          <p className="font-medium">{option.name}</p>
+                          <p className="text-xs text-slate-300">
+                            {Number(option.price_delta) > 0 ? `+${Number(option.price_delta).toFixed(2)} TL` : "Dahil"}
+                          </p>
+                        </div>
+                      ))}
+                    </div>
+                  </div>
+                ))}
+              </div>
+            ) : (
+              <p className="text-sm text-slate-300">Bu urun icin secenek bilgisi bulunmuyor.</p>
+            )}
+          </div>
+        ) : null}
+
         <p className="mt-4 text-center text-xs text-slate-400">QR ekrani menu goruntuleme icindir. Siparisler personel tarafindan acilir.</p>
       </section>
     </div>

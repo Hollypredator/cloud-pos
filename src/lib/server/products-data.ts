@@ -152,7 +152,7 @@ async function getCachedProductManagementRow(input: {
       };
     },
     [cacheKey],
-    { revalidate: 15, tags: ["product-management"] },
+    { revalidate: 30, tags: ["product-management"] },
   );
 
   return reader();

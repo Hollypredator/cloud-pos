@@ -1,3 +1,6 @@
+"use client";
+
+import { useMemo, useState } from "react";
 import Link from "next/link";
 import { LandingContactCard } from "@/components/landing-contact-card";
 import type { GeneralSettings } from "@/lib/app-settings";
@@ -11,14 +14,299 @@ type LandingRendererEditorOptions = {
   previewMode?: boolean;
 };
 
+type HeaderNavKey = "pos" | "orders" | "business" | "corporate" | "pricing";
+
+type HeaderMegaCard = {
+  title: string;
+  body: string;
+  badge: string;
+};
+
+type HeaderMegaMenu = {
+  title: string;
+  cards: HeaderMegaCard[];
+  ctaLabel: string;
+};
+
+type HeroShowcaseTab = {
+  label: string;
+  caption: string;
+  href: string;
+};
+
+type LandingHeaderCopy = {
+  menuLabel: string;
+  solutionsLabel: string;
+  requestDemoLabel: string;
+  nav: {
+    posSystems: string;
+    orderSolutions: string;
+    businessSolutions: string;
+    corporate: string;
+    pricing: string;
+  };
+  tabs: {
+    allInOnePos: string;
+    bossApp: string;
+    staffManagement: string;
+    qrOrdering: string;
+    kioskSolutions: string;
+  };
+  stats: {
+    venuesLabel: string;
+    venuesValue: string;
+    uptimeLabel: string;
+    uptimeValue: string;
+    supportLabel: string;
+    supportValue: string;
+  };
+};
+
+function getLandingHeaderCopy(locale: AppLocale): LandingHeaderCopy {
+  if (locale === "fr") {
+    return {
+      menuLabel: "Menu",
+      solutionsLabel: "Solutions Produits",
+      requestDemoLabel: "Demander une Demo",
+      nav: {
+        posSystems: "Solutions POS",
+        orderSolutions: "Solutions de Commande",
+        businessSolutions: "Solutions Business",
+        corporate: "Entreprise",
+        pricing: "Tarifs",
+      },
+      tabs: {
+        allInOnePos: "Cloud POS Core",
+        bossApp: "Panel de Gestion",
+        staffManagement: "Gestion Equipe",
+        qrOrdering: "QR & Commande",
+        kioskSolutions: "Libre-Service",
+      },
+      stats: {
+        venuesLabel: "Operation",
+        venuesValue: "Multi",
+        uptimeLabel: "Infrastructure",
+        uptimeValue: "Cloud",
+        supportLabel: "Support",
+        supportValue: "24/7",
+      },
+    };
+  }
+
+  if (locale === "en") {
+    return {
+      menuLabel: "Menu",
+      solutionsLabel: "Product Solutions",
+      requestDemoLabel: "Request Demo",
+      nav: {
+        posSystems: "POS Systems",
+        orderSolutions: "Order Solutions",
+        businessSolutions: "Business Solutions",
+        corporate: "Corporate",
+        pricing: "Pricing",
+      },
+      tabs: {
+        allInOnePos: "Cloud POS Core",
+        bossApp: "Management Panel",
+        staffManagement: "Staff Management",
+        qrOrdering: "QR & Ordering",
+        kioskSolutions: "Self-Service",
+      },
+      stats: {
+        venuesLabel: "Operations",
+        venuesValue: "Multi",
+        uptimeLabel: "Infrastructure",
+        uptimeValue: "Cloud",
+        supportLabel: "Support",
+        supportValue: "24/7",
+      },
+    };
+  }
+
+  return {
+    menuLabel: "Menu",
+    solutionsLabel: "Urun Cozumleri",
+    requestDemoLabel: "Demo Talep Et",
+    nav: {
+      posSystems: "POS Sistemleri",
+      orderSolutions: "Siparis Cozumleri",
+      businessSolutions: "Isletme Cozumleri",
+      corporate: "Kurumsal",
+      pricing: "Fiyatlama",
+    },
+    tabs: {
+      allInOnePos: "Cloud POS Core",
+      bossApp: "Yonetim Paneli",
+      staffManagement: "Personel Yonetimi",
+      qrOrdering: "QR ve Siparis",
+      kioskSolutions: "Self-Servis",
+    },
+    stats: {
+      venuesLabel: "Operasyon",
+      venuesValue: "Coklu",
+      uptimeLabel: "Altyapi",
+      uptimeValue: "Bulut",
+      supportLabel: "Destek",
+      supportValue: "24/7",
+    },
+  };
+}
+
+function getHeaderMegaMenus(locale: AppLocale): Partial<Record<HeaderNavKey, HeaderMegaMenu>> {
+  if (locale === "fr") {
+    return {
+      pos: {
+        title: "Solutions POS",
+        ctaLabel: "Voir l'Offre Equipement",
+        cards: [
+          { badge: "CF", title: "Cafe", body: "Flux de caisse et operation de salle." },
+          { badge: "RS", title: "Restaurant", body: "Gestion de table, cuisine et service." },
+          { badge: "DL", title: "Livraison", body: "Flux en salle et livraison sur le meme ecran." },
+          { badge: "IN", title: "Integrations", body: "Connexions vers paiements et canaux externes." },
+          { badge: "QR", title: "QR Menu", body: "Consultation menu et demande de service par QR." },
+        ],
+      },
+      orders: {
+        title: "Solutions de Commande",
+        ctaLabel: "Voir les Flux de Commande",
+        cards: [
+          { badge: "MB", title: "Mobile POS", body: "Operation depuis tablette et mobile." },
+          { badge: "QR", title: "QR Menu", body: "Consultation menu et suivi de commande." },
+          { badge: "WB", title: "Web", body: "Gestion operationnelle depuis navigateur." },
+          { badge: "KS", title: "Kiosque", body: "Libre-service avec suggestion panier." },
+        ],
+      },
+      business: {
+        title: "Solutions Business",
+        ctaLabel: "Decouvrir les Modules",
+        cards: [
+          { badge: "HR", title: "Staff", body: "Roles, shifts, objectifs et suivi d'equipe." },
+          { badge: "ST", title: "Stock", body: "Recettes, couts et mouvements de stock." },
+          { badge: "RP", title: "Reports", body: "Rapports horaires, journaliers et multi-site." },
+          { badge: "BR", title: "Branches", body: "Gestion centralisee des succursales." },
+        ],
+      },
+    };
+  }
+
+  if (locale === "en") {
+    return {
+      pos: {
+        title: "POS Systems",
+        ctaLabel: "See Device Campaign",
+        cards: [
+          { badge: "CF", title: "Cafe", body: "Fast checkout flow and table operations." },
+          { badge: "RS", title: "Restaurant", body: "Table, kitchen, and service orchestration." },
+          { badge: "DL", title: "Delivery", body: "In-store and delivery flow on one screen." },
+          { badge: "IN", title: "Integrations", body: "Connections to payments and external channels." },
+          { badge: "QR", title: "QR Menu", body: "Menu browse and service request via QR." },
+        ],
+      },
+      orders: {
+        title: "Order Solutions",
+        ctaLabel: "Explore Order Flows",
+        cards: [
+          { badge: "MB", title: "Mobile POS", body: "Operate from tablet and phone." },
+          { badge: "QR", title: "QR Menu", body: "Menu viewing and order status tracking." },
+          { badge: "WB", title: "Web Panel", body: "Operational control from browser." },
+          { badge: "KS", title: "Kiosk", body: "Self-order flow with basket upsell." },
+        ],
+      },
+      business: {
+        title: "Business Solutions",
+        ctaLabel: "Discover Modules",
+        cards: [
+          { badge: "HR", title: "Staff", body: "Roles, shifts, goals, and team tracking." },
+          { badge: "ST", title: "Stock", body: "Recipe-based costs and stock movements." },
+          { badge: "RP", title: "Reports", body: "Hourly, daily, and multi-branch reporting." },
+          { badge: "BR", title: "Branch", body: "Centralized multi-branch management." },
+        ],
+      },
+    };
+  }
+
+  return {
+    pos: {
+      title: "POS Sistemleri",
+      ctaLabel: "Cozum Paketlerini Incele",
+      cards: [
+        { badge: "CF", title: "Kafe", body: "Hizli checkout ve masa operasyonu." },
+        { badge: "RS", title: "Restoran", body: "Masa, mutfak ve servis orkestrasyonu." },
+        { badge: "DL", title: "Paket-Siparis", body: "Salon ve teslimat akisi tek ekranda." },
+        { badge: "IN", title: "Entegrasyonlar", body: "Odeme ve dis kanal baglantilari." },
+        { badge: "QR", title: "QR Menu", body: "QR ile menu goruntuleme ve servis talebi." },
+      ],
+    },
+    orders: {
+      title: "Siparis Cozumleri",
+      ctaLabel: "Siparis Akislarini Kesfet",
+      cards: [
+        { badge: "MB", title: "Mobil POS", body: "Tablet ve telefonla operasyon." },
+        { badge: "QR", title: "QR Menu", body: "Menu goruntuleme ve siparis durumu." },
+        { badge: "WB", title: "Web Panel", body: "Tarayicidan operasyon yonetimi." },
+        { badge: "KS", title: "Kiosk Siparis", body: "Self-servis siparis akisi." },
+      ],
+    },
+    business: {
+      title: "Isletme Cozumleri",
+      ctaLabel: "Tum Modulleri Incele",
+      cards: [
+        { badge: "HR", title: "Personel", body: "Rol, vardiya, hedef ve ekip takibi." },
+        { badge: "ST", title: "Stok", body: "Recete bazli maliyet ve stok yonetimi." },
+        { badge: "RP", title: "Raporlar", body: "Saatlik, gunluk, sube bazli raporlama." },
+        { badge: "BR", title: "Sube", body: "Merkezden coklu sube yonetimi." },
+      ],
+    },
+  };
+}
+
+function getSectionHref(sections: LandingSection[], sectionType: LandingSection["type"]) {
+  const section = sections.find((item) => item.type === sectionType);
+  return section ? `#${section.id}` : "/";
+}
+
+function renderHeaderNavLink(
+  item: { href: string; label: string },
+  previewMode: boolean | undefined,
+  className: string,
+  onNavigate?: () => void,
+) {
+  if (previewMode) {
+    return (
+      <span key={item.label} className={className}>
+        {item.label}
+      </span>
+    );
+  }
+
+  if (item.href.startsWith("#")) {
+    return (
+      <a key={item.label} href={item.href} className={className} onClick={onNavigate}>
+        {item.label}
+      </a>
+    );
+  }
+
+  return (
+    <Link key={item.label} href={item.href} className={className} onClick={onNavigate}>
+      {item.label}
+    </Link>
+  );
+}
+
 function wrapEditableSection(
   section: LandingSection,
   content: React.ReactNode,
   editor?: LandingRendererEditorOptions,
 ) {
   const isActive = editor?.activeSectionId === section.id;
-  const containerClass =
-    section.style.containerWidth === "narrow"
+  const containerClass = editor?.previewMode
+    ? section.style.containerWidth === "narrow"
+      ? "mx-auto max-w-5xl"
+      : section.style.containerWidth === "wide"
+        ? "mx-auto max-w-[1760px]"
+        : "mx-auto max-w-[1600px]"
+    : section.style.containerWidth === "narrow"
       ? "mx-auto max-w-4xl"
       : section.style.containerWidth === "wide"
         ? "mx-auto max-w-[1400px]"
@@ -43,12 +331,17 @@ function wrapEditableSection(
   );
 
   if (!editor?.onSelectSection) {
-    return <div key={section.id}>{inner}</div>;
+    return (
+      <div key={section.id} id={section.id} className="scroll-mt-32">
+        {inner}
+      </div>
+    );
   }
 
   return (
     <div
       key={section.id}
+      id={section.id}
       role="button"
       tabIndex={0}
       onClick={() => editor.onSelectSection?.(section.id)}
@@ -58,7 +351,7 @@ function wrapEditableSection(
           editor.onSelectSection?.(section.id);
         }
       }}
-      className={`group relative rounded-[2.25rem] transition ${
+      className={`group relative scroll-mt-32 rounded-[2.25rem] transition ${
         isActive
           ? "ring-4 ring-sky-500/45 ring-offset-4 ring-offset-transparent"
           : "hover:ring-2 hover:ring-sky-400/35 hover:ring-offset-2 hover:ring-offset-transparent"
@@ -116,15 +409,24 @@ function getSectionShadowClass(style: LandingSectionStyle) {
   return "";
 }
 
-function renderHeaderActions(content: LandingContent, previewMode?: boolean) {
+function renderHeaderActions(
+  content: LandingContent,
+  requestDemoLabel: string,
+  requestHref: string,
+  previewMode?: boolean,
+  onNavigate?: () => void,
+) {
   if (previewMode) {
     return (
       <>
-        <span className="rounded-2xl border border-slate-300 bg-white/70 px-3 py-2 text-xs font-semibold text-slate-700 sm:px-4 sm:text-sm">
+        <span className="px-3 py-2 text-xs font-semibold text-slate-700 sm:px-2 sm:text-sm">
           {content.topLoginLabel}
         </span>
-        <span className="rounded-2xl bg-slate-950 px-3 py-2 text-xs font-semibold text-white sm:px-4 sm:text-sm">
+        <span className="px-3 py-2 text-xs font-semibold text-slate-700 sm:px-2 sm:text-sm">
           {content.topDemoLabel}
+        </span>
+        <span className="rounded-full bg-[linear-gradient(130deg,#4f46e5_0%,#7c3aed_100%)] px-4 py-2 text-xs font-semibold text-white shadow-[0_12px_28px_rgba(79,70,229,0.3)] sm:px-5 sm:text-sm">
+          {requestDemoLabel}
         </span>
       </>
     );
@@ -132,12 +434,29 @@ function renderHeaderActions(content: LandingContent, previewMode?: boolean) {
 
   return (
     <>
-      <Link href="/login" className="w-full rounded-2xl border border-slate-300 bg-white/70 px-3 py-2 text-center text-xs font-semibold text-slate-700 sm:w-auto sm:px-4 sm:text-sm">
+      <Link href="/login" onClick={onNavigate} className="w-full px-3 py-2 text-center text-xs font-semibold text-slate-700 transition hover:text-slate-900 sm:w-auto sm:px-2 sm:text-sm">
         {content.topLoginLabel}
       </Link>
-      <Link href="/demo" className="w-full rounded-2xl bg-slate-950 px-3 py-2 text-center text-xs font-semibold text-white sm:w-auto sm:px-4 sm:text-sm">
+      <Link href="/demo" onClick={onNavigate} className="w-full px-3 py-2 text-center text-xs font-semibold text-slate-700 transition hover:text-slate-900 sm:w-auto sm:px-2 sm:text-sm">
         {content.topDemoLabel}
       </Link>
+      {requestHref.startsWith("#") ? (
+        <a
+          href={requestHref}
+          onClick={onNavigate}
+          className="w-full rounded-full bg-[linear-gradient(130deg,#4f46e5_0%,#7c3aed_100%)] px-4 py-2 text-center text-xs font-semibold text-white shadow-[0_12px_28px_rgba(79,70,229,0.3)] sm:w-auto sm:px-5 sm:text-sm"
+        >
+          {requestDemoLabel}
+        </a>
+      ) : (
+        <Link
+          href={requestHref}
+          onClick={onNavigate}
+          className="w-full rounded-full bg-[linear-gradient(130deg,#4f46e5_0%,#7c3aed_100%)] px-4 py-2 text-center text-xs font-semibold text-white shadow-[0_12px_28px_rgba(79,70,229,0.3)] sm:w-auto sm:px-5 sm:text-sm"
+        >
+          {requestDemoLabel}
+        </Link>
+      )}
     </>
   );
 }
@@ -200,13 +519,37 @@ function localizeLandingSection(section: LandingSection, locale: AppLocale): Lan
 }
 
 function renderHeroActions(section: Extract<LandingSection, { type: "hero" }>, previewMode?: boolean) {
+  const primaryHref = section.primaryCtaHref.trim() || "/login";
+  const secondaryHref = section.secondaryCtaHref.trim() || "/demo";
+
+  function renderActionLink(label: string, href: string, className: string) {
+    const isExternal = /^https?:\/\//i.test(href) || href.startsWith("mailto:") || href.startsWith("tel:");
+    if (href.startsWith("#") || isExternal) {
+      return (
+        <a
+          href={href}
+          target={isExternal ? "_blank" : undefined}
+          rel={isExternal ? "noreferrer" : undefined}
+          className={className}
+        >
+          {label}
+        </a>
+      );
+    }
+    return (
+      <Link href={href} className={className}>
+        {label}
+      </Link>
+    );
+  }
+
   if (previewMode) {
     return (
       <>
-        <span className="rounded-2xl bg-white px-5 py-3 text-sm font-semibold text-slate-950">
+        <span className="rounded-2xl bg-[linear-gradient(130deg,#4f46e5_0%,#7c3aed_100%)] px-5 py-3 text-sm font-semibold text-white">
           {section.primaryCtaLabel}
         </span>
-        <span className="rounded-2xl border border-white/20 px-5 py-3 text-sm font-semibold text-white">
+        <span className="rounded-2xl border border-slate-300 bg-white px-5 py-3 text-sm font-semibold text-slate-700">
           {section.secondaryCtaLabel}
         </span>
       </>
@@ -215,12 +558,16 @@ function renderHeroActions(section: Extract<LandingSection, { type: "hero" }>, p
 
   return (
     <>
-      <Link href="/login" className="w-full rounded-2xl bg-white px-5 py-3 text-center text-sm font-semibold text-slate-950 sm:w-auto">
-        {section.primaryCtaLabel}
-      </Link>
-      <Link href="/demo" className="w-full rounded-2xl border border-white/20 px-5 py-3 text-center text-sm font-semibold text-white sm:w-auto">
-        {section.secondaryCtaLabel}
-      </Link>
+      {renderActionLink(
+        section.primaryCtaLabel,
+        primaryHref,
+        "w-full rounded-2xl bg-[linear-gradient(130deg,#4f46e5_0%,#7c3aed_100%)] px-5 py-3 text-center text-sm font-semibold text-white shadow-[0_12px_28px_rgba(79,70,229,0.34)] sm:w-auto",
+      )}
+      {renderActionLink(
+        section.secondaryCtaLabel,
+        secondaryHref,
+        "w-full rounded-2xl border border-slate-300 bg-white px-5 py-3 text-center text-sm font-semibold text-slate-700 transition hover:border-slate-400 sm:w-auto",
+      )}
     </>
   );
 }
@@ -233,38 +580,130 @@ function renderSection(
   businessPhone?: string,
   locale: AppLocale = "tr",
   editor?: LandingRendererEditorOptions,
+  heroShowcase?: {
+    tabs: HeroShowcaseTab[];
+    activeIndex: number;
+    setActiveIndex: (index: number) => void;
+  },
 ) {
   const copy = getPublicCopy(locale);
+  const heroStats = getLandingHeaderCopy(locale).stats;
   if (section.type === "hero") {
+    const activeTab = heroShowcase?.tabs[heroShowcase.activeIndex] ?? null;
+    const wantsHeroImage = section.heroVisualMode === "image";
+    const hasHeroImage = wantsHeroImage && section.heroImageUrl.trim().length > 0;
     return wrapEditableSection(
       section,
-      <section className="grid flex-1 items-center gap-5 py-4 sm:py-6 lg:grid-cols-[1.05fr_0.95fr] lg:gap-8 lg:py-10">
-        <div className="rounded-[1.5rem] border border-[#1d1f2a] bg-[linear-gradient(160deg,#07111f_0%,#121f2f_44%,#231713_100%)] px-5 py-6 text-white shadow-[0_35px_90px_rgba(15,23,42,0.24)] sm:rounded-[2rem] sm:px-8 sm:py-10">
-          <p className="inline-flex rounded-full border border-white/15 bg-white/10 px-3 py-1 text-[11px] font-semibold uppercase tracking-[0.28em] text-slate-200">
-            {section.badge}
-          </p>
-          <h2 className="mt-5 max-w-2xl text-3xl font-semibold leading-tight tracking-tight sm:mt-6 sm:text-4xl lg:text-5xl">{section.title}</h2>
-          <p className="mt-4 max-w-2xl text-sm leading-7 text-slate-300 sm:mt-5 sm:text-base sm:leading-8">{section.body}</p>
-          <div className="mt-6 flex flex-wrap gap-3 sm:mt-8">{renderHeroActions(section, editor?.previewMode)}</div>
-        </div>
-        <div className="grid gap-4">
-          <div className="rounded-[1.5rem] border border-white/70 bg-white/82 p-5 shadow-[0_28px_80px_rgba(15,23,42,0.12)] backdrop-blur sm:p-6">
-            <p className="text-2xl font-semibold tracking-tight text-slate-950">{copy.landing.heroAsideTitle}</p>
-            <p className="mt-3 text-sm leading-7 text-slate-600">
-              {copy.landing.heroAsideBody}
+      <section className="py-6 sm:py-8 lg:py-10">
+        <div className="grid items-center gap-7 lg:grid-cols-[1.04fr_0.96fr] lg:gap-10">
+          <div className="px-1 sm:px-2">
+            <p className="inline-flex rounded-full border border-indigo-200 bg-indigo-50 px-3 py-1 text-[11px] font-semibold uppercase tracking-[0.28em] text-indigo-700">
+              {section.badge}
             </p>
-            <div className="mt-5 space-y-3">
-              <div className="rounded-2xl border border-slate-200 bg-[linear-gradient(135deg,#fff8ee_0%,#f8fbfd_100%)] px-4 py-4">
-                <p className="text-sm font-semibold text-slate-950">{copy.landing.heroAsidePointA}</p>
-                <p className="mt-2 text-sm leading-6 text-slate-600">{copy.landing.heroAsidePointABody}</p>
+            <h2 className="mt-5 max-w-2xl text-3xl font-semibold leading-tight tracking-tight text-slate-900 sm:mt-6 sm:text-5xl lg:text-[3.85rem]">
+              {section.title}
+            </h2>
+            <p className="mt-4 max-w-2xl text-base leading-8 text-slate-600">{section.body}</p>
+            <div className="mt-7 flex flex-wrap gap-3">{renderHeroActions(section, editor?.previewMode)}</div>
+
+            <div className="mt-8 grid max-w-xl grid-cols-3 gap-3 border-t border-slate-200 pt-5">
+              <div className="rounded-xl bg-white px-3 py-2">
+                <p className="text-xl font-bold text-slate-900">{heroStats.venuesValue}</p>
+                <p className="text-[11px] font-semibold uppercase tracking-[0.2em] text-slate-500">{heroStats.venuesLabel}</p>
               </div>
-              <div className="rounded-2xl border border-slate-200 bg-[linear-gradient(135deg,#fff8ee_0%,#f8fbfd_100%)] px-4 py-4">
-                <p className="text-sm font-semibold text-slate-950">{copy.landing.heroAsidePointB}</p>
-                <p className="mt-2 text-sm leading-6 text-slate-600">{copy.landing.heroAsidePointBBody}</p>
+              <div className="rounded-xl bg-white px-3 py-2">
+                <p className="text-xl font-bold text-slate-900">{heroStats.uptimeValue}</p>
+                <p className="text-[11px] font-semibold uppercase tracking-[0.2em] text-slate-500">{heroStats.uptimeLabel}</p>
+              </div>
+              <div className="rounded-xl bg-white px-3 py-2">
+                <p className="text-xl font-bold text-slate-900">{heroStats.supportValue}</p>
+                <p className="text-[11px] font-semibold uppercase tracking-[0.2em] text-slate-500">{heroStats.supportLabel}</p>
               </div>
             </div>
           </div>
+
+          <div className="rounded-[2rem] border border-slate-200 bg-[#f8fafc] p-5 shadow-[0_22px_50px_rgba(15,23,42,0.08)] sm:p-6">
+            <div className="relative h-[320px] rounded-[1.4rem] border border-slate-200 bg-white p-4 sm:h-[360px]">
+              {hasHeroImage ? (
+                <div className="relative h-full w-full overflow-hidden rounded-[1.1rem] border border-slate-200 bg-slate-50">
+                  <img
+                    src={section.heroImageUrl}
+                    alt={section.heroImageAlt || section.title}
+                    className={`h-full w-full ${section.heroImageFit === "cover" ? "object-cover" : "object-contain"}`}
+                  />
+                  <div className="pointer-events-none absolute left-3 top-3 rounded-full border border-white/60 bg-white/75 px-3 py-1 backdrop-blur">
+                    <p className="text-[10px] font-semibold uppercase tracking-[0.16em] text-slate-700">{activeTab?.label ?? copy.landing.heroAsideTitle}</p>
+                  </div>
+                </div>
+              ) : wantsHeroImage ? (
+                <div className="flex h-full items-center justify-center rounded-[1.1rem] border border-dashed border-slate-300 bg-slate-50/80 p-6 text-center">
+                  <div>
+                    <p className="text-sm font-semibold text-slate-700">Hero gorseli bekleniyor</p>
+                    <p className="mt-2 text-xs leading-6 text-slate-500">Studio icinde "Gorsel URL" alanini doldurdugunuzda burada gosterilir.</p>
+                  </div>
+                </div>
+              ) : (
+                <>
+                  <div className="absolute left-[12%] top-[10%] h-[56%] w-[70%] rounded-2xl border border-slate-300 bg-slate-50 shadow-[0_18px_30px_rgba(15,23,42,0.12)]">
+                    <div className="border-b border-slate-200 px-3 py-2">
+                      <p className="text-[11px] font-semibold uppercase tracking-[0.16em] text-slate-500">{activeTab?.label ?? copy.landing.heroAsideTitle}</p>
+                    </div>
+                    <div className="grid grid-cols-4 gap-2 p-3">
+                      {Array.from({ length: 12 }).map((_, index) => (
+                        <div key={`desktop-cell-${index}`} className="h-7 rounded-md bg-slate-200/75" />
+                      ))}
+                    </div>
+                  </div>
+
+                  <div className="absolute left-[6%] top-[38%] h-[42%] w-[38%] rounded-xl border border-slate-300 bg-white shadow-[0_16px_25px_rgba(15,23,42,0.16)]">
+                    <div className="border-b border-slate-200 px-2 py-1.5">
+                      <p className="text-[10px] font-semibold uppercase tracking-[0.14em] text-slate-500">Tablet</p>
+                    </div>
+                    <div className="grid grid-cols-2 gap-1.5 p-2">
+                      {Array.from({ length: 6 }).map((_, index) => (
+                        <div key={`tablet-cell-${index}`} className="h-5 rounded bg-slate-200/80" />
+                      ))}
+                    </div>
+                  </div>
+
+                  <div className="absolute bottom-[12%] right-[8%] h-[44%] w-[18%] rounded-xl border border-slate-300 bg-white shadow-[0_16px_25px_rgba(15,23,42,0.16)]">
+                    <div className="border-b border-slate-200 px-2 py-1.5">
+                      <p className="text-[10px] font-semibold uppercase tracking-[0.14em] text-slate-500">Mobile</p>
+                    </div>
+                    <div className="space-y-1.5 p-2">
+                      {Array.from({ length: 7 }).map((_, index) => (
+                        <div key={`mobile-cell-${index}`} className="h-3 rounded bg-slate-200/80" />
+                      ))}
+                    </div>
+                  </div>
+                </>
+              )}
+            </div>
+          </div>
         </div>
+
+        {heroShowcase && heroShowcase.tabs.length > 0 ? (
+          <div className="mt-7 grid grid-cols-2 gap-3 border-t border-slate-200 pt-6 sm:grid-cols-3 lg:grid-cols-5">
+            {heroShowcase.tabs.map((tab, index) => {
+              const active = index === heroShowcase.activeIndex;
+              return (
+                <button
+                  key={tab.label}
+                  type="button"
+                  onClick={() => heroShowcase.setActiveIndex(index)}
+                  className={`rounded-2xl border px-4 py-3 text-left transition ${
+                    active
+                      ? "border-indigo-500 bg-white shadow-[0_12px_30px_rgba(79,70,229,0.16)]"
+                      : "border-slate-200 bg-white hover:border-slate-300"
+                  }`}
+                >
+                  <p className={`text-sm font-semibold ${active ? "text-indigo-700" : "text-slate-800"}`}>{tab.label}</p>
+                  <p className="mt-1 text-xs font-medium uppercase tracking-[0.16em] text-slate-500">{tab.caption}</p>
+                </button>
+              );
+            })}
+          </div>
+        ) : null}
       </section>,
       editor,
     );
@@ -277,7 +716,7 @@ function renderSection(
         {section.items.map((item, index) => (
           <article
             key={`${section.id}-${index}`}
-            className="rounded-[1.25rem] border border-white/70 bg-[linear-gradient(180deg,rgba(255,255,255,0.92)_0%,rgba(248,250,252,0.82)_100%)] p-4 shadow-[0_20px_60px_rgba(15,23,42,0.10)] backdrop-blur sm:rounded-[1.75rem] sm:p-6"
+            className="rounded-[1.25rem] border border-slate-200 bg-white p-4 shadow-[0_14px_35px_rgba(15,23,42,0.06)] sm:rounded-[1.75rem] sm:p-6"
           >
             <div className="flex items-center justify-between gap-3">
               <p className="text-xs uppercase tracking-[0.28em] text-slate-500">{section.eyebrow}</p>
@@ -297,11 +736,11 @@ function renderSection(
   if (section.type === "process_steps") {
     return wrapEditableSection(
       section,
-      <section className="rounded-[1.25rem] border border-slate-200 bg-white/88 p-4 shadow-[0_20px_60px_rgba(15,23,42,0.10)] sm:rounded-[1.75rem] sm:p-6">
+      <section className="rounded-[1.25rem] border border-slate-200 bg-white p-4 shadow-[0_14px_35px_rgba(15,23,42,0.06)] sm:rounded-[1.75rem] sm:p-6">
         <p className="text-xs uppercase tracking-[0.28em] text-slate-500">{section.eyebrow}</p>
         <div className="mt-4 grid gap-3 sm:grid-cols-3">
           {section.items.map((item, index) => (
-            <div key={`${section.id}-${index}`} className="rounded-2xl border border-slate-200 bg-[linear-gradient(135deg,#fff9f1_0%,#f8fbfd_100%)] p-4">
+            <div key={`${section.id}-${index}`} className="rounded-2xl border border-slate-200 bg-white p-4">
               <div className="flex items-center gap-3">
                 <span className="inline-flex h-9 w-9 items-center justify-center rounded-full bg-[linear-gradient(135deg,#ff6a3d_0%,#f2b44f_100%)] text-xs font-black text-white">
                   {index + 1}
@@ -326,8 +765,8 @@ function renderSection(
             key={`${section.id}-${index}`}
             className={`rounded-[1.25rem] border p-4 backdrop-blur sm:rounded-[1.75rem] sm:p-6 ${
               index === 1
-                ? "border-slate-950 bg-slate-950 text-white shadow-[0_30px_80px_rgba(15,23,42,0.22)]"
-                : "border-white/70 bg-white/82 shadow-[0_20px_60px_rgba(15,23,42,0.10)]"
+                ? "border-indigo-600 bg-[linear-gradient(130deg,#4338ca_0%,#7c3aed_100%)] text-white shadow-[0_20px_50px_rgba(79,70,229,0.30)]"
+                : "border-slate-200 bg-white shadow-[0_14px_35px_rgba(15,23,42,0.06)]"
             }`}
           >
             <div className="flex items-center justify-between gap-3">
@@ -346,7 +785,7 @@ function renderSection(
   if (section.type === "credibility") {
     return wrapEditableSection(
       section,
-      <section className="rounded-[1.5rem] border border-white/70 bg-white/78 p-4 shadow-[0_20px_60px_rgba(15,23,42,0.08)] backdrop-blur sm:rounded-[2rem] sm:p-6">
+      <section className="rounded-[1.5rem] border border-slate-200 bg-white p-4 shadow-[0_14px_35px_rgba(15,23,42,0.06)] sm:rounded-[2rem] sm:p-6">
         <p className="text-xs uppercase tracking-[0.28em] text-slate-500">{section.eyebrow}</p>
         <div className="mt-5 grid gap-4 lg:grid-cols-[0.95fr_1.05fr]">
           <div className="rounded-[1.5rem] bg-[linear-gradient(155deg,#0f172a_0%,#1f2937_100%)] px-5 py-6 text-white shadow-[0_20px_50px_rgba(15,23,42,0.18)]">
@@ -355,7 +794,7 @@ function renderSection(
           </div>
           <div className="grid gap-3 sm:grid-cols-2">
             {section.references.map((item, index) => (
-              <div key={`${section.id}-${index}`} className="rounded-2xl border border-slate-200 bg-[linear-gradient(135deg,#fff7ed_0%,#f8fafc_100%)] px-4 py-4 text-sm font-semibold text-slate-700">
+              <div key={`${section.id}-${index}`} className="rounded-2xl border border-slate-200 bg-white px-4 py-4 text-sm font-semibold text-slate-700">
                 {item}
               </div>
             ))}
@@ -373,7 +812,7 @@ function renderSection(
         {section.items.map((item, index) => (
           <article
             key={`${section.id}-${index}`}
-            className="rounded-[1.25rem] border border-slate-200 bg-white/85 p-4 shadow-[0_20px_60px_rgba(15,23,42,0.08)] sm:rounded-[1.75rem] sm:p-6"
+            className="rounded-[1.25rem] border border-slate-200 bg-white p-4 shadow-[0_14px_35px_rgba(15,23,42,0.06)] sm:rounded-[1.75rem] sm:p-6"
           >
             <p className="text-sm font-semibold text-slate-900">{item.title}</p>
             <p className="mt-3 text-sm leading-7 text-slate-600">{item.body}</p>
@@ -414,6 +853,10 @@ export function LandingPageRenderer({
   locale?: AppLocale;
 }) {
   const copy = getPublicCopy(locale);
+  const isPreviewMode = Boolean(editor?.previewMode);
+  const [activeNavKey, setActiveNavKey] = useState<HeaderNavKey | null>(null);
+  const [activeHeroTab, setActiveHeroTab] = useState(0);
+  const [isMobileMenuOpen, setIsMobileMenuOpen] = useState(false);
   const safeContent: LandingContent = {
     ...defaultLandingContent,
     ...(content ?? defaultLandingContent),
@@ -429,33 +872,177 @@ export function LandingPageRenderer({
   const footerNote = locale === "tr" ? settings?.footerNote || "Cloud POS" : copy.landing.footerFallback;
   const contactPhone = settings?.contactPhone || "";
   const supportEmail = settings?.supportEmail || "";
+  const headerCopy = getLandingHeaderCopy(locale);
+  const featureHref = getSectionHref(safeContent.sections, "feature_grid");
+  const processHref = getSectionHref(safeContent.sections, "process_steps");
+  const credibilityHref = getSectionHref(safeContent.sections, "credibility");
+  const pricingHref = getSectionHref(safeContent.sections, "pricing_grid");
+  const contactHref = getSectionHref(safeContent.sections, "contact_cta");
+  const faqHref = getSectionHref(safeContent.sections, "faq_grid");
+  const headerNavItems: Array<{ key: HeaderNavKey; href: string; label: string; hasMega: boolean }> = [
+    { key: "pos", href: featureHref, label: headerCopy.nav.posSystems, hasMega: true },
+    { key: "orders", href: processHref, label: headerCopy.nav.orderSolutions, hasMega: true },
+    { key: "business", href: credibilityHref, label: headerCopy.nav.businessSolutions, hasMega: true },
+    { key: "corporate", href: "/blog", label: headerCopy.nav.corporate, hasMega: false },
+    { key: "pricing", href: pricingHref, label: headerCopy.nav.pricing, hasMega: false },
+  ];
+  const heroShowcaseTabs: HeroShowcaseTab[] = [
+    { href: featureHref, label: headerCopy.tabs.allInOnePos, caption: locale === "tr" ? "CLOUD POS CORE" : "CLOUD POS CORE" },
+    { href: credibilityHref, label: headerCopy.tabs.bossApp, caption: locale === "tr" ? "YONETIM PANELI" : "MANAGEMENT PANEL" },
+    { href: processHref, label: headerCopy.tabs.staffManagement, caption: locale === "tr" ? "PERSONEL YONETIMI" : "STAFF MANAGEMENT" },
+    { href: featureHref, label: headerCopy.tabs.qrOrdering, caption: locale === "tr" ? "QR VE SIPARIS" : "QR & ORDERING" },
+    { href: pricingHref, label: headerCopy.tabs.kioskSolutions, caption: locale === "tr" ? "KIOSK COZUMLERI" : "KIOSK SOLUTIONS" },
+  ];
+  const megaMenus = useMemo(() => getHeaderMegaMenus(locale), [locale]);
+  const activeMegaMenu = activeNavKey ? megaMenus[activeNavKey] : undefined;
+  const supportHref = faqHref === "/" ? contactHref : faqHref;
+  const safeHeroTabIndex = heroShowcaseTabs.length > 0 ? Math.min(activeHeroTab, heroShowcaseTabs.length - 1) : 0;
+  const mainClass = isPreviewMode
+    ? "mx-auto flex w-full max-w-none flex-col px-2 py-3 sm:px-3 sm:py-4 md:px-4 lg:px-6"
+    : "mx-auto min-h-screen flex w-full max-w-7xl flex-col px-3 py-4 sm:px-4 sm:py-6 md:px-8 lg:px-10";
 
   return (
-    <div className="relative min-h-screen overflow-hidden bg-[linear-gradient(135deg,#f4efe3_0%,#dbe8f0_46%,#fbfbf8_100%)] text-slate-900">
-      <div className="absolute left-[-7rem] top-[-6rem] h-72 w-72 rounded-full bg-amber-300/30 blur-3xl" />
-      <div className="absolute bottom-[-7rem] right-[-5rem] h-80 w-80 rounded-full bg-cyan-300/25 blur-3xl" />
-      <div className="absolute inset-x-0 top-0 h-[420px] bg-[radial-gradient(circle_at_top,rgba(255,255,255,0.7),transparent_58%)]" />
+    <div className={`${isPreviewMode ? "" : "min-h-screen "}bg-[#f5f6f8] text-slate-900`}>
+      <main className={mainClass}>
+        <header className={`${isPreviewMode ? "relative" : "sticky top-2 z-30"} mb-4`}>
+          <div
+            className="relative overflow-visible rounded-[1.55rem] border border-white/85 bg-white/94 shadow-[0_20px_55px_rgba(15,23,42,0.12)] backdrop-blur-xl"
+            onMouseLeave={() => setActiveNavKey(null)}
+          >
+            <div className="flex items-center gap-4 px-4 py-3 sm:px-5">
+              <Link href="/" className="flex min-w-0 items-center gap-3">
+                {logoUrl ? (
+                  <img src={logoUrl} alt={siteName} className="h-10 w-10 rounded-xl border border-slate-200 bg-white object-contain p-1" />
+                ) : (
+                  <span className="inline-flex h-10 w-10 items-center justify-center rounded-xl bg-slate-950 text-sm font-black uppercase tracking-[0.12em] text-white">
+                    {siteName.slice(0, 2)}
+                  </span>
+                )}
+                <div className="min-w-0">
+                  <p className="truncate text-[11px] font-semibold uppercase tracking-[0.24em] text-slate-500">{siteName}</p>
+                  <p className="truncate text-sm font-semibold text-slate-900">{siteTagline}</p>
+                </div>
+              </Link>
 
-      <main className="relative mx-auto flex min-h-screen w-full max-w-7xl flex-col px-3 py-4 sm:px-4 sm:py-6 md:px-8 lg:px-10">
-        <header className="sticky top-0 z-20 -mx-3 mb-3 border-b border-white/50 bg-white/55 px-3 py-3 backdrop-blur sm:-mx-4 sm:px-4 md:mx-0 md:flex md:items-center md:justify-between md:rounded-[2rem] md:border md:px-6">
-          <div className="min-w-0">
-            {logoUrl ? (
-              <img src={logoUrl} alt={siteName} className="mb-3 h-10 max-w-full rounded-lg object-contain" />
-            ) : null}
-            <div className="flex flex-wrap items-center gap-2">
-              <p className="text-xs uppercase tracking-[0.28em] text-slate-500">{siteName}</p>
+              <nav className="ml-2 hidden items-center gap-1 xl:flex">
+                {headerNavItems.map((item) =>
+                  item.hasMega ? (
+                    <button
+                      key={item.key}
+                      type="button"
+                      onMouseEnter={() => setActiveNavKey(item.key)}
+                      className={`rounded-full px-4 py-2 text-[14px] font-semibold transition ${
+                        activeNavKey === item.key
+                          ? "bg-[linear-gradient(130deg,#4f46e5_0%,#7c3aed_100%)] text-white shadow-[0_10px_24px_rgba(79,70,229,0.28)]"
+                          : "text-slate-700 hover:bg-slate-100 hover:text-slate-950"
+                      }`}
+                    >
+                      {item.label}
+                    </button>
+                  ) : (
+                    <span key={item.key} onMouseEnter={() => setActiveNavKey(null)}>
+                      {renderHeaderNavLink(
+                        { href: item.href, label: item.label },
+                        editor?.previewMode,
+                        "rounded-full px-4 py-2 text-[14px] font-semibold text-slate-700 transition hover:bg-slate-100 hover:text-slate-950",
+                      )}
+                    </span>
+                  ),
+                )}
+              </nav>
+
+              <div className="ml-auto hidden items-center gap-2 lg:flex">
+                <LanguageSwitcher locale={locale} label={copy.localeSwitcher.label} compact />
+                {renderHeaderActions(safeContent, headerCopy.requestDemoLabel, contactHref, editor?.previewMode)}
+              </div>
+
+              <div className="ml-auto lg:hidden">
+                <button
+                  type="button"
+                  onClick={() => setIsMobileMenuOpen((prev) => !prev)}
+                  className="rounded-lg border border-slate-200 bg-white px-3 py-2 text-xs font-semibold uppercase tracking-[0.14em] text-slate-700 shadow-sm"
+                  aria-expanded={isMobileMenuOpen}
+                  aria-controls="landing-mobile-menu"
+                >
+                  {headerCopy.menuLabel}
+                </button>
+              </div>
             </div>
-            <h1 className="mt-2 text-xl font-semibold tracking-tight sm:text-2xl">{siteTagline}</h1>
-          </div>
-          <div className="flex w-full flex-col gap-2 sm:w-auto sm:flex-row sm:flex-wrap sm:items-center sm:gap-3">
-            <LanguageSwitcher locale={locale} label={copy.localeSwitcher.label} compact />
-            {renderHeaderActions(safeContent, editor?.previewMode)}
+
+            {isMobileMenuOpen ? (
+              <div
+                id="landing-mobile-menu"
+                className="z-40 max-h-[calc(100vh-7rem)] overflow-y-auto border-t border-slate-200 p-3 lg:hidden"
+              >
+                <nav className="grid gap-2">
+                  {headerNavItems.map((item) =>
+                    renderHeaderNavLink(
+                      { href: item.href, label: item.label },
+                      editor?.previewMode,
+                      "rounded-xl border border-slate-200 px-3 py-2 text-sm font-semibold text-slate-700",
+                      () => setIsMobileMenuOpen(false),
+                    ),
+                  )}
+                </nav>
+                <div className="mt-3 grid gap-2 border-t border-slate-200 pt-3">
+                  <p className="text-[11px] font-semibold uppercase tracking-[0.22em] text-slate-500">{headerCopy.solutionsLabel}</p>
+                  {heroShowcaseTabs.map((item) =>
+                    renderHeaderNavLink(
+                      item,
+                      editor?.previewMode,
+                      "rounded-xl border border-slate-200 bg-slate-50 px-3 py-2 text-sm font-semibold text-slate-700",
+                      () => setIsMobileMenuOpen(false),
+                    ),
+                  )}
+                  {renderHeaderNavLink(
+                    { href: supportHref, label: headerCopy.stats.supportLabel },
+                    editor?.previewMode,
+                    "rounded-xl border border-slate-200 px-3 py-2 text-sm font-semibold text-slate-700",
+                    () => setIsMobileMenuOpen(false),
+                  )}
+                </div>
+                <div className="mt-3 grid gap-2 border-t border-slate-200 pt-3">
+                  {renderHeaderActions(safeContent, headerCopy.requestDemoLabel, contactHref, editor?.previewMode, () => setIsMobileMenuOpen(false))}
+                </div>
+              </div>
+            ) : null}
+
+            {activeMegaMenu && !editor?.previewMode ? (
+              <div className="absolute left-0 right-0 top-[calc(100%+0.55rem)] z-30 hidden rounded-[1.4rem] border border-slate-200 bg-white p-5 shadow-[0_22px_55px_rgba(15,23,42,0.14)] xl:block">
+                <p className="text-[11px] font-semibold uppercase tracking-[0.2em] text-slate-500">{activeMegaMenu.title}</p>
+                <div className={`mt-4 grid gap-3 ${activeMegaMenu.cards.length > 4 ? "grid-cols-5" : "grid-cols-4"}`}>
+                  {activeMegaMenu.cards.map((card) => (
+                    <article key={card.title} className="rounded-2xl border border-slate-200 bg-slate-50/80 px-4 py-4">
+                      <div className="inline-flex h-10 w-10 items-center justify-center rounded-xl bg-indigo-100 text-xs font-bold text-indigo-700">
+                        {card.badge}
+                      </div>
+                      <p className="text-[1.35rem] font-semibold text-slate-900">{card.title}</p>
+                      <p className="mt-2 text-sm leading-6 text-slate-600">{card.body}</p>
+                    </article>
+                  ))}
+                </div>
+                <div className="mt-5 border-t border-slate-200 pt-4">
+                  <button
+                    type="button"
+                    className="rounded-full bg-[linear-gradient(130deg,#4f46e5_0%,#7c3aed_100%)] px-5 py-2.5 text-sm font-semibold text-white shadow-[0_12px_28px_rgba(79,70,229,0.3)]"
+                  >
+                    {activeMegaMenu.ctaLabel}
+                  </button>
+                </div>
+              </div>
+            ) : null}
           </div>
         </header>
 
-        {safeContent.sections.map((section) => renderSection(section, settings, safeContent, leadStatus, safeContent.businessPhone, locale, editor))}
+        {safeContent.sections.map((section) =>
+          renderSection(section, settings, safeContent, leadStatus, safeContent.businessPhone, locale, editor, {
+            tabs: heroShowcaseTabs,
+            activeIndex: safeHeroTabIndex,
+            setActiveIndex: setActiveHeroTab,
+          }),
+        )}
 
-        <footer className="mt-6 rounded-[2rem] border border-white/70 bg-white/70 px-5 py-6 text-sm text-slate-600 shadow-[0_18px_50px_rgba(15,23,42,0.08)] backdrop-blur sm:px-6">
+        <footer className="mt-6 rounded-[2rem] border border-slate-200 bg-white px-5 py-6 text-sm text-slate-600 shadow-[0_14px_35px_rgba(15,23,42,0.06)] sm:px-6">
           <div className="flex flex-col gap-2 md:flex-row md:items-center md:justify-between">
             <p>{footerNote}</p>
             <p className="break-words">

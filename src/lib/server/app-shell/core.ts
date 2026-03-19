@@ -9,37 +9,46 @@ import {
   type GeneralSettings,
 } from "@/lib/app-settings";
 import type { AppShellPayload } from "@/lib/app-shell";
-import { DEFAULT_BUSINESS_SLUG } from "@/lib/business";
+import { DEFAULT_BUSINESS_SLUG, normalizeBusinessSlug } from "@/lib/business";
 import { getSupabaseServerClient } from "@/lib/supabase/server";
 import type { SiteContent, StaffAccessScope } from "@/lib/types";
 import { getAppShellContext } from "@/lib/server/app-context";
 
-const getCachedAppShellSettingsRows = unstable_cache(
-  async () => {
-    const supabase = getSupabaseServerClient();
-    if (!supabase) {
-      return null;
-    }
+function buildScopedGeneralSettingsKey(activeBusinessSlug?: string) {
+  return `general_settings:${normalizeBusinessSlug(activeBusinessSlug)}`;
+}
 
-    const { data, error } = await supabase
-      .from("app_settings")
-      .select("key, content")
-      .in("key", ["general_settings", "application_settings"]);
+async function getCachedAppShellSettingsRows(activeBusinessSlug?: string) {
+  const generalSettingsKey = buildScopedGeneralSettingsKey(activeBusinessSlug);
+  const cachedReader = unstable_cache(
+    async () => {
+      const supabase = getSupabaseServerClient();
+      if (!supabase) {
+        return null;
+      }
 
-    if (error) {
-      return { error: true as const, rows: [] as Array<Pick<SiteContent, "key" | "content">> };
-    }
+      const { data, error } = await supabase
+        .from("app_settings")
+        .select("key, content")
+        .in("key", [generalSettingsKey, "general_settings", "application_settings"]);
 
-    return {
-      error: false as const,
-      rows: (data ?? []) as Array<Pick<SiteContent, "key" | "content">>,
-    };
-  },
-  ["app-shell-settings"],
-  { tags: ["app-settings-general", "app-settings-application"] },
-);
+      if (error) {
+        return { error: true as const, rows: [] as Array<Pick<SiteContent, "key" | "content">> };
+      }
 
-export async function getAppShellUiSettings() {
+      return {
+        error: false as const,
+        rows: (data ?? []) as Array<Pick<SiteContent, "key" | "content">>,
+      };
+    },
+    [`app-shell-settings:${generalSettingsKey}`],
+    { tags: ["app-settings-general", `app-settings-general:${generalSettingsKey}`, "app-settings-application"] },
+  );
+
+  return cachedReader();
+}
+
+export async function getAppShellUiSettings(activeBusinessSlug?: string) {
   const supabase = getSupabaseServerClient();
   if (!supabase) {
     return {
@@ -49,7 +58,8 @@ export async function getAppShellUiSettings() {
     };
   }
 
-  const cached = await getCachedAppShellSettingsRows();
+  const generalSettingsKey = buildScopedGeneralSettingsKey(activeBusinessSlug);
+  const cached = await getCachedAppShellSettingsRows(activeBusinessSlug);
   if (!cached || cached.error) {
     return {
       generalSettings: defaultGeneralSettings,
@@ -58,7 +68,10 @@ export async function getAppShellUiSettings() {
     };
   }
 
-  const generalRow = cached.rows.find((row) => row.key === "general_settings") ?? null;
+  const generalRow =
+    cached.rows.find((row) => row.key === generalSettingsKey) ??
+    cached.rows.find((row) => row.key === "general_settings") ??
+    null;
   const applicationRow = cached.rows.find((row) => row.key === "application_settings") ?? null;
 
   return {
@@ -93,10 +106,8 @@ export function getFallbackAppShellPayload(): AppShellPayload {
 }
 
 export const getAppShellPayload = cache(async (): Promise<AppShellPayload> => {
-  const [shellSnapshot, { generalSettings, applicationSettings }] = await Promise.all([
-    getAppShellContext(),
-    getAppShellUiSettings(),
-  ]);
+  const shellSnapshot = await getAppShellContext();
+  const { generalSettings, applicationSettings } = await getAppShellUiSettings(shellSnapshot.activeBusinessSlug);
 
   const activeBusiness =
     shellSnapshot.businesses.find((item) => item.slug === shellSnapshot.activeBusinessSlug) ??
