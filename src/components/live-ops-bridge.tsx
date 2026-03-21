@@ -16,8 +16,8 @@ const LIVE_REFRESH_MIN_INTERVAL_MS = 1200;
 const OPS_REFRESH_DEBOUNCE_MS = 700;
 const OPS_REFRESH_MIN_INTERVAL_MS = 3500;
 const REALTIME_CONNECTING_TIMEOUT_MS = 8000;
-const REALTIME_DISCONNECT_GRACE_MS = 2500;
-const REALTIME_POST_CONNECT_HOLD_MS = 5000;
+const REALTIME_DISCONNECT_GRACE_MS = 15000;
+const REALTIME_POST_CONNECT_HOLD_MS = 12000;
 
 function getRefreshProfile(pathname: string | null) {
   if (pathname === "/ops") {
@@ -46,6 +46,7 @@ export function LiveOpsBridge({ tables, enableSound = false, fallbackIntervalMs 
   const [connectionState, setConnectionState] = useState<"connecting" | "online" | "offline">("connecting");
   const connectionStateRef = useRef<"connecting" | "online" | "offline">("connecting");
   const channelKey = useMemo(() => [...tables].sort().join("-"), [tables]);
+  const stableTables = useMemo(() => [...tables].sort(), [channelKey]);
   const refreshProfile = useMemo(() => getRefreshProfile(pathname), [pathname]);
   const disconnectGraceMs = Math.max(REALTIME_DISCONNECT_GRACE_MS, Number(fallbackIntervalMs ?? 0) || 0);
   const clearConnectionTimers = useEffectEvent(() => {
@@ -86,13 +87,16 @@ export function LiveOpsBridge({ tables, enableSound = false, fallbackIntervalMs 
         return;
       }
       const elapsedSinceSubscribe = Date.now() - lastSubscribedAtRef.current;
-      const holdMs = Math.max(0, REALTIME_POST_CONNECT_HOLD_MS - elapsedSinceSubscribe);
+      const holdMs = Math.max(
+        disconnectGraceMs,
+        Math.max(0, REALTIME_POST_CONNECT_HOLD_MS - elapsedSinceSubscribe),
+      );
       disconnectTimeoutRef.current = setTimeout(
         () => {
           disconnectTimeoutRef.current = null;
           setStableConnectionState(hasSubscribedOnceRef.current ? "offline" : "connecting");
         },
-        holdMs > 0 ? holdMs : disconnectGraceMs,
+        holdMs,
       );
       return;
     }
@@ -128,7 +132,7 @@ export function LiveOpsBridge({ tables, enableSound = false, fallbackIntervalMs 
           new CustomEvent("live-ops:update", {
             detail: {
               pathname,
-              tables,
+              tables: stableTables,
               at: now,
             },
           }),
@@ -153,7 +157,7 @@ export function LiveOpsBridge({ tables, enableSound = false, fallbackIntervalMs 
         }
       }, REALTIME_CONNECTING_TIMEOUT_MS);
       channel = supabase.channel(`ops-live-${channelKey}`);
-      for (const table of tables) {
+      for (const table of stableTables) {
         channel.on(
           "postgres_changes",
           { event: "*", schema: "public", table },
@@ -204,21 +208,11 @@ export function LiveOpsBridge({ tables, enableSound = false, fallbackIntervalMs 
         supabase.removeChannel(channel);
       }
     };
-  }, [
-    channelKey,
-    clearConnectionTimers,
-    enableSound,
-    handleRealtimeChannelStatus,
-    pathname,
-    queueLiveEvent,
-    refreshProfile,
-    setStableConnectionState,
-    tables,
-  ]);
+  }, [channelKey, enableSound, pathname, refreshProfile.minIntervalMs, stableTables]);
 
   return (
     <span
-      className={`inline-flex rounded-full px-2 py-1 text-xs font-semibold ${
+      className={`inline-flex min-w-[118px] justify-center rounded-full px-2 py-1 text-xs font-semibold ${
         connectionState === "online"
           ? "bg-emerald-100 text-emerald-700"
           : connectionState === "connecting"
