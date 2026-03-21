@@ -15,6 +15,9 @@ const LIVE_REFRESH_DEBOUNCE_MS = 300;
 const LIVE_REFRESH_MIN_INTERVAL_MS = 1200;
 const OPS_REFRESH_DEBOUNCE_MS = 700;
 const OPS_REFRESH_MIN_INTERVAL_MS = 3500;
+const REALTIME_CONNECTING_TIMEOUT_MS = 8000;
+const REALTIME_DISCONNECT_GRACE_MS = 2500;
+const REALTIME_POST_CONNECT_HOLD_MS = 5000;
 
 function getRefreshProfile(pathname: string | null) {
   if (pathname === "/ops") {
@@ -30,15 +33,74 @@ function getRefreshProfile(pathname: string | null) {
   };
 }
 
-export function LiveOpsBridge({ tables, enableSound = false }: LiveOpsBridgeProps) {
+export function LiveOpsBridge({ tables, enableSound = false, fallbackIntervalMs }: LiveOpsBridgeProps) {
   const pathname = usePathname();
   const timeoutRef = useRef<ReturnType<typeof setTimeout> | null>(null);
+  const connectTimeoutRef = useRef<ReturnType<typeof setTimeout> | null>(null);
+  const disconnectTimeoutRef = useRef<ReturnType<typeof setTimeout> | null>(null);
   const lastRealtimeFingerprintRef = useRef<string | null>(null);
   const lastRealtimeEventAtRef = useRef(0);
   const lastDispatchAtRef = useRef(0);
-  const [connected, setConnected] = useState(false);
+  const lastSubscribedAtRef = useRef(0);
+  const hasSubscribedOnceRef = useRef(false);
+  const [connectionState, setConnectionState] = useState<"connecting" | "online" | "offline">("connecting");
+  const connectionStateRef = useRef<"connecting" | "online" | "offline">("connecting");
   const channelKey = useMemo(() => [...tables].sort().join("-"), [tables]);
   const refreshProfile = useMemo(() => getRefreshProfile(pathname), [pathname]);
+  const disconnectGraceMs = Math.max(REALTIME_DISCONNECT_GRACE_MS, Number(fallbackIntervalMs ?? 0) || 0);
+  const clearConnectionTimers = useEffectEvent(() => {
+    if (connectTimeoutRef.current) {
+      clearTimeout(connectTimeoutRef.current);
+      connectTimeoutRef.current = null;
+    }
+    if (disconnectTimeoutRef.current) {
+      clearTimeout(disconnectTimeoutRef.current);
+      disconnectTimeoutRef.current = null;
+    }
+  });
+  const setStableConnectionState = useEffectEvent((nextState: "connecting" | "online" | "offline") => {
+    if (connectionStateRef.current === nextState) {
+      return;
+    }
+    connectionStateRef.current = nextState;
+    setConnectionState(nextState);
+  });
+  const handleRealtimeChannelStatus = useEffectEvent((status: string) => {
+    if (status === "SUBSCRIBED") {
+      hasSubscribedOnceRef.current = true;
+      lastSubscribedAtRef.current = Date.now();
+      if (connectTimeoutRef.current) {
+        clearTimeout(connectTimeoutRef.current);
+        connectTimeoutRef.current = null;
+      }
+      if (disconnectTimeoutRef.current) {
+        clearTimeout(disconnectTimeoutRef.current);
+        disconnectTimeoutRef.current = null;
+      }
+      setStableConnectionState("online");
+      return;
+    }
+
+    if (status === "CHANNEL_ERROR" || status === "TIMED_OUT" || status === "CLOSED") {
+      if (disconnectTimeoutRef.current) {
+        return;
+      }
+      const elapsedSinceSubscribe = Date.now() - lastSubscribedAtRef.current;
+      const holdMs = Math.max(0, REALTIME_POST_CONNECT_HOLD_MS - elapsedSinceSubscribe);
+      disconnectTimeoutRef.current = setTimeout(
+        () => {
+          disconnectTimeoutRef.current = null;
+          setStableConnectionState(hasSubscribedOnceRef.current ? "offline" : "connecting");
+        },
+        holdMs > 0 ? holdMs : disconnectGraceMs,
+      );
+      return;
+    }
+
+    if (!hasSubscribedOnceRef.current) {
+      setStableConnectionState("connecting");
+    }
+  });
 
   const queueLiveEvent = useEffectEvent((event?: LivePosEvent) => {
     const elapsed = Date.now() - lastDispatchAtRef.current;
@@ -76,10 +138,20 @@ export function LiveOpsBridge({ tables, enableSound = false }: LiveOpsBridgeProp
   });
 
   useEffect(() => {
+    connectionStateRef.current = connectionState;
+  }, [connectionState]);
+
+  useEffect(() => {
     const supabase = getSupabaseAuthBrowserClient();
     let channel: ReturnType<NonNullable<typeof supabase>["channel"]> | null = null;
 
     if (supabase) {
+      setStableConnectionState("connecting");
+      connectTimeoutRef.current = setTimeout(() => {
+        if (!hasSubscribedOnceRef.current) {
+          setStableConnectionState("offline");
+        }
+      }, REALTIME_CONNECTING_TIMEOUT_MS);
       channel = supabase.channel(`ops-live-${channelKey}`);
       for (const table of tables) {
         channel.on(
@@ -117,29 +189,48 @@ export function LiveOpsBridge({ tables, enableSound = false }: LiveOpsBridgeProp
       }
 
       channel.subscribe((status) => {
-        setConnected(status === "SUBSCRIBED");
+        handleRealtimeChannelStatus(status);
       });
     } else {
-      setConnected(false);
+      setStableConnectionState("offline");
     }
 
     return () => {
       if (timeoutRef.current) {
         clearTimeout(timeoutRef.current);
       }
+      clearConnectionTimers();
       if (supabase && channel) {
         supabase.removeChannel(channel);
       }
     };
-  }, [channelKey, enableSound, pathname, queueLiveEvent, refreshProfile, tables]);
+  }, [
+    channelKey,
+    clearConnectionTimers,
+    enableSound,
+    handleRealtimeChannelStatus,
+    pathname,
+    queueLiveEvent,
+    refreshProfile,
+    setStableConnectionState,
+    tables,
+  ]);
 
   return (
     <span
       className={`inline-flex rounded-full px-2 py-1 text-xs font-semibold ${
-        connected ? "bg-emerald-100 text-emerald-700" : "bg-slate-200 text-slate-600"
+        connectionState === "online"
+          ? "bg-emerald-100 text-emerald-700"
+          : connectionState === "connecting"
+            ? "bg-sky-100 text-sky-700"
+            : "bg-slate-200 text-slate-600"
       }`}
     >
-      {connected ? "Realtime Acik" : "Realtime Kapali"}
+      {connectionState === "online"
+        ? "Realtime Acik"
+        : connectionState === "connecting"
+          ? "Realtime Baglaniyor"
+          : "Realtime Kapali"}
     </span>
   );
 }

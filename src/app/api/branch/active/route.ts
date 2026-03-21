@@ -26,11 +26,13 @@ export async function POST(request: Request) {
   } else if (branchId === ALL_BRANCHES_VALUE) {
     // allowed only for business-scope users
   }
+  const requestProtocolRaw = request.headers.get("x-forwarded-proto") ?? new URL(request.url).protocol.replace(":", "");
+  const secureCookie = requestProtocolRaw.split(",")[0]?.trim().toLowerCase() === "https";
   const response = NextResponse.json({ ok: true, branchId });
   response.cookies.set(ACTIVE_BRANCH_COOKIE, branchId, {
     httpOnly: false,
     sameSite: "lax",
-    secure: process.env.NODE_ENV === "production",
+    secure: secureCookie,
     path: "/",
     maxAge: 60 * 60 * 24 * 365,
   });
