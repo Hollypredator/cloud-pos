@@ -21,4 +21,6 @@ export type AppShellPayload = {
   sidebarAccentColor: ApplicationSettings["sidebarAccentColor"];
   ownerSidebarOrder: ApplicationSettings["ownerSidebarOrder"];
   adminSidebarOrder: ApplicationSettings["adminSidebarOrder"];
+  mobileAppExperienceEnabled: ApplicationSettings["mobileAppExperienceEnabled"];
+  mobileReadOnlyPwaEnabled: ApplicationSettings["mobileReadOnlyPwaEnabled"];
 };

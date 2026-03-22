@@ -102,6 +102,8 @@ export function getFallbackAppShellPayload(): AppShellPayload {
     sidebarAccentColor: defaultApplicationSettings.sidebarAccentColor,
     ownerSidebarOrder: defaultApplicationSettings.ownerSidebarOrder,
     adminSidebarOrder: defaultApplicationSettings.adminSidebarOrder,
+    mobileAppExperienceEnabled: defaultApplicationSettings.mobileAppExperienceEnabled,
+    mobileReadOnlyPwaEnabled: defaultApplicationSettings.mobileReadOnlyPwaEnabled,
   };
 }
 
@@ -133,5 +135,7 @@ export const getAppShellPayload = cache(async (): Promise<AppShellPayload> => {
     sidebarAccentColor: applicationSettings.sidebarAccentColor,
     ownerSidebarOrder: applicationSettings.ownerSidebarOrder,
     adminSidebarOrder: applicationSettings.adminSidebarOrder,
+    mobileAppExperienceEnabled: applicationSettings.mobileAppExperienceEnabled,
+    mobileReadOnlyPwaEnabled: applicationSettings.mobileReadOnlyPwaEnabled,
   };
 });
