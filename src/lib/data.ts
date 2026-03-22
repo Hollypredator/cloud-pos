@@ -8778,7 +8778,7 @@ async function getCachedOpsPageRow(input: {
     const reader = unstable_cache(
       async () => queryOpsPageRow(serviceClient),
       [cacheKey],
-      { revalidate: 8, tags: ["dashboard-snapshot"] },
+      { revalidate: 12, tags: ["dashboard-snapshot"] },
     );
 
     return reader();

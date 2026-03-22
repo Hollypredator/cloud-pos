@@ -44,6 +44,12 @@ NEXT_PUBLIC_BUSINESS_ADDRESS=Istanbul
 NEXT_PUBLIC_RECEIPT_FOOTER=Afiyet olsun.
 NEXT_PUBLIC_RECEIPT_LOGO_URL=...
 NEXT_PUBLIC_VAT_RATE=10
+NEXT_PUBLIC_POS_CLIENT_QUEUE_TABLES=false
+NEXT_PUBLIC_POS_CLIENT_QUEUE_CASHIER=false
+PERF_REQUIRE_AUTH_BASELINE=false
+PERF_ALLOW_LOCAL_AUTH_BASELINE=false
+PERF_AUTH_COOKIE=
+VERCEL_PROTECTION_BYPASS=
 ```
 
 3. Supabase schema kurulumunda iki yol var:
@@ -114,7 +120,7 @@ npm run dev
 - Studio/backoffice tablolarinda dogrudan tenant admin erisimi kapatilmis, islem server-side service role akisi uzerine alinmistir.
 - Musteri operasyon yuzeyi ile studio/backoffice bilincli olarak ayridir:
   - public/studio: web
-  - musteri operasyonu: web tabanli uygulama, ileride desktop shell / hybrid mobile shell icin uygun
+  - musteri operasyonu: web tabanli uygulama, ileride hybrid mobile shell icin uygun
 - Coklu sube senaryosu desteklenir. Branch secimi cookie + `staff_branch_access` + RLS ile scope edilir.
 - `owner` ve `admin` ayni yetki seviyesi degildir; owner isletme ve personel yapisini yonetir, admin operasyonel yonetim alanlarina erisir.
 - SQL migration dosyasinda RLS starter policy bulunur.
@@ -144,6 +150,10 @@ npm run dev
 - QR servis talebi API: `/api/table-requests`
 - QR siparis durum API: `/api/orders/latest?qr=table-1&b=default&t=<qr-access-token>`
 - QR siparis gecmis API: `/api/orders/history?qr=table-1&b=default&t=<qr-access-token>`
+- Ops command API: `/api/ops/command`
+- Sync lock API: `/api/sync/lock`
+- Sync push API: `/api/sync/push`
+- Sync pull API: `/api/sync/pull`
 - Health API: `/api/health`
 - Ops metrics API: `/api/metrics/ops`
 - Ops alert dispatch API: `/api/alerts/dispatch` (`GET` preview, `POST` webhook send)
@@ -197,6 +207,11 @@ Detayli checklist ve incident proseduru:
   - Lokal manuel tetikleme: `npm run sessions:auto-close`
 - Operasyon smoke-check: `npm run ops:smoke`
 - Perf SLA check: `npm run perf:sla` (API avg<=200ms, operation avg<=500ms hedefleri)
+- Queue staging rollout runbook: `docs/staging-queue-rollout.md`
+- Rollout preflight: `npm run rollout:preflight`
+- Wave-1 (Tables) smoke gate: `npm run rollout:wave:tables`
+- Wave-2 (Cashier) smoke gate: `npm run rollout:wave:cashier`
+- Auth perf baseline gate: `npm run rollout:perf:auth`
 - Tenant runtime isolation check: `npm run phase2:runtime` (uygulama ayakta olmali)
 - Faz 3 finans runtime kontrolu: `npm run phase3:runtime` (Supabase env gerekli)
 - Faz 4 mutabakat kontrolu: `npm run phase4:reconciliation` (Supabase env gerekli)

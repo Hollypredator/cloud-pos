@@ -59,6 +59,7 @@ type QueryDeps = {
   getOrderPaymentSummaryMap: (
     supabase: NonNullable<ReturnType<typeof getSupabaseServerClient>>,
     orderIds: string[],
+    scopeOverride?: Scope,
   ) => Promise<Map<string, { net: number; count: number }>>;
   withQueryTimeout: <T>(promise: PromiseLike<T>, ms?: number) => Promise<T>;
   demoOrders: Order[];
@@ -200,7 +201,7 @@ export async function listLatestOrdersByTableIdsImpl(tableIds: string[], deps: Q
       }
 
       const orderIds = [...latestRows.values()].map((row) => row.id);
-      const paymentSummary = await deps.getOrderPaymentSummaryMap(innerSupabase, orderIds);
+      const paymentSummary = await deps.getOrderPaymentSummaryMap(innerSupabase, orderIds, scope);
       const normalizedRows = [...latestRows.values()].map((row) => {
         const finalPrice = toMoney(Number(row.final_price ?? row.total_price));
         const amountPaid = toMoney(paymentSummary.get(row.id)?.net ?? 0);
@@ -298,7 +299,7 @@ export async function getOrderHistoryByTableIdImpl(tableId: string, limit: numbe
         created_at: string;
       }>;
       const orderIds = rows.map((row) => row.id);
-      const paymentSummary = await deps.getOrderPaymentSummaryMap(innerSupabase, orderIds);
+      const paymentSummary = await deps.getOrderPaymentSummaryMap(innerSupabase, orderIds, scope);
       const normalizedRows = rows.map((row) => {
         const finalPrice = toMoney(Number(row.final_price ?? row.total_price));
         const amountPaid = toMoney(paymentSummary.get(row.id)?.net ?? 0);

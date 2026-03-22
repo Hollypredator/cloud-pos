@@ -25,6 +25,14 @@ export function LogoutButton({ redirectPath = "/login" }: { redirectPath?: strin
       }
     } catch {}
 
+    window.dispatchEvent(new CustomEvent("app-shell:sw-clear"));
+    try {
+      if ("caches" in window) {
+        const keys = await caches.keys();
+        await Promise.all(keys.filter((key) => key.startsWith("ops-")).map((key) => caches.delete(key)));
+      }
+    } catch {}
+
     await supabase.auth.signOut();
     window.dispatchEvent(new CustomEvent("app-shell:refresh"));
     router.replace(redirectPath);

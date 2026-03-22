@@ -1,6 +1,6 @@
 "use client";
 
-import { useEffect, useMemo, useRef, useState } from "react";
+import { useEffect, useMemo, useRef, useState, type FormEvent } from "react";
 import { PendingSubmitButton } from "@/components/pending-submit-button";
 import type { OrderItem } from "@/lib/types";
 
@@ -19,20 +19,42 @@ export function CashierPaymentPanel({
   items,
   requestKey,
   action,
+  onSubmit,
+  submitIdleLabel = "Odeme Al",
+  submitPendingLabel = "Odeme Isleniyor...",
+  forcePending = false,
 }: {
   orderId: string;
   returnOrderId?: string;
   defaultAmount: number;
   items: OrderItem[];
-  requestKey: string;
-  action: (formData: FormData) => void | Promise<void>;
+  requestKey?: string;
+  action?: (formData: FormData) => void | Promise<void>;
+  onSubmit?: (input: {
+    orderId: string;
+    returnOrderId?: string;
+    requestKey: string;
+    method: "cash" | "card" | "mixed";
+    amount: number;
+    note?: string;
+  }) => void | Promise<void>;
+  submitIdleLabel?: string;
+  submitPendingLabel?: string;
+  forcePending?: boolean;
 }) {
   const [amount, setAmount] = useState(defaultAmount.toFixed(2));
   const [note, setNote] = useState("");
   const [method, setMethod] = useState<"cash" | "card" | "mixed">("cash");
   const [selectedQuantities, setSelectedQuantities] = useState<number[]>(() => items.map(() => 0));
+  const [isClientSubmitting, setIsClientSubmitting] = useState(false);
   const prevOrderIdRef = useRef(orderId);
   const prevDefaultAmountRef = useRef(defaultAmount);
+  const resolvedRequestKey = useMemo(() => {
+    if (requestKey) {
+      return requestKey;
+    }
+    return `${orderId}-${crypto.randomUUID()}`;
+  }, [orderId, requestKey]);
 
   const splitSummary = useMemo(() => buildSplitSummary(items, selectedQuantities), [items, selectedQuantities]);
   const parsedAmount = Number(amount);
@@ -59,7 +81,7 @@ export function CashierPaymentPanel({
     }
 
     setSelectedQuantities((prev) => (prev.length === items.length ? prev : items.map(() => 0)));
-  }, [defaultAmount, items.length, orderId]);
+  }, [defaultAmount, items, orderId]);
 
   function applySplit(splitCount: number) {
     const share = Math.max(0.01, defaultAmount / splitCount);
@@ -90,6 +112,32 @@ export function CashierPaymentPanel({
   }
 
   const finalNote = [note.trim(), splitSummary ? `split_items:${splitSummary}` : ""].filter(Boolean).join(" | ");
+  const pending = forcePending || isClientSubmitting;
+
+  async function handleClientSubmit(event: FormEvent<HTMLFormElement>) {
+    if (!onSubmit) {
+      return;
+    }
+
+    event.preventDefault();
+    if (pending) {
+      return;
+    }
+
+    setIsClientSubmitting(true);
+    try {
+      await onSubmit({
+        orderId,
+        returnOrderId,
+        requestKey: resolvedRequestKey,
+        method,
+        amount: safeAmount,
+        note: finalNote || undefined,
+      });
+    } finally {
+      setIsClientSubmitting(false);
+    }
+  }
 
   return (
     <div className="mt-4 space-y-4 rounded-[24px] border border-slate-200 bg-[#fbfbfc] p-4">
@@ -194,10 +242,10 @@ export function CashierPaymentPanel({
         {splitSummary ? <p className="mt-3 text-xs text-slate-500">Secilen: {splitSummary}</p> : null}
       </div>
 
-      <form action={action} className="space-y-3 rounded-[20px] border border-slate-200 bg-white p-4">
+      <form action={onSubmit ? undefined : action} onSubmit={handleClientSubmit} className="space-y-3 rounded-[20px] border border-slate-200 bg-white p-4">
         <input type="hidden" name="orderId" value={orderId} />
         {returnOrderId ? <input type="hidden" name="returnOrderId" value={returnOrderId} /> : null}
-        <input type="hidden" name="requestKey" value={requestKey} />
+        <input type="hidden" name="requestKey" value={resolvedRequestKey} />
         <input type="hidden" name="note" value={finalNote} />
         <input type="hidden" name="method" value={method} />
 
@@ -254,11 +302,21 @@ export function CashierPaymentPanel({
           </p>
         </div>
 
-        <PendingSubmitButton
-          idleLabel="Odeme Al"
-          pendingLabel="Odeme Isleniyor..."
-          className="w-full rounded-2xl bg-emerald-600 px-4 py-3 text-sm font-semibold text-white shadow-[0_10px_20px_rgba(16,185,129,0.24)]"
-        />
+        {onSubmit ? (
+          <button
+            type="submit"
+            disabled={pending}
+            className="w-full rounded-2xl bg-emerald-600 px-4 py-3 text-sm font-semibold text-white shadow-[0_10px_20px_rgba(16,185,129,0.24)] disabled:cursor-not-allowed disabled:opacity-70"
+          >
+            {pending ? submitPendingLabel : submitIdleLabel}
+          </button>
+        ) : (
+          <PendingSubmitButton
+            idleLabel={submitIdleLabel}
+            pendingLabel={submitPendingLabel}
+            className="w-full rounded-2xl bg-emerald-600 px-4 py-3 text-sm font-semibold text-white shadow-[0_10px_20px_rgba(16,185,129,0.24)]"
+          />
+        )}
       </form>
     </div>
   );

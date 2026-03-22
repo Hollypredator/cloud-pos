@@ -29,17 +29,21 @@ export function BackofficePage({
 }) {
   const locale = getLocale();
   return (
-    <div className="min-h-screen overflow-x-clip bg-[#e9eaee] px-3 py-4 md:px-6">
-      <main className="mx-auto flex w-full max-w-[1600px] flex-col gap-5 xl:flex-row">
-        {sidebar ? <aside className="min-w-0 w-full xl:w-[320px]">{sidebar}</aside> : null}
-        <section className="min-w-0 flex-1 space-y-5">
-          <div className="panel-surface mesh-accent rounded-[24px] px-4 py-4 sm:px-6 sm:py-5">
+    <div className="backoffice-page-shell relative min-h-screen overflow-x-clip bg-gradient-to-br from-slate-50 relative via-[#eef2f5] to-[#e2e6eb] px-3 py-4 md:px-6">
+      {/* Soft animated background gradient meshes */}
+      <div className="pointer-events-none absolute -left-40 top-0 h-[600px] w-[600px] rounded-full bg-orange-400/10 blur-[120px]" />
+      <div className="pointer-events-none absolute -right-20 top-40 h-[600px] w-[600px] rounded-full bg-blue-400/10 blur-[120px]" />
+
+      <main className="backoffice-page-main relative z-10 mx-auto flex w-full max-w-[1600px] flex-col gap-5 xl:flex-row">
+        {sidebar ? <aside className="backoffice-page-sidebar min-w-0 w-full xl:w-[320px]">{sidebar}</aside> : null}
+        <section className="backoffice-page-content min-w-0 flex-1 space-y-5">
+          <div className="backoffice-page-hero rounded-[24px] border border-white/60 bg-white/60 px-4 py-4 shadow-[0_8px_30px_rgb(0,0,0,0.04)] backdrop-blur-xl transition-all duration-300 sm:px-6 sm:py-5">
             <div className="flex flex-wrap items-center justify-between gap-4">
               <div>
                 <p className="text-sm font-medium text-slate-500">{description ? translateUiText(description, locale) : description}</p>
                 <h1 className="font-display mt-1 text-2xl font-semibold tracking-tight text-slate-900 sm:text-3xl">{translateUiText(title, locale)}</h1>
               </div>
-              {actions ? <div className="flex w-full flex-wrap items-center gap-2 sm:w-auto sm:gap-3">{actions}</div> : null}
+              {actions ? <div className="backoffice-page-actions flex w-full flex-wrap items-center gap-2 sm:w-auto sm:gap-3">{actions}</div> : null}
             </div>
           </div>
           {children}
@@ -60,8 +64,8 @@ export function SidebarPanel({
 }) {
   const locale = getLocale();
   return (
-    <section className="panel-surface panel-hover rounded-[28px] p-5">
-      <div className="border-b border-slate-200 pb-4">
+    <section className="rounded-[28px] border border-white/50 bg-white/60 p-5 shadow-[0_8px_30px_rgb(0,0,0,0.04)] backdrop-blur-xl transition-all duration-300 hover:-translate-y-0.5 hover:bg-white/80 hover:shadow-[0_10px_40px_rgb(0,0,0,0.06)]">
+      <div className="border-b border-white/40 pb-4">
         <h2 className="font-display text-[1.45rem] font-semibold tracking-tight text-slate-900">{translateUiText(title, locale)}</h2>
         {description ? <p className="mt-2 text-sm text-slate-500">{translateUiText(description, locale)}</p> : null}
       </div>
@@ -114,7 +118,7 @@ export function SummaryCard({
   };
 
   return (
-    <article className={cn("panel-surface panel-hover mesh-accent rounded-[24px] p-5", className)}>
+    <article className={cn("rounded-[24px] border border-white/60 bg-white/70 p-5 shadow-[0_8px_30px_rgb(0,0,0,0.04)] backdrop-blur-lg transition-all duration-300 hover:-translate-y-0.5 hover:bg-white/90 hover:shadow-[0_10px_40px_rgb(0,0,0,0.08)]", className)}>
       <div className="flex items-start justify-between gap-3">
         <div>
           <p className="text-xs font-bold uppercase tracking-[0.16em] text-slate-500">{translateUiText(label, locale)}</p>
@@ -170,8 +174,8 @@ export function ContentCard({
 }) {
   const locale = getLocale();
   return (
-    <section className={cn("panel-surface panel-hover rounded-[28px] p-5", className)}>
-      <div className="border-b border-slate-200 pb-4">
+    <section className={cn("rounded-[28px] border border-white/50 bg-white/60 p-5 shadow-[0_8px_30px_rgb(0,0,0,0.04)] backdrop-blur-xl transition-all duration-300 hover:-translate-y-0.5 hover:bg-white/80 hover:shadow-[0_10px_40px_rgb(0,0,0,0.06)]", className)}>
+      <div className="border-b border-white/40 pb-4">
         <h3 className="font-display text-2xl font-semibold tracking-tight text-slate-900">{translateUiText(title, locale)}</h3>
       </div>
       <div className="pt-4">{children}</div>
@@ -190,14 +194,14 @@ export function NoticeBanner({
 }) {
   const locale = getLocale();
   const toneStyles = {
-    info: "border-sky-200 bg-sky-50 text-sky-950",
-    success: "border-emerald-200 bg-emerald-50 text-emerald-950",
-    warning: "border-amber-200 bg-amber-50 text-amber-950",
-    error: "border-rose-200 bg-rose-50 text-rose-950",
+    info: "border-sky-200/60 bg-sky-50/70 text-sky-950",
+    success: "border-emerald-200/60 bg-emerald-50/70 text-emerald-950",
+    warning: "border-amber-200/60 bg-amber-50/70 text-amber-950",
+    error: "border-rose-200/60 bg-rose-50/70 text-rose-950",
   };
 
   return (
-    <div className={cn("rounded-[24px] border px-5 py-4 shadow-[0_8px_18px_rgba(15,23,42,0.04)]", toneStyles[tone])}>
+    <div className={cn("rounded-[24px] border px-5 py-4 shadow-[0_8px_20px_rgb(0,0,0,0.03)] backdrop-blur-md transition-all duration-300", toneStyles[tone])}>
       <p className="text-base font-semibold tracking-tight">{translateUiText(title, locale)}</p>
       {description ? <p className="mt-1 text-sm opacity-80">{translateUiText(description, locale)}</p> : null}
     </div>
@@ -261,14 +265,14 @@ export function WorkflowGuide({
 }) {
   const locale = getLocale();
   return (
-    <section className={cn("panel-surface panel-hover rounded-[28px] p-5", className)}>
-      <div className="border-b border-slate-200 pb-4">
+    <section className={cn("rounded-[28px] border border-white/50 bg-white/60 p-5 shadow-[0_8px_30px_rgb(0,0,0,0.04)] backdrop-blur-xl transition-all duration-300 hover:-translate-y-0.5 hover:bg-white/80 hover:shadow-[0_10px_40px_rgb(0,0,0,0.06)]", className)}>
+      <div className="border-b border-white/40 pb-4">
         <h3 className="font-display text-2xl font-semibold tracking-tight text-slate-900">{translateUiText(title, locale)}</h3>
         {description ? <p className="mt-2 text-sm text-slate-500">{translateUiText(description, locale)}</p> : null}
       </div>
       <div className="space-y-3 pt-4">
         {steps.map((step, index) => (
-          <div key={step.title} className="rounded-[22px] border border-slate-200 bg-slate-50 p-4">
+          <div key={step.title} className="group rounded-[22px] border border-white/60 bg-white/50 p-4 transition-all duration-300 hover:bg-white/90 hover:shadow-sm">
             <div className="flex items-start gap-3">
               <span className="font-display inline-flex h-9 w-9 shrink-0 items-center justify-center rounded-2xl bg-gradient-to-r from-[#ff6a3d] to-[#f2b44f] text-sm font-semibold text-white shadow-[0_10px_18px_rgba(255,106,61,0.18)]">
                 {index + 1}
@@ -294,7 +298,7 @@ export function EmptyPanel({
 }) {
   const locale = getLocale();
   return (
-    <div className="flex min-h-[220px] flex-col items-center justify-center rounded-[24px] border border-dashed border-slate-200 bg-slate-50 px-6 py-10 text-center">
+    <div className="flex min-h-[220px] flex-col items-center justify-center rounded-[24px] border border-dashed border-slate-300/60 bg-white/40 px-6 py-10 text-center backdrop-blur-md">
       <div className="mb-5 inline-flex h-16 w-16 items-center justify-center rounded-full bg-slate-200 text-lg font-bold text-slate-600">
         --
       </div>
@@ -337,8 +341,8 @@ export function AppShellHeader() {
   const locale = getLocale();
 
   return (
-    <div className="flex items-center gap-3 rounded-[24px] border border-slate-200 bg-white px-5 py-4 shadow-[0_10px_20px_rgba(15,23,42,0.04)]">
-      <span className="inline-flex h-11 w-11 items-center justify-center rounded-full border border-slate-200 bg-slate-50 text-lg font-semibold text-slate-700">
+    <div className="flex items-center gap-3 rounded-[24px] border border-white/60 bg-white/70 px-5 py-4 shadow-[0_8px_30px_rgb(0,0,0,0.04)] backdrop-blur-xl transition-all duration-300 hover:bg-white/90 hover:shadow-[0_10px_40px_rgb(0,0,0,0.06)]">
+      <span className="inline-flex h-11 w-11 items-center justify-center rounded-full border border-slate-200/50 bg-white/60 text-lg font-semibold text-slate-700 shadow-sm">
         {"<-"}
       </span>
       <div className="min-w-0">

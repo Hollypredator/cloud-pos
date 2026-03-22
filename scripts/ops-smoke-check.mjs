@@ -3,10 +3,21 @@ const alertSecret = process.env.ALERT_DISPATCH_SECRET || "";
 const autoSessionCloseSecret = process.env.AUTO_SESSION_CLOSE_SECRET || "";
 const apiBudgetMs = Number(process.env.SMOKE_API_BUDGET_MS || 200);
 const operationBudgetMs = Number(process.env.SMOKE_OPERATION_BUDGET_MS || 500);
+const vercelBypassToken = (process.env.VERCEL_PROTECTION_BYPASS || "").trim();
+
+function withBypass(url) {
+  if (!vercelBypassToken) {
+    return url;
+  }
+  const target = new URL(url);
+  target.searchParams.set("x-vercel-set-bypass-cookie", "true");
+  target.searchParams.set("x-vercel-protection-bypass", vercelBypassToken);
+  return target.toString();
+}
 
 async function checkJson(url, options = {}) {
   const startedAt = Date.now();
-  const response = await fetch(url, options);
+  const response = await fetch(withBypass(url), options);
   const text = await response.text();
   let payload = null;
   try {

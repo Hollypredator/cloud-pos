@@ -44,42 +44,70 @@ type AppShellBranchSummary = { id: string; name: string };
 const resolveBusinessBySlug = cache(async (businessSlug?: string) => {
   const slug = normalizeBusinessSlug(businessSlug);
   const cacheKey = `business-by-slug:${slug}`;
-  const reader = unstable_cache(
-    async () => {
-      const supabase = getSupabaseServerClient();
-      if (!supabase) {
-        return { business: demoBusiness, usingDemoData: true };
-      }
 
-      const { data, error } = await supabase
-        .from("businesses")
-        .select("id, name, slug, plan, is_active, created_at, updated_at")
-        .eq("slug", slug)
-        .eq("is_active", true)
-        .maybeSingle();
+  const serviceClient = getSupabaseServerClient();
+  if (serviceClient) {
+    const reader = unstable_cache(
+      async () => {
+        const { data, error } = await serviceClient
+          .from("businesses")
+          .select("id, name, slug, plan, is_active, created_at, updated_at")
+          .eq("slug", slug)
+          .eq("is_active", true)
+          .maybeSingle();
 
-      if (error) {
-        if (error.message.toLowerCase().includes("businesses")) {
-          return { business: null as Business | null, usingDemoData: false, useLegacySchema: true };
+        if (error) {
+          if (error.message.toLowerCase().includes("businesses")) {
+            return { business: null as Business | null, usingDemoData: false, useLegacySchema: true };
+          }
+          return { business: null as Business | null, usingDemoData: false, useLegacySchema: false };
         }
-        return { business: null as Business | null, usingDemoData: false, useLegacySchema: false };
-      }
 
-      if (!data) {
-        return { business: null as Business | null, usingDemoData: false, useLegacySchema: false };
-      }
+        if (!data) {
+          return { business: null as Business | null, usingDemoData: false, useLegacySchema: false };
+        }
 
-      return {
-        business: data as Business,
-        usingDemoData: false,
-        useLegacySchema: false,
-      };
-    },
-    [cacheKey],
-    { revalidate: 60, tags: ["businesses"] },
-  );
+        return {
+          business: data as Business,
+          usingDemoData: false,
+          useLegacySchema: false,
+        };
+      },
+      [cacheKey],
+      { revalidate: 60, tags: ["businesses"] },
+    );
 
-  return reader();
+    return reader();
+  }
+
+  const authClient = await getSupabaseAuthServerClient();
+  if (!authClient) {
+    return { business: demoBusiness, usingDemoData: true, useLegacySchema: false };
+  }
+
+  const { data, error } = await authClient
+    .from("businesses")
+    .select("id, name, slug, plan, is_active, created_at, updated_at")
+    .eq("slug", slug)
+    .eq("is_active", true)
+    .maybeSingle();
+
+  if (error) {
+    if (error.message.toLowerCase().includes("businesses")) {
+      return { business: null as Business | null, usingDemoData: false, useLegacySchema: true };
+    }
+    return { business: null as Business | null, usingDemoData: false, useLegacySchema: false };
+  }
+
+  if (!data) {
+    return { business: null as Business | null, usingDemoData: false, useLegacySchema: false };
+  }
+
+  return {
+    business: data as Business,
+    usingDemoData: false,
+    useLegacySchema: false,
+  };
 });
 
 const getCachedActiveBusinessesRow = unstable_cache(
@@ -113,95 +141,154 @@ const getCachedActiveBusinessesRow = unstable_cache(
   { revalidate: 30, tags: ["businesses"] },
 );
 
+async function getActiveBusinessesRowForRequest() {
+  const serviceClient = getSupabaseServerClient();
+  if (serviceClient) {
+    return getCachedActiveBusinessesRow();
+  }
+
+  const authClient = await getSupabaseAuthServerClient();
+  if (!authClient) {
+    return null;
+  }
+
+  const { data, error } = await authClient
+    .from("businesses")
+    .select("id, name, slug, plan")
+    .eq("is_active", true)
+    .order("name", { ascending: true });
+
+  if (error) {
+    return {
+      error: true as const,
+      useLegacySchema: error.message.toLowerCase().includes("businesses"),
+      businesses: [] as Array<Pick<Business, "id" | "name" | "slug" | "plan">>,
+    };
+  }
+
+  return {
+    error: false as const,
+    useLegacySchema: false,
+    businesses: (data ?? []) as Array<Pick<Business, "id" | "name" | "slug" | "plan">>,
+  };
+}
+
 async function getCachedResolvedUserScope(input: {
   userId: string;
   businessId: string | null;
   roleHint: AppRole | null;
 }) {
-  const cacheKey = `app-context-scope:${input.userId}:${input.businessId ?? "none"}:${input.roleHint ?? "none"}`;
-  const reader = unstable_cache(
-    async () => {
-      const supabase = getSupabaseServerClient();
-      if (!supabase || !input.businessId) {
-        return {
-          role: input.roleHint,
-          accessScope: (input.roleHint === "owner" ? "business" : "branch") as StaffAccessScope,
-          primaryBranchId: null as string | null,
-          branchAccessIds: [] as string[],
-        };
-      }
+  if (!input.businessId) {
+    return {
+      role: input.roleHint,
+      accessScope: (input.roleHint === "owner" ? "business" : "branch") as StaffAccessScope,
+      primaryBranchId: null as string | null,
+      branchAccessIds: [] as string[],
+    };
+  }
 
-      const [{ data: roleData }, accessResult] = await Promise.all([
-        supabase.from("profiles").select("role").eq("id", input.userId).maybeSingle(),
-        supabase
-          .from("staff_branch_access")
-          .select("branch_id, access_scope, is_primary")
-          .eq("profile_id", input.userId)
-          .eq("business_id", input.businessId),
-      ]);
+  const readWithClient = async (
+    supabase: NonNullable<ReturnType<typeof getSupabaseServerClient>> | NonNullable<Awaited<ReturnType<typeof getSupabaseAuthServerClient>>>,
+  ) => {
+    const [{ data: roleData }, accessResult] = await Promise.all([
+      supabase.from("profiles").select("role").eq("id", input.userId).maybeSingle(),
+      supabase
+        .from("staff_branch_access")
+        .select("branch_id, access_scope, is_primary")
+        .eq("profile_id", input.userId)
+        .eq("business_id", input.businessId),
+    ]);
 
-      const role = ((roleData as { role?: AppRole | null } | null)?.role ?? input.roleHint ?? null) as AppRole | null;
-      const accessRows = (accessResult.data ?? []) as Array<Pick<StaffBranchAccess, "branch_id" | "access_scope" | "is_primary">>;
-      const accessScope =
-        accessRows.length > 0
-          ? accessRows.some((row) => row.access_scope === "business")
-            ? ("business" as StaffAccessScope)
-            : ("branch" as StaffAccessScope)
-          : role === "owner"
-            ? ("business" as StaffAccessScope)
-            : ("branch" as StaffAccessScope);
-      const branchAccessIds = accessRows
-        .map((row) => row.branch_id)
-        .filter((branchId): branchId is string => Boolean(branchId));
-      const primaryBranchId =
-        accessRows.find((row) => row.is_primary && row.branch_id)?.branch_id ??
-        branchAccessIds[0] ??
-        null;
+    const role = ((roleData as { role?: AppRole | null } | null)?.role ?? input.roleHint ?? null) as AppRole | null;
+    const accessRows = (accessResult.data ?? []) as Array<Pick<StaffBranchAccess, "branch_id" | "access_scope" | "is_primary">>;
+    const accessScope =
+      accessRows.length > 0
+        ? accessRows.some((row) => row.access_scope === "business")
+          ? ("business" as StaffAccessScope)
+          : ("branch" as StaffAccessScope)
+        : role === "owner"
+          ? ("business" as StaffAccessScope)
+          : ("branch" as StaffAccessScope);
+    const branchAccessIds = accessRows
+      .map((row) => row.branch_id)
+      .filter((branchId): branchId is string => Boolean(branchId));
+    const primaryBranchId =
+      accessRows.find((row) => row.is_primary && row.branch_id)?.branch_id ??
+      branchAccessIds[0] ??
+      null;
 
-      return {
-        role,
-        accessScope,
-        primaryBranchId,
-        branchAccessIds,
-      };
-    },
-    [cacheKey],
-    { revalidate: 15, tags: ["staff-branch-access", "profiles"] },
-  );
+    return {
+      role,
+      accessScope,
+      primaryBranchId,
+      branchAccessIds,
+    };
+  };
 
-  return reader();
+  const serviceClient = getSupabaseServerClient();
+  if (serviceClient) {
+    const cacheKey = `app-context-scope:${input.userId}:${input.businessId}:${input.roleHint ?? "none"}`;
+    const reader = unstable_cache(
+      async () => readWithClient(serviceClient),
+      [cacheKey],
+      { revalidate: 30, tags: ["staff-branch-access", "profiles"] },
+    );
+
+    return reader();
+  }
+
+  const authClient = await getSupabaseAuthServerClient();
+  if (!authClient) {
+    return {
+      role: input.roleHint,
+      accessScope: (input.roleHint === "owner" ? "business" : "branch") as StaffAccessScope,
+      primaryBranchId: null as string | null,
+      branchAccessIds: [] as string[],
+    };
+  }
+
+  return readWithClient(authClient);
 }
 
 async function getCachedUserBusinessIds(userId: string) {
-  const cacheKey = `user-business-access:${userId}`;
-  const reader = unstable_cache(
-    async () => {
-      const supabase = getSupabaseServerClient();
-      if (!supabase) {
-        return { businessIds: [] as string[], hasError: false as const };
-      }
+  const readWithClient = async (
+    supabase: NonNullable<ReturnType<typeof getSupabaseServerClient>> | NonNullable<Awaited<ReturnType<typeof getSupabaseAuthServerClient>>>,
+  ) => {
+    const { data, error } = await supabase
+      .from("staff_branch_access")
+      .select("business_id")
+      .eq("profile_id", userId);
 
-      const { data, error } = await supabase
-        .from("staff_branch_access")
-        .select("business_id")
-        .eq("profile_id", userId);
+    if (error) {
+      return {
+        businessIds: [] as string[],
+        hasError: true as const,
+        errorMessage: error.message,
+      };
+    }
 
-      if (error) {
-        return {
-          businessIds: [] as string[],
-          hasError: true as const,
-          errorMessage: error.message,
-        };
-      }
+    const businessIds = [...new Set(((data ?? []) as Array<{ business_id: string | null }>).map((row) => row.business_id).filter(Boolean))] as string[];
+    return { businessIds, hasError: false as const };
+  };
 
-      const businessIds = [...new Set(((data ?? []) as Array<{ business_id: string | null }>).map((row) => row.business_id).filter(Boolean))] as string[];
-      return { businessIds, hasError: false as const };
-    },
-    [cacheKey],
-    { revalidate: 20, tags: ["staff-branch-access"] },
-  );
+  const serviceClient = getSupabaseServerClient();
+  if (serviceClient) {
+    const cacheKey = `user-business-access:${userId}`;
+    const reader = unstable_cache(
+      async () => readWithClient(serviceClient),
+      [cacheKey],
+      { revalidate: 45, tags: ["staff-branch-access"] },
+    );
 
-  return reader();
+    return reader();
+  }
+
+  const authClient = await getSupabaseAuthServerClient();
+  if (!authClient) {
+    return { businessIds: [] as string[], hasError: false as const };
+  }
+
+  return readWithClient(authClient);
 }
 
 async function getCachedScopedBranches(input: {
@@ -209,47 +296,60 @@ async function getCachedScopedBranches(input: {
   accessScope: StaffAccessScope;
   branchAccessIds: string[];
 }) {
+  if (!input.businessId) {
+    return { branches: [] as AppShellBranchSummary[] };
+  }
+
   const normalizedBranchAccessIds = [...input.branchAccessIds].sort();
-  const cacheKey = `scoped-branches:${input.businessId ?? "none"}:${input.accessScope}:${normalizedBranchAccessIds.join(",") || "none"}`;
-  const reader = unstable_cache(
-    async () => {
-      const supabase = getSupabaseServerClient();
-      if (!supabase || !input.businessId) {
+  const readWithClient = async (
+    supabase: NonNullable<ReturnType<typeof getSupabaseServerClient>> | NonNullable<Awaited<ReturnType<typeof getSupabaseAuthServerClient>>>,
+  ) => {
+    let query = supabase
+      .from("branches")
+      .select("id, name")
+      .eq("is_active", true)
+      .eq("business_id", input.businessId)
+      .order("name", { ascending: true });
+
+    if (input.accessScope !== "business") {
+      if (normalizedBranchAccessIds.length === 0) {
         return { branches: [] as AppShellBranchSummary[] };
       }
+      query = query.in("id", normalizedBranchAccessIds);
+    }
 
-      let query = supabase
-        .from("branches")
-        .select("id, name")
-        .eq("is_active", true)
-        .eq("business_id", input.businessId)
-        .order("name", { ascending: true });
-
-      if (input.accessScope !== "business") {
-        if (normalizedBranchAccessIds.length === 0) {
-          return { branches: [] as AppShellBranchSummary[] };
-        }
-        query = query.in("id", normalizedBranchAccessIds);
-      }
-
-      const { data, error } = await query;
-      if (error) {
-        return {
-          branches: error.message.toLowerCase().includes("branches")
-            ? ([] as AppShellBranchSummary[])
-            : demoBranches.map((branch) => ({ id: branch.id, name: branch.name })),
-        };
-      }
-
+    const { data, error } = await query;
+    if (error) {
       return {
-        branches: (data ?? []) as AppShellBranchSummary[],
+        branches: error.message.toLowerCase().includes("branches")
+          ? ([] as AppShellBranchSummary[])
+          : demoBranches.map((branch) => ({ id: branch.id, name: branch.name })),
       };
-    },
-    [cacheKey],
-    { revalidate: 20, tags: ["branches"] },
-  );
+    }
 
-  return reader();
+    return {
+      branches: (data ?? []) as AppShellBranchSummary[],
+    };
+  };
+
+  const serviceClient = getSupabaseServerClient();
+  if (serviceClient) {
+    const cacheKey = `scoped-branches:${input.businessId}:${input.accessScope}:${normalizedBranchAccessIds.join(",") || "none"}`;
+    const reader = unstable_cache(
+      async () => readWithClient(serviceClient),
+      [cacheKey],
+      { revalidate: 45, tags: ["branches"] },
+    );
+
+    return reader();
+  }
+
+  const authClient = await getSupabaseAuthServerClient();
+  if (!authClient) {
+    return { branches: [] as AppShellBranchSummary[] };
+  }
+
+  return readWithClient(authClient);
 }
 
 export const getRequestAppContext = cache(async () => {
@@ -287,7 +387,7 @@ export const getRequestAppContext = cache(async () => {
       data: { user },
     },
     businessesResult,
-  ] = await Promise.all([authClient.auth.getUser(), getCachedActiveBusinessesRow()]);
+  ] = await Promise.all([authClient.auth.getUser(), getActiveBusinessesRowForRequest()]);
 
   const cachedBusinesses = businessesResult?.businesses ?? [];
   const fallbackContext =

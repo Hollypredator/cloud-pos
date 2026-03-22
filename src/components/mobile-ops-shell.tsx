@@ -55,7 +55,7 @@ function buildQueryString(searchParams: ReturnType<typeof useSearchParams>) {
   return query ? `?${query}` : "";
 }
 
-function resolveDesktopHref(pathname: string | null, searchParams: ReturnType<typeof useSearchParams>) {
+function resolveLargeScreenHref(pathname: string | null, searchParams: ReturnType<typeof useSearchParams>) {
   if (!pathname) return "/ops";
 
   if (pathname === "/m/ops" || pathname.startsWith("/m/ops/")) {
@@ -193,8 +193,8 @@ export function MobileOpsShell({
     if (shouldStayInMobileApp) {
       return;
     }
-    const desktopHref = resolveDesktopHref(pathname, searchParams);
-    router.replace(desktopHref);
+    const largeScreenHref = resolveLargeScreenHref(pathname, searchParams);
+    router.replace(largeScreenHref);
   }, [isCoarsePointer, isNarrowViewport, pathname, router, searchParams]);
 
   return (

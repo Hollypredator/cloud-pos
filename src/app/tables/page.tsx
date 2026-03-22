@@ -3,16 +3,16 @@ import Link from "next/link";
 import { redirect } from "next/navigation";
 import { BackofficePage, ContentCard, EmptyPanel, NoticeBanner, SidebarPanel, SummaryCard, WorkflowGuide } from "@/components/backoffice-ui";
 import { LiveOpsBridge } from "@/components/live-ops-bridge";
+import { MobileStickySegment, MobileTaskCard, MobileTaskList } from "@/components/mobile-ops-ui";
 import { PendingSubmitButton } from "@/components/pending-submit-button";
+import { QuerySnapshotSeed } from "@/components/query-snapshot-seed";
+import { OptimisticTableStatusBadge, TableStatusQueueButton } from "@/components/tables-client-queue-controls";
 import { getCurrentUserWithRole, hasRoleAccess, requireRole } from "@/lib/auth";
-import { getTableMap, getTableZones, listLatestOrdersByTableIds, listTableRequests, listTableSupervisors, updateTableStatus } from "@/lib/domains/tables";
+import { getTableMap, getTableZones, listLatestOrdersByTableIds, listTableRequests, listTableSupervisors } from "@/lib/domains/tables";
+import { POS_CLIENT_QUEUE_TABLES_ENABLED } from "@/lib/pos/feature-flags";
+import { posQueryKeys } from "@/lib/pos/query-keys";
+import { executeWebOpsCommand } from "@/lib/ops/server-action";
 import type { TableStatus } from "@/lib/types";
-
-const statusStyles: Record<TableStatus, string> = {
-  empty: "bg-emerald-100 text-emerald-700",
-  occupied: "bg-amber-100 text-amber-800",
-  reserved: "bg-sky-100 text-sky-800",
-};
 
 type TableFilter = "all" | TableStatus;
 
@@ -35,12 +35,6 @@ function feedbackHref(tone: "success" | "error", message: string, filter: TableF
     params.set("status", filter);
   }
   return `/tables?${params.toString()}`;
-}
-
-function tableStatusLabel(status: TableStatus) {
-  if (status === "empty") return "Bos";
-  if (status === "occupied") return "Dolu";
-  return "Rezerve";
 }
 
 function orderStatusLabel(status: string) {
@@ -80,13 +74,16 @@ async function setTableStatusAction(formData: FormData) {
     redirect(feedbackHref("error", "Masa durumu guncellenemedi.", returnFilter));
   }
 
-  const result = await updateTableStatus({
-    tableId,
-    status: nextStatus as "empty" | "reserved",
+  const result = await executeWebOpsCommand({
+    type: "TABLE_STATUS_SET",
+    payload: {
+      table_id: tableId,
+      status: nextStatus,
+    },
   });
 
-  if (!result.ok) {
-    redirect(feedbackHref("error", result.error ?? "Masa durumu guncellenemedi.", returnFilter));
+  if (result.status !== "ACK") {
+    redirect(feedbackHref("error", result.message ?? "Masa durumu guncellenemedi.", returnFilter));
   }
 
   revalidatePath("/tables");
@@ -152,6 +149,12 @@ export default async function TablesPage({
   const reservedCount = sortedTables.filter((table) => table.status === "reserved").length;
   const openOrderCount = [...ordersByTableId.values()].filter((order) => isOpenOrderStatus(order.status)).length;
   const openRequestCountLabel = hasMoreOpenRequests ? `${openRequests.length}+` : String(openRequests.length);
+  const tablesSnapshotSeed = sortedTables.map((table) => ({
+    id: table.id,
+    table_number: table.table_number,
+    name: table.name ?? null,
+    status: table.status,
+  }));
 
   return (
     <BackofficePage
@@ -221,7 +224,177 @@ export default async function TablesPage({
         </div>
       ) : null}
 
-      <section className="grid gap-4 xl:grid-cols-5">
+      <QuerySnapshotSeed queryKey={posQueryKeys.tablesSnapshot} data={tablesSnapshotSeed} />
+
+      <MobileTaskList>
+        <MobileTaskCard title="Masa Oncelik Akisi" subtitle="Tek dokunusla masa operasyonu">
+          <div className="grid grid-cols-3 gap-2">
+            <div className="rounded-xl bg-emerald-50 px-2 py-2 text-center">
+              <p className="text-[10px] font-semibold uppercase tracking-[0.12em] text-emerald-700">Bos</p>
+              <p className="mt-1 text-lg font-semibold text-emerald-900">{emptyCount}</p>
+            </div>
+            <div className="rounded-xl bg-amber-50 px-2 py-2 text-center">
+              <p className="text-[10px] font-semibold uppercase tracking-[0.12em] text-amber-700">Dolu</p>
+              <p className="mt-1 text-lg font-semibold text-amber-900">{occupiedCount}</p>
+            </div>
+            <div className="rounded-xl bg-sky-50 px-2 py-2 text-center">
+              <p className="text-[10px] font-semibold uppercase tracking-[0.12em] text-sky-700">Rezerve</p>
+              <p className="mt-1 text-lg font-semibold text-sky-900">{reservedCount}</p>
+            </div>
+          </div>
+        </MobileTaskCard>
+
+        <MobileStickySegment
+          items={[
+            { href: filterHref("all"), label: "Tum", active: activeFilter === "all" },
+            { href: filterHref("empty"), label: "Bos", active: activeFilter === "empty" },
+            { href: filterHref("occupied"), label: "Dolu", active: activeFilter === "occupied" },
+            { href: filterHref("reserved"), label: "Rezerve", active: activeFilter === "reserved" },
+          ]}
+        />
+
+        <MobileTaskCard title="Anlik Ozet">
+          <div className="flex items-center justify-between rounded-xl bg-slate-100 px-3 py-2 text-sm">
+            <span className="text-slate-600">Acik adisyon</span>
+            <span className="font-semibold text-slate-900">{openOrderCount}</span>
+          </div>
+        </MobileTaskCard>
+
+        {filteredTables.length === 0 ? (
+          <MobileTaskCard subtitle="Masa bulunamadi">
+            <p className="text-sm text-slate-500">Bu filtrede gosterilecek masa yok.</p>
+          </MobileTaskCard>
+        ) : (
+          filteredTables.map((table) => {
+            const latestOrder = ordersByTableId.get(table.id);
+            const requestCount = requestCountByTableId.get(table.id) ?? 0;
+            const zoneName = table.zone_id ? zoneNameById.get(table.zone_id) ?? "Bolge silinmis" : "Bolgesiz";
+            const supervisor = supervisorByTableId.get(table.id);
+            const hasOpenOrder = latestOrder ? isOpenOrderStatus(latestOrder.status) : false;
+
+            return (
+              <MobileTaskCard key={`mobile-${table.id}`} title={`Masa ${table.table_number}`} subtitle={table.name || `Masa ${table.table_number}`}>
+                <div className="flex items-center justify-between">
+                  <p className="text-xs text-slate-500">Durum</p>
+                  <OptimisticTableStatusBadge
+                    tableId={table.id}
+                    initialStatus={table.status}
+                    className="rounded-full px-2.5 py-1 text-xs font-semibold"
+                  />
+                </div>
+                <div className="mt-3 space-y-1 text-sm text-slate-600">
+                  <p>Bolge: <span className="font-semibold text-slate-900">{zoneName}</span></p>
+                  <p>Sorumlu: <span className="font-semibold text-slate-900">{supervisor?.full_name ?? "Atanmamis"}</span></p>
+                </div>
+
+                {latestOrder ? (
+                  <div className="mt-3 rounded-xl border border-slate-200 bg-slate-50 px-3 py-3 text-sm">
+                    <p className="text-xs font-semibold uppercase tracking-[0.12em] text-slate-500">Acik Adisyon</p>
+                    <div className="mt-1 flex items-center justify-between">
+                      <span className="font-semibold text-slate-900">#{orderRef(latestOrder)}</span>
+                      <span className="rounded-full bg-white px-2.5 py-1 text-xs font-semibold text-slate-700">{orderStatusLabel(latestOrder.status)}</span>
+                    </div>
+                    <p className="mt-1 text-slate-600">
+                      Kalan: <span className="font-semibold text-emerald-700">{formatMoney(Number(latestOrder.remaining_balance ?? latestOrder.final_price ?? latestOrder.total_price))}</span>
+                    </p>
+                  </div>
+                ) : (
+                  <div className="mt-3 rounded-xl border border-dashed border-slate-200 bg-slate-50 px-3 py-3 text-sm text-slate-500">
+                    Bu masada acik adisyon yok.
+                  </div>
+                )}
+
+                {requestCount > 0 ? (
+                  <div className="mt-3 rounded-xl bg-amber-100 px-3 py-2 text-sm font-semibold text-amber-800">
+                    {requestCount} acik servis talebi var.
+                  </div>
+                ) : null}
+
+                <div className="mt-3 grid gap-2">
+                  {canOpenOrders ? (
+                    <Link
+                      href={`/admin/orders?table=${encodeURIComponent(table.id)}`}
+                      className="mobile-cta-primary inline-flex min-h-[46px] items-center justify-center px-4 py-3 text-sm font-semibold"
+                    >
+                      {latestOrder && hasOpenOrder ? "Siparise Ekle" : "Siparis Ac"}
+                    </Link>
+                  ) : null}
+
+                  {canUseCashier && latestOrder && hasOpenOrder ? (
+                    <Link
+                      href={`/cashier?order=${encodeURIComponent(latestOrder.id)}`}
+                      className="mobile-cta-secondary inline-flex min-h-[44px] items-center justify-center border border-slate-200 bg-white px-4 py-3 text-sm font-semibold text-slate-800"
+                    >
+                      Adisyona Git
+                    </Link>
+                  ) : null}
+
+                  {canOpenKitchen && latestOrder && hasOpenOrder ? (
+                    <Link
+                      href="/kitchen"
+                      className="mobile-cta-secondary inline-flex min-h-[44px] items-center justify-center border border-slate-200 bg-white px-4 py-3 text-sm font-semibold text-slate-800"
+                    >
+                      Mutfaga Git
+                    </Link>
+                  ) : null}
+
+                  {canManageReservations && table.status === "empty" ? (
+                    POS_CLIENT_QUEUE_TABLES_ENABLED ? (
+                      <TableStatusQueueButton
+                        tableId={table.id}
+                        currentStatus={table.status}
+                        nextStatus="reserved"
+                        returnStatusFilter={activeFilter}
+                        idleLabel="Rezerveye Al"
+                        pendingLabel="Isleniyor..."
+                        className="mobile-cta-secondary min-h-[44px] w-full border border-slate-200 bg-white px-4 py-3 text-sm font-semibold text-slate-800"
+                      />
+                    ) : (
+                      <form action={setTableStatusAction}>
+                        <input type="hidden" name="tableId" value={table.id} />
+                        <input type="hidden" name="status" value="reserved" />
+                        <input type="hidden" name="returnStatusFilter" value={activeFilter} />
+                        <PendingSubmitButton
+                          idleLabel="Rezerveye Al"
+                          pendingLabel="Isleniyor..."
+                          className="mobile-cta-secondary min-h-[44px] w-full border border-slate-200 bg-white px-4 py-3 text-sm font-semibold text-slate-800"
+                        />
+                      </form>
+                    )
+                  ) : null}
+
+                  {canManageReservations && table.status === "reserved" ? (
+                    POS_CLIENT_QUEUE_TABLES_ENABLED ? (
+                      <TableStatusQueueButton
+                        tableId={table.id}
+                        currentStatus={table.status}
+                        nextStatus="empty"
+                        returnStatusFilter={activeFilter}
+                        idleLabel="Rezervasyonu Kaldir"
+                        pendingLabel="Isleniyor..."
+                        className="mobile-cta-secondary min-h-[44px] w-full border border-slate-200 bg-white px-4 py-3 text-sm font-semibold text-slate-800"
+                      />
+                    ) : (
+                      <form action={setTableStatusAction}>
+                        <input type="hidden" name="tableId" value={table.id} />
+                        <input type="hidden" name="status" value="empty" />
+                        <input type="hidden" name="returnStatusFilter" value={activeFilter} />
+                        <PendingSubmitButton
+                          idleLabel="Rezervasyonu Kaldir"
+                          pendingLabel="Isleniyor..."
+                          className="mobile-cta-secondary min-h-[44px] w-full border border-slate-200 bg-white px-4 py-3 text-sm font-semibold text-slate-800"
+                        />
+                      </form>
+                    )
+                  ) : null}
+                </div>
+              </MobileTaskCard>
+            );
+          })
+        )}
+      </MobileTaskList>
+
+      <section className="app-mobile-hide grid gap-4 xl:grid-cols-5">
         <SummaryCard label="Toplam Masa" value={String(sortedTables.length)} hint="Aktif sube masa adedi" tone="accent" />
         <SummaryCard label="Bos Masa" value={String(emptyCount)} hint="Yeni servis icin hazir" tone="success" />
         <SummaryCard label="Dolu Masa" value={String(occupiedCount)} hint="Aktif adisyon var" />
@@ -229,8 +402,8 @@ export default async function TablesPage({
         <SummaryCard label="Acik Talep" value={openRequestCountLabel} hint={hasMoreOpenRequests ? "Ilk 200 talep gosteriliyor" : "Acik garson/hesap talepleri"} tone="danger" />
       </section>
 
-      <ContentCard title="Masa Filtreleri">
-        <div className="flex flex-wrap gap-2">
+      <ContentCard title="Masa Filtreleri" className="app-mobile-hide mobile-sticky-filter-card">
+        <div className="mobile-task-tabs flex flex-wrap gap-2">
           {([
             { value: "all" as const, label: "Tum Masalar" },
             { value: "empty" as const, label: "Bos" },
@@ -240,22 +413,23 @@ export default async function TablesPage({
             <Link
               key={tab.value}
               href={filterHref(tab.value)}
+              data-active={activeFilter === tab.value}
               className={`rounded-2xl px-4 py-2 text-sm font-semibold ${
                 activeFilter === tab.value
                   ? "bg-gradient-to-r from-[#ff5a34] to-[#f0b14f] text-white"
                   : "border border-slate-200 bg-slate-50 text-slate-700"
-              }`}
+              } mobile-task-tab`}
             >
               {tab.label}
             </Link>
           ))}
-          <span className="ml-auto rounded-2xl border border-slate-200 bg-white px-4 py-2 text-sm font-semibold text-slate-700">
+          <span className="ml-auto rounded-2xl border border-slate-200 bg-white px-4 py-2 text-sm font-semibold text-slate-700 mobile-tone-neutral">
             Acik adisyon: {openOrderCount}
           </span>
         </div>
       </ContentCard>
 
-      <ContentCard title="Masa Operasyon Kartlari">
+      <ContentCard title="Masa Operasyon Kartlari" className="app-mobile-hide">
         {filteredTables.length === 0 ? (
           <EmptyPanel title="Masa bulunamadi" description="Bu filtrede gosterilecek masa yok." />
         ) : (
@@ -268,15 +442,17 @@ export default async function TablesPage({
               const hasOpenOrder = latestOrder ? isOpenOrderStatus(latestOrder.status) : false;
 
               return (
-                <article key={table.id} className="rounded-[24px] border border-slate-200 bg-white p-5 shadow-[0_10px_20px_rgba(15,23,42,0.04)]">
+                <article key={table.id} className="mobile-task-card rounded-[24px] border border-slate-200 bg-white p-5 shadow-[0_10px_20px_rgba(15,23,42,0.04)]">
                   <div className="flex flex-wrap items-start justify-between gap-3">
                     <div>
                       <p className="text-xs font-bold uppercase tracking-[0.16em] text-slate-500">Masa {table.table_number}</p>
                       <h3 className="mt-1 text-2xl font-semibold tracking-tight text-slate-900">{table.name || `Masa ${table.table_number}`}</h3>
                     </div>
-                    <span className={`rounded-full px-3 py-1 text-xs font-semibold uppercase ${statusStyles[table.status]}`}>
-                      {tableStatusLabel(table.status)}
-                    </span>
+                    <OptimisticTableStatusBadge
+                      tableId={table.id}
+                      initialStatus={table.status}
+                      className="rounded-full px-3 py-1 text-xs font-semibold uppercase"
+                    />
                   </div>
 
                   <div className="mt-3 space-y-1 text-sm text-slate-500">
@@ -326,7 +502,7 @@ export default async function TablesPage({
                     {canUseCashier && latestOrder && hasOpenOrder ? (
                       <Link
                         href={`/cashier?order=${encodeURIComponent(latestOrder.id)}`}
-                        className="inline-flex min-h-11 items-center justify-center rounded-2xl border border-slate-200 bg-slate-50 px-4 py-3 text-center text-sm font-semibold text-slate-800"
+                        className="mobile-cta-secondary inline-flex min-h-11 items-center justify-center rounded-2xl border border-slate-200 bg-slate-50 px-4 py-3 text-center text-sm font-semibold text-slate-800"
                       >
                         Adisyona Git
                       </Link>
@@ -335,7 +511,7 @@ export default async function TablesPage({
                     {canOpenKitchen && latestOrder && hasOpenOrder ? (
                       <Link
                         href="/kitchen"
-                        className="inline-flex min-h-11 items-center justify-center rounded-2xl border border-slate-200 bg-slate-50 px-4 py-3 text-center text-sm font-semibold text-slate-800"
+                        className="mobile-cta-secondary inline-flex min-h-11 items-center justify-center rounded-2xl border border-slate-200 bg-slate-50 px-4 py-3 text-center text-sm font-semibold text-slate-800"
                       >
                         Mutfaga Git
                       </Link>
@@ -344,36 +520,60 @@ export default async function TablesPage({
                     {canOpenServiceRequests && requestCount > 0 ? (
                       <Link
                         href="/service-requests"
-                        className="inline-flex min-h-11 items-center justify-center rounded-2xl border border-slate-200 bg-slate-50 px-4 py-3 text-center text-sm font-semibold text-slate-800"
+                        className="mobile-cta-secondary inline-flex min-h-11 items-center justify-center rounded-2xl border border-slate-200 bg-slate-50 px-4 py-3 text-center text-sm font-semibold text-slate-800"
                       >
                         Talepleri Ac
                       </Link>
                     ) : null}
 
                     {canManageReservations && table.status === "empty" ? (
-                      <form action={setTableStatusAction}>
-                        <input type="hidden" name="tableId" value={table.id} />
-                        <input type="hidden" name="status" value="reserved" />
-                        <input type="hidden" name="returnStatusFilter" value={activeFilter} />
-                        <PendingSubmitButton
+                      POS_CLIENT_QUEUE_TABLES_ENABLED ? (
+                        <TableStatusQueueButton
+                          tableId={table.id}
+                          currentStatus={table.status}
+                          nextStatus="reserved"
+                          returnStatusFilter={activeFilter}
                           idleLabel="Rezerveye Al"
                           pendingLabel="Isleniyor..."
-                          className="min-h-11 w-full rounded-2xl border border-slate-200 bg-white px-4 py-3 text-sm font-semibold text-slate-800"
+                          className="mobile-cta-secondary min-h-11 w-full rounded-2xl border border-slate-200 bg-white px-4 py-3 text-sm font-semibold text-slate-800"
                         />
-                      </form>
+                      ) : (
+                        <form action={setTableStatusAction}>
+                          <input type="hidden" name="tableId" value={table.id} />
+                          <input type="hidden" name="status" value="reserved" />
+                          <input type="hidden" name="returnStatusFilter" value={activeFilter} />
+                          <PendingSubmitButton
+                            idleLabel="Rezerveye Al"
+                            pendingLabel="Isleniyor..."
+                            className="mobile-cta-secondary min-h-11 w-full rounded-2xl border border-slate-200 bg-white px-4 py-3 text-sm font-semibold text-slate-800"
+                          />
+                        </form>
+                      )
                     ) : null}
 
                     {canManageReservations && table.status === "reserved" ? (
-                      <form action={setTableStatusAction}>
-                        <input type="hidden" name="tableId" value={table.id} />
-                        <input type="hidden" name="status" value="empty" />
-                        <input type="hidden" name="returnStatusFilter" value={activeFilter} />
-                        <PendingSubmitButton
+                      POS_CLIENT_QUEUE_TABLES_ENABLED ? (
+                        <TableStatusQueueButton
+                          tableId={table.id}
+                          currentStatus={table.status}
+                          nextStatus="empty"
+                          returnStatusFilter={activeFilter}
                           idleLabel="Rezervasyonu Kaldir"
                           pendingLabel="Isleniyor..."
-                          className="min-h-11 w-full rounded-2xl border border-slate-200 bg-white px-4 py-3 text-sm font-semibold text-slate-800"
+                          className="mobile-cta-secondary min-h-11 w-full rounded-2xl border border-slate-200 bg-white px-4 py-3 text-sm font-semibold text-slate-800"
                         />
-                      </form>
+                      ) : (
+                        <form action={setTableStatusAction}>
+                          <input type="hidden" name="tableId" value={table.id} />
+                          <input type="hidden" name="status" value="empty" />
+                          <input type="hidden" name="returnStatusFilter" value={activeFilter} />
+                          <PendingSubmitButton
+                            idleLabel="Rezervasyonu Kaldir"
+                            pendingLabel="Isleniyor..."
+                            className="mobile-cta-secondary min-h-11 w-full rounded-2xl border border-slate-200 bg-white px-4 py-3 text-sm font-semibold text-slate-800"
+                          />
+                        </form>
+                      )
                     ) : null}
                   </div>
                 </article>

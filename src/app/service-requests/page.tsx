@@ -2,10 +2,12 @@ import Link from "next/link";
 import { revalidatePath } from "next/cache";
 import { BackofficePage, ContentCard, EmptyPanel, SidebarPanel, SummaryCard, WorkflowGuide } from "@/components/backoffice-ui";
 import { LiveOpsBridge } from "@/components/live-ops-bridge";
+import { MobileTaskCard, MobileTaskList } from "@/components/mobile-ops-ui";
 import { PendingSubmitButton } from "@/components/pending-submit-button";
 import { requireRole } from "@/lib/auth";
 import { getCurrentLocale } from "@/lib/i18n-server";
-import { listTableRequests, resolveTableRequest } from "@/lib/domains/tables";
+import { listTableRequests } from "@/lib/domains/tables";
+import { executeWebOpsCommand } from "@/lib/ops/server-action";
 
 async function resolveAction(formData: FormData) {
   "use server";
@@ -16,7 +18,12 @@ async function resolveAction(formData: FormData) {
     return;
   }
 
-  await resolveTableRequest(requestId);
+  await executeWebOpsCommand({
+    type: "TABLE_REQUEST_RESOLVE",
+    payload: {
+      request_id: requestId,
+    },
+  });
   revalidatePath("/service-requests");
   revalidatePath("/ops");
 }
@@ -33,17 +40,36 @@ function elapsedLabel(createdAt: string) {
   return `${diff} dk`;
 }
 
+type RequestStatusFilter = "open" | "resolved";
+
+function parseStatusFilter(value?: string | null): RequestStatusFilter {
+  if (value === "resolved" || value === "open") {
+    return value;
+  }
+  return "open";
+}
+
+function statusHref(status: RequestStatusFilter, page = 1) {
+  const params = new URLSearchParams();
+  params.set("status", status);
+  if (page > 1) {
+    params.set("page", String(page));
+  }
+  return `/service-requests?${params.toString()}`;
+}
+
 export default async function ServiceRequestsPage({
   searchParams,
 }: {
-  searchParams: Promise<{ page?: string }>;
+  searchParams: Promise<{ page?: string; status?: string }>;
 }) {
   await requireRole(["admin", "waiter", "cashier"], "/service-requests");
   const locale = await getCurrentLocale();
   const localeCode = locale === "en" ? "en-US" : locale === "fr" ? "fr-FR" : "tr-TR";
-  const { page: pageParam } = await searchParams;
+  const { page: pageParam, status: statusParam } = await searchParams;
+  const activeStatus = parseStatusFilter(statusParam);
   const page = Number.isFinite(Number(pageParam)) ? Math.max(1, Number(pageParam)) : 1;
-  const { requests, usingDemoData, hasNextPage, hasPreviousPage } = await listTableRequests("open", { page, limit: 24 });
+  const { requests, usingDemoData, hasNextPage, hasPreviousPage } = await listTableRequests(activeStatus, { page, limit: 24 });
 
   const waiterCalls = requests.filter((request) => request.request_type === "call_waiter").length;
   const billCalls = requests.filter((request) => request.request_type === "request_bill").length;
@@ -82,7 +108,7 @@ export default async function ServiceRequestsPage({
         <>
           <LiveOpsBridge tables={["table_requests"]} />
           <span className="rounded-2xl border border-slate-200 bg-slate-50 px-5 py-3 text-sm font-semibold text-slate-800">
-            {requests.length} aktif talep
+            {requests.length} {activeStatus === "open" ? "aktif talep" : "cozulmus talep"}
           </span>
           <span className="rounded-2xl border border-slate-200 bg-white px-5 py-3 text-sm font-semibold text-slate-700">
             Sayfa {page}
@@ -96,16 +122,95 @@ export default async function ServiceRequestsPage({
         </div>
       ) : null}
 
-      <section className="grid gap-4 xl:grid-cols-4">
-        <SummaryCard label="Toplam Talep" value={String(requests.length)} hint="Acik servis kuyrugu" tone="accent" />
+      <section className="app-mobile-hide grid gap-4 xl:grid-cols-4">
+        <SummaryCard
+          label={activeStatus === "open" ? "Toplam Talep" : "Cozulen Talep"}
+          value={String(requests.length)}
+          hint={activeStatus === "open" ? "Acik servis kuyrugu" : "Kapanan servis gecmisi"}
+          tone="accent"
+        />
         <SummaryCard label="Garson" value={String(waiterCalls)} hint="Mudahale isteyen masa" />
         <SummaryCard label="Hesap" value={String(billCalls)} hint="Tahsilata yonlenecek masa" tone="success" />
-        <SummaryCard label="Acil" value={String(requests.filter((request) => elapsedLabel(request.created_at) !== "Yeni").length)} hint="1 dk ustu bekleyen talep" tone="danger" />
+        <SummaryCard
+          label={activeStatus === "open" ? "Acil" : "Bekleme Suresi"}
+          value={String(requests.filter((request) => elapsedLabel(request.created_at) !== "Yeni").length)}
+          hint={activeStatus === "open" ? "1 dk ustu bekleyen talep" : "1 dk uzeri kayitlar"}
+          tone="danger"
+        />
       </section>
+
+      <MobileTaskList>
+        <div className="mobile-task-tabs">
+          <Link href={statusHref("open")} data-active={activeStatus === "open"} className="mobile-task-tab">
+            Acik
+          </Link>
+          <Link href={statusHref("resolved")} data-active={activeStatus === "resolved"} className="mobile-task-tab">
+            Cozuldu
+          </Link>
+        </div>
+        <MobileTaskCard
+          title="Servis Kuyrugu"
+          subtitle={activeStatus === "open" ? "Mudahale Bekleyen Talepler" : "Kapanan Talepler"}
+        >
+          <p className="mt-1 text-sm text-slate-500">
+            {activeStatus === "open"
+              ? "Garson ve hesap isteklerini tek dokunusla coz."
+              : "Cozulen talepleri vardiya takibi icin incele."}
+          </p>
+        </MobileTaskCard>
+
+        {requests.length === 0 ? (
+          <MobileTaskCard subtitle="Acik talep yok">
+            <p className="text-sm text-slate-500">Garson cagri veya hesap istegi geldikce bu kuyrukta gorunecek.</p>
+          </MobileTaskCard>
+        ) : (
+          requests.map((request) => (
+            <MobileTaskCard key={`mobile-request-${request.id}`} title={`Masa ${request.table_number ?? "-"}`} subtitle={toLabel(request.request_type)}>
+              <div className="flex items-center justify-between text-xs text-slate-500">
+                <span>{new Date(request.created_at).toLocaleString(localeCode)}</span>
+                <span className="rounded-full bg-amber-100 px-2.5 py-1 font-semibold uppercase text-amber-800">{elapsedLabel(request.created_at)}</span>
+              </div>
+              <div className="mt-3 rounded-xl border border-slate-200 bg-white px-3 py-3 text-sm text-slate-700">
+                {request.note?.trim() ? request.note : "Ek not yok."}
+              </div>
+              {activeStatus === "open" ? (
+                <form action={resolveAction} className="mt-3">
+                  <input type="hidden" name="requestId" value={request.id} />
+                  <PendingSubmitButton
+                    idleLabel="Cozuldu Olarak Isaretle"
+                    pendingLabel="Kapatiliyor..."
+                    className="mobile-cta-primary w-full rounded-2xl px-4 py-3 text-sm font-semibold text-white"
+                  />
+                </form>
+              ) : (
+                <div className="mt-3 rounded-xl bg-emerald-50 px-3 py-2 text-sm font-semibold text-emerald-700">Talep cozulmus.</div>
+              )}
+            </MobileTaskCard>
+          ))
+        )}
+
+        <div className="grid grid-cols-2 gap-2">
+          {hasPreviousPage ? (
+            <Link href={statusHref(activeStatus, page - 1)} className="mobile-cta-secondary inline-flex items-center justify-center border border-slate-200 bg-white px-4 py-3 text-sm font-semibold text-slate-700">
+              Onceki
+            </Link>
+          ) : (
+            <span className="mobile-cta-secondary inline-flex items-center justify-center border border-slate-200 bg-slate-100 px-4 py-3 text-sm font-semibold text-slate-400">Onceki</span>
+          )}
+          {hasNextPage ? (
+            <Link href={statusHref(activeStatus, page + 1)} className="mobile-cta-secondary inline-flex items-center justify-center border border-slate-200 bg-white px-4 py-3 text-sm font-semibold text-slate-700">
+              Sonraki
+            </Link>
+          ) : (
+            <span className="mobile-cta-secondary inline-flex items-center justify-center border border-slate-200 bg-slate-100 px-4 py-3 text-sm font-semibold text-slate-400">Sonraki</span>
+          )}
+        </div>
+      </MobileTaskList>
 
       <WorkflowGuide
         title="Servis Talepleri 3 Adim"
         description="Servis ekranini ilk kez acan biri hangi talepe nasil bakacagini hemen anlasin."
+        className="app-mobile-hide"
         steps={[
           { title: "Masa numarasina bak", description: "Kartin ustundeki masa numarasi talebin hangi masadan geldigini gosterir." },
           { title: "Talep tipini ayirt et", description: "Garson Cagir ise masaya git; Hesap Istegi ise gerekirse kasaya veya adisyona yonel." },
@@ -113,7 +218,7 @@ export default async function ServiceRequestsPage({
         ]}
       />
 
-      <ContentCard title="Acik Talepler">
+      <ContentCard title="Acik Talepler" className="app-mobile-hide">
         {requests.length === 0 ? (
           <EmptyPanel title="Acik talep yok" description="Garson cagri veya hesap istegi geldikce bu kuyrukta gorunecek." />
         ) : (
@@ -137,28 +242,34 @@ export default async function ServiceRequestsPage({
                     <p className="mt-2 text-sm leading-6 text-slate-700">{request.note?.trim() ? request.note : "Ek not yok."}</p>
                   </div>
 
-                  <form action={resolveAction} className="mt-4">
-                    <input type="hidden" name="requestId" value={request.id} />
-                    <PendingSubmitButton
-                      idleLabel="Cozuldu Olarak Isaretle"
-                      pendingLabel="Kapatiliyor..."
-                      className="w-full rounded-2xl bg-gradient-to-r from-[#ff5a34] to-[#f0b14f] px-4 py-3 text-sm font-semibold text-white"
-                    />
-                  </form>
+                  {activeStatus === "open" ? (
+                    <form action={resolveAction} className="mt-4">
+                      <input type="hidden" name="requestId" value={request.id} />
+                      <PendingSubmitButton
+                        idleLabel="Cozuldu Olarak Isaretle"
+                        pendingLabel="Kapatiliyor..."
+                        className="mobile-cta-primary w-full rounded-2xl bg-gradient-to-r from-[#ff5a34] to-[#f0b14f] px-4 py-3 text-sm font-semibold text-white"
+                      />
+                    </form>
+                  ) : (
+                    <div className="mt-4 rounded-xl bg-emerald-50 px-4 py-3 text-sm font-semibold text-emerald-700">
+                      Talep cozulmus.
+                    </div>
+                  )}
                 </article>
               ))}
             </div>
 
             <div className="flex flex-wrap items-center justify-end gap-2">
               {hasPreviousPage ? (
-                <Link href={`/service-requests?page=${page - 1}`} className="rounded-2xl border border-slate-200 bg-white px-4 py-2 text-sm font-semibold text-slate-700">
+                <Link href={statusHref(activeStatus, page - 1)} className="rounded-2xl border border-slate-200 bg-white px-4 py-2 text-sm font-semibold text-slate-700">
                   Onceki
                 </Link>
               ) : (
                 <span className="rounded-2xl border border-slate-200 bg-slate-100 px-4 py-2 text-sm font-semibold text-slate-400">Onceki</span>
               )}
               {hasNextPage ? (
-                <Link href={`/service-requests?page=${page + 1}`} className="rounded-2xl border border-slate-200 bg-white px-4 py-2 text-sm font-semibold text-slate-700">
+                <Link href={statusHref(activeStatus, page + 1)} className="rounded-2xl border border-slate-200 bg-white px-4 py-2 text-sm font-semibold text-slate-700">
                   Sonraki
                 </Link>
               ) : (

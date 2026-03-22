@@ -5,13 +5,12 @@ import { LiveOpsBridge } from "@/components/live-ops-bridge";
 import { PendingSubmitButton } from "@/components/pending-submit-button";
 import { requireRole } from "@/lib/auth";
 import {
-  assignOrderCourier,
   createCourier,
   deleteCourier,
   getDeliveryPageSnapshot,
-  markDeliveryCompleted,
   updateCourier,
 } from "@/lib/data";
+import { executeWebOpsCommand } from "@/lib/ops/server-action";
 import { logServerPerf, measureAsync } from "@/lib/perf";
 import { getFeatureAccess } from "@/lib/plan-access";
 import type { Order } from "@/lib/types";
@@ -51,31 +50,36 @@ async function assignCourierAction(formData: FormData) {
 
   const orderId = formData.get("orderId");
   const courierValue = formData.get("courierValue");
+  const stage = formData.get("stage");
+  const stageParam = typeof stage === "string" && stage ? { stage } : undefined;
   if (typeof orderId !== "string" || typeof courierValue !== "string") {
-    redirect(feedbackHref("error", "Siparis ve kurye secimi zorunludur."));
+    redirect(feedbackHref("error", "Siparis ve kurye secimi zorunludur.", stageParam));
   }
 
   const [courierId, courierName, courierPhone] = courierValue.split("||");
   if (!courierId || !courierName) {
-    redirect(feedbackHref("error", "Gecerli bir kurye secin."));
+    redirect(feedbackHref("error", "Gecerli bir kurye secin.", stageParam));
   }
 
   try {
-    const result = await assignOrderCourier({
-      orderId,
-      courierId,
-      courierName,
-      courierPhone: courierPhone || null,
+    const result = await executeWebOpsCommand({
+      type: "DELIVERY_ASSIGN",
+      payload: {
+        order_id: orderId,
+        courier_id: courierId,
+        courier_name: courierName,
+        courier_phone: courierPhone || null,
+      },
     });
-    if (!result.ok) {
-      redirect(feedbackHref("error", result.error ?? "Kurye atamasi tamamlanamadi."));
+    if (result.status !== "ACK") {
+      redirect(feedbackHref("error", result.message ?? "Kurye atamasi tamamlanamadi.", stageParam));
     }
-    if ("noop" in result && result.noop) {
-      redirect(feedbackHref("success", "Kurye atamasi zaten yapilmis."));
+    if (result.data?.noop === true) {
+      redirect(feedbackHref("success", "Kurye atamasi zaten yapilmis.", stageParam));
     }
-    redirect(feedbackHref("success", "Siparis kuryeye atandi."));
+    redirect(feedbackHref("success", "Siparis kuryeye atandi.", stageParam));
   } catch {
-    redirect(feedbackHref("error", "Kurye atamasi tamamlanamadi."));
+    redirect(feedbackHref("error", "Kurye atamasi tamamlanamadi.", stageParam));
   }
 }
 
@@ -126,21 +130,28 @@ async function completeDeliveryAction(formData: FormData) {
   await requireRole(["admin", "cashier", "waiter"], "/delivery");
 
   const orderId = formData.get("orderId");
+  const stage = formData.get("stage");
+  const stageParam = typeof stage === "string" && stage ? { stage } : undefined;
   if (typeof orderId !== "string") {
-    redirect(feedbackHref("error", "Teslimat kapatilacak siparis bulunamadi."));
+    redirect(feedbackHref("error", "Teslimat kapatilacak siparis bulunamadi.", stageParam));
   }
 
   try {
-    const result = await markDeliveryCompleted(orderId);
-    if (!result.ok) {
-      redirect(feedbackHref("error", result.error ?? "Teslimat kapanisi yapilamadi."));
+    const result = await executeWebOpsCommand({
+      type: "DELIVERY_COMPLETE",
+      payload: {
+        order_id: orderId,
+      },
+    });
+    if (result.status !== "ACK") {
+      redirect(feedbackHref("error", result.message ?? "Teslimat kapanisi yapilamadi.", stageParam));
     }
-    if ("noop" in result && result.noop) {
-      redirect(feedbackHref("success", "Teslimat zaten tamamlanmis."));
+    if (result.data?.noop === true) {
+      redirect(feedbackHref("success", "Teslimat zaten tamamlanmis.", stageParam));
     }
-    redirect(feedbackHref("success", "Teslimat tamamlandi olarak isaretlendi."));
+    redirect(feedbackHref("success", "Teslimat tamamlandi olarak isaretlendi.", stageParam));
   } catch {
-    redirect(feedbackHref("error", "Teslimat kapanisi yapilamadi."));
+    redirect(feedbackHref("error", "Teslimat kapanisi yapilamadi.", stageParam));
   }
 }
 
@@ -156,6 +167,19 @@ function timelineLabel(order: Order) {
   return "Kurye atamasi bekliyor";
 }
 
+type DeliveryStage = "dispatch" | "travel" | "done";
+
+function parseDeliveryStage(value?: string | null): DeliveryStage {
+  if (value === "travel" || value === "done" || value === "dispatch") {
+    return value;
+  }
+  return "dispatch";
+}
+
+function stageHref(stage: DeliveryStage) {
+  return `/delivery?stage=${stage}`;
+}
+
 function orderRef(order: { id: string; check_number?: string | null }) {
   return order.check_number?.trim() ? order.check_number : order.id.slice(0, 8);
 }
@@ -164,6 +188,7 @@ function renderOrderCard(
   order: Order,
   kind: "awaiting" | "travel" | "done",
   couriers: Array<{ id: string; full_name: string; phone: string | null }>,
+  stage?: DeliveryStage,
 ) {
   return (
     <article key={order.id} className="rounded-[22px] border border-slate-200 bg-white p-4 shadow-[0_10px_20px_rgba(15,23,42,0.04)]">
@@ -195,6 +220,7 @@ function renderOrderCard(
       {kind === "awaiting" ? (
         <form action={assignCourierAction} className="mt-4 grid gap-2">
           <input type="hidden" name="orderId" value={order.id} />
+          {stage ? <input type="hidden" name="stage" value={stage} /> : null}
           <select
             name="courierValue"
             className="rounded-2xl border border-slate-300 px-4 py-3 text-sm"
@@ -222,6 +248,7 @@ function renderOrderCard(
       {kind === "travel" ? (
         <form action={completeDeliveryAction} className="mt-4">
           <input type="hidden" name="orderId" value={order.id} />
+          {stage ? <input type="hidden" name="stage" value={stage} /> : null}
           <PendingSubmitButton
             idleLabel="Teslim Edildi"
             pendingLabel="Kapatiliyor..."
@@ -236,7 +263,7 @@ function renderOrderCard(
 export default async function DeliveryPage({
   searchParams,
 }: {
-  searchParams: Promise<{ feedback?: string; tone?: "success" | "error"; order?: string; courier?: string; showAll?: string }>;
+  searchParams: Promise<{ feedback?: string; tone?: "success" | "error"; order?: string; courier?: string; showAll?: string; stage?: string }>;
 }) {
   await requireRole(["admin", "cashier", "waiter"], "/delivery");
   const featureAccessResult = await measureAsync("feature_access", () => getFeatureAccess("delivery_dispatch"));
@@ -254,7 +281,7 @@ export default async function DeliveryPage({
       </BackofficePage>
     );
   }
-  const { feedback, tone, order: selectedOrderId, courier: selectedCourierId, showAll } = await searchParams;
+  const { feedback, tone, order: selectedOrderId, courier: selectedCourierId, showAll, stage: stageParam } = await searchParams;
   const deliverySnapshotResult = await measureAsync("delivery_snapshot", () => getDeliveryPageSnapshot(selectedOrderId));
   logServerPerf("/delivery", [featureAccessResult, deliverySnapshotResult]);
   const { orders: deliveryOrders, couriers, selectedOrder, usingDemoData } = deliverySnapshotResult.value;
@@ -267,6 +294,8 @@ export default async function DeliveryPage({
   const visibleTravel = showAllColumns ? outForDelivery : outForDelivery.slice(0, initialColumnLimit);
   const visibleCompleted = showAllColumns ? completed : completed.slice(0, initialColumnLimit);
   const selectedCourier = selectedCourierId ? couriers.find((courier) => courier.id === selectedCourierId) ?? null : null;
+  const activeStage = parseDeliveryStage(stageParam);
+  const activeMobileOrders = activeStage === "dispatch" ? awaitingDispatch : activeStage === "travel" ? outForDelivery : completed;
 
   return (
     <BackofficePage
@@ -295,14 +324,65 @@ export default async function DeliveryPage({
         </div>
       ) : null}
 
-      <section className="grid gap-4 xl:grid-cols-4">
+      <section className="app-mobile-hide grid gap-4 xl:grid-cols-4">
         <SummaryCard label="Dispatch" value={String(awaitingDispatch.length)} hint="Kurye bekleyen siparis" tone="accent" />
         <SummaryCard label="Yolda" value={String(outForDelivery.length)} hint="Aktif dagitim" tone="neutral" />
         <SummaryCard label="Tamamlanan" value={String(completed.length)} hint="Bugun kapanan teslimat" tone="success" />
         <SummaryCard label="Aktif Kurye" value={String(couriers.length)} hint="Kullanilabilir kurye" />
       </section>
 
-      <section className="grid gap-5 xl:grid-cols-[1.2fr_0.8fr]">
+      <section className="app-mobile-only space-y-3">
+        <div className="mobile-task-tabs">
+          {([
+            { key: "dispatch" as const, label: "Dispatch", count: awaitingDispatch.length },
+            { key: "travel" as const, label: "Yolda", count: outForDelivery.length },
+            { key: "done" as const, label: "Tamamlandi", count: completed.length },
+          ]).map((tab) => (
+            <Link key={tab.key} href={stageHref(tab.key)} data-active={activeStage === tab.key} className="mobile-task-tab">
+              {tab.label} ({tab.count})
+            </Link>
+          ))}
+        </div>
+
+        <article className="mobile-task-card">
+          <p className="text-[11px] font-bold uppercase tracking-[0.16em] text-slate-500">Aktif Akis</p>
+          <h2 className="mt-2 text-xl font-semibold tracking-tight text-slate-900">
+            {activeStage === "dispatch" ? "Kurye Atama" : activeStage === "travel" ? "Yolda Siparisler" : "Kapanan Teslimatlar"}
+          </h2>
+          <p className="mt-1 text-sm text-slate-500">
+            {activeStage === "dispatch"
+              ? "Kurye secimini yaparak siparisi aninda yola cikar."
+              : activeStage === "travel"
+                ? "Yoldaki siparisleri hizli kapatma aksiyonuyla tamamla."
+                : "Tamamlanan teslimatlari gecmis kontrolu icin izle."}
+          </p>
+        </article>
+
+        {activeMobileOrders.length === 0 ? (
+          <article className="mobile-task-card text-sm text-slate-600">Bu asamada gosterilecek siparis yok.</article>
+        ) : (
+          <div className="grid gap-3">
+            {activeMobileOrders.map((order) => (
+              <div key={`mobile-delivery-${order.id}`} className="space-y-2">
+                {renderOrderCard(
+                  order,
+                  activeStage === "dispatch" ? "awaiting" : activeStage === "travel" ? "travel" : "done",
+                  couriers,
+                  activeStage,
+                )}
+                <Link
+                  href={`/delivery?stage=${activeStage}&order=${order.id}`}
+                  className="mobile-cta-secondary inline-flex w-full items-center justify-center border border-slate-200 bg-white px-4 py-3 text-sm font-semibold text-slate-700"
+                >
+                  Detayi Ac
+                </Link>
+              </div>
+            ))}
+          </div>
+        )}
+      </section>
+
+      <section className="app-mobile-hide grid gap-5 xl:grid-cols-[1.2fr_0.8fr]">
         <ContentCard title="Dispatch Board">
           {deliveryOrders.length === 0 ? (
             <EmptyPanel title="Teslimat Yok" description="Aktif delivery siparisi bulunmuyor." />
@@ -331,7 +411,7 @@ export default async function DeliveryPage({
                     ) : (
                       visibleAwaiting.map((order) => (
                         <div key={order.id}>
-                          {renderOrderCard(order, "awaiting", couriers)}
+                          {renderOrderCard(order, "awaiting", couriers, "dispatch")}
                           <Link
                             href={`/delivery?order=${order.id}`}
                             className="mt-2 block rounded-2xl border border-slate-200 bg-white px-4 py-3 text-center text-sm font-semibold text-slate-700"
@@ -361,7 +441,7 @@ export default async function DeliveryPage({
                   ) : (
                     visibleTravel.map((order) => (
                       <div key={order.id}>
-                        {renderOrderCard(order, "travel", couriers)}
+                          {renderOrderCard(order, "travel", couriers, "travel")}
                         <Link
                           href={`/delivery?order=${order.id}`}
                           className="mt-2 block rounded-2xl border border-slate-200 bg-white px-4 py-3 text-center text-sm font-semibold text-slate-700"
@@ -391,7 +471,7 @@ export default async function DeliveryPage({
                   ) : (
                     visibleCompleted.map((order) => (
                       <div key={order.id}>
-                        {renderOrderCard(order, "done", couriers)}
+                          {renderOrderCard(order, "done", couriers, "done")}
                         <Link
                           href={`/delivery?order=${order.id}`}
                           className="mt-2 block rounded-2xl border border-slate-200 bg-white px-4 py-3 text-center text-sm font-semibold text-slate-700"
@@ -410,6 +490,7 @@ export default async function DeliveryPage({
 
         <div className="space-y-5">
           <WorkflowGuide
+            className="app-mobile-hide"
             title="Teslimatta 3 Adim"
             description="Kurye operasyonunu bilmeyen biri de dispatch akisini rahat kullansin."
             steps={[

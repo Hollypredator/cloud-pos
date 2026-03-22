@@ -5,12 +5,37 @@ import { getPlatformAccessByEmail, getStudioAccessByEmail, getSupportAccessByEma
 import { getRequestAppContext } from "@/lib/server/app-context";
 import { getDirectPlatformOwnerEmails } from "@/lib/platform-owner";
 
+function isServiceRoleConfigured() {
+  return Boolean(process.env.NEXT_PUBLIC_SUPABASE_URL && process.env.SUPABASE_SERVICE_ROLE_KEY);
+}
+
+export function canUseDemoModeBypass(usingDemoData: boolean) {
+  return usingDemoData && !isServiceRoleConfigured();
+}
+
 export function hasRoleAccess(role: AppRole | null, allowedRoles: AppRole[]) {
   return !!role && (allowedRoles.includes(role) || (role === "owner" && allowedRoles.includes("admin")));
 }
 
 export function hasExactRoleAccess(role: AppRole | null, allowedRoles: AppRole[]) {
   return !!role && allowedRoles.includes(role);
+}
+
+function hasResolvedOperationalScope(input: {
+  user: unknown;
+  usingDemoData: boolean;
+  accessScope: StaffAccessScope;
+  branchAccessIds: string[];
+}) {
+  if (!input.user || input.usingDemoData) {
+    return true;
+  }
+
+  if (input.accessScope === "business") {
+    return true;
+  }
+
+  return input.branchAccessIds.length > 0;
 }
 
 export const getCurrentUserIdentity = cache(async () => {
@@ -58,12 +83,16 @@ export const getCurrentUserWithRole = cache(async () => {
 
 export async function requireRole(allowedRoles: AppRole[], nextPath: string) {
   const context = await getCurrentUserWithRole();
-  if (context.usingDemoData) {
+  if (canUseDemoModeBypass(context.usingDemoData)) {
     return { bypass: true as const };
   }
 
   if (!context.user) {
     redirect(`/login?next=${encodeURIComponent(nextPath)}`);
+  }
+
+  if (!hasResolvedOperationalScope(context)) {
+    redirect("/unauthorized");
   }
 
   const roleAllowed =
@@ -78,12 +107,16 @@ export async function requireRole(allowedRoles: AppRole[], nextPath: string) {
 
 export async function requireExactRole(allowedRoles: AppRole[], nextPath: string) {
   const context = await getCurrentUserWithRole();
-  if (context.usingDemoData) {
+  if (canUseDemoModeBypass(context.usingDemoData)) {
     return { bypass: true as const };
   }
 
   if (!context.user) {
     redirect(`/login?next=${encodeURIComponent(nextPath)}`);
+  }
+
+  if (!hasResolvedOperationalScope(context)) {
+    redirect("/unauthorized");
   }
 
   if (!hasExactRoleAccess(context.role, allowedRoles)) {
@@ -95,7 +128,7 @@ export async function requireExactRole(allowedRoles: AppRole[], nextPath: string
 
 export async function requireStudioAccess(nextPath: string, allowedRoles?: StudioRole[]) {
   const context = await getCurrentUserWithRole();
-  if (context.usingDemoData) {
+  if (canUseDemoModeBypass(context.usingDemoData)) {
     return { bypass: true as const };
   }
 
@@ -131,7 +164,7 @@ export async function requireStudioAccess(nextPath: string, allowedRoles?: Studi
 
 export async function requireSupportAccess(nextPath: string, allowedRoles?: SupportRole[]) {
   const context = await getCurrentUserWithRole();
-  if (context.usingDemoData) {
+  if (canUseDemoModeBypass(context.usingDemoData)) {
     return { bypass: true as const };
   }
 

@@ -2,6 +2,13 @@ import Image from "next/image";
 import Link from "next/link";
 import { headers } from "next/headers";
 import { redirect } from "next/navigation";
+import {
+  CashierCancelOrderQueueForm,
+  CashierFinancialsQueueForm,
+  CashierOrderItemCancelQueueButton,
+  CashierPaymentQueuePanel,
+  CashierRefundQueueForm,
+} from "@/components/cashier-queue-controls";
 import { CashierPaymentPanel } from "@/components/cashier-payment-panel";
 import {
   BackofficePage,
@@ -13,12 +20,15 @@ import {
 } from "@/components/backoffice-ui";
 import { LiveOpsBridge } from "@/components/live-ops-bridge";
 import { LiveRouteRefresh } from "@/components/live-route-refresh";
+import { QuerySnapshotSeed } from "@/components/query-snapshot-seed";
 import { ReceiptPreviewLauncher } from "@/components/receipt-preview-launcher";
 import { getAppBaseUrl } from "@/lib/app-url";
 import { requireRole } from "@/lib/auth";
 import { getCurrentLocale } from "@/lib/i18n-server";
 import { getCashierPageSnapshot } from "@/lib/domains/orders";
 import { executeWebOpsCommand } from "@/lib/ops/server-action";
+import { POS_CLIENT_QUEUE_CASHIER_ENABLED } from "@/lib/pos/feature-flags";
+import { posQueryKeys } from "@/lib/pos/query-keys";
 import { logServerPerf, measureAsync } from "@/lib/perf";
 import { getWebPerfProfile } from "@/lib/web-perf-profile";
 import { isLikelyMobileUserAgent } from "@/lib/device";
@@ -282,6 +292,11 @@ export default async function CashierPage({
 
   const servedTotals = totals(servedOrders);
   const paidTotals = totals(paidOrders);
+  const cashierSnapshotSeed = {
+    served_order_ids: servedOrders.map((order) => order.id),
+    paid_order_ids: paidOrders.map((order) => order.id),
+    selected_order_id: selectedOrder?.id ?? null,
+  };
 
   return (
     <BackofficePage
@@ -313,6 +328,8 @@ export default async function CashierPage({
           Demo veri modu aktif. Split, odeme ve iade akislarini bu ekran uzerinden test edebilirsin.
         </div>
       ) : null}
+
+      <QuerySnapshotSeed queryKey={posQueryKeys.cashierSnapshot} data={cashierSnapshotSeed} />
 
       {!renderMobileMarkup ? (
         <section className="app-mobile-hide grid gap-4 xl:grid-cols-4">
@@ -514,31 +531,40 @@ export default async function CashierPage({
                       </div>
                     </div>
 
-                    <form action={refundOrderAction} className="grid gap-2 rounded-[20px] border border-rose-200 bg-rose-50/60 p-4">
-                      <input type="hidden" name="orderId" value={order.id} />
-                      <input type="hidden" name="requestKey" value={crypto.randomUUID()} />
-                      <select name="method" className="rounded-2xl border border-slate-300 px-4 py-3 text-sm">
-                        <option value="cash">Nakit</option>
-                        <option value="card">Kart</option>
-                        <option value="mixed">Karma</option>
-                      </select>
-                      <input
-                        name="amount"
-                        type="number"
-                        min="0"
-                        step="0.01"
-                        defaultValue={Number(order.final_price ?? order.total_price)}
-                        className="rounded-2xl border border-slate-300 px-4 py-3 text-sm"
+                    {POS_CLIENT_QUEUE_CASHIER_ENABLED ? (
+                      <CashierRefundQueueForm
+                        orderId={order.id}
+                        returnOrderId={selectedOrder?.id}
+                        defaultAmount={Number(order.final_price ?? order.total_price)}
+                        className="grid gap-2 rounded-[20px] border border-rose-200 bg-rose-50/60 p-4"
                       />
-                      <input
-                        name="note"
-                        placeholder="Iade notu"
-                        className="rounded-2xl border border-slate-300 px-4 py-3 text-sm"
-                      />
-                      <button type="submit" className="rounded-2xl border border-rose-300 px-4 py-3 text-sm font-semibold text-rose-700">
-                        Iade Baslat
-                      </button>
-                    </form>
+                    ) : (
+                      <form action={refundOrderAction} className="grid gap-2 rounded-[20px] border border-rose-200 bg-rose-50/60 p-4">
+                        <input type="hidden" name="orderId" value={order.id} />
+                        <input type="hidden" name="requestKey" value={crypto.randomUUID()} />
+                        <select name="method" className="rounded-2xl border border-slate-300 px-4 py-3 text-sm">
+                          <option value="cash">Nakit</option>
+                          <option value="card">Kart</option>
+                          <option value="mixed">Karma</option>
+                        </select>
+                        <input
+                          name="amount"
+                          type="number"
+                          min="0"
+                          step="0.01"
+                          defaultValue={Number(order.final_price ?? order.total_price)}
+                          className="rounded-2xl border border-slate-300 px-4 py-3 text-sm"
+                        />
+                        <input
+                          name="note"
+                          placeholder="Iade notu"
+                          className="rounded-2xl border border-slate-300 px-4 py-3 text-sm"
+                        />
+                        <button type="submit" className="rounded-2xl border border-rose-300 px-4 py-3 text-sm font-semibold text-rose-700">
+                          Iade Baslat
+                        </button>
+                      </form>
+                    )}
                   </div>
                 </article>
               ))}
@@ -637,20 +663,29 @@ export default async function CashierPage({
                                 </div>
                                 <div className="flex shrink-0 items-center gap-3">
                                   <span className="font-numeric pt-1">{Number(item.line_total).toFixed(2)} TL</span>
-                                  <form action={cancelOrderItemAction}>
-                                    <input type="hidden" name="orderId" value={order.id} />
-                                    <input type="hidden" name="returnOrderId" value={order.id} />
-                                    <input type="hidden" name="productId" value={item.product_id} />
-                                    <button
-                                      type="submit"
-                                      title="Urunu dus veya iptal et"
-                                      className="flex h-7 w-7 items-center justify-center rounded-lg border border-slate-200 bg-white text-rose-500 opacity-20 transition hover:bg-rose-50 hover:border-rose-200 group-hover:opacity-100 focus:opacity-100"
-                                    >
-                                      <svg className="h-4 w-4" fill="none" viewBox="0 0 24 24" stroke="currentColor">
-                                        <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2.5} d="M20 12H4" />
-                                      </svg>
-                                    </button>
-                                  </form>
+                                  {POS_CLIENT_QUEUE_CASHIER_ENABLED ? (
+                                    <CashierOrderItemCancelQueueButton
+                                      orderId={order.id}
+                                      returnOrderId={order.id}
+                                      productId={item.product_id}
+                                      className="flex h-7 w-7 items-center justify-center rounded-lg border border-slate-200 bg-white text-rose-500 opacity-20 transition hover:bg-rose-50 hover:border-rose-200 group-hover:opacity-100 focus:opacity-100 disabled:cursor-not-allowed disabled:opacity-40"
+                                    />
+                                  ) : (
+                                    <form action={cancelOrderItemAction}>
+                                      <input type="hidden" name="orderId" value={order.id} />
+                                      <input type="hidden" name="returnOrderId" value={order.id} />
+                                      <input type="hidden" name="productId" value={item.product_id} />
+                                      <button
+                                        type="submit"
+                                        title="Urunu dus veya iptal et"
+                                        className="flex h-7 w-7 items-center justify-center rounded-lg border border-slate-200 bg-white text-rose-500 opacity-20 transition hover:bg-rose-50 hover:border-rose-200 group-hover:opacity-100 focus:opacity-100"
+                                      >
+                                        <svg className="h-4 w-4" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+                                          <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2.5} d="M20 12H4" />
+                                        </svg>
+                                      </button>
+                                    </form>
+                                  )}
                                 </div>
                               </div>
                             </li>
@@ -707,61 +742,89 @@ export default async function CashierPage({
                         </div>
                       </div>
 
-                      <form action={applyFinancialsAction} className="grid gap-2 rounded-[20px] border border-slate-200 bg-white p-4 md:grid-cols-3">
-                        <input type="hidden" name="orderId" value={order.id} />
-                        <input type="hidden" name="returnOrderId" value={order.id} />
-                        <input
-                          name="discountAmount"
-                          type="number"
-                          min="0"
-                          step="0.01"
-                          defaultValue={discount}
-                          placeholder="Indirim"
-                          className="rounded-2xl border border-slate-300 px-4 py-3 text-sm"
+                      {POS_CLIENT_QUEUE_CASHIER_ENABLED ? (
+                        <CashierFinancialsQueueForm
+                          orderId={order.id}
+                          returnOrderId={order.id}
+                          defaultDiscountAmount={discount}
+                          defaultServiceFee={service}
+                          className="grid gap-2 rounded-[20px] border border-slate-200 bg-white p-4 md:grid-cols-3"
                         />
-                        <input
-                          name="serviceFee"
-                          type="number"
-                          min="0"
-                          step="0.01"
-                          defaultValue={service}
-                          placeholder="Servis"
-                          className="rounded-2xl border border-slate-300 px-4 py-3 text-sm"
-                        />
-                        <button
-                          type="submit"
-                          className="rounded-2xl border border-slate-200 bg-slate-50 px-4 py-3 text-sm font-semibold text-slate-800"
-                        >
-                          Finans Guncelle
-                        </button>
-                      </form>
+                      ) : (
+                        <form action={applyFinancialsAction} className="grid gap-2 rounded-[20px] border border-slate-200 bg-white p-4 md:grid-cols-3">
+                          <input type="hidden" name="orderId" value={order.id} />
+                          <input type="hidden" name="returnOrderId" value={order.id} />
+                          <input
+                            name="discountAmount"
+                            type="number"
+                            min="0"
+                            step="0.01"
+                            defaultValue={discount}
+                            placeholder="Indirim"
+                            className="rounded-2xl border border-slate-300 px-4 py-3 text-sm"
+                          />
+                          <input
+                            name="serviceFee"
+                            type="number"
+                            min="0"
+                            step="0.01"
+                            defaultValue={service}
+                            placeholder="Servis"
+                            className="rounded-2xl border border-slate-300 px-4 py-3 text-sm"
+                          />
+                          <button
+                            type="submit"
+                            className="rounded-2xl border border-slate-200 bg-slate-50 px-4 py-3 text-sm font-semibold text-slate-800"
+                          >
+                            Finans Guncelle
+                          </button>
+                        </form>
+                      )}
                     </div>
                   </section>
 
                   <section id="wizard-payment" className="scroll-mt-[130px] grid gap-4 xl:grid-cols-[1.1fr_0.9fr]">
-                    <CashierPaymentPanel
-                      orderId={order.id}
-                      returnOrderId={order.id}
-                      defaultAmount={remaining}
-                      items={order.items as OrderItem[]}
-                      requestKey={paymentRequestKey}
-                      action={completePaymentAction}
-                    />
-
-                    <form id="wizard-close" action={cancelOrderAction} className="scroll-mt-[130px] grid gap-2 rounded-[20px] border border-rose-200 bg-rose-50/60 p-4 content-start">
-                      <input type="hidden" name="orderId" value={order.id} />
-                      <input type="hidden" name="returnOrderId" value={order.id} />
-                      <input type="hidden" name="requestKey" value={cancelRequestKey} />
-                      <p className="text-xs font-bold uppercase tracking-[0.16em] text-rose-700">Adisyon Iptal</p>
-                      <input
-                        name="note"
-                        placeholder="Iptal nedeni"
-                        className="rounded-2xl border border-rose-200 bg-white px-4 py-3 text-sm"
+                    {POS_CLIENT_QUEUE_CASHIER_ENABLED ? (
+                      <CashierPaymentQueuePanel
+                        orderId={order.id}
+                        returnOrderId={order.id}
+                        defaultAmount={remaining}
+                        items={order.items as OrderItem[]}
                       />
-                      <button type="submit" className="rounded-2xl border border-rose-300 px-4 py-3 text-sm font-semibold text-rose-700">
-                        Iptal
-                      </button>
-                    </form>
+                    ) : (
+                      <CashierPaymentPanel
+                        orderId={order.id}
+                        returnOrderId={order.id}
+                        defaultAmount={remaining}
+                        items={order.items as OrderItem[]}
+                        requestKey={paymentRequestKey}
+                        action={completePaymentAction}
+                      />
+                    )}
+
+                    {POS_CLIENT_QUEUE_CASHIER_ENABLED ? (
+                      <CashierCancelOrderQueueForm
+                        id="wizard-close"
+                        orderId={order.id}
+                        returnOrderId={order.id}
+                        className="scroll-mt-[130px] grid gap-2 rounded-[20px] border border-rose-200 bg-rose-50/60 p-4 content-start"
+                      />
+                    ) : (
+                      <form id="wizard-close" action={cancelOrderAction} className="scroll-mt-[130px] grid gap-2 rounded-[20px] border border-rose-200 bg-rose-50/60 p-4 content-start">
+                        <input type="hidden" name="orderId" value={order.id} />
+                        <input type="hidden" name="returnOrderId" value={order.id} />
+                        <input type="hidden" name="requestKey" value={cancelRequestKey} />
+                        <p className="text-xs font-bold uppercase tracking-[0.16em] text-rose-700">Adisyon Iptal</p>
+                        <input
+                          name="note"
+                          placeholder="Iptal nedeni"
+                          className="rounded-2xl border border-rose-200 bg-white px-4 py-3 text-sm"
+                        />
+                        <button type="submit" className="rounded-2xl border border-rose-300 px-4 py-3 text-sm font-semibold text-rose-700">
+                          Iptal
+                        </button>
+                      </form>
+                    )}
                   </section>
                 </div>
               );

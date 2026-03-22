@@ -1,14 +1,23 @@
-import type { Metadata } from "next";
+import type { Metadata, Viewport } from "next";
 import { cookies } from "next/headers";
 import { Analytics } from "@vercel/analytics/next";
 import { SpeedInsights } from "@vercel/speed-insights/next";
 import "./globals.css";
 import { AppShell } from "@/components/app-shell";
+import { PosCommandQueueRuntime } from "@/components/pos-command-queue-runtime";
+import { QueryProvider } from "@/components/query-provider";
 import { getGeneralSettings, getSeoSettings } from "@/lib/data";
 import { getCurrentLocale } from "@/lib/i18n-server";
 import { getAppShellPayload } from "@/lib/server/app-shell";
 
 const APP_SHELL_FETCH_BUDGET_MS = 220;
+
+export const viewport: Viewport = {
+  width: "device-width",
+  initialScale: 1,
+  viewportFit: "cover",
+  themeColor: "#0f172a",
+};
 
 async function getAppShellPayloadWithBudget() {
   try {
@@ -68,7 +77,10 @@ export default async function RootLayout({
   return (
     <html lang={locale}>
       <body className="antialiased">
-        <AppShell initialData={initialShellData}>{children}</AppShell>
+        <QueryProvider>
+          <PosCommandQueueRuntime />
+          <AppShell initialData={initialShellData}>{children}</AppShell>
+        </QueryProvider>
         <SpeedInsights />
         <Analytics />
       </body>

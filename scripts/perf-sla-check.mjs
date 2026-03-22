@@ -4,6 +4,9 @@ const baseUrl = (process.env.PERF_BASE_URL || process.env.NEXT_PUBLIC_APP_URL ||
 const runs = Math.max(1, Number.parseInt(process.env.PERF_RUNS || "5", 10) || 5);
 const warmupRuns = Math.max(0, Number.parseInt(process.env.PERF_WARMUP_RUNS || "1", 10) || 1);
 const authCookie = (process.env.PERF_AUTH_COOKIE || "").trim();
+const requireAuthBaseline = process.env.PERF_REQUIRE_AUTH_BASELINE === "true";
+const allowLocalAuthBaseline = process.env.PERF_ALLOW_LOCAL_AUTH_BASELINE === "true";
+const vercelBypassToken = (process.env.VERCEL_PROTECTION_BYPASS || "").trim();
 const requestTimeoutMs = Math.max(250, Number.parseInt(process.env.PERF_REQUEST_TIMEOUT_MS || "4000", 10) || 4000);
 
 const apiBudgetMs = Number(process.env.PERF_API_BUDGET_MS || 200);
@@ -28,6 +31,20 @@ function stats(values) {
 
 function fmt(ms) {
   return `${ms.toFixed(2)}ms`;
+}
+
+function parseMetricHeader(response, headerName) {
+  const value = Number(response.headers.get(headerName));
+  return Number.isFinite(value) ? value : null;
+}
+
+function isLocalBaseUrl(url) {
+  try {
+    const hostname = new URL(url).hostname.toLowerCase();
+    return hostname === "localhost" || hostname === "127.0.0.1" || hostname === "::1";
+  } catch {
+    return false;
+  }
 }
 
 function buildTargets() {
@@ -70,11 +87,29 @@ function buildTargets() {
     });
   }
 
-  return targets.filter((target) => !target.requiresAuth || authCookie);
+  return targets.filter((target) => {
+    if (!target.requiresAuth) {
+      return true;
+    }
+    if (authCookie) {
+      return true;
+    }
+    return !requireAuthBaseline;
+  });
+}
+
+function withBypass(url) {
+  if (!vercelBypassToken) {
+    return url;
+  }
+  const target = new URL(url);
+  target.searchParams.set("x-vercel-set-bypass-cookie", "true");
+  target.searchParams.set("x-vercel-protection-bypass", vercelBypassToken);
+  return target.toString();
 }
 
 async function timedRequest(target) {
-  const url = new URL(target.path, baseUrl).toString();
+  const url = withBypass(new URL(target.path, baseUrl).toString());
   const startedAt = performance.now();
   const controller = new AbortController();
   const timer = setTimeout(() => controller.abort("timeout"), requestTimeoutMs);
@@ -97,7 +132,12 @@ async function timedRequest(target) {
     });
     await response.arrayBuffer();
     const elapsed = performance.now() - startedAt;
-    return { status: response.status, ms: elapsed };
+    return {
+      status: response.status,
+      ms: elapsed,
+      appShellMs: parseMetricHeader(response, "x-app-shell-ms"),
+      operationMs: parseMetricHeader(response, "x-operation-ms"),
+    };
   } finally {
     clearTimeout(timer);
   }
@@ -106,6 +146,8 @@ async function timedRequest(target) {
 async function runTarget(target) {
   const durations = [];
   const statuses = [];
+  const appShellDurations = [];
+  const operationDurations = [];
   let error = null;
 
   for (let index = 0; index < runs; index += 1) {
@@ -113,6 +155,12 @@ async function runTarget(target) {
       const result = await timedRequest(target);
       durations.push(result.ms);
       statuses.push(result.status);
+      if (typeof result.appShellMs === "number") {
+        appShellDurations.push(result.appShellMs);
+      }
+      if (typeof result.operationMs === "number") {
+        operationDurations.push(result.operationMs);
+      }
     } catch (innerError) {
       error = innerError instanceof Error ? innerError.message : "unknown_error";
       break;
@@ -131,6 +179,8 @@ async function runTarget(target) {
 
   const hasUnexpectedStatus = statuses.some((status) => !target.expected.includes(status));
   const metric = stats(durations);
+  const appShellMetric = appShellDurations.length > 0 ? stats(appShellDurations) : null;
+  const operationMetric = operationDurations.length > 0 ? stats(operationDurations) : null;
   const budget = target.type === "api" ? apiBudgetMs : target.type === "operation" ? operationBudgetMs : pageBudgetMs;
   const p95Budget =
     target.type === "api" ? apiP95BudgetMs : target.type === "operation" ? operationP95BudgetMs : pageP95BudgetMs;
@@ -146,6 +196,10 @@ async function runTarget(target) {
         : `budget_exceeded(avg=${fmt(metric.avg)},p95=${fmt(metric.p95)})`,
     statuses,
     metrics: metric,
+    headerMetrics: {
+      appShell: appShellMetric,
+      operation: operationMetric,
+    },
     budget,
     p95Budget,
   };
@@ -166,13 +220,24 @@ async function warmupTarget(target) {
 }
 
 async function run() {
+  if (requireAuthBaseline && !authCookie) {
+    console.error("[perf:sla] PERF_REQUIRE_AUTH_BASELINE=true icin PERF_AUTH_COOKIE zorunludur.");
+    process.exit(1);
+  }
+  if (requireAuthBaseline && !allowLocalAuthBaseline && isLocalBaseUrl(baseUrl)) {
+    console.error("[perf:sla] auth baseline staging URL ile alinmali. PERF_BASE_URL localhost olamaz.");
+    process.exit(1);
+  }
+
   const targets = buildTargets();
   if (targets.length === 0) {
     console.error("[perf:sla] olculecek hedef bulunamadi. PERF_AUTH_COOKIE tanimlaman gerekebilir.");
     process.exit(1);
   }
 
-  console.log(`[perf:sla] base=${baseUrl} runs=${runs} warmup=${warmupRuns} auth=${authCookie ? "on" : "off"}`);
+  console.log(
+    `[perf:sla] base=${baseUrl} runs=${runs} warmup=${warmupRuns} auth=${authCookie ? "on" : "off"} require_auth_baseline=${requireAuthBaseline ? "on" : "off"}`,
+  );
   console.log(
     `[perf:sla] budgets api_avg<=${apiBudgetMs}ms api_p95<=${apiP95BudgetMs}ms op_avg<=${operationBudgetMs}ms op_p95<=${operationP95BudgetMs}ms page_avg<=${pageBudgetMs}ms page_p95<=${pageP95BudgetMs}ms timeout=${requestTimeoutMs}ms`,
   );
@@ -194,8 +259,14 @@ async function run() {
     }
     const uniqueStatuses = [...new Set(result.statuses)].join(",");
     const marker = result.ok ? "PASS" : "FAIL";
+    const appShellMetricText = result.headerMetrics?.appShell
+      ? ` app_shell_avg=${fmt(result.headerMetrics.appShell.avg)} app_shell_p95=${fmt(result.headerMetrics.appShell.p95)}`
+      : "";
+    const operationMetricText = result.headerMetrics?.operation
+      ? ` operation_avg=${fmt(result.headerMetrics.operation.avg)} operation_p95=${fmt(result.headerMetrics.operation.p95)}`
+      : "";
     console.log(
-      `[perf:sla] ${target.name} ${marker} status=${uniqueStatuses} avg=${fmt(result.metrics.avg)} p95=${fmt(result.metrics.p95)} min=${fmt(result.metrics.min)} max=${fmt(result.metrics.max)} budget=${result.budget}ms p95_budget=${result.p95Budget}ms`,
+      `[perf:sla] ${target.name} ${marker} status=${uniqueStatuses} avg=${fmt(result.metrics.avg)} p95=${fmt(result.metrics.p95)} min=${fmt(result.metrics.min)} max=${fmt(result.metrics.max)} budget=${result.budget}ms p95_budget=${result.p95Budget}ms${appShellMetricText}${operationMetricText}`,
     );
     if (!result.ok) {
       console.log(`[perf:sla] ${target.name} reason=${result.reason}`);

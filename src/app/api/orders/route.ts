@@ -1,8 +1,10 @@
 import { NextResponse } from "next/server";
 import { performance } from "node:perf_hooks";
-import { getCurrentUserWithRole, hasRoleAccess } from "@/lib/auth";
-import { createOrder, getBusinessContextBySlug, getTableById, getTableByQr } from "@/lib/domains/orders";
+import { canUseDemoModeBypass, getCurrentUserWithRole, hasRoleAccess } from "@/lib/auth";
+import { getBusinessContextBySlug, getTableById, getTableByQr } from "@/lib/domains/orders";
+import { executeOpsCommand, makeOpsCommandEnvelope } from "@/lib/ops/command-executor";
 import { getCorrelationId, logApiEvent, withCorrelationId } from "@/lib/observability";
+import { getBusinessScopeContext } from "@/lib/server/app-context";
 import type { FulfillmentStatus, OrderChannel } from "@/lib/types";
 
 type Body = {
@@ -46,12 +48,14 @@ export async function POST(request: Request) {
 
   try {
     const auth = await getCurrentUserWithRole();
+    const allowDemoBypass = canUseDemoModeBypass(auth.usingDemoData);
     const canCreateOrders =
-      auth.usingDemoData || (!!auth.user && hasRoleAccess(auth.role, ["admin", "waiter", "cashier"]));
+      allowDemoBypass || (!!auth.user && hasRoleAccess(auth.role, ["admin", "waiter", "cashier"]));
     if (!canCreateOrders) {
       logApiEvent("warn", "orders.create.forbidden", { correlationId });
       return json({ ok: false, message: "Siparis olusturma yetkiniz yok." }, { status: 403 });
     }
+    const businessScope = allowDemoBypass ? null : await getBusinessScopeContext();
 
     let body: Body;
     try {
@@ -117,43 +121,100 @@ export async function POST(request: Request) {
     const businessContext = table
       ? { businessId: table.business_id, branchId: table.branch_id }
       : await getBusinessContextBySlug(body.businessSlug);
-    const result = await createOrder({
-      tableId: table?.id ?? null,
-      businessId: table?.business_id ?? businessContext.businessId ?? undefined,
-      branchId: table?.branch_id ?? undefined,
-      items: body.items,
-      totalPrice: body.totalPrice,
-      channel,
-      customerName: body.customerName,
-      customerPhone: body.customerPhone,
-      deliveryAddress: body.deliveryAddress,
-      deliveryNote: body.deliveryNote,
-      courierName: body.courierName,
-      courierPhone: body.courierPhone,
-      fulfillmentStatus: body.fulfillmentStatus,
+
+    const targetBusinessId = table?.business_id ?? businessContext.businessId ?? null;
+    const targetBranchId = table?.branch_id ?? null;
+    if (businessScope && !businessScope.useLegacySchema) {
+      if (!businessScope.businessId) {
+        logApiEvent("warn", "orders.create.no_business_scope", { correlationId });
+        return json({ ok: false, message: "Aktif isletme secilmedi." }, { status: 403 });
+      }
+      if (targetBusinessId && targetBusinessId !== businessScope.businessId) {
+        logApiEvent("warn", "orders.create.cross_business_forbidden", {
+          correlationId,
+          requestedBusinessId: targetBusinessId,
+          activeBusinessId: businessScope.businessId,
+        });
+        return json({ ok: false, message: "Bu isletme icin siparis olusturma yetkiniz yok." }, { status: 403 });
+      }
+    }
+    if (businessScope && auth.accessScope === "branch") {
+      const allowedBranchIds = new Set<string>();
+      for (const branchId of auth.branchAccessIds ?? []) {
+        if (branchId) {
+          allowedBranchIds.add(branchId);
+        }
+      }
+      if (auth.primaryBranchId) {
+        allowedBranchIds.add(auth.primaryBranchId);
+      }
+
+      const candidateBranchId = targetBranchId ?? businessScope.branchId ?? auth.primaryBranchId ?? null;
+      if (!candidateBranchId || !allowedBranchIds.has(candidateBranchId)) {
+        logApiEvent("warn", "orders.create.cross_branch_forbidden", {
+          correlationId,
+          candidateBranchId,
+          allowedBranchIds: [...allowedBranchIds],
+        });
+        return json({ ok: false, message: "Bu sube icin siparis olusturma yetkiniz yok." }, { status: 403 });
+      }
+    }
+
+    const deviceId = request.headers.get("x-device-id")?.trim() || "web-online";
+    const command = makeOpsCommandEnvelope({
+      type: "ORDER_CREATE",
+      deviceId,
+      actorId: auth.user?.id ?? null,
+      businessId: table?.business_id ?? businessContext.businessId ?? null,
+      branchId: targetBranchId ?? null,
+      payload: {
+        table_id: table?.id ?? null,
+        business_id: table?.business_id ?? businessContext.businessId ?? null,
+        branch_id: targetBranchId ?? null,
+        items: body.items,
+        total_price: body.totalPrice,
+        channel,
+        customer_name: body.customerName ?? null,
+        customer_phone: body.customerPhone ?? null,
+        delivery_address: body.deliveryAddress ?? null,
+        delivery_note: body.deliveryNote ?? null,
+        courier_name: body.courierName ?? null,
+        courier_phone: body.courierPhone ?? null,
+        fulfillment_status: body.fulfillmentStatus ?? null,
+      },
+      idempotencyKey: request.headers.get("x-idempotency-key")?.trim() || undefined,
+      commandId: request.headers.get("x-command-id")?.trim() || undefined,
     });
 
-    if (!result.ok) {
+    const result = await executeOpsCommand(command, { enforceCashOnly: false });
+    if (result.status !== "ACK") {
       logApiEvent("error", "orders.create.failed", {
         correlationId,
         channel,
-        error: result.error ?? null,
+        error: result.message ?? null,
+        commandStatus: result.status,
       });
       return json(
         {
           ok: false,
-          message: result.error ?? "Siparis kaydedilemedi.",
+          message: result.message ?? "Siparis kaydedilemedi.",
+          resultStatus: result.status,
         },
-        { status: 500 },
+        { status: result.status === "CONFLICT" ? 409 : result.status === "RETRY" ? 503 : 422 },
       );
     }
 
     logApiEvent("info", "orders.create.success", {
       correlationId,
-      orderId: result.id ?? null,
+      orderId: typeof result.data?.order_id === "string" ? result.data.order_id : null,
       channel,
+      commandId: result.command_id,
     });
-    return json({ ok: true, orderId: result.id });
+    return json({
+      ok: true,
+      orderId: typeof result.data?.order_id === "string" ? result.data.order_id : null,
+      commandId: result.command_id,
+    });
   } catch (error) {
     logApiEvent("error", "orders.create.unhandled", {
       correlationId,

@@ -60,13 +60,14 @@ export default async function AdminOrdersPage({
         </Link>
       }
     >
-      <section className="grid gap-4 xl:grid-cols-3">
+      <section className="app-mobile-hide grid gap-4 xl:grid-cols-3">
         <SummaryCard label={translateUiText("Kategori", locale)} value={String(categories.length)} hint={translateUiText("Menu kategorileri", locale)} tone="accent" />
         <SummaryCard label={translateUiText("Aktif Urun", locale)} value={String(availableProducts)} hint={translateUiText("Siparise acik urunler", locale)} />
         <SummaryCard label={translateUiText("Masa", locale)} value={String(tables.length)} hint={translateUiText("Siparis acilabilecek masa sayisi", locale)} tone="success" />
       </section>
 
       <WorkflowGuide
+        className="app-mobile-hide"
         title={translateUiText("Siparis Girisi 3 Adim", locale)}
         description={translateUiText("Sistemi ilk kez goren biri de siparisi dogru kanal uzerinden kolayca acabilsin.", locale)}
         steps={[
@@ -75,6 +76,12 @@ export default async function AdminOrdersPage({
           { title: translateUiText("Siparisi ac", locale), description: translateUiText("Toplam ve sepet kalemlerini kontrol edip Siparisi Ac butonuyla mutfak veya servise gonder.", locale) },
         ]}
       />
+
+      <section className="app-mobile-only">
+        <p className="rounded-2xl border border-slate-200 bg-white px-4 py-3 text-sm text-slate-600">
+          {translateUiText("Mobil siparis modunda ekran dogrudan urun secimi ve sepete odaklanir.", locale)}
+        </p>
+      </section>
 
       {usingMenuDemo || usingTablesDemo ? (
           <p className="rounded-[24px] border border-amber-200 bg-amber-50 px-5 py-4 text-sm text-amber-900">

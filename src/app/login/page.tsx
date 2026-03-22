@@ -1,6 +1,7 @@
 import { redirect } from "next/navigation";
 import { PublicTopNav } from "@/components/public-top-nav";
 import { LanguageSwitcher } from "@/components/language-switcher";
+import { StaffLoginForm } from "@/components/staff-login-form";
 import { getCurrentUserWithRole } from "@/lib/auth";
 import { getCurrentLocale } from "@/lib/i18n-server";
 import { getPublicCopy } from "@/lib/i18n";
@@ -15,6 +16,7 @@ export default async function LoginPage({
   const copy = getPublicCopy(locale);
   const { user, usingDemoData } = await getCurrentUserWithRole();
   const businessName = process.env.NEXT_PUBLIC_BUSINESS_NAME ?? "Cloud POS Cafe";
+  const pendingLoginCta = locale === "en" ? "Signing in..." : locale === "fr" ? "Connexion..." : "Giris yapiliyor...";
   if (usingDemoData) {
     return (
       <div className="relative min-h-screen overflow-hidden bg-[linear-gradient(135deg,#f3efe5_0%,#d7e4ea_45%,#f7f8fb_100%)] px-4 py-10">
@@ -101,44 +103,17 @@ export default async function LoginPage({
             </p>
 
             <div className="mt-8">
-              <form action="/auth/login" method="post" className="space-y-4">
-                <input type="hidden" name="next" value={next ?? "/ops"} />
-                <div className="space-y-2">
-                  <label htmlFor="email" className="text-sm font-medium text-slate-700">
-                    {copy.login.email}
-                  </label>
-                  <input
-                    id="email"
-                    type="email"
-                    name="email"
-                    required
-                    placeholder={copy.login.emailPlaceholder}
-                    className="w-full rounded-2xl border border-slate-200 bg-white px-4 py-3 text-sm text-slate-900 outline-none transition placeholder:text-slate-400 focus:border-slate-900"
-                  />
-                </div>
-                <div className="space-y-2">
-                  <label htmlFor="password" className="text-sm font-medium text-slate-700">
-                    {copy.login.password}
-                  </label>
-                  <input
-                    id="password"
-                    type="password"
-                    name="password"
-                    required
-                    placeholder="••••••••"
-                    className="w-full rounded-2xl border border-slate-200 bg-white px-4 py-3 text-sm text-slate-900 outline-none transition placeholder:text-slate-400 focus:border-slate-900"
-                  />
-                </div>
-                <button
-                  type="submit"
-                  className="w-full rounded-2xl bg-slate-950 px-4 py-3 text-sm font-semibold text-white transition hover:bg-slate-800"
-                >
-                  {copy.login.loginCta}
-                </button>
-                {error ? (
-                  <p className="rounded-2xl border border-rose-200 bg-rose-50 px-4 py-3 text-sm text-rose-700">{error}</p>
-                ) : null}
-              </form>
+              <StaffLoginForm
+                next={next}
+                error={error}
+                labels={{
+                  email: copy.login.email,
+                  emailPlaceholder: copy.login.emailPlaceholder,
+                  password: copy.login.password,
+                  loginCta: copy.login.loginCta,
+                  pendingCta: pendingLoginCta,
+                }}
+              />
             </div>
 
             <div className="mt-8 hidden gap-3 sm:grid-cols-2 lg:grid">
@@ -157,3 +132,4 @@ export default async function LoginPage({
     </div>
   );
 }
+

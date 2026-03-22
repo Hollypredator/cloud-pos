@@ -1,18 +1,18 @@
 import { NextResponse } from "next/server";
-import { getCurrentUserWithRole, hasRoleAccess } from "@/lib/auth";
+import { canUseDemoModeBypass, getCurrentUserWithRole, hasRoleAccess } from "@/lib/auth";
 import { getOrderReceipt } from "@/lib/domains/orders";
 
 export async function GET(
   _request: Request,
-  context: { params: Promise<{ orderId: string }> | { orderId: string } },
+  context: { params: Promise<{ orderId: string }> },
 ) {
   const auth = await getCurrentUserWithRole();
-  const canAccess = auth.usingDemoData || (!!auth.user && hasRoleAccess(auth.role, ["admin"]));
+  const canAccess = canUseDemoModeBypass(auth.usingDemoData) || (!!auth.user && hasRoleAccess(auth.role, ["admin"]));
   if (!canAccess) {
     return NextResponse.json({ ok: false, message: "Yetkisiz erisim." }, { status: 403 });
   }
 
-  const params = await Promise.resolve(context.params);
+  const params = await context.params;
   const orderId = String(params.orderId ?? "").trim();
   if (!orderId) {
     return NextResponse.json({ ok: false, message: "orderId gerekli." }, { status: 400 });

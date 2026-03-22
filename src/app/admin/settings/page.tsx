@@ -85,6 +85,10 @@ async function updateApplicationSettingsAction(formData: FormData) {
 
   const hasDemoMode = formData.has("demoMode_present") || formData.has("demoMode");
   const hasAppPrintingEnabled = formData.has("appPrintingEnabled_present") || formData.has("appPrintingEnabled");
+  const hasMobileAppExperienceEnabled =
+    formData.has("mobileAppExperienceEnabled_present") || formData.has("mobileAppExperienceEnabled");
+  const hasMobileReadOnlyPwaEnabled =
+    formData.has("mobileReadOnlyPwaEnabled_present") || formData.has("mobileReadOnlyPwaEnabled");
   const sidebarTheme = readString(formData, "sidebarTheme");
   const sidebarAccentColor = readString(formData, "sidebarAccentColor");
   const ownerSidebarOrderRaw = readString(formData, "ownerSidebarOrder");
@@ -114,6 +118,12 @@ async function updateApplicationSettingsAction(formData: FormData) {
     ...currentSettings,
     demoMode: hasDemoMode ? formData.get("demoMode") === "on" : currentSettings.demoMode,
     appPrintingEnabled: hasAppPrintingEnabled ? formData.get("appPrintingEnabled") === "on" : currentSettings.appPrintingEnabled,
+    mobileAppExperienceEnabled: hasMobileAppExperienceEnabled
+      ? formData.get("mobileAppExperienceEnabled") === "on"
+      : currentSettings.mobileAppExperienceEnabled,
+    mobileReadOnlyPwaEnabled: hasMobileReadOnlyPwaEnabled
+      ? formData.get("mobileReadOnlyPwaEnabled") === "on"
+      : currentSettings.mobileReadOnlyPwaEnabled,
     sidebarTheme: nextSidebarTheme,
     sidebarOrder: currentSettings.sidebarOrder,
     sidebarAccentColor: sidebarAccentColor || currentSettings.sidebarAccentColor,
@@ -371,6 +381,20 @@ export default async function AdminSettingsPage() {
                 defaultChecked={applicationSettings.appPrintingEnabled}
               />
               <input type="hidden" name="appPrintingEnabled_present" value="1" />
+              <ToggleField
+                title="Mobil App Deneyimi"
+                description="Ops cekirdeginde mobilde Home + Actions shell deneyimini ac."
+                name="mobileAppExperienceEnabled"
+                defaultChecked={applicationSettings.mobileAppExperienceEnabled}
+              />
+              <input type="hidden" name="mobileAppExperienceEnabled_present" value="1" />
+              <ToggleField
+                title="Ops Read-Only PWA Cache"
+                description="Ops rotalarinda (web + PWA install) read-only offline cache davranisini ac."
+                name="mobileReadOnlyPwaEnabled"
+                defaultChecked={applicationSettings.mobileReadOnlyPwaEnabled}
+              />
+              <input type="hidden" name="mobileReadOnlyPwaEnabled_present" value="1" />
               <div className="grid gap-4">
                 <label className="block">
                   <span className="text-sm font-medium text-slate-700">Sidebar renk temasi</span>

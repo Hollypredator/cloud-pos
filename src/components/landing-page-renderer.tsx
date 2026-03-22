@@ -650,7 +650,7 @@ function renderSection(
                     </div>
                     <div className="grid grid-cols-4 gap-2 p-3">
                       {Array.from({ length: 12 }).map((_, index) => (
-                        <div key={`desktop-cell-${index}`} className="h-7 rounded-md bg-slate-200/75" />
+                        <div key={`wide-cell-${index}`} className="h-7 rounded-md bg-slate-200/75" />
                       ))}
                     </div>
                   </div>

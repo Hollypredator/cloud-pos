@@ -5,8 +5,9 @@ import { LiveOpsBridge } from "@/components/live-ops-bridge";
 import { LiveRouteRefresh } from "@/components/live-route-refresh";
 import { PendingSubmitButton } from "@/components/pending-submit-button";
 import { requireRole } from "@/lib/auth";
-import { getKitchenPageSnapshot, updateOrderStationStatus } from "@/lib/data";
+import { getKitchenPageSnapshot } from "@/lib/data";
 import { getCurrentLocale } from "@/lib/i18n-server";
+import { executeWebOpsCommand } from "@/lib/ops/server-action";
 import { logServerPerf, measureAsync } from "@/lib/perf";
 import { getFeatureAccess } from "@/lib/plan-access";
 import type { Order, OrderItem } from "@/lib/types";
@@ -29,7 +30,14 @@ async function moveOrder(formData: FormData) {
     return;
   }
 
-  await updateOrderStationStatus(orderId, station, nextStatus);
+  await executeWebOpsCommand({
+    type: "ORDER_STATUS_SET",
+    payload: {
+      order_id: orderId,
+      status: nextStatus,
+      station,
+    },
+  });
   revalidatePath("/kitchen");
   revalidatePath("/ops");
 }
@@ -123,6 +131,17 @@ function stationLabel(station: KitchenStation) {
   return "Mutfak";
 }
 
+function parseKitchenStation(value?: string | null): KitchenStation {
+  if (value === "bar" || value === "dessert" || value === "kitchen") {
+    return value;
+  }
+  return "kitchen";
+}
+
+function stationHref(station: KitchenStation) {
+  return `/kitchen?station=${station}`;
+}
+
 function stationTone(station: KitchenStation) {
   if (station === "bar") return "bg-sky-100 text-sky-700";
   if (station === "dessert") return "bg-amber-100 text-amber-700";
@@ -182,10 +201,16 @@ function buildStationGroups(
   return stationGroups;
 }
 
-export default async function KitchenPage() {
+export default async function KitchenPage({
+  searchParams,
+}: {
+  searchParams: Promise<{ station?: string }>;
+}) {
   await requireRole(["admin", "kitchen"], "/kitchen");
   const locale = await getCurrentLocale();
   const localeCode = locale === "en" ? "en-US" : locale === "fr" ? "fr-FR" : "tr-TR";
+  const { station: stationParam } = await searchParams;
+  const activeStation = parseKitchenStation(stationParam);
   const featureAccessResult = await measureAsync("feature_access", () => getFeatureAccess("kitchen_display"));
   const featureAccess = featureAccessResult.value;
   if (!featureAccess.enabled) {
@@ -230,6 +255,7 @@ export default async function KitchenPage() {
       tone: stationTone(station),
     };
   });
+  const activeBoard = stationBoards.find((board) => board.key === activeStation) ?? stationBoards[0];
 
   return (
     <BackofficePage
@@ -251,7 +277,7 @@ export default async function KitchenPage() {
         </div>
       ) : null}
 
-      <section className="grid gap-4 xl:grid-cols-4">
+      <section className="app-mobile-hide grid gap-4 xl:grid-cols-4">
         <SummaryCard label="Bekleyen" value={String(pendingCount)} hint="Yeni giren siparisler" tone="accent" />
         <SummaryCard label="Hazirlaniyor" value={String(preparingCount)} hint="Istasyonda islenen siparis" tone="neutral" />
         <SummaryCard label="Servise Hazir" value={String(servedCount)} hint="Tamamlandi ama kasaya devredilmedi" tone="success" />
@@ -261,6 +287,7 @@ export default async function KitchenPage() {
       <WorkflowGuide
         title="Mutfakta 3 Adim"
         description="Istasyonu ilk kez acan personel ne yapacagini hemen gorsun."
+        className="app-mobile-hide"
         steps={[
           { title: "Bekleyen siparisi al", description: "Yeni gelen sipariste once Hazirlanmaya Al butonuna bas; boylece ekip hangi isin aktif oldugunu gorur." },
           { title: "Hazir oldugunda servise cikar", description: "Hazirlaniyor durumundaki siparisi Servise Hazir yap; kasa ve salon tarafina haber gider." },
@@ -268,7 +295,106 @@ export default async function KitchenPage() {
         ]}
       />
 
-      <ContentCard title="Istasyon Board">
+      <section className="app-mobile-only space-y-3">
+        <div className="mobile-task-tabs">
+          {stationBoards.map((board) => (
+            <Link
+              key={`mobile-station-${board.key}`}
+              href={stationHref(board.key)}
+              data-active={activeBoard.key === board.key}
+              className="mobile-task-tab"
+            >
+              {stationLabel(board.key)} ({board.orders.length})
+            </Link>
+          ))}
+        </div>
+
+        <article className="mobile-task-card">
+          <p className="text-[11px] font-bold uppercase tracking-[0.16em] text-slate-500">Aktif Istasyon</p>
+          <h2 className="mt-2 text-xl font-semibold tracking-tight text-slate-900">{stationLabel(activeBoard.key)}</h2>
+          <p className="mt-1 text-sm text-slate-500">
+            {activeBoard.pending} bekleyen - {activeBoard.preparing} hazirlanan - {activeBoard.served} hazir
+          </p>
+        </article>
+
+        {activeBoard.orders.length === 0 ? (
+          <article className="mobile-task-card text-sm text-slate-600">Bu istasyonda aktif siparis yok.</article>
+        ) : (
+          <div className="grid gap-3">
+            {activeBoard.orders.map((order) => {
+              const stationStatus = resolveStationStatus(order, activeBoard.key);
+              const delay = getDelayLevel(stationStatus, order.created_at);
+              const stationGroups = stationGroupsByOrder.get(order.id)!;
+              const items = stationGroups.get(activeBoard.key) ?? [];
+              return (
+                <article
+                  key={`mobile-${activeBoard.key}-${order.id}`}
+                  className={`mobile-task-card ${
+                    delay.critical ? "border-rose-300" : delay.delayed ? "border-amber-300" : "border-slate-200"
+                  }`}
+                >
+                  <div className="flex items-start justify-between gap-3">
+                    <div>
+                      <p className="text-[11px] font-semibold uppercase tracking-[0.14em] text-slate-500">{orderSourceLabel(order)}</p>
+                      <p className="mt-1 text-lg font-semibold text-slate-900">Siparis #{orderRef(order)}</p>
+                    </div>
+                    <span className={`rounded-full px-3 py-1 text-xs font-semibold ${statusTone(stationStatus)}`}>{statusLabel(stationStatus)}</span>
+                  </div>
+                  {delay.delayed ? (
+                    <p className={`mt-2 rounded-xl px-3 py-2 text-xs font-semibold ${delay.critical ? "mobile-tone-critical" : "mobile-tone-warning"}`}>
+                      {delay.critical ? "Kritik gecikme" : "Gecikme"} - {delay.elapsedMin} dk
+                    </p>
+                  ) : null}
+                  <div className="mt-3 space-y-2">
+                    {items.map((item) => (
+                      <div key={`mobile-item-${order.id}-${activeBoard.key}-${item.product_id}`} className="rounded-xl bg-slate-50 px-3 py-3">
+                        <p className="text-sm font-semibold text-slate-900">{item.quantity}x {item.name}</p>
+                        {item.modifiers?.length ? (
+                          <p className="mt-1 text-xs text-slate-500">
+                            {item.modifiers.map((modifier) => `${modifier.group_name}: ${modifier.option_name}`).join(" / ")}
+                          </p>
+                        ) : null}
+                      </div>
+                    ))}
+                  </div>
+                  <div className="mt-3 grid gap-2">
+                    <Link
+                      href={`/admin/print-center/kitchen/${order.id}?layout=thermal&station=${encodeURIComponent(stationLabel(activeBoard.key))}`}
+                      target="_blank"
+                      rel="noreferrer"
+                      className="mobile-cta-secondary inline-flex items-center justify-center border border-slate-200 bg-white px-4 py-3 text-sm font-semibold text-slate-700"
+                    >
+                      Fis Yazdir
+                    </Link>
+                    <form action={moveOrder}>
+                      <input type="hidden" name="orderId" value={order.id} />
+                      <input type="hidden" name="station" value={activeBoard.key} />
+                      <input
+                        type="hidden"
+                        name="nextStatus"
+                        value={stationStatus === "pending" ? "preparing" : stationStatus === "preparing" ? "served" : "preparing"}
+                      />
+                      <PendingSubmitButton
+                        idleLabel={stationStatus === "pending" ? "Hazirlanmaya Al" : stationStatus === "preparing" ? "Servise Hazir" : "Geri Al"}
+                        pendingLabel="Guncelleniyor..."
+                        className={`mobile-cta-primary w-full px-4 py-3 text-sm font-semibold text-white ${
+                          stationStatus === "pending"
+                            ? "bg-gradient-to-r from-[#ff5a34] to-[#f0b14f] shadow-[0_10px_20px_rgba(255,111,60,0.24)]"
+                            : stationStatus === "preparing"
+                              ? "bg-slate-900"
+                              : "bg-emerald-700"
+                        }`}
+                      />
+                    </form>
+                  </div>
+                </article>
+              );
+            })}
+          </div>
+        )}
+      </section>
+
+      <ContentCard title="Istasyon Board" className="app-mobile-hide">
         {orders.length === 0 ? (
           <EmptyPanel title="Kuyruk Bos" description="Mutfakta islenecek siparis bulunmuyor." />
         ) : (

@@ -103,7 +103,7 @@ export function PwaInstallCard({ enabled }: { enabled: boolean }) {
 
   return (
     <aside className="no-print fixed bottom-4 right-4 z-50 max-w-[320px] rounded-2xl border border-slate-200 bg-white/95 p-4 shadow-[0_16px_34px_rgba(15,23,42,0.18)] backdrop-blur">
-      <p className="text-xs font-semibold uppercase tracking-[0.14em] text-slate-500">Desktop App</p>
+      <p className="text-xs font-semibold uppercase tracking-[0.14em] text-slate-500">Web App</p>
       <p className="mt-2 text-sm font-semibold text-slate-900">Cloud POS uygulamasini masaustune yukleyin</p>
       <p className="mt-1 text-xs leading-5 text-slate-600">
         Yukleme sonrasi uygulama ayrik pencere olarak acilir ve offline cache ile daha kararli calisir.

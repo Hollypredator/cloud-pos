@@ -4,7 +4,8 @@ import { LiveOpsBridge } from "@/components/live-ops-bridge";
 import { CashierSessionSettingsForm, type SessionSettingsFormActionState } from "@/components/cashier-session-settings-form";
 import { BackofficePage, ContentCard, FeatureLockedState, NoticeBanner, SidebarPanel, SummaryCard, WorkflowGuide } from "@/components/backoffice-ui";
 import { requireRole } from "@/lib/auth";
-import { closeCashSession, getCurrentCashSession, getPaymentOverview, openCashSession } from "@/lib/domains/finance";
+import { getCurrentCashSession, getPaymentOverview } from "@/lib/domains/finance";
+import { executeWebOpsCommand } from "@/lib/ops/server-action";
 import { getApplicationSettings, updateApplicationSettings } from "@/lib/data";
 import { getFeatureAccess } from "@/lib/plan-access";
 
@@ -23,7 +24,16 @@ async function openSessionAction(formData: FormData) {
   }
 
   try {
-    await openCashSession(openingCash, typeof note === "string" ? note : undefined);
+    const result = await executeWebOpsCommand({
+      type: "CASH_SESSION_OPEN",
+      payload: {
+        opening_cash: openingCash,
+        note: typeof note === "string" ? note : undefined,
+      },
+    });
+    if (result.status !== "ACK") {
+      redirect(feedbackHref("error", result.message ?? "Gun basi islemi tamamlanamadi."));
+    }
     revalidatePath("/cashier/session");
     redirect(feedbackHref("success", "Gun basi basariyla acildi."));
   } catch {
@@ -46,21 +56,26 @@ async function closeSessionAction(formData: FormData) {
   }
 
   try {
-    const result = await closeCashSession({
-      sessionId,
-      closingCash,
-      note: typeof note === "string" ? note : undefined,
+    const result = await executeWebOpsCommand({
+      type: "CASH_SESSION_CLOSE",
+      payload: {
+        session_id: sessionId,
+        closing_cash: closingCash,
+        note: typeof note === "string" ? note : undefined,
+      },
     });
-    if (!result.ok) {
-      redirect(feedbackHref("error", result.error ?? "Gun sonu islemi tamamlanamadi."));
+    if (result.status !== "ACK") {
+      redirect(feedbackHref("error", result.message ?? "Gun sonu islemi tamamlanamadi."));
     }
     revalidatePath("/cashier/session");
+    const varianceValue = typeof result.data?.variance === "number" ? result.data.variance : null;
+    const expectedCash = typeof result.data?.expectedCash === "number" ? result.data.expectedCash : 0;
     const varianceMessage =
-      typeof result.variance === "number"
-        ? ` Beklenen: ${result.expectedCash.toFixed(2)} TL, fark: ${result.variance.toFixed(2)} TL.`
+      typeof varianceValue === "number"
+        ? ` Beklenen: ${expectedCash.toFixed(2)} TL, fark: ${varianceValue.toFixed(2)} TL.`
         : "";
     const mismatchMessage =
-      result.mismatchAlertSent
+      result.data?.mismatchAlertSent === true
         ? " Mutabakat farki esigi asildigi icin operasyon alarmi olusturuldu."
         : "";
     redirect(feedbackHref("success", `Gun sonu islemi tamamlandi.${varianceMessage}${mismatchMessage}`));

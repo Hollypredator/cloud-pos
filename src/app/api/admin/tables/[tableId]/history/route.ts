@@ -1,18 +1,24 @@
 import { NextResponse } from "next/server";
-import { getCurrentUserWithRole, hasRoleAccess } from "@/lib/auth";
-import { getLatestOrderByTableId, getOrderHistoryByTableId } from "@/lib/domains/orders";
+import { performance } from "node:perf_hooks";
+import { canUseDemoModeBypass, getCurrentUserWithRole, hasRoleAccess } from "@/lib/auth";
+import { getOrderHistoryByTableId } from "@/lib/domains/orders";
+
+function isOpenOrderStatus(status: string) {
+  return status === "pending" || status === "preparing" || status === "ready" || status === "served" || status === "partially_paid";
+}
 
 export async function GET(
   request: Request,
-  context: { params: Promise<{ tableId: string }> | { tableId: string } },
+  context: { params: Promise<{ tableId: string }> },
 ) {
+  const startedAt = performance.now();
   const auth = await getCurrentUserWithRole();
-  const canAccess = auth.usingDemoData || (!!auth.user && hasRoleAccess(auth.role, ["admin"]));
+  const canAccess = canUseDemoModeBypass(auth.usingDemoData) || (!!auth.user && hasRoleAccess(auth.role, ["admin"]));
   if (!canAccess) {
     return NextResponse.json({ ok: false, message: "Yetkisiz erisim." }, { status: 403 });
   }
 
-  const params = await Promise.resolve(context.params);
+  const params = await context.params;
   const tableId = String(params.tableId ?? "").trim();
   if (!tableId) {
     return NextResponse.json({ ok: false, message: "tableId gerekli." }, { status: 400 });
@@ -22,10 +28,8 @@ export async function GET(
   const limitRaw = Number(searchParams.get("limit") ?? 8);
   const limit = Number.isInteger(limitRaw) ? Math.max(1, Math.min(20, limitRaw)) : 8;
 
-  const [{ order: latestOrder }, { orders }] = await Promise.all([
-    getLatestOrderByTableId(tableId),
-    getOrderHistoryByTableId(tableId, limit),
-  ]);
+  const { orders } = await getOrderHistoryByTableId(tableId, limit);
+  const latestOrder = orders.find((order) => isOpenOrderStatus(order.status)) ?? null;
 
   return NextResponse.json(
     {
@@ -55,6 +59,7 @@ export async function GET(
     {
       headers: {
         "Cache-Control": "no-store",
+        "x-operation-ms": Math.round(performance.now() - startedAt).toString(),
       },
     },
   );

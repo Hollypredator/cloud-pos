@@ -112,6 +112,13 @@ function checkRateLimit(request: NextRequest, correlationId: string) {
     return null;
   }
 
+  if (pathname === "/auth/login" || pathname.startsWith("/auth/login/")) {
+    const redirectUrl = request.nextUrl.clone();
+    redirectUrl.pathname = "/login";
+    redirectUrl.searchParams.set("error", "Cok fazla giris denemesi. Lutfen 1 dakika bekleyip tekrar deneyin.");
+    return withSecurityAndCorrelation(NextResponse.redirect(redirectUrl), correlationId);
+  }
+
   return withSecurityAndCorrelation(
     NextResponse.json(
       { ok: false, message: "Cok fazla istek gonderildi. Lutfen kisa bir sure sonra tekrar deneyin." },
@@ -149,6 +156,23 @@ function withHostRouting(request: NextRequest, correlationId: string) {
   return null;
 }
 
+function withLegacyMobilePathRedirect(request: NextRequest, correlationId: string) {
+  const { pathname, search } = request.nextUrl;
+  if (pathname === "/m") {
+    return withSecurityAndCorrelation(NextResponse.redirect(new URL(`/ops${search}`, request.url)), correlationId);
+  }
+  if (!pathname.startsWith("/m/")) {
+    return null;
+  }
+
+  const targetPath = pathname.slice(2);
+  const normalizedPath = targetPath && targetPath !== "/" ? targetPath : "/ops";
+  return withSecurityAndCorrelation(
+    NextResponse.redirect(new URL(`${normalizedPath}${search}`, request.url)),
+    correlationId,
+  );
+}
+
 export async function middleware(request: NextRequest) {
   const requestHeaders = new Headers(request.headers);
   const correlationId =
@@ -163,6 +187,10 @@ export async function middleware(request: NextRequest) {
   const hostResponse = withHostRouting(request, correlationId);
   if (hostResponse) {
     return hostResponse;
+  }
+  const legacyMobilePathResponse = withLegacyMobilePathRedirect(request, correlationId);
+  if (legacyMobilePathResponse) {
+    return legacyMobilePathResponse;
   }
   const response = withSecurityAndCorrelation(
     NextResponse.next({
@@ -179,5 +207,7 @@ export async function middleware(request: NextRequest) {
 }
 
 export const config = {
-  matcher: ["/((?!_next/|favicon.ico).*)"],
+  matcher: [
+    "/((?!_next/static|_next/image|favicon.ico|robots.txt|sitemap.xml|manifest.webmanifest|manifest.json|.*\\.(?:svg|png|jpg|jpeg|gif|webp|ico|txt|xml|css|js|map|woff|woff2)$).*)",
+  ],
 };

@@ -35,6 +35,8 @@ export type SeoSettings = {
 export type ApplicationSettings = {
   appPrintingEnabled: boolean;
   demoMode: boolean;
+  mobileAppExperienceEnabled: boolean;
+  mobileReadOnlyPwaEnabled: boolean;
   autoSessionCloseEnabled: boolean;
   autoSessionCloseTime: string;
   requireNoOpenChecksForSessionClose: boolean;
@@ -94,6 +96,8 @@ export const defaultSeoSettings: SeoSettings = {
 export const defaultApplicationSettings: ApplicationSettings = {
   appPrintingEnabled: false,
   demoMode: false,
+  mobileAppExperienceEnabled: true,
+  mobileReadOnlyPwaEnabled: false,
   autoSessionCloseEnabled: false,
   autoSessionCloseTime: "00:00",
   requireNoOpenChecksForSessionClose: true,
@@ -164,6 +168,8 @@ export function normalizeApplicationSettings(input?: Partial<ApplicationSettings
   return {
     appPrintingEnabled: Boolean(merged.appPrintingEnabled),
     demoMode: Boolean(merged.demoMode),
+    mobileAppExperienceEnabled: Boolean(merged.mobileAppExperienceEnabled),
+    mobileReadOnlyPwaEnabled: Boolean(merged.mobileReadOnlyPwaEnabled),
     autoSessionCloseEnabled: Boolean(merged.autoSessionCloseEnabled),
     autoSessionCloseTime: normalizeTimeValue(merged.autoSessionCloseTime),
     requireNoOpenChecksForSessionClose: Boolean(merged.requireNoOpenChecksForSessionClose),
