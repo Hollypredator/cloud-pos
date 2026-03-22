@@ -1,5 +1,5 @@
-import { BackofficeLoadingShell } from "@/components/loading-shells";
+import { RouteLoading } from "@/components/route-loading";
 
 export default function Loading() {
-  return <BackofficeLoadingShell />;
+  return <RouteLoading title="Operasyon" />;
 }

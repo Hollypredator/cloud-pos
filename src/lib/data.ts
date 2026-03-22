@@ -77,6 +77,8 @@ import type {
   PlatformPermission,
   PlatformRole,
   PaymentMethod,
+  OrderPaymentSummaryAggregate,
+  OpsSnapshotAggregate,
   PrepStation,
   Product,
   ProductModifierGroup,
@@ -686,12 +688,32 @@ async function reconcileOrderSettlementState(input: {
   };
 }
 
-async function getTenantDataClient(): Promise<TenantSupabaseClient | null> {
+const getRequestScopedServiceDataClient = cache(() => getSupabaseServerClient());
+
+const getCachedOpsDataClient = cache(async (): Promise<TenantSupabaseClient | null> => {
+  const serviceClient = getRequestScopedServiceDataClient();
+  if (serviceClient) {
+    return serviceClient;
+  }
+
+  const authClient = await getSupabaseAuthServerClient();
+  return authClient ?? null;
+});
+
+async function getOpsDataClient(): Promise<TenantSupabaseClient | null> {
+  return getCachedOpsDataClient();
+}
+
+const getCachedTenantDataClient = cache(async (): Promise<TenantSupabaseClient | null> => {
   const authClient = await getSupabaseAuthServerClient();
   if (authClient) {
     return authClient;
   }
-  return getSupabaseServerClient();
+  return getRequestScopedServiceDataClient();
+});
+
+async function getTenantDataClient(): Promise<TenantSupabaseClient | null> {
+  return getCachedTenantDataClient();
 }
 
 const demoCategories: Category[] = [
@@ -1205,42 +1227,69 @@ const getCachedSeoSettingsRow = unstable_cache(
 const resolveBusinessBySlug = cache(async (businessSlug?: string) => {
   const slug = normalizeBusinessSlug(businessSlug);
   const cacheKey = `business-by-slug:${slug}`;
-  const reader = unstable_cache(
-    async () => {
-      const supabase = getSupabaseServerClient();
-      if (!supabase) {
-        return { business: demoBusiness, usingDemoData: true };
-      }
+  const serviceClient = getSupabaseServerClient();
+  if (serviceClient) {
+    const reader = unstable_cache(
+      async () => {
+        const { data, error } = await serviceClient
+          .from("businesses")
+          .select("id, name, slug, plan, is_active, created_at, updated_at")
+          .eq("slug", slug)
+          .eq("is_active", true)
+          .maybeSingle();
 
-      const { data, error } = await supabase
-        .from("businesses")
-        .select("id, name, slug, plan, is_active, created_at, updated_at")
-        .eq("slug", slug)
-        .eq("is_active", true)
-        .maybeSingle();
-
-      if (error) {
-        if (error.message.toLowerCase().includes("businesses")) {
-          return { business: null as Business | null, usingDemoData: false, useLegacySchema: true };
+        if (error) {
+          if (error.message.toLowerCase().includes("businesses")) {
+            return { business: null as Business | null, usingDemoData: false, useLegacySchema: true };
+          }
+          return { business: null as Business | null, usingDemoData: false, useLegacySchema: false };
         }
-        return { business: null as Business | null, usingDemoData: false, useLegacySchema: false };
-      }
 
-      if (!data) {
-        return { business: null as Business | null, usingDemoData: false, useLegacySchema: false };
-      }
+        if (!data) {
+          return { business: null as Business | null, usingDemoData: false, useLegacySchema: false };
+        }
 
-      return {
-        business: data as Business,
-        usingDemoData: false,
-        useLegacySchema: false,
-      };
-    },
-    [cacheKey],
-    { revalidate: 60, tags: ["businesses"] },
-  );
+        return {
+          business: data as Business,
+          usingDemoData: false,
+          useLegacySchema: false,
+        };
+      },
+      [cacheKey],
+      { revalidate: 60, tags: ["businesses"] },
+    );
 
-  return reader();
+    return reader();
+  }
+
+  const authClient = await getSupabaseAuthServerClient();
+  if (!authClient) {
+    return { business: demoBusiness, usingDemoData: true, useLegacySchema: false };
+  }
+
+  const { data, error } = await authClient
+    .from("businesses")
+    .select("id, name, slug, plan, is_active, created_at, updated_at")
+    .eq("slug", slug)
+    .eq("is_active", true)
+    .maybeSingle();
+
+  if (error) {
+    if (error.message.toLowerCase().includes("businesses")) {
+      return { business: null as Business | null, usingDemoData: false, useLegacySchema: true };
+    }
+    return { business: null as Business | null, usingDemoData: false, useLegacySchema: false };
+  }
+
+  if (!data) {
+    return { business: null as Business | null, usingDemoData: false, useLegacySchema: false };
+  }
+
+  return {
+    business: data as Business,
+    usingDemoData: false,
+    useLegacySchema: false,
+  };
 });
 
 export async function getBusinessContextBySlug(businessSlug?: string) {
@@ -1254,10 +1303,11 @@ export async function getBusinessContextBySlug(businessSlug?: string) {
 }
 
 export async function listBranches() {
-  const supabase = await getSupabaseAuthServerClient();
+  const authClient = await getSupabaseAuthServerClient();
+  const serviceClient = getSupabaseServerClient();
   const scope = await getDefaultBusinessScope();
   const activeBranchId = scope.branchId;
-  if (!supabase) {
+  if (!serviceClient && !authClient) {
     return {
       branches: demoBranches,
       activeBranchId: activeBranchId || demoBranches[0]?.id || "",
@@ -1272,45 +1322,42 @@ export async function listBranches() {
     return { branches: [] as Branch[], activeBranchId: "", usingDemoData: false };
   }
 
-  const cacheKey = `branches:${scope.businessId ?? "none"}:${scope.branchId ?? "all"}:${scope.canAccessAllBranches ? "all" : scope.branchAccessIds.join(",")}:${scope.useLegacySchema ? "legacy" : "scoped"}`;
-  const reader = unstable_cache(
-    async () => {
-      const innerSupabase = getSupabaseServerClient();
-      if (!innerSupabase) {
-        return null;
-      }
+  const queryWithClient = async (client: TenantSupabaseClient) => {
+    let query = client
+      .from("branches")
+      .select("id, business_id, name, slug, is_active, created_at, updated_at")
+      .eq("is_active", true)
+      .order("name", { ascending: true });
+    if (!scope.useLegacySchema && scope.businessId) {
+      query = query.eq("business_id", scope.businessId);
+    }
+    if (!scope.canAccessAllBranches) {
+      query = query.in("id", scope.branchAccessIds);
+    }
 
-      let query = innerSupabase
-        .from("branches")
-        .select("id, business_id, name, slug, is_active, created_at, updated_at")
-        .eq("is_active", true)
-        .order("name", { ascending: true });
-      if (!scope.useLegacySchema && scope.businessId) {
-        query = query.eq("business_id", scope.businessId);
-      }
-      if (!scope.canAccessAllBranches) {
-        query = query.in("id", scope.branchAccessIds);
-      }
+    const { data, error } = await query;
+    return {
+      hasError: Boolean(error),
+      errorMessage: error?.message ?? null,
+      branches: (data ?? []) as Branch[],
+    };
+  };
 
-      const { data, error } = await query;
-      return {
-        hasError: Boolean(error),
-        errorMessage: error?.message ?? null,
-        branches: (data ?? []) as Branch[],
-      };
-    },
-    [cacheKey],
-    { revalidate: 20, tags: ["branches"] },
-  );
+  const result = serviceClient
+    ? await unstable_cache(
+        async () => queryWithClient(serviceClient),
+        [`branches:${scope.businessId ?? "none"}:${scope.branchId ?? "all"}:${scope.canAccessAllBranches ? "all" : scope.branchAccessIds.join(",")}:${scope.useLegacySchema ? "legacy" : "scoped"}`],
+        { revalidate: 20, tags: ["branches"] },
+      )()
+    : await queryWithClient(authClient as TenantSupabaseClient);
 
-  const cached = await reader();
-  const data = cached?.branches ?? [];
-  const error = cached?.hasError ? { message: cached.errorMessage ?? "branches" } : null;
+  const data = result.branches ?? [];
+  const error = result.hasError ? { message: result.errorMessage ?? "branches" } : null;
   if (error) {
     if (error.message.toLowerCase().includes("branches")) {
       return { branches: [] as Branch[], activeBranchId: activeBranchId || "", usingDemoData: false };
     }
-    return { branches: demoBranches, activeBranchId: activeBranchId || demoBranches[0]?.id || "", usingDemoData: true };
+    return { branches: [] as Branch[], activeBranchId: activeBranchId || "", usingDemoData: false };
   }
 
   const branches = (data ?? []) as Branch[];
@@ -1516,15 +1563,11 @@ export async function listBusinesses() {
       usingDemoData: true,
     };
   }
+  const tenantSupabase = supabase;
 
   const reader = unstable_cache(
     async () => {
-      const innerSupabase = await getTenantDataClient();
-      if (!innerSupabase) {
-        return null;
-      }
-
-      const { data, error } = await innerSupabase
+      const { data, error } = await tenantSupabase
         .from("businesses")
         .select("id, name, slug, plan, is_active, created_at, updated_at")
         .eq("is_active", true)
@@ -1865,8 +1908,9 @@ export async function updateActiveBusinessPlan(plan: BusinessPlan) {
 }
 
 export async function listCouriers() {
-  const supabase = await getTenantDataClient();
-  if (!supabase) {
+  const serviceClient = getSupabaseServerClient();
+  const authClient = serviceClient ? null : await getTenantDataClient();
+  if (!serviceClient && !authClient) {
     return { couriers: demoCouriers, usingDemoData: true };
   }
 
@@ -1874,32 +1918,44 @@ export async function listCouriers() {
   if (!scope.useLegacySchema && !scope.businessId) {
     return { couriers: [] as Courier[], usingDemoData: false };
   }
+
+  const queryCouriers = async (client: TenantSupabaseClient) => {
+    let query = client
+      .from("couriers")
+      .select("id, business_id, branch_id, full_name, phone, is_active, created_at, updated_at")
+      .eq("is_active", true)
+      .order("full_name", { ascending: true });
+
+    if (!scope.useLegacySchema && scope.businessId) {
+      query = query.eq("business_id", scope.businessId);
+    }
+    if (scope.branchId) {
+      query = query.eq("branch_id", scope.branchId);
+    }
+
+    const result = (await withQueryTimeout(query)) as { data: unknown[] | null; error: { message: string } | null };
+    return {
+      data: result.data as unknown[] | null,
+      error: result.error as { message: string } | null,
+    };
+  };
+
+  if (!serviceClient && authClient) {
+    const uncached = await queryCouriers(authClient);
+    if (uncached.error) {
+      return { couriers: [] as Courier[], usingDemoData: false };
+    }
+    return { couriers: (uncached.data ?? []) as Courier[], usingDemoData: false };
+  }
+
   const cacheKey = `couriers:${scope.businessId ?? "none"}:${scope.branchId ?? "all"}:${scope.useLegacySchema ? "legacy" : "scoped"}`;
   const reader = unstable_cache(
     async () => {
-      const innerSupabase = await getTenantDataClient();
+      const innerSupabase = getSupabaseServerClient();
       if (!innerSupabase) {
         return null;
       }
-
-      let query = innerSupabase
-        .from("couriers")
-        .select("id, business_id, branch_id, full_name, phone, is_active, created_at, updated_at")
-        .eq("is_active", true)
-        .order("full_name", { ascending: true });
-
-      if (!scope.useLegacySchema && scope.businessId) {
-        query = query.eq("business_id", scope.businessId);
-      }
-      if (scope.branchId) {
-        query = query.eq("branch_id", scope.branchId);
-      }
-
-      const result = (await withQueryTimeout(query)) as { data: unknown[] | null; error: { message: string } | null };
-      return {
-        data: result.data as unknown[] | null,
-        error: result.error as { message: string } | null,
-      };
+      return queryCouriers(innerSupabase);
     },
     [cacheKey],
     { revalidate: 30, tags: ["couriers"] },
@@ -2899,31 +2955,143 @@ type OrderItemModifierRow = {
   quantity: number;
 };
 
-async function getOrderPaymentSummaryMap(supabase: TenantSupabaseClient | null, orderIds: string[]) {
-  if (!supabase || orderIds.length === 0) {
-    return new Map<string, { paid: number; refunds: number; net: number; count: number }>();
+type OrderPaymentSummaryEntry = {
+  paid: number;
+  refunds: number;
+  net: number;
+  count: number;
+};
+
+type RuntimePaymentSummaryCacheEntry = {
+  expiresAt: number;
+  rows: OrderPaymentSummaryAggregate[];
+};
+
+const ORDER_PAYMENT_SUMMARY_TTL_MS = 8_000;
+const ORDER_PAYMENT_SUMMARY_MAX_CACHE_ITEMS = 256;
+const runtimeOrderPaymentSummaryCache = new Map<string, RuntimePaymentSummaryCacheEntry>();
+
+function buildPaymentSummaryOrderIdsFingerprint(orderIds: string[]) {
+  const joined = orderIds.join(",");
+  let hash = 0;
+  for (let index = 0; index < joined.length; index += 1) {
+    hash = (hash * 31 + joined.charCodeAt(index)) >>> 0;
+  }
+  return `${orderIds.length}:${hash.toString(16)}`;
+}
+
+function mapPaymentSummaryByOrderId(rows: OrderPaymentSummaryAggregate[]) {
+  const byOrderId = new Map<string, OrderPaymentSummaryEntry>();
+  for (const row of rows) {
+    byOrderId.set(row.order_id, {
+      paid: toMoney(Number(row.paid)),
+      refunds: toMoney(Number(row.refunds)),
+      net: toMoney(Number(row.net)),
+      count: Math.max(0, Number(row.payment_count ?? 0)),
+    });
+  }
+  return byOrderId;
+}
+
+async function getOrderPaymentSummaryRows(
+  supabase: TenantSupabaseClient,
+  orderIds: string[],
+) {
+  const rpcResult = (await withQueryTimeout(
+    supabase.rpc("get_order_payment_summary", { p_order_ids: orderIds }),
+  )) as {
+    data: unknown[] | null;
+    error: { message: string } | null;
+  };
+
+  if (!rpcResult.error) {
+    return (rpcResult.data ?? []) as OrderPaymentSummaryAggregate[];
   }
 
-  const { data } = await supabase
-    .from("payments")
-    .select("order_id, payment_type, amount")
-    .in("order_id", orderIds);
+  // Keep compatibility if the RPC is unavailable on a tenant.
+  const fallback = (await withQueryTimeout(
+    supabase.from("payments").select("order_id, payment_type, amount").in("order_id", orderIds),
+  )) as {
+    data: Array<{ order_id: string; payment_type: "sale" | "refund"; amount: number }> | null;
+    error: { message: string } | null;
+  };
 
-  const map = new Map<string, { paid: number; refunds: number; net: number; count: number }>();
-  for (const row of (data ?? []) as Array<{ order_id: string; payment_type: "sale" | "refund"; amount: number }>) {
-    const current = map.get(row.order_id) ?? { paid: 0, refunds: 0, net: 0, count: 0 };
-    const amount = toMoney(Number(row.amount));
-    if (row.payment_type === "refund") {
-      current.refunds = toMoney(current.refunds + amount);
-      current.net = toMoney(current.net - amount);
-    } else {
-      current.paid = toMoney(current.paid + amount);
-      current.net = toMoney(current.net + amount);
-      current.count += 1;
+  if (!fallback.error) {
+    const rolledUp = new Map<string, OrderPaymentSummaryEntry>();
+    for (const row of fallback.data ?? []) {
+      const current = rolledUp.get(row.order_id) ?? { paid: 0, refunds: 0, net: 0, count: 0 };
+      const amount = toMoney(Number(row.amount));
+      if (row.payment_type === "refund") {
+        current.refunds = toMoney(current.refunds + amount);
+        current.net = toMoney(current.net - amount);
+      } else {
+        current.paid = toMoney(current.paid + amount);
+        current.net = toMoney(current.net + amount);
+        current.count += 1;
+      }
+      rolledUp.set(row.order_id, current);
     }
-    map.set(row.order_id, current);
+
+    return [...rolledUp.entries()].map(([order_id, summary]) => ({
+      order_id,
+      paid: summary.paid,
+      refunds: summary.refunds,
+      net: summary.net,
+      payment_count: summary.count,
+    }));
   }
-  return map;
+
+  return [];
+}
+
+async function getOrderPaymentSummaryMap(
+  supabase: TenantSupabaseClient | null,
+  orderIds: string[],
+  scopeOverride?: {
+    businessId: string | null;
+    branchId: string | null;
+    useLegacySchema: boolean;
+  },
+) {
+  if (!supabase || orderIds.length === 0) {
+    return new Map<string, OrderPaymentSummaryEntry>();
+  }
+
+  const normalizedOrderIds = [...new Set(orderIds.filter(Boolean))].sort();
+  if (normalizedOrderIds.length === 0) {
+    return new Map<string, OrderPaymentSummaryEntry>();
+  }
+
+  const scope = scopeOverride ?? (await getDefaultBusinessScope());
+  const orderIdsFingerprint = buildPaymentSummaryOrderIdsFingerprint(normalizedOrderIds);
+  const cacheKey = `order-payment-summary:${scope.businessId ?? "none"}:${scope.branchId ?? "all"}:${scope.useLegacySchema ? "legacy" : "scoped"}:${orderIdsFingerprint}`;
+  const now = Date.now();
+  const cached = runtimeOrderPaymentSummaryCache.get(cacheKey);
+  if (cached && cached.expiresAt > now) {
+    return mapPaymentSummaryByOrderId(cached.rows);
+  }
+
+  const rows = await getOrderPaymentSummaryRows(supabase, normalizedOrderIds);
+  runtimeOrderPaymentSummaryCache.set(cacheKey, {
+    expiresAt: now + ORDER_PAYMENT_SUMMARY_TTL_MS,
+    rows,
+  });
+
+  if (runtimeOrderPaymentSummaryCache.size > ORDER_PAYMENT_SUMMARY_MAX_CACHE_ITEMS) {
+    for (const [key, entry] of runtimeOrderPaymentSummaryCache) {
+      if (entry.expiresAt <= now) {
+        runtimeOrderPaymentSummaryCache.delete(key);
+      }
+    }
+    if (runtimeOrderPaymentSummaryCache.size > ORDER_PAYMENT_SUMMARY_MAX_CACHE_ITEMS) {
+      const oldestKey = runtimeOrderPaymentSummaryCache.keys().next().value as string | undefined;
+      if (oldestKey) {
+        runtimeOrderPaymentSummaryCache.delete(oldestKey);
+      }
+    }
+  }
+
+  return mapPaymentSummaryByOrderId(rows);
 }
 
 type FinancePaymentRow = {
@@ -3168,6 +3336,7 @@ async function getCachedOrderSummaryRows(input: {
         ? "id, check_number, branch_id, table_id, station_statuses, total_price, discount_amount, service_fee, final_price, channel, customer_name, customer_phone, delivery_address, delivery_note, courier_id, courier_name, courier_phone, fulfillment_status, status, created_at, tables(table_number)"
         : "id, check_number, branch_id, table_id, total_price, discount_amount, service_fee, final_price, channel, customer_name, customer_phone, delivery_address, delivery_note, courier_id, courier_name, courier_phone, fulfillment_status, status, created_at, tables(table_number)";
 
+      // eslint-disable-next-line @typescript-eslint/no-explicit-any
       let ordersQuery: any = supabase.from("orders");
       ordersQuery = ordersQuery.select(orderSummarySelect);
       ordersQuery = ordersQuery.in("status", input.statuses);
@@ -3198,7 +3367,11 @@ async function getCachedOrderSummaryRows(input: {
 
       const orderIds = orders.map((row) => row.id);
       const paymentSummary = input.includePaymentSummary
-        ? await getOrderPaymentSummaryMap(supabase, orderIds)
+        ? await getOrderPaymentSummaryMap(supabase, orderIds, {
+            businessId: input.businessId,
+            branchId: input.branchId,
+            useLegacySchema: input.useLegacySchema,
+          })
         : new Map<string, { paid: number; refunds: number; net: number; count: number }>();
 
       return {
@@ -3243,8 +3416,11 @@ async function getCachedOrderSummaryRows(input: {
 
 async function getCachedOrderReceiptRow(input: {
   orderId: string;
+  businessId: string | null;
+  branchId: string | null;
+  useLegacySchema: boolean;
 }) {
-  const cacheKey = `order-receipt:${input.orderId}`;
+  const cacheKey = `order-receipt:${input.orderId}:${input.businessId ?? "none"}:${input.branchId ?? "all"}:${input.useLegacySchema ? "legacy" : "scoped"}`;
   const reader = unstable_cache(
     async () => {
       const supabase = getSupabaseServerClient();
@@ -3252,18 +3428,29 @@ async function getCachedOrderReceiptRow(input: {
         return null;
       }
 
-      const { data, error } = await supabase
+      let orderQuery = supabase
         .from("orders")
         .select("id, check_number, table_id, station_statuses, total_price, discount_amount, service_fee, final_price, channel, customer_name, customer_phone, delivery_address, delivery_note, courier_id, courier_name, courier_phone, fulfillment_status, status, created_at, tables(table_number)")
-        .eq("id", input.orderId)
-        .maybeSingle();
+        .eq("id", input.orderId);
+      if (!input.useLegacySchema && input.businessId) {
+        orderQuery = orderQuery.eq("business_id", input.businessId);
+      }
+      if (input.branchId) {
+        orderQuery = orderQuery.eq("branch_id", input.branchId);
+      }
+
+      const { data, error } = await orderQuery.maybeSingle();
 
       if (error || !data) {
         return { hasError: true as const, order: null as Order | null };
       }
 
       const [paymentSummary, { data: itemRows }, { data: modifierRows }] = await Promise.all([
-        getOrderPaymentSummaryMap(supabase, [input.orderId]),
+        getOrderPaymentSummaryMap(supabase, [input.orderId], {
+          businessId: input.businessId,
+          branchId: input.branchId,
+          useLegacySchema: input.useLegacySchema,
+        }),
         supabase
           .from("order_items")
           .select("product_id, product_name, quantity, unit_price, line_total")
@@ -3501,6 +3688,7 @@ export async function listOrders(
     ? "id, check_number, branch_id, table_id, station_statuses, total_price, discount_amount, service_fee, final_price, channel, customer_name, customer_phone, delivery_address, delivery_note, courier_id, courier_name, courier_phone, fulfillment_status, status, created_at, tables(table_number)"
     : "id, check_number, branch_id, table_id, total_price, discount_amount, service_fee, final_price, channel, customer_name, customer_phone, delivery_address, delivery_note, courier_id, courier_name, courier_phone, fulfillment_status, status, created_at, tables(table_number)";
 
+  // eslint-disable-next-line @typescript-eslint/no-explicit-any
   let ordersQuery: any = supabase.from("orders");
   ordersQuery = ordersQuery.select(orderSummarySelect);
   ordersQuery = ordersQuery.in("status", statuses);
@@ -3914,16 +4102,33 @@ export async function getOrderReceipt(orderId: string) {
     return { order, usingDemoData: true };
   }
 
-  const cached = await getCachedOrderReceiptRow({ orderId });
+  const scope = await getDefaultBusinessScope();
+  if (!scope.useLegacySchema && !scope.businessId) {
+    return { order: null as Order | null, usingDemoData: false };
+  }
+
+  const cached = await getCachedOrderReceiptRow({
+    orderId,
+    businessId: scope.businessId,
+    branchId: scope.branchId,
+    useLegacySchema: scope.useLegacySchema,
+  });
   if (cached && !cached.hasError) {
     return { order: cached.order, usingDemoData: false };
   }
 
-  const { data, error } = await supabase
+  let orderQuery = supabase
     .from("orders")
     .select("id, check_number, table_id, station_statuses, total_price, discount_amount, service_fee, final_price, channel, customer_name, customer_phone, delivery_address, delivery_note, courier_id, courier_name, courier_phone, fulfillment_status, status, created_at, tables(table_number)")
-    .eq("id", orderId)
-    .maybeSingle();
+    .eq("id", orderId);
+  if (!scope.useLegacySchema && scope.businessId) {
+    orderQuery = orderQuery.eq("business_id", scope.businessId);
+  }
+  if (scope.branchId) {
+    orderQuery = orderQuery.eq("branch_id", scope.branchId);
+  }
+
+  const { data, error } = await orderQuery.maybeSingle();
 
   if (error || !data) {
     return { order: null as Order | null, usingDemoData: false };
@@ -4658,6 +4863,86 @@ export async function cancelOrder(orderId: string, note?: string, requestKey?: s
   return { ok: true };
 }
 
+export async function cancelOrderItem(orderId: string, productId: string) {
+  const supabase = getSupabaseServerClient() ?? (await getTenantDataClient());
+  if (!supabase) {
+    return { ok: false, error: "Demo modda islem pasif." };
+  }
+
+  const scope = await getDefaultBusinessScope();
+  let findQuery = supabase.from("orders").select("id, status, items, total_price, final_price").eq("id", orderId);
+  if (!scope.useLegacySchema && scope.businessId) {
+    findQuery = findQuery.eq("business_id", scope.businessId);
+  }
+  if (scope.branchId) {
+    findQuery = findQuery.eq("branch_id", scope.branchId);
+  }
+
+  const { data: orderRow, error: findError } = await findQuery.maybeSingle();
+  if (findError || !orderRow) {
+    return { ok: false, error: findError?.message ?? "Siparis bulunamadi." };
+  }
+
+  if (orderRow.status === "paid" || orderRow.status === "cancelled" || orderRow.status === "refunded") {
+    return { ok: false, error: "Kapanmis veya iptal edilmis bir adisyondan urun silinemez." };
+  }
+
+  const items = Array.isArray(orderRow.items) ? (orderRow.items as OrderItem[]) : [];
+  const targetIndex = items.findIndex((item) => item.product_id === productId);
+  if (targetIndex === -1) {
+    return { ok: false, error: "Urun adisyonda bulunamadi." };
+  }
+
+  const itemToEdit = items[targetIndex];
+  const unitPrice = Number(itemToEdit.unit_price) || 0;
+  
+  if (itemToEdit.quantity <= 1) {
+    items.splice(targetIndex, 1);
+    await retryMutation(async () => supabase.from("order_items").delete().eq("order_id", orderId).eq("product_id", productId));
+  } else {
+    itemToEdit.quantity -= 1;
+    itemToEdit.line_total = Number(itemToEdit.line_total) - unitPrice;
+    await retryMutation(async () => supabase.from("order_items").update({
+      quantity: itemToEdit.quantity,
+      line_total: itemToEdit.line_total
+    }).eq("order_id", orderId).eq("product_id", productId));
+  }
+  
+  const newTotalPrice = Math.max(0, Number(orderRow.total_price) - unitPrice);
+  const newFinalPrice = Math.max(0, Number(orderRow.final_price) - unitPrice);
+
+  const updateResult = await retryMutation(async () => {
+    let updateQuery = supabase.from("orders").update({
+      items: items,
+      total_price: newTotalPrice,
+      final_price: newFinalPrice
+    }).eq("id", orderId);
+    if (!scope.useLegacySchema && scope.businessId) {
+      updateQuery = updateQuery.eq("business_id", scope.businessId);
+    }
+    if (scope.branchId) {
+      updateQuery = updateQuery.eq("branch_id", scope.branchId);
+    }
+    return updateQuery;
+  });
+
+  if (updateResult.error) {
+    return { ok: false, error: "Siparis guncellenemedi." };
+  }
+
+  fireAndForgetAuditEvent({
+    entityType: "order",
+    entityId: orderId,
+    action: "update",
+    details: { note: "Urun iptal edildi/dusuruldu", productId }
+  });
+
+  revalidateOrderFlowCaches();
+  revalidateTag("table-map", "max");
+  revalidateReportCaches();
+  return { ok: true, remainingItems: items.length };
+}
+
 export async function refundOrder(input: {
   orderId: string;
   method: PaymentMethod;
@@ -5055,10 +5340,62 @@ export async function getTableZones() {
   });
 }
 
+async function queryAssignableWaitersByScope(
+  client: TenantSupabaseClient,
+  scope: { businessId: string; branchId: string | null },
+) {
+  let accessQuery = client
+    .from("staff_branch_access")
+    .select("profile_id, branch_id")
+    .eq("business_id", scope.businessId);
+  if (scope.branchId) {
+    accessQuery = accessQuery.eq("branch_id", scope.branchId);
+  }
+
+  const { data: accessRows, error: accessError } = await accessQuery;
+  if (accessError) {
+    return {
+      hasError: true as const,
+      waiters: [] as Array<{ id: string; full_name: string | null }>,
+    };
+  }
+
+  const profileIds = [
+    ...new Set(((accessRows ?? []) as Array<{ profile_id: string | null }>).map((row) => row.profile_id).filter(Boolean)),
+  ] as string[];
+
+  if (profileIds.length === 0) {
+    return {
+      hasError: false as const,
+      waiters: [] as Array<{ id: string; full_name: string | null }>,
+    };
+  }
+
+  const { data: profileRows, error: profilesError } = await client
+    .from("profiles")
+    .select("id, full_name, role")
+    .in("id", profileIds)
+    .eq("role", "waiter")
+    .order("full_name", { ascending: true });
+
+  if (profilesError) {
+    return {
+      hasError: true as const,
+      waiters: [] as Array<{ id: string; full_name: string | null }>,
+    };
+  }
+
+  return {
+    hasError: false as const,
+    waiters: (profileRows ?? []) as Array<{ id: string; full_name: string | null }>,
+  };
+}
+
 export async function listAssignableWaiters() {
   try {
-    const authClient = await getSupabaseAuthServerClient();
-    if (!authClient) {
+    const serviceClient = getSupabaseServerClient();
+    const authClient = serviceClient ? null : await getSupabaseAuthServerClient();
+    if (!serviceClient && !authClient) {
       return {
         waiters: [] as Array<{ id: string; full_name: string | null }>,
         usingDemoData: true,
@@ -5073,59 +5410,29 @@ export async function listAssignableWaiters() {
       };
     }
 
+    const targetScope = { businessId: scope.businessId, branchId: scope.branchId };
+    if (!serviceClient && authClient) {
+      const uncached = await queryAssignableWaitersByScope(authClient, targetScope);
+      if (uncached.hasError) {
+        return {
+          waiters: [] as Array<{ id: string; full_name: string | null }>,
+          usingDemoData: false,
+        };
+      }
+      return {
+        waiters: uncached.waiters,
+        usingDemoData: false,
+      };
+    }
+
     const cacheKey = `assignable-waiters:${scope.businessId}:${scope.branchId ?? "all"}:${scope.useLegacySchema ? "legacy" : "scoped"}`;
     const reader = unstable_cache(
       async () => {
-        const innerAuthClient = await getSupabaseAuthServerClient();
-        if (!innerAuthClient) {
+        const innerSupabase = getSupabaseServerClient();
+        if (!innerSupabase) {
           return null;
         }
-
-        let accessQuery = innerAuthClient
-          .from("staff_branch_access")
-          .select("profile_id, branch_id")
-          .eq("business_id", scope.businessId);
-        if (scope.branchId) {
-          accessQuery = accessQuery.eq("branch_id", scope.branchId);
-        }
-
-        const { data: accessRows, error: accessError } = await accessQuery;
-        if (accessError) {
-          return {
-            hasError: true as const,
-            waiters: [] as Array<{ id: string; full_name: string | null }>,
-          };
-        }
-
-        const profileIds = [
-          ...new Set(((accessRows ?? []) as Array<{ profile_id: string | null }>).map((row) => row.profile_id).filter(Boolean)),
-        ] as string[];
-
-        if (profileIds.length === 0) {
-          return {
-            hasError: false as const,
-            waiters: [] as Array<{ id: string; full_name: string | null }>,
-          };
-        }
-
-        const { data: profileRows, error: profilesError } = await innerAuthClient
-          .from("profiles")
-          .select("id, full_name, role")
-          .in("id", profileIds)
-          .eq("role", "waiter")
-          .order("full_name", { ascending: true });
-
-        if (profilesError) {
-          return {
-            hasError: true as const,
-            waiters: [] as Array<{ id: string; full_name: string | null }>,
-          };
-        }
-
-        return {
-          hasError: false as const,
-          waiters: ((profileRows ?? []) as Array<{ id: string; full_name: string | null }>),
-        };
+        return queryAssignableWaitersByScope(innerSupabase, targetScope);
       },
       [cacheKey],
       { revalidate: 20, tags: ["profiles", "staff-access"] },
@@ -5933,54 +6240,50 @@ export async function listProfiles() {
         usingDemoData: true,
       };
     }
+    const tenantAuthClient = authClient;
 
     const scope = await getDefaultBusinessScope();
     if (!scope.businessId) {
       return { profiles: [] as Array<{ id: string; full_name: string | null; role: AppRole }>, usingDemoData: false };
     }
 
-  const cacheKey = `profiles:${scope.businessId}:${scope.useLegacySchema ? "legacy" : "scoped"}`;
-  const reader = unstable_cache(
-    async () => {
-      const innerAuthClient = await getSupabaseAuthServerClient();
-      if (!innerAuthClient) {
-        return null;
-      }
+    const cacheKey = `profiles:${scope.businessId}:${scope.useLegacySchema ? "legacy" : "scoped"}`;
+    const reader = unstable_cache(
+      async () => {
+        const { data: accessRows, error: accessError } = await tenantAuthClient
+          .from("staff_branch_access")
+          .select("profile_id, branch_id, access_scope, is_primary, branches(name)")
+          .eq("business_id", scope.businessId);
 
-      const { data: accessRows, error: accessError } = await innerAuthClient
-        .from("staff_branch_access")
-        .select("profile_id, branch_id, access_scope, is_primary, branches(name)")
-        .eq("business_id", scope.businessId);
+        if (accessError) {
+          return { hasError: true as const, profiles: [] as Array<{ id: string; full_name: string | null; role: AppRole }>, accessRows: [] as unknown[] };
+        }
 
-      if (accessError) {
-        return { hasError: true as const, profiles: [] as Array<{ id: string; full_name: string | null; role: AppRole }>, accessRows: [] as unknown[] };
-      }
+        const profileIds = [...new Set(((accessRows ?? []) as Array<{ profile_id: string }>).map((row) => row.profile_id))];
+        if (profileIds.length === 0) {
+          return { hasError: false as const, profiles: [] as Array<{ id: string; full_name: string | null; role: AppRole }>, accessRows: (accessRows ?? []) as unknown[] };
+        }
 
-      const profileIds = [...new Set(((accessRows ?? []) as Array<{ profile_id: string }>).map((row) => row.profile_id))];
-      if (profileIds.length === 0) {
-        return { hasError: false as const, profiles: [] as Array<{ id: string; full_name: string | null; role: AppRole }>, accessRows: (accessRows ?? []) as unknown[] };
-      }
+        const { data, error } = await tenantAuthClient
+          .from("profiles")
+          .select("id, full_name, role")
+          .in("id", profileIds)
+          .order("created_at", { ascending: false });
 
-      const { data, error } = await innerAuthClient
-        .from("profiles")
-        .select("id, full_name, role")
-        .in("id", profileIds)
-        .order("created_at", { ascending: false });
+        return {
+          hasError: Boolean(error),
+          profiles: ((data ?? []) as Array<{ id: string; full_name: string | null; role: AppRole }>),
+          accessRows: (accessRows ?? []) as unknown[],
+        };
+      },
+      [cacheKey],
+      { revalidate: 20, tags: ["profiles", "staff-access"] },
+    );
 
-      return {
-        hasError: Boolean(error),
-        profiles: ((data ?? []) as Array<{ id: string; full_name: string | null; role: AppRole }>),
-        accessRows: (accessRows ?? []) as unknown[],
-      };
-    },
-    [cacheKey],
-    { revalidate: 20, tags: ["profiles", "staff-access"] },
-  );
-
-  const cached = await reader();
-  if (!cached || cached.hasError) {
-    return { profiles: [] as Array<{ id: string; full_name: string | null; role: AppRole }>, usingDemoData: false };
-  }
+    const cached = await reader();
+    if (!cached || cached.hasError) {
+      return { profiles: [] as Array<{ id: string; full_name: string | null; role: AppRole }>, usingDemoData: false };
+    }
 
   const accessRows = cached.accessRows as Array<{
     profile_id: string;
@@ -6050,6 +6353,7 @@ export async function listProfileRoleCounts() {
       usingDemoData: true,
     };
   }
+  const tenantAuthClient = authClient;
 
   const scope = await getDefaultBusinessScope();
   if (!scope.businessId) {
@@ -6062,12 +6366,7 @@ export async function listProfileRoleCounts() {
   const cacheKey = `profile-role-counts:${scope.businessId}:${scope.useLegacySchema ? "legacy" : "scoped"}`;
   const reader = unstable_cache(
     async () => {
-      const innerAuthClient = await getSupabaseAuthServerClient();
-      if (!innerAuthClient) {
-        return null;
-      }
-
-      const { data: accessRows, error: accessError } = await innerAuthClient
+      const { data: accessRows, error: accessError } = await tenantAuthClient
         .from("staff_branch_access")
         .select("profile_id")
         .eq("business_id", scope.businessId);
@@ -6081,7 +6380,7 @@ export async function listProfileRoleCounts() {
         return { hasError: false as const, counts: { owner: 0, admin: 0, cashier: 0, kitchen: 0, waiter: 0 } };
       }
 
-      const { data: profiles, error: profilesError } = await innerAuthClient
+      const { data: profiles, error: profilesError } = await tenantAuthClient
         .from("profiles")
         .select("role")
         .in("id", profileIds);
@@ -7650,8 +7949,208 @@ export async function getPaymentOverview() {
   };
 }
 
+function createEmptyOpsSnapshotAggregate(): OpsSnapshotAggregate {
+  return {
+    pending_orders: 0,
+    preparing_orders: 0,
+    served_orders: 0,
+    delayed_kitchen_orders: 0,
+    critical_kitchen_orders: 0,
+    occupied_tables: 0,
+    empty_tables: 0,
+    open_service_requests: 0,
+    today_revenue: 0,
+  };
+}
+
+function normalizeOpsSnapshotAggregateRow(row: Partial<OpsSnapshotAggregate> | null | undefined): OpsSnapshotAggregate {
+  if (!row) {
+    return createEmptyOpsSnapshotAggregate();
+  }
+  return {
+    pending_orders: Math.max(0, Number(row.pending_orders ?? 0)),
+    preparing_orders: Math.max(0, Number(row.preparing_orders ?? 0)),
+    served_orders: Math.max(0, Number(row.served_orders ?? 0)),
+    delayed_kitchen_orders: Math.max(0, Number(row.delayed_kitchen_orders ?? 0)),
+    critical_kitchen_orders: Math.max(0, Number(row.critical_kitchen_orders ?? 0)),
+    occupied_tables: Math.max(0, Number(row.occupied_tables ?? 0)),
+    empty_tables: Math.max(0, Number(row.empty_tables ?? 0)),
+    open_service_requests: Math.max(0, Number(row.open_service_requests ?? 0)),
+    today_revenue: toMoney(Number(row.today_revenue ?? 0)),
+  };
+}
+
+function buildOpsSnapshotMetrics(aggregate: OpsSnapshotAggregate) {
+  const pendingOrders = Math.max(0, Number(aggregate.pending_orders ?? 0));
+  const preparingOrders = Math.max(0, Number(aggregate.preparing_orders ?? 0));
+  const servedOrders = Math.max(0, Number(aggregate.served_orders ?? 0));
+  return {
+    openOrders: pendingOrders + preparingOrders + servedOrders,
+    pendingOrders,
+    preparingOrders,
+    servedOrders,
+    occupiedTables: Math.max(0, Number(aggregate.occupied_tables ?? 0)),
+    emptyTables: Math.max(0, Number(aggregate.empty_tables ?? 0)),
+    openServiceRequests: Math.max(0, Number(aggregate.open_service_requests ?? 0)),
+    delayedKitchenOrders: Math.max(0, Number(aggregate.delayed_kitchen_orders ?? 0)),
+    criticalKitchenOrders: Math.max(0, Number(aggregate.critical_kitchen_orders ?? 0)),
+    todayRevenue: toMoney(Number(aggregate.today_revenue ?? 0)),
+  };
+}
+
+async function getOpsSnapshotAggregateForScope(input: {
+  supabase: TenantSupabaseClient;
+  businessId: string | null;
+  branchId: string | null;
+  useLegacySchema: boolean;
+}): Promise<OpsSnapshotAggregate> {
+  const rpcResult = (await withQueryTimeout(
+    input.supabase.rpc("get_ops_snapshot_agg", {
+      p_business_id: input.useLegacySchema ? null : input.businessId,
+      p_branch_id: input.branchId,
+    }),
+  )) as {
+    data: unknown[] | null;
+    error: { message: string } | null;
+  };
+
+  if (!rpcResult.error) {
+    const firstRow = Array.isArray(rpcResult.data) ? rpcResult.data[0] : null;
+    return normalizeOpsSnapshotAggregateRow((firstRow ?? null) as Partial<OpsSnapshotAggregate> | null);
+  }
+
+  type ScopeQuery = {
+    eq: (column: string, value: string) => ScopeQuery;
+  };
+
+  const applyScope = (query: unknown) => {
+    let scopedQuery = query as ScopeQuery;
+    if (!input.useLegacySchema && input.businessId) {
+      scopedQuery = scopedQuery.eq("business_id", input.businessId);
+    }
+    if (input.branchId) {
+      scopedQuery = scopedQuery.eq("branch_id", input.branchId);
+    }
+    return scopedQuery;
+  };
+
+  const now = Date.now();
+  const delayedPendingBefore = new Date(now - 15 * 60_000).toISOString();
+  const delayedPreparingBefore = new Date(now - 20 * 60_000).toISOString();
+  const criticalPendingBefore = new Date(now - 25 * 60_000).toISOString();
+  const criticalPreparingBefore = new Date(now - 35 * 60_000).toISOString();
+  const todayStart = new Date();
+  todayStart.setHours(0, 0, 0, 0);
+
+  type CountQueryResult = { count: number | null };
+  const queryClient = input.supabase;
+
+  const pendingOrdersPromise = applyScope(
+    queryClient.from("orders").select("id", { count: "exact", head: true }).eq("status", "pending"),
+  ) as unknown as Promise<CountQueryResult>;
+  const preparingOrdersPromise = applyScope(
+    queryClient.from("orders").select("id", { count: "exact", head: true }).eq("status", "preparing"),
+  ) as unknown as Promise<CountQueryResult>;
+  const servedOrdersPromise = applyScope(
+    queryClient.from("orders").select("id", { count: "exact", head: true }).in("status", ["ready", "served", "partially_paid"]),
+  ) as unknown as Promise<CountQueryResult>;
+  const delayedPendingPromise = applyScope(
+    queryClient
+      .from("orders")
+      .select("id", { count: "exact", head: true })
+      .eq("status", "pending")
+      .lte("created_at", delayedPendingBefore),
+  ) as unknown as Promise<CountQueryResult>;
+  const delayedPreparingPromise = applyScope(
+    queryClient
+      .from("orders")
+      .select("id", { count: "exact", head: true })
+      .eq("status", "preparing")
+      .lte("created_at", delayedPreparingBefore),
+  ) as unknown as Promise<CountQueryResult>;
+  const criticalPendingPromise = applyScope(
+    queryClient
+      .from("orders")
+      .select("id", { count: "exact", head: true })
+      .eq("status", "pending")
+      .lte("created_at", criticalPendingBefore),
+  ) as unknown as Promise<CountQueryResult>;
+  const criticalPreparingPromise = applyScope(
+    queryClient
+      .from("orders")
+      .select("id", { count: "exact", head: true })
+      .eq("status", "preparing")
+      .lte("created_at", criticalPreparingBefore),
+  ) as unknown as Promise<CountQueryResult>;
+  const occupiedTablesPromise = applyScope(
+    queryClient.from("tables").select("id", { count: "exact", head: true }).eq("status", "occupied"),
+  ) as unknown as Promise<CountQueryResult>;
+  const emptyTablesPromise = applyScope(
+    queryClient.from("tables").select("id", { count: "exact", head: true }).eq("status", "empty"),
+  ) as unknown as Promise<CountQueryResult>;
+  const openServiceRequestsPromise = applyScope(
+    queryClient.from("table_requests").select("id", { count: "exact", head: true }).eq("status", "open"),
+  ) as unknown as Promise<CountQueryResult>;
+
+  const [
+    pendingOrdersResult,
+    preparingOrdersResult,
+    servedOrdersResult,
+    delayedPendingResult,
+    delayedPreparingResult,
+    criticalPendingResult,
+    criticalPreparingResult,
+    occupiedTablesResult,
+    emptyTablesResult,
+    openServiceRequestsResult,
+    paymentResult,
+  ] = await Promise.all([
+    pendingOrdersPromise,
+    preparingOrdersPromise,
+    servedOrdersPromise,
+    delayedPendingPromise,
+    delayedPreparingPromise,
+    criticalPendingPromise,
+    criticalPreparingPromise,
+    occupiedTablesPromise,
+    emptyTablesPromise,
+    openServiceRequestsPromise,
+    listScopedFinancePayments({
+      supabase: input.supabase,
+      startIso: todayStart.toISOString(),
+      businessId: input.businessId,
+      branchId: input.branchId,
+      useLegacySchema: input.useLegacySchema,
+    }),
+  ]);
+
+  const pendingOrders = pendingOrdersResult.count ?? 0;
+  const preparingOrders = preparingOrdersResult.count ?? 0;
+  const servedOrders = servedOrdersResult.count ?? 0;
+  const delayedPendingCount = delayedPendingResult.count ?? 0;
+  const delayedPreparingCount = delayedPreparingResult.count ?? 0;
+  const criticalPendingCount = criticalPendingResult.count ?? 0;
+  const criticalPreparingCount = criticalPreparingResult.count ?? 0;
+  const occupiedTables = occupiedTablesResult.count ?? 0;
+  const emptyTables = emptyTablesResult.count ?? 0;
+  const openServiceRequests = openServiceRequestsResult.count ?? 0;
+
+  const todayRevenue = paymentResult.error ? 0 : aggregateFinancePayments(paymentResult.rows).netSales;
+  return normalizeOpsSnapshotAggregateRow({
+    pending_orders: pendingOrders,
+    preparing_orders: preparingOrders,
+    served_orders: servedOrders,
+    delayed_kitchen_orders: delayedPendingCount + delayedPreparingCount,
+    critical_kitchen_orders: criticalPendingCount + criticalPreparingCount,
+    occupied_tables: occupiedTables,
+    empty_tables: emptyTables,
+    open_service_requests: openServiceRequests,
+    today_revenue: todayRevenue,
+  });
+}
+
 export async function getOpsSummary() {
-  const supabase = getSupabaseServerClient();
+  const supabase = await getOpsDataClient();
   if (!supabase) {
     return {
       openOrders: demoOrders.filter((order) => ["pending", "preparing", "ready", "served", "partially_paid"].includes(order.status)).length,
@@ -7661,38 +8160,19 @@ export async function getOpsSummary() {
     };
   }
 
-  const todayStart = new Date();
-  todayStart.setHours(0, 0, 0, 0);
-
   const scope = await getDefaultBusinessScope();
-  const openBase = supabase
-    .from("orders")
-    .select("id", { count: "exact", head: true })
-    .in("status", ["pending", "preparing", "ready", "served", "partially_paid"]);
-  const pendingBase = supabase.from("orders").select("id", { count: "exact", head: true }).eq("status", "pending");
-
-  const [{ count: openOrdersCount }, { count: pendingCount }, paymentResult] = await Promise.all([
-    !scope.useLegacySchema && scope.businessId
-      ? (scope.branchId ? openBase.eq("business_id", scope.businessId).eq("branch_id", scope.branchId) : openBase.eq("business_id", scope.businessId))
-      : openBase,
-    !scope.useLegacySchema && scope.businessId
-      ? (scope.branchId ? pendingBase.eq("business_id", scope.businessId).eq("branch_id", scope.branchId) : pendingBase.eq("business_id", scope.businessId))
-      : pendingBase,
-    listScopedFinancePayments({
-      supabase,
-      startIso: todayStart.toISOString(),
-      businessId: scope.businessId,
-      branchId: scope.branchId,
-      useLegacySchema: scope.useLegacySchema,
-    }),
-  ]);
-
-  const todayRevenue = paymentResult.error ? 0 : aggregateFinancePayments(paymentResult.rows).netSales;
+  const aggregate = await getOpsSnapshotAggregateForScope({
+    supabase,
+    businessId: scope.businessId,
+    branchId: scope.branchId,
+    useLegacySchema: scope.useLegacySchema,
+  });
+  const snapshot = buildOpsSnapshotMetrics(aggregate);
 
   return {
-    openOrders: openOrdersCount ?? 0,
-    pendingCount: pendingCount ?? 0,
-    todayRevenue,
+    openOrders: snapshot.openOrders,
+    pendingCount: snapshot.pendingOrders,
+    todayRevenue: snapshot.todayRevenue,
     usingDemoData: false,
   };
 }
@@ -7711,12 +8191,8 @@ function isKitchenOrderCritical(order: { status: string; created_at: string }) {
   return false;
 }
 
-function isPendingKitchenSignal(order: { status?: OrderStatus; created_at: string }): order is { status: "pending" | "preparing"; created_at: string } {
-  return order.status === "pending" || order.status === "preparing";
-}
-
 export async function getOpsMetricsSnapshot() {
-  const supabase = getSupabaseServerClient();
+  const supabase = await getOpsDataClient();
   if (!supabase) {
     const pendingOrders = demoOrders.filter((order) => order.status === "pending" || order.status === "preparing");
     const delayedKitchenOrders = pendingOrders.filter((order) => isKitchenOrderDelayed(order)).length;
@@ -7742,43 +8218,27 @@ export async function getOpsMetricsSnapshot() {
     branchId: scope.branchId,
     useLegacySchema: scope.useLegacySchema,
   });
-
-  const kitchenRows = cached?.kitchenRows ?? [];
-  const servedCount = cached?.servedCount ?? 0;
-  const paymentRows = cached?.paymentRows ?? [];
-  const tableRows = (cached?.tablesRows ?? []) as Array<{ id: string; status?: TableStatus }>;
-  const openServiceRequests = cached?.openServiceRequests ?? 0;
-
-  const pendingKitchenOrders = kitchenRows.filter(isPendingKitchenSignal);
-  const delayedKitchenOrders = pendingKitchenOrders.filter((order) => isKitchenOrderDelayed(order)).length;
-  const criticalKitchenOrders = pendingKitchenOrders.filter((order) => isKitchenOrderCritical(order)).length;
-  const pendingOrders = pendingKitchenOrders.filter((order) => order.status === "pending").length;
-  const preparingOrders = pendingKitchenOrders.filter((order) => order.status === "preparing").length;
-  const servedOrders = servedCount;
-  const occupiedTables = tableRows.filter((row) => row.status === "occupied").length;
-  const emptyTables = tableRows.filter((row) => row.status === "empty").length;
-  const todayRevenue = ((paymentRows ?? []) as Array<{ amount: number; payment_type: "sale" | "refund" }>).reduce((sum, row) => {
-    const amount = Number(row.amount);
-    return sum + (row.payment_type === "refund" ? -amount : amount);
-  }, 0);
+  const snapshot = buildOpsSnapshotMetrics(
+    normalizeOpsSnapshotAggregateRow((cached?.opsAggregate ?? null) as Partial<OpsSnapshotAggregate> | null),
+  );
 
   return {
-    openOrders: pendingOrders + preparingOrders + servedOrders,
-    pendingOrders,
-    preparingOrders,
-    servedOrders,
-    occupiedTables,
-    emptyTables,
-    todayRevenue: Number(todayRevenue.toFixed(2)),
-    openServiceRequests,
-    delayedKitchenOrders,
-    criticalKitchenOrders,
+    openOrders: snapshot.openOrders,
+    pendingOrders: snapshot.pendingOrders,
+    preparingOrders: snapshot.preparingOrders,
+    servedOrders: snapshot.servedOrders,
+    occupiedTables: snapshot.occupiedTables,
+    emptyTables: snapshot.emptyTables,
+    todayRevenue: snapshot.todayRevenue,
+    openServiceRequests: snapshot.openServiceRequests,
+    delayedKitchenOrders: snapshot.delayedKitchenOrders,
+    criticalKitchenOrders: snapshot.criticalKitchenOrders,
   };
 }
 
 export async function getOpsPageSnapshot(options?: { includeSetup?: boolean }) {
   const includeSetup = options?.includeSetup ?? true;
-  const supabase = getSupabaseServerClient();
+  const supabase = await getOpsDataClient();
   if (!supabase) {
     const dashboard = await getDashboardData();
     const setup = includeSetup
@@ -7825,33 +8285,24 @@ export async function getOpsPageSnapshot(options?: { includeSetup?: boolean }) {
     useLegacySchema: scope.useLegacySchema,
   });
 
-  const kitchenRows = cached?.kitchenRows ?? [];
-  const servedCount = cached?.servedCount ?? 0;
-  const paymentRows = cached?.paymentRows ?? [];
-  const tablesRows = cached?.tablesRows ?? [];
   const recentOrderRows = cached?.recentOrderRows ?? [];
   const lowStockRows = cached?.lowStockRows ?? [];
-  const openServiceRequests = cached?.openServiceRequests ?? 0;
-  const pendingKitchenOrders = kitchenRows.filter(isPendingKitchenSignal);
-  const tableRows = (tablesRows ?? []) as Array<{ id: string; status?: TableStatus }>;
-  const occupiedTables = tableRows.filter((row) => row.status === "occupied").length;
-  const emptyTables = tableRows.filter((row) => row.status === "empty").length;
-  const todayRevenue = ((paymentRows ?? []) as Array<{ amount: number; payment_type: "sale" | "refund" }>).reduce((sum, row) => {
-    const amount = Number(row.amount);
-    return sum + (row.payment_type === "refund" ? -amount : amount);
-  }, 0);
-  const pendingCount = pendingKitchenOrders.filter((row) => row.status === "pending").length;
-  const preparingCount = pendingKitchenOrders.filter((row) => row.status === "preparing").length;
+  const snapshot = buildOpsSnapshotMetrics(
+    normalizeOpsSnapshotAggregateRow((cached?.opsAggregate ?? null) as Partial<OpsSnapshotAggregate> | null),
+  );
+  const pendingCount = snapshot.pendingOrders;
+  const preparingCount = snapshot.preparingOrders;
+  const servedCount = snapshot.servedOrders;
   const dashboard = {
     usingDemoData: false,
     metrics: {
-      openOrders: pendingCount + preparingCount + servedCount,
+      openOrders: snapshot.openOrders,
       pending: pendingCount,
       preparing: preparingCount,
       served: servedCount,
-      occupiedTables,
-      emptyTables,
-      todayRevenue,
+      occupiedTables: snapshot.occupiedTables,
+      emptyTables: snapshot.emptyTables,
+      todayRevenue: snapshot.todayRevenue,
     },
     recentOrders: ((recentOrderRows ?? []) as OrderRow[]).map((row) => ({
       id: row.id,
@@ -7868,29 +8319,27 @@ export async function getOpsPageSnapshot(options?: { includeSetup?: boolean }) {
     })),
     lowStockProducts: (lowStockRows ?? []) as Product[],
   };
-  const delayedKitchenOrders = pendingKitchenOrders.filter((order) => isKitchenOrderDelayed(order)).length;
-  const criticalKitchenOrders = pendingKitchenOrders.filter((order) => isKitchenOrderCritical(order)).length;
 
   return {
     dashboard,
     ops: {
-      openOrders: dashboard.metrics.openOrders,
-      pendingOrders: dashboard.metrics.pending,
-      preparingOrders: dashboard.metrics.preparing,
-      servedOrders: dashboard.metrics.served,
-      occupiedTables: dashboard.metrics.occupiedTables,
-      emptyTables: dashboard.metrics.emptyTables,
-      todayRevenue: Number(dashboard.metrics.todayRevenue.toFixed(2)),
-      openServiceRequests,
-      delayedKitchenOrders,
-      criticalKitchenOrders,
+      openOrders: snapshot.openOrders,
+      pendingOrders: snapshot.pendingOrders,
+      preparingOrders: snapshot.preparingOrders,
+      servedOrders: snapshot.servedOrders,
+      occupiedTables: snapshot.occupiedTables,
+      emptyTables: snapshot.emptyTables,
+      todayRevenue: snapshot.todayRevenue,
+      openServiceRequests: snapshot.openServiceRequests,
+      delayedKitchenOrders: snapshot.delayedKitchenOrders,
+      criticalKitchenOrders: snapshot.criticalKitchenOrders,
     },
     setup,
   };
 }
 
 export async function getDashboardData() {
-  const supabase = getSupabaseServerClient();
+  const supabase = await getOpsDataClient();
   if (!supabase) {
     const pending = demoOrders.filter((order) => order.status === "pending").length;
     const preparing = demoOrders.filter((order) => order.status === "preparing").length;
@@ -7925,22 +8374,11 @@ export async function getDashboardData() {
     branchId: scope.branchId,
     useLegacySchema: scope.useLegacySchema,
   });
-  const kitchenRows = cached?.kitchenRows ?? [];
-  const servedCount = cached?.servedCount ?? 0;
-  const paymentRows = cached?.paymentRows ?? [];
-  const tablesRows = cached?.tablesRows ?? [];
   const recentOrderRows = cached?.recentOrderRows ?? [];
   const lowStockRows = cached?.lowStockRows ?? [];
-
-  const tableRows = (tablesRows ?? []) as Array<{ id: string; status: TableStatus }>;
-  const occupiedTables = tableRows.filter((row) => row.status === "occupied").length;
-  const emptyTables = tableRows.filter((row) => row.status === "empty").length;
-  const todayRevenue = ((paymentRows ?? []) as Array<{ amount: number; payment_type: "sale" | "refund" }>).reduce((sum, row) => {
-    const amount = Number(row.amount);
-    return sum + (row.payment_type === "refund" ? -amount : amount);
-  }, 0);
-  const pendingCount = kitchenRows.filter((row) => row.status === "pending").length;
-  const preparingCount = kitchenRows.filter((row) => row.status === "preparing").length;
+  const snapshot = buildOpsSnapshotMetrics(
+    normalizeOpsSnapshotAggregateRow((cached?.opsAggregate ?? null) as Partial<OpsSnapshotAggregate> | null),
+  );
 
   const recentOrders = ((recentOrderRows ?? []) as OrderRow[]).map((row) => ({
     id: row.id,
@@ -7964,13 +8402,13 @@ export async function getDashboardData() {
   return {
     usingDemoData: false,
     metrics: {
-      openOrders: pendingCount + preparingCount + servedCount,
-      pending: pendingCount,
-      preparing: preparingCount,
-      served: servedCount,
-      occupiedTables,
-      emptyTables,
-      todayRevenue,
+      openOrders: snapshot.openOrders,
+      pending: snapshot.pendingOrders,
+      preparing: snapshot.preparingOrders,
+      served: snapshot.servedOrders,
+      occupiedTables: snapshot.occupiedTables,
+      emptyTables: snapshot.emptyTables,
+      todayRevenue: snapshot.todayRevenue,
     },
     recentOrders,
     lowStockProducts: (lowStockRows ?? []) as Product[],
@@ -8181,8 +8619,24 @@ export async function updateSalesLeadStatus(leadId: string, status: SalesLeadSta
 }
 
 export async function getSetupChecklistSummary() {
-  const supabase = getSupabaseServerClient();
-  if (!supabase) {
+  const serviceClient = getSupabaseServerClient();
+  if (serviceClient) {
+    const cached = await getCachedSetupChecklistSummary();
+
+    return {
+      usingDemoData: false,
+      counts: {
+        businesses: cached?.businesses ?? 0,
+        products: cached?.products ?? 0,
+        tables: cached?.tables ?? 0,
+        staff: cached?.staff ?? 0,
+        leads: cached?.leads ?? 0,
+      },
+    };
+  }
+
+  const authClient = await getSupabaseAuthServerClient();
+  if (!authClient) {
     return {
       usingDemoData: true,
       counts: {
@@ -8195,16 +8649,28 @@ export async function getSetupChecklistSummary() {
     };
   }
 
-  const cached = await getCachedSetupChecklistSummary();
+  const [
+    { count: businesses },
+    { count: products },
+    { count: tables },
+    { count: staff },
+    { count: leads },
+  ] = await Promise.all([
+    authClient.from("businesses").select("id", { count: "exact", head: true }).eq("is_active", true),
+    authClient.from("products").select("id", { count: "exact", head: true }),
+    authClient.from("tables").select("id", { count: "exact", head: true }),
+    authClient.from("profiles").select("id", { count: "exact", head: true }),
+    authClient.from("sales_leads").select("id", { count: "exact", head: true }),
+  ]);
 
   return {
     usingDemoData: false,
     counts: {
-      businesses: cached?.businesses ?? 0,
-      products: cached?.products ?? 0,
-      tables: cached?.tables ?? 0,
-      staff: cached?.staff ?? 0,
-      leads: cached?.leads ?? 0,
+      businesses: businesses ?? 0,
+      products: products ?? 0,
+      tables: tables ?? 0,
+      staff: staff ?? 0,
+      leads: leads ?? 0,
     },
   };
 }
@@ -8261,117 +8727,72 @@ async function getCachedOpsPageRow(input: {
   branchId: string | null;
   useLegacySchema: boolean;
 }) {
-  const cacheKey = `ops-page:${input.businessId ?? "none"}:${input.branchId ?? "all"}:${input.useLegacySchema ? "legacy" : "scoped"}`;
-  const reader = unstable_cache(
-    async () => {
-      const supabase = getSupabaseServerClient();
-      if (!supabase) {
-        return null;
-      }
-      const recentOrderLimit = 18;
+  const queryOpsPageRow = async (supabase: TenantSupabaseClient) => {
+    const recentOrderLimit = 8;
 
-      const todayStart = new Date();
-      todayStart.setHours(0, 0, 0, 0);
+    const [opsAggregate, { data: recentOrderRows }, { data: lowStockRows }] = await Promise.all([
+      getOpsSnapshotAggregateForScope({
+        supabase,
+        businessId: input.businessId,
+        branchId: input.branchId,
+        useLegacySchema: input.useLegacySchema,
+      }),
+      !input.useLegacySchema && input.businessId
+        ? (input.branchId
+            ? supabase
+                .from("orders")
+                .select("id, check_number, table_id, total_price, final_price, channel, customer_name, status, created_at, tables(table_number)")
+                .eq("business_id", input.businessId)
+                .eq("branch_id", input.branchId)
+                .order("created_at", { ascending: false })
+                .limit(recentOrderLimit)
+            : supabase
+                .from("orders")
+                .select("id, check_number, table_id, total_price, final_price, channel, customer_name, status, created_at, tables(table_number)")
+                .eq("business_id", input.businessId)
+                .order("created_at", { ascending: false })
+                .limit(recentOrderLimit))
+        : supabase
+            .from("orders")
+            .select("id, check_number, table_id, total_price, final_price, channel, customer_name, status, created_at, tables(table_number)")
+            .order("created_at", { ascending: false })
+            .limit(recentOrderLimit),
+      !input.useLegacySchema && input.businessId
+        ? supabase
+            .from("products")
+            .select("id, name, stock_count")
+            .eq("business_id", input.businessId)
+            .lte("stock_count", 10)
+            .order("stock_count", { ascending: true })
+            .limit(4)
+        : supabase.from("products").select("id, name, stock_count").lte("stock_count", 10).order("stock_count", { ascending: true }).limit(4),
+    ]);
 
-      const [
-        { data: kitchenRows },
-        { count: servedCount },
-        { data: paymentRows },
-        { data: tablesRows },
-        { data: recentOrderRows },
-        { data: lowStockRows },
-        { count: openServiceRequests },
-      ] = await Promise.all([
-        !input.useLegacySchema && input.businessId
-          ? (input.branchId
-              ? supabase
-                  .from("orders")
-                  .select("status, created_at")
-                  .eq("business_id", input.businessId)
-                  .eq("branch_id", input.branchId)
-                  .in("status", ["pending", "preparing"])
-              : supabase.from("orders").select("status, created_at").eq("business_id", input.businessId).in("status", ["pending", "preparing"]))
-          : supabase.from("orders").select("status, created_at").in("status", ["pending", "preparing"]),
-        !input.useLegacySchema && input.businessId
-          ? (input.branchId
-              ? supabase
-                  .from("orders")
-                  .select("id", { count: "exact", head: true })
-                  .eq("business_id", input.businessId)
-                  .eq("branch_id", input.branchId)
-                  .in("status", ["ready", "served", "partially_paid"])
-              : supabase
-                  .from("orders")
-                  .select("id", { count: "exact", head: true })
-                  .eq("business_id", input.businessId)
-                  .in("status", ["ready", "served", "partially_paid"]))
-          : supabase.from("orders").select("id", { count: "exact", head: true }).in("status", ["ready", "served", "partially_paid"]),
-        !input.useLegacySchema && input.businessId
-          ? (input.branchId
-              ? supabase.from("payments").select("amount, payment_type").eq("business_id", input.businessId).eq("branch_id", input.branchId).gte("created_at", todayStart.toISOString())
-              : supabase.from("payments").select("amount, payment_type").eq("business_id", input.businessId).gte("created_at", todayStart.toISOString()))
-          : supabase.from("payments").select("amount, payment_type").gte("created_at", todayStart.toISOString()),
-        !input.useLegacySchema && input.businessId
-          ? (input.branchId
-              ? supabase.from("tables").select("id, status").eq("business_id", input.businessId).eq("branch_id", input.branchId)
-              : supabase.from("tables").select("id, status").eq("business_id", input.businessId))
-          : supabase.from("tables").select("id, status"),
-        !input.useLegacySchema && input.businessId
-          ? (input.branchId
-              ? supabase
-                  .from("orders")
-                  .select("id, check_number, table_id, total_price, final_price, channel, customer_name, status, created_at, tables(table_number)")
-                  .eq("business_id", input.businessId)
-                  .eq("branch_id", input.branchId)
-                  .order("created_at", { ascending: false })
-                  .limit(recentOrderLimit)
-              : supabase
-                  .from("orders")
-                  .select("id, check_number, table_id, total_price, final_price, channel, customer_name, status, created_at, tables(table_number)")
-                  .eq("business_id", input.businessId)
-                  .order("created_at", { ascending: false })
-                  .limit(recentOrderLimit))
-          : supabase
-              .from("orders")
-              .select("id, check_number, table_id, total_price, final_price, channel, customer_name, status, created_at, tables(table_number)")
-              .order("created_at", { ascending: false })
-              .limit(recentOrderLimit),
-        !input.useLegacySchema && input.businessId
-          ? supabase
-              .from("products")
-              .select("id, name, stock_count")
-              .eq("business_id", input.businessId)
-              .lte("stock_count", 10)
-              .order("stock_count", { ascending: true })
-              .limit(4)
-          : supabase.from("products").select("id, name, stock_count").lte("stock_count", 10).order("stock_count", { ascending: true }).limit(4),
-        !input.useLegacySchema && input.businessId
-          ? (input.branchId
-              ? supabase
-                  .from("table_requests")
-                  .select("id", { count: "exact", head: true })
-                  .eq("business_id", input.businessId)
-                  .eq("branch_id", input.branchId)
-                  .eq("status", "open")
-              : supabase.from("table_requests").select("id", { count: "exact", head: true }).eq("business_id", input.businessId).eq("status", "open"))
-          : supabase.from("table_requests").select("id", { count: "exact", head: true }).eq("status", "open"),
-      ]);
+    return {
+      opsAggregate,
+      recentOrderRows: (recentOrderRows ?? []) as Array<OrderRow>,
+      lowStockRows: (lowStockRows ?? []) as Array<Pick<Product, "id" | "name" | "stock_count">>,
+    };
+  };
 
-      return {
-        kitchenRows: (kitchenRows ?? []) as Array<{ status?: OrderStatus; created_at: string }>,
-        servedCount: servedCount ?? 0,
-        paymentRows: (paymentRows ?? []) as Array<{ amount: number; payment_type: "sale" | "refund" }>,
-        tablesRows: (tablesRows ?? []) as Array<{ id: string; status?: TableStatus }>,
-        recentOrderRows: (recentOrderRows ?? []) as Array<OrderRow>,
-        lowStockRows: (lowStockRows ?? []) as Array<Pick<Product, "id" | "name" | "stock_count">>,
-        openServiceRequests: openServiceRequests ?? 0,
-      };
-    },
-    [cacheKey],
-    { revalidate: 8, tags: ["dashboard-snapshot"] },
-  );
+  const serviceClient = getRequestScopedServiceDataClient();
+  if (serviceClient) {
+    const cacheKey = `ops-page:${input.businessId ?? "none"}:${input.branchId ?? "all"}:${input.useLegacySchema ? "legacy" : "scoped"}`;
+    const reader = unstable_cache(
+      async () => queryOpsPageRow(serviceClient),
+      [cacheKey],
+      { revalidate: 8, tags: ["dashboard-snapshot"] },
+    );
 
-  return reader();
+    return reader();
+  }
+
+  const authClient = await getSupabaseAuthServerClient();
+  if (!authClient) {
+    return null;
+  }
+
+  return queryOpsPageRow(authClient);
 }
 
 const getCachedSetupChecklistSummary = unstable_cache(

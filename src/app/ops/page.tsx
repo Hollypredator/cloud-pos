@@ -1,8 +1,9 @@
 import Link from "next/link";
 import { redirect } from "next/navigation";
 import { BackofficePage, ContentCard, EmptyPanel, SidebarPanel, SummaryCard, WorkflowGuide } from "@/components/backoffice-ui";
+import { MobileTaskCard, MobileTaskList } from "@/components/mobile-ops-ui";
 import { OpsLiveBadge } from "@/components/ops-live-badge";
-import { getCurrentUserIdentity } from "@/lib/auth";
+import { getCurrentUserWithRole } from "@/lib/auth";
 import { getOpsPageSnapshot } from "@/lib/data";
 import { getCurrentLocale } from "@/lib/i18n-server";
 import { translateUiText } from "@/lib/i18n";
@@ -71,23 +72,34 @@ export default async function OpsPage({
 }: {
   searchParams: Promise<{ ordersPage?: string }>;
 }) {
+  const includeSetupInInitialPaint = false;
   const locale = await getCurrentLocale();
   const { ordersPage: ordersPageParam } = await searchParams;
   const ordersPage = Number.isFinite(Number(ordersPageParam)) ? Math.max(1, Number(ordersPageParam)) : 1;
   const ordersPageSize = 6;
-  const authResult = await measureAsync("current_user", () => getCurrentUserIdentity());
+  const opsSnapshotPromise = measureAsync("ops_snapshot", () =>
+    getOpsPageSnapshot({ includeSetup: includeSetupInInitialPaint }),
+  );
+  const authResult = await measureAsync("current_user", () => getCurrentUserWithRole());
   const auth = authResult.value;
 
   if (!auth.usingDemoData && !auth.user) {
     redirect("/login");
   }
 
+  if (!auth.usingDemoData && !auth.role) {
+    redirect("/unauthorized");
+  }
+
+  if (!auth.usingDemoData && auth.accessScope === "branch" && auth.branchAccessIds.length === 0) {
+    redirect("/unauthorized");
+  }
+
   const role = auth.role;
   const allowAll = auth.usingDemoData;
   const isManagement = role === "owner" || role === "admin";
   const canAdmin = allowAll || isManagement;
-  const showInlineSetup = canAdmin;
-  const opsSnapshotResult = await measureAsync("ops_snapshot", () => getOpsPageSnapshot({ includeSetup: showInlineSetup }));
+  const opsSnapshotResult = await opsSnapshotPromise;
   logServerPerf("/ops", [authResult, opsSnapshotResult]);
   const opsSnapshot = opsSnapshotResult.value;
   const {
@@ -101,7 +113,7 @@ export default async function OpsPage({
   const canWaiterOps = allowAll || isManagement || role === "waiter" || role === "cashier";
   const roleLabel = allowAll ? translateUiText("Demo", locale) : role ? translateUiText(role, locale) : translateUiText("Guest", locale);
   const showSetupPrompt =
-    showInlineSetup &&
+    includeSetupInInitialPaint &&
     canAdmin && (setup.counts.businesses === 0 || setup.counts.products === 0 || setup.counts.tables === 0 || setup.counts.staff < 4);
   const setupSteps = [
     {
@@ -170,6 +182,59 @@ export default async function OpsPage({
   const pagedRecentOrders = recentOrders.slice(recentOrdersStart, recentOrdersStart + ordersPageSize);
   const hasNextRecentOrdersPage = recentOrders.length > recentOrdersStart + ordersPageSize;
   const hasPreviousRecentOrdersPage = ordersPage > 1;
+  type PriorityQueueItem = {
+    key: string;
+    title: string;
+    value: number;
+    hint: string;
+    href: string;
+    tone: string;
+    cta: string;
+  };
+  const priorityQueue = [
+    canKitchen || canAdmin
+      ? {
+          key: "kitchen",
+          title: translateUiText("Mutfakta Bekleyen Kritikler", locale),
+          value: ops.delayedKitchenOrders,
+          hint: translateUiText("Gecikmeyi azaltmak icin mutfak istasyonuna gec.", locale),
+          href: "/kitchen",
+          tone: ops.criticalKitchenOrders > 0 ? "mobile-tone-critical" : "mobile-tone-warning",
+          cta: translateUiText("Mutfaga Git", locale),
+        }
+      : null,
+    canCashier
+      ? {
+          key: "cashier",
+          title: translateUiText("Kasada Tahsilat Kuyrugu", locale),
+          value: ops.servedOrders,
+          hint: translateUiText("Servise hazir adisyonlar kapanis bekliyor.", locale),
+          href: "/cashier",
+          tone: ops.servedOrders > 0 ? "mobile-tone-warning" : "mobile-tone-neutral",
+          cta: translateUiText("Tahsilata Gec", locale),
+        }
+      : null,
+    canWaiterOps
+      ? {
+          key: "service",
+          title: translateUiText("Masa Talepleri", locale),
+          value: ops.openServiceRequests,
+          hint: translateUiText("Acik talepleri kapat ve kuyrugu temizle.", locale),
+          href: "/service-requests",
+          tone: ops.openServiceRequests > 0 ? "mobile-tone-warning" : "mobile-tone-neutral",
+          cta: translateUiText("Talep Ekranina Gec", locale),
+        }
+      : null,
+    {
+      key: "tables",
+      title: translateUiText("Masa Akisi", locale),
+      value: metrics.occupiedTables,
+      hint: `${metrics.emptyTables} ${translateUiText("bos masa", locale).toLowerCase()}`,
+      href: "/tables",
+      tone: metrics.occupiedTables > metrics.emptyTables ? "mobile-tone-warning" : "mobile-tone-success",
+      cta: translateUiText("Masalari Ac", locale),
+    },
+  ].filter((item): item is PriorityQueueItem => item !== null);
 
   return (
     <BackofficePage
@@ -200,15 +265,15 @@ export default async function OpsPage({
             ]}
           />
           <SidebarPanel title={translateUiText("Anlik Durum", locale)} description={translateUiText("Gunluk operasyon nabzi ve risk odaklari.", locale)}>
-            <div className="rounded-[24px] bg-gradient-to-br from-slate-900 via-slate-800 to-slate-700 p-4 text-white sm:p-5">
+            <div className="rounded-[24px] bg-gradient-to-br from-slate-900/95 via-slate-800/95 to-slate-700/95 p-4 text-white shadow-[0_10px_30px_rgb(0,0,0,0.12)] backdrop-blur-xl sm:p-5">
               <p className="text-xs font-bold uppercase tracking-[0.18em] text-slate-300">{translateUiText("Gunluk Ciro", locale)}</p>
               <p className="mt-4 text-2xl font-semibold tracking-tight sm:text-4xl">{formatCurrency(metrics.todayRevenue)}</p>
               <div className="mt-5 grid gap-3 sm:grid-cols-2">
-                <div className="rounded-2xl bg-white/10 p-3">
+                <div className="rounded-2xl bg-white/10 p-3 backdrop-blur-md">
                   <p className="text-xs uppercase tracking-[0.16em] text-slate-300">{translateUiText("Dolu Masa", locale)}</p>
                   <p className="mt-2 text-2xl font-semibold">{metrics.occupiedTables}</p>
                 </div>
-                <div className="rounded-2xl bg-white/10 p-3">
+                <div className="rounded-2xl bg-white/10 p-3 backdrop-blur-md">
                   <p className="text-xs uppercase tracking-[0.16em] text-slate-300">{translateUiText("Bos Masa", locale)}</p>
                   <p className="mt-2 text-2xl font-semibold">{metrics.emptyTables}</p>
                 </div>
@@ -219,7 +284,7 @@ export default async function OpsPage({
               {priorityWarnings
                 .filter((item) => (item.key === "kitchen_delay" ? canKitchen || canAdmin : item.key === "cashier_queue" ? canCashier : canWaiterOps))
                 .map((item) => (
-                  <div key={item.key} className="rounded-[22px] border border-slate-200 bg-slate-50 p-4">
+                  <div key={item.key} className="rounded-[22px] border border-white/60 bg-white/50 p-4 shadow-sm backdrop-blur-md transition-all hover:bg-white/80">
                     <div className="flex flex-col items-start justify-between gap-3 sm:flex-row">
                       <div>
                         <p className="text-xs font-bold uppercase tracking-[0.16em] text-slate-500">{item.label}</p>
@@ -247,31 +312,31 @@ export default async function OpsPage({
 
           <SidebarPanel title={translateUiText("Hizli Aksiyonlar", locale)} description={translateUiText("En sik kullanilan operasyon gecisleri.", locale)}>
             <div className="grid gap-3">
-              <Link href="/admin/tables" className="rounded-2xl bg-slate-100 px-4 py-4 text-center text-sm font-semibold text-slate-800 transition hover:bg-slate-200 sm:text-left">
+              <Link href="/admin/tables" className="rounded-2xl border border-white/50 bg-white/60 px-4 py-4 text-center text-sm font-semibold text-slate-800 shadow-sm backdrop-blur-sm transition-all hover:-translate-y-0.5 hover:bg-white/90 hover:shadow-md sm:text-left">
                 {translateUiText("Masa QR Yonetimi", locale)}
               </Link>
               {canKitchen ? (
-                <Link href="/kitchen" className="rounded-2xl bg-slate-100 px-4 py-4 text-center text-sm font-semibold text-slate-800 transition hover:bg-slate-200 sm:text-left">
+                <Link href="/kitchen" className="rounded-2xl border border-white/50 bg-white/60 px-4 py-4 text-center text-sm font-semibold text-slate-800 shadow-sm backdrop-blur-sm transition-all hover:-translate-y-0.5 hover:bg-white/90 hover:shadow-md sm:text-left">
                   {translateUiText("Mutfak Board", locale)}
                 </Link>
               ) : null}
               {canCashier ? (
-                <Link href="/cashier" className="rounded-2xl bg-slate-100 px-4 py-4 text-center text-sm font-semibold text-slate-800 transition hover:bg-slate-200 sm:text-left">
+                <Link href="/cashier" className="rounded-2xl border border-white/50 bg-white/60 px-4 py-4 text-center text-sm font-semibold text-slate-800 shadow-sm backdrop-blur-sm transition-all hover:-translate-y-0.5 hover:bg-white/90 hover:shadow-md sm:text-left">
                   {translateUiText("Kasa Ekrani", locale)}
                 </Link>
               ) : null}
               {canWaiterOps ? (
-                <Link href="/delivery" className="rounded-2xl bg-slate-100 px-4 py-4 text-center text-sm font-semibold text-slate-800 transition hover:bg-slate-200 sm:text-left">
+                <Link href="/delivery" className="rounded-2xl border border-white/50 bg-white/60 px-4 py-4 text-center text-sm font-semibold text-slate-800 shadow-sm backdrop-blur-sm transition-all hover:-translate-y-0.5 hover:bg-white/90 hover:shadow-md sm:text-left">
                   {translateUiText("Teslimat Board", locale)}
                 </Link>
               ) : null}
               {canWaiterOps ? (
-                <Link href="/service-requests" className="rounded-2xl bg-slate-100 px-4 py-4 text-center text-sm font-semibold text-slate-800 transition hover:bg-slate-200 sm:text-left">
+                <Link href="/service-requests" className="rounded-2xl border border-white/50 bg-white/60 px-4 py-4 text-center text-sm font-semibold text-slate-800 shadow-sm backdrop-blur-sm transition-all hover:-translate-y-0.5 hover:bg-white/90 hover:shadow-md sm:text-left">
                   {translateUiText("Masa Talepleri", locale)}
                 </Link>
               ) : null}
               {canAdmin ? (
-                <Link href="/admin/orders" className="rounded-2xl bg-slate-100 px-4 py-4 text-center text-sm font-semibold text-slate-800 transition hover:bg-slate-200 sm:text-left">
+                <Link href="/admin/orders" className="rounded-2xl border border-white/50 bg-white/60 px-4 py-4 text-center text-sm font-semibold text-slate-800 shadow-sm backdrop-blur-sm transition-all hover:-translate-y-0.5 hover:bg-white/90 hover:shadow-md sm:text-left">
                   {translateUiText("Manuel Siparis Gir", locale)}
                 </Link>
               ) : null}
@@ -280,7 +345,55 @@ export default async function OpsPage({
         </div>
       }
     >
-      <section className="grid gap-4 md:grid-cols-2 xl:grid-cols-4">
+      <MobileTaskList>
+        <MobileTaskCard
+          title={translateUiText("Canli Operasyon", locale)}
+          subtitle={translateUiText("Oncelik kuyruğu", locale)}
+        >
+          <div className="grid grid-cols-4 gap-2">
+            <div className="rounded-xl bg-amber-50 px-2 py-2 text-center">
+              <p className="text-[10px] font-semibold uppercase tracking-[0.12em] text-amber-700">{translateUiText("Bekleyen", locale)}</p>
+              <p className="mt-1 text-lg font-semibold text-amber-900">{ops.pendingOrders}</p>
+            </div>
+            <div className="rounded-xl bg-sky-50 px-2 py-2 text-center">
+              <p className="text-[10px] font-semibold uppercase tracking-[0.12em] text-sky-700">{translateUiText("Hazir", locale)}</p>
+              <p className="mt-1 text-lg font-semibold text-sky-900">{ops.servedOrders}</p>
+            </div>
+            <div className="rounded-xl bg-rose-50 px-2 py-2 text-center">
+              <p className="text-[10px] font-semibold uppercase tracking-[0.12em] text-rose-700">{translateUiText("Kritik", locale)}</p>
+              <p className="mt-1 text-lg font-semibold text-rose-900">{ops.criticalKitchenOrders}</p>
+            </div>
+            <div className="rounded-xl bg-emerald-50 px-2 py-2 text-center">
+              <p className="text-[10px] font-semibold uppercase tracking-[0.12em] text-emerald-700">{translateUiText("Ciro", locale)}</p>
+              <p className="mt-1 text-lg font-semibold text-emerald-900">{Math.round(ops.todayRevenue)}</p>
+            </div>
+          </div>
+        </MobileTaskCard>
+
+        {priorityQueue.map((item) => (
+          <MobileTaskCard key={item.key}>
+            <div className="flex items-center justify-between gap-3">
+              <p className="text-[0.95rem] font-semibold tracking-tight text-slate-900">{item.title}</p>
+              <span className={`rounded-full px-3 py-1 text-xs font-semibold ${item.tone}`}>{item.value}</span>
+            </div>
+            <p className="mt-2 text-xs text-slate-600">{item.hint}</p>
+            <Link href={item.href} className="mobile-cta-primary mt-3 inline-flex w-full items-center justify-center px-4 py-3 text-sm">
+              {item.cta}
+            </Link>
+          </MobileTaskCard>
+        ))}
+
+        <div className="grid grid-cols-2 gap-2">
+          <Link href="/tables" className="mobile-cta-secondary inline-flex items-center justify-center px-3 py-3 text-sm font-semibold">
+            {translateUiText("Masa Akisi", locale)}
+          </Link>
+          <Link href="/cashier" className="mobile-cta-secondary inline-flex items-center justify-center px-3 py-3 text-sm font-semibold">
+            {translateUiText("Tahsilat", locale)}
+          </Link>
+        </div>
+      </MobileTaskList>
+
+      <section className="app-mobile-hide grid gap-4 md:grid-cols-2 xl:grid-cols-4">
         <SummaryCard label={translateUiText("Acik Siparis", locale)} value={String(metrics.openOrders)} hint={translateUiText("Pending, hazirlaniyor ve kasada bekleyen toplam siparis", locale)} tone="accent" />
         <SummaryCard label={translateUiText("Bekleyen", locale)} value={String(metrics.pending)} hint={translateUiText("Mutfaga yeni dusen isler", locale)} tone="danger" />
         <SummaryCard label={translateUiText("Hazirlaniyor", locale)} value={String(metrics.preparing)} hint={translateUiText("Aktif mutfak uretimi", locale)} tone="accent" />
@@ -288,7 +401,7 @@ export default async function OpsPage({
       </section>
 
       {showSetupPrompt ? (
-        <section className="rounded-[28px] border border-amber-200 bg-gradient-to-r from-amber-50 to-orange-50 p-4 shadow-[0_10px_20px_rgba(251,191,36,0.12)] sm:p-6">
+        <section className="app-mobile-hide rounded-[28px] border border-amber-200 bg-gradient-to-r from-amber-50 to-orange-50 p-4 shadow-[0_10px_20px_rgba(251,191,36,0.12)] sm:p-6">
           <div className="flex flex-wrap items-start justify-between gap-6">
             <div className="max-w-3xl">
               <p className="text-xs font-bold uppercase tracking-[0.18em] text-amber-700">{translateUiText("Ilk Kurulum", locale)}</p>
@@ -329,14 +442,14 @@ export default async function OpsPage({
         </section>
       ) : null}
 
-      <section className="grid gap-5 xl:grid-cols-[1.2fr_0.8fr]">
+      <section className="app-mobile-hide grid gap-5 xl:grid-cols-[1.2fr_0.8fr]">
         <ContentCard title={translateUiText("Anlik Siparis Akisi", locale)}>
           {recentOrders.length === 0 ? (
             <EmptyPanel title={translateUiText("Siparis akisi bos", locale)} description={translateUiText("Bu vardiyada izlenecek yeni siparis olustugunda burada gune ait son siparisler gorunur.", locale)} />
           ) : (
             <div className="space-y-3">
               {pagedRecentOrders.map((order) => (
-                <div key={order.id} className="rounded-[24px] border border-slate-200 bg-slate-50 p-4">
+                <div key={order.id} className="rounded-[24px] border border-white/60 bg-white/60 p-4 shadow-sm backdrop-blur-md transition-all duration-300 hover:bg-white/80 hover:shadow-md">
                   <div className="flex flex-col items-start justify-between gap-4 sm:flex-row">
                     <div>
                       <p className="text-xs font-bold uppercase tracking-[0.16em] text-slate-500">{orderSourceLabel(order, locale)}</p>
@@ -416,25 +529,25 @@ export default async function OpsPage({
         </div>
       </section>
 
-      <section className="grid gap-5 xl:grid-cols-[0.95fr_1.05fr]">
+      <section className="app-mobile-hide grid gap-5 xl:grid-cols-[0.95fr_1.05fr]">
         <ContentCard title={translateUiText("Operasyon Isaretleri", locale)}>
           <div className="grid gap-3 sm:grid-cols-2">
-            <div className="rounded-[24px] border border-slate-200 bg-slate-50 p-4">
+            <div className="rounded-[24px] border border-white/60 bg-white/50 p-4 shadow-sm backdrop-blur-md transition-all hover:bg-white/80">
               <p className="text-xs font-bold uppercase tracking-[0.16em] text-slate-500">{translateUiText("Servis Talepleri", locale)}</p>
               <p className="mt-3 text-4xl font-semibold tracking-tight text-slate-900">{ops.openServiceRequests}</p>
               <p className="mt-2 text-sm text-slate-500">{translateUiText("Garson cagir, hesap iste ve benzeri talepler", locale)}</p>
             </div>
-            <div className="rounded-[24px] border border-slate-200 bg-slate-50 p-4">
+            <div className="rounded-[24px] border border-white/60 bg-white/50 p-4 shadow-sm backdrop-blur-md transition-all hover:bg-white/80">
               <p className="text-xs font-bold uppercase tracking-[0.16em] text-slate-500">{translateUiText("Kritik Mutfak", locale)}</p>
               <p className="mt-3 text-4xl font-semibold tracking-tight text-slate-900">{ops.criticalKitchenOrders}</p>
               <p className="mt-2 text-sm text-slate-500">{translateUiText("Esik ustu gecikmis siparis sayisi", locale)}</p>
             </div>
-            <div className="rounded-[24px] border border-slate-200 bg-slate-50 p-4">
+            <div className="rounded-[24px] border border-white/60 bg-white/50 p-4 shadow-sm backdrop-blur-md transition-all hover:bg-white/80">
               <p className="text-xs font-bold uppercase tracking-[0.16em] text-slate-500">{translateUiText("Bugunku Acik Siparis", locale)}</p>
               <p className="mt-3 text-4xl font-semibold tracking-tight text-slate-900">{ops.openOrders}</p>
               <p className="mt-2 text-sm text-slate-500">{translateUiText("Operasyonda halen kapanmamis siparisler", locale)}</p>
             </div>
-            <div className="rounded-[24px] border border-slate-200 bg-slate-50 p-4">
+            <div className="rounded-[24px] border border-white/60 bg-white/50 p-4 shadow-sm backdrop-blur-md transition-all hover:bg-white/80">
               <p className="text-xs font-bold uppercase tracking-[0.16em] text-slate-500">{translateUiText("Kasa Bekleyen", locale)}</p>
               <p className="mt-3 text-4xl font-semibold tracking-tight text-slate-900">{ops.servedOrders}</p>
               <p className="mt-2 text-sm text-slate-500">{translateUiText("Tahsilat bekleyen servisler", locale)}</p>
