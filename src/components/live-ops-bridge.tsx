@@ -19,10 +19,12 @@ const OPS_REFRESH_MIN_INTERVAL_MS = 3500;
 const REALTIME_CONNECTING_TIMEOUT_MS = 8000;
 const REALTIME_DISCONNECT_GRACE_MS = 15000;
 const REALTIME_POST_CONNECT_HOLD_MS = 12000;
+const FALLBACK_HIDDEN_INTERVAL_MS = 10000;
 
 export function LiveOpsBridge({ tables, enableSound = false, fallbackIntervalMs }: LiveOpsBridgeProps) {
   const pathname = usePathname();
   const timeoutRef = useRef<ReturnType<typeof setTimeout> | null>(null);
+  const fallbackTimerRef = useRef<ReturnType<typeof setTimeout> | null>(null);
   const connectTimeoutRef = useRef<ReturnType<typeof setTimeout> | null>(null);
   const disconnectTimeoutRef = useRef<ReturnType<typeof setTimeout> | null>(null);
   const stateTransitionRef = useRef<ReturnType<typeof setTimeout> | null>(null);
@@ -35,7 +37,7 @@ export function LiveOpsBridge({ tables, enableSound = false, fallbackIntervalMs 
   const [connectionState, setConnectionState] = useState<"connecting" | "online" | "offline">("connecting");
   const connectionStateRef = useRef<"connecting" | "online" | "offline">("connecting");
   const channelKey = useMemo(() => [...tables].sort().join("-"), [tables]);
-  const stableTables = useMemo(() => [...tables].sort(), [channelKey]);
+  const stableTables = useMemo(() => [...tables].sort(), [tables]);
   const refreshProfile = useMemo(() => {
     const profile = getWebPerfProfile(pathname);
     return {
@@ -48,6 +50,13 @@ export function LiveOpsBridge({ tables, enableSound = false, fallbackIntervalMs 
     };
   }, [pathname]);
   const disconnectGraceMs = Math.max(REALTIME_DISCONNECT_GRACE_MS, Number(fallbackIntervalMs ?? 0) || 0);
+  const fallbackVisibleIntervalMs = Math.max(600, Number(fallbackIntervalMs ?? 0) || 0);
+  const clearFallbackTimer = useEffectEvent(() => {
+    if (fallbackTimerRef.current) {
+      clearTimeout(fallbackTimerRef.current);
+      fallbackTimerRef.current = null;
+    }
+  });
   const clearConnectionTimers = useEffectEvent(() => {
     if (connectTimeoutRef.current) {
       clearTimeout(connectTimeoutRef.current);
@@ -114,6 +123,7 @@ export function LiveOpsBridge({ tables, enableSound = false, fallbackIntervalMs 
       if (disconnectTimeoutRef.current) {
         return;
       }
+      requestConnectionState("connecting");
       const elapsedSinceSubscribe = Date.now() - lastSubscribedAtRef.current;
       const holdMs = Math.max(
         disconnectGraceMs,
@@ -144,7 +154,7 @@ export function LiveOpsBridge({ tables, enableSound = false, fallbackIntervalMs 
 
     timeoutRef.current = setTimeout(() => {
       const now = Date.now();
-      const isHeartbeat = !event;
+      const isHeartbeat = !event || event.type === "heartbeat";
       const payload: LivePosEvent =
         event ??
         ({
@@ -172,6 +182,53 @@ export function LiveOpsBridge({ tables, enableSound = false, fallbackIntervalMs 
   useEffect(() => {
     connectionStateRef.current = connectionState;
   }, [connectionState]);
+
+  const scheduleFallbackTick = useEffectEvent(() => {
+    if (!fallbackVisibleIntervalMs) {
+      clearFallbackTimer();
+      return;
+    }
+
+    const scheduleNext = () => {
+      const intervalMs = typeof document !== "undefined" && document.hidden
+        ? FALLBACK_HIDDEN_INTERVAL_MS
+        : fallbackVisibleIntervalMs;
+      fallbackTimerRef.current = setTimeout(() => {
+        fallbackTimerRef.current = null;
+        queueLiveEvent();
+        scheduleNext();
+      }, intervalMs);
+    };
+
+    clearFallbackTimer();
+    scheduleNext();
+  });
+
+  useEffect(() => {
+    if (!fallbackVisibleIntervalMs) {
+      clearFallbackTimer();
+      return;
+    }
+
+    const handleVisibilityChange = () => {
+      scheduleFallbackTick();
+    };
+
+    scheduleFallbackTick();
+
+    if (typeof document !== "undefined") {
+      document.addEventListener("visibilitychange", handleVisibilityChange);
+      window.addEventListener("focus", handleVisibilityChange);
+    }
+
+    return () => {
+      clearFallbackTimer();
+      if (typeof document !== "undefined") {
+        document.removeEventListener("visibilitychange", handleVisibilityChange);
+        window.removeEventListener("focus", handleVisibilityChange);
+      }
+    };
+  }, [fallbackVisibleIntervalMs]);
 
   useEffect(() => {
     const supabase = getSupabaseAuthBrowserClient();
@@ -228,12 +285,13 @@ export function LiveOpsBridge({ tables, enableSound = false, fallbackIntervalMs 
       if (timeoutRef.current) {
         clearTimeout(timeoutRef.current);
       }
+      clearFallbackTimer();
       clearConnectionTimers();
       if (supabase && channel) {
         supabase.removeChannel(channel);
       }
     };
-  }, [channelKey, enableSound, handleRealtimeChannelStatus, pathname, refreshProfile.duplicateWindowMs, requestConnectionState, stableTables]);
+  }, [channelKey, enableSound, pathname, refreshProfile.duplicateWindowMs, stableTables]);
 
   return (
     <span

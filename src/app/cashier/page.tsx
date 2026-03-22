@@ -43,9 +43,24 @@ function buildReceiptQr(orderId: string) {
   return `https://api.qrserver.com/v1/create-qr-code/?size=160x160&data=${encodeURIComponent(buildReceiptLink(orderId))}`;
 }
 
+function formatOrderTableLabel(order: {
+  table_number?: number;
+  table_name?: string | null;
+}) {
+  const normalizedName = typeof order.table_name === "string" ? order.table_name.trim() : "";
+  if (normalizedName) {
+    return normalizedName;
+  }
+  if (typeof order.table_number === "number") {
+    return `Masa ${order.table_number}`;
+  }
+  return "Masa -";
+}
+
 function orderSourceLabel(order: {
   channel?: string;
   table_number?: number;
+  table_name?: string | null;
   customer_name?: string | null;
 }) {
   if (order.channel === "delivery") {
@@ -54,7 +69,7 @@ function orderSourceLabel(order: {
   if (order.channel === "pickup") {
     return order.customer_name ? `Gel-al - ${order.customer_name}` : "Gel-al";
   }
-  return `Masa ${order.table_number ?? "-"}`;
+  return formatOrderTableLabel(order);
 }
 
 function orderRef(order: { id: string; check_number?: string | null }) {
@@ -304,8 +319,8 @@ export default async function CashierPage({
       description="Tahsilat, split bill, iade ve adisyon kapanis operasyonu"
       actions={
         <>
-          <LiveOpsBridge tables={["orders", "tables", "payments", "cash_register_sessions"]} />
-          <LiveRouteRefresh tables={["orders", "payments", "cash_register_sessions"]} />
+          <LiveOpsBridge tables={["orders", "tables", "payments", "cash_register_sessions"]} fallbackIntervalMs={900} />
+          <LiveRouteRefresh tables={["orders", "payments", "cash_register_sessions"]} debounceMs={120} minIntervalMs={700} />
           <Link href="/cashier/session" className="w-full rounded-2xl border border-slate-200 bg-white px-5 py-3 text-center text-sm font-semibold text-slate-800 sm:w-auto">
             Gun Islemleri
           </Link>
@@ -421,7 +436,7 @@ export default async function CashierPage({
                       <div>
                         <p className="text-xs font-bold uppercase tracking-[0.16em] text-slate-500">{orderSourceLabel(order)}</p>
                         <p className="font-display mt-2 text-xl font-semibold tracking-tight text-slate-900">
-                          {order.table_number ? `Masa ${order.table_number}` : order.customer_name ?? "Adisyon"}
+                          {order.channel === "dine_in" ? formatOrderTableLabel(order) : order.customer_name ?? "Adisyon"}
                         </p>
                       </div>
                       <span className={`inline-flex w-full justify-center rounded-full px-3 py-1 text-xs font-semibold uppercase sm:w-auto ${statusTone(order.status)}`}>{order.status}</span>
@@ -581,7 +596,9 @@ export default async function CashierPage({
               <div>
                 <p className="text-xs font-bold uppercase tracking-[0.16em] text-slate-500">{orderSourceLabel(selectedOrder)}</p>
                 <h2 className="font-display mt-2 text-2xl font-semibold tracking-tight text-slate-900 sm:text-3xl">
-                  {selectedOrder.table_number ? `Masa ${selectedOrder.table_number} Adisyonu` : `Siparis #${orderRef(selectedOrder)}`}
+                  {selectedOrder.channel === "dine_in"
+                    ? `${formatOrderTableLabel(selectedOrder)} Adisyonu`
+                    : `Siparis #${orderRef(selectedOrder)}`}
                 </h2>
                 <p className="mt-1 text-sm text-slate-500">Popup tahsilat akisi. Ekrandan ayrilmadan odeme, split ve iptal yap.</p>
                 {renderMobileMarkup ? (

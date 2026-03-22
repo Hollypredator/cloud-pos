@@ -153,6 +153,7 @@ export type Order = {
   station_statuses?: Partial<Record<PrepStation, OrderStationStatus>> | null;
   created_at: string;
   table_number?: number;
+  table_name?: string | null;
 };
 
 export type Courier = {

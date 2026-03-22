@@ -49,9 +49,24 @@ function getDelayLevel(status: string, createdAt: string) {
   return { delayed: false, critical: false, elapsedMin };
 }
 
+function formatOrderTableLabel(order: {
+  table_number?: number;
+  table_name?: string | null;
+}) {
+  const normalizedName = typeof order.table_name === "string" ? order.table_name.trim() : "";
+  if (normalizedName) {
+    return normalizedName;
+  }
+  if (typeof order.table_number === "number") {
+    return `Masa ${order.table_number}`;
+  }
+  return "Masa -";
+}
+
 function orderSourceLabel(order: {
   channel?: string;
   table_number?: number;
+  table_name?: string | null;
   customer_name?: string | null;
 }) {
   if (order.channel === "delivery") {
@@ -60,7 +75,7 @@ function orderSourceLabel(order: {
   if (order.channel === "pickup") {
     return order.customer_name ? `Gel-al - ${order.customer_name}` : "Gel-al";
   }
-  return `Masa ${order.table_number ?? "-"}`;
+  return formatOrderTableLabel(order);
 }
 
 function orderRef(order: { id: string; check_number?: string | null }) {
@@ -263,8 +278,8 @@ export default async function KitchenPage({
       description="Istasyon bazli hazirlama kuyrugu, gecikmeler ve servis cikislari"
       actions={
         <>
-          <LiveOpsBridge tables={["orders"]} enableSound />
-          <LiveRouteRefresh tables={["orders"]} />
+          <LiveOpsBridge tables={["orders"]} enableSound fallbackIntervalMs={900} />
+          <LiveRouteRefresh tables={["orders"]} debounceMs={120} minIntervalMs={700} />
           <Link href="/ops" className="w-full rounded-2xl border border-slate-200 bg-white px-5 py-3 text-center text-sm font-semibold text-slate-800 sm:w-auto">
             Panele Don
           </Link>
@@ -346,8 +361,8 @@ export default async function KitchenPage({
                     </p>
                   ) : null}
                   <div className="mt-3 space-y-2">
-                    {items.map((item) => (
-                      <div key={`mobile-item-${order.id}-${activeBoard.key}-${item.product_id}`} className="rounded-xl bg-slate-50 px-3 py-3">
+                    {items.map((item, index) => (
+                      <div key={`mobile-item-${order.id}-${activeBoard.key}-${item.product_id}-${index}`} className="rounded-xl bg-slate-50 px-3 py-3">
                         <p className="text-sm font-semibold text-slate-900">{item.quantity}x {item.name}</p>
                         {item.modifiers?.length ? (
                           <p className="mt-1 text-xs text-slate-500">
@@ -462,8 +477,8 @@ export default async function KitchenPage({
                           ) : null}
 
                           <div className="mt-3 space-y-2">
-                            {items.map((item) => (
-                            <div key={`${order.id}-${board.key}-${item.product_id}`} className="rounded-2xl bg-slate-50 px-3 py-3">
+                            {items.map((item, index) => (
+                            <div key={`${order.id}-${board.key}-${item.product_id}-${index}`} className="rounded-2xl bg-slate-50 px-3 py-3">
                                 <div className="flex items-start justify-between gap-3">
                                   <span className="min-w-0 break-words font-semibold text-slate-900">
                                     {item.quantity}x {item.name}

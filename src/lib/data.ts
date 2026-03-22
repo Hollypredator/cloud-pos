@@ -402,6 +402,24 @@ function isMissingRpcFunctionError(message?: string | null, rpcName?: string) {
   return normalized.includes("function") && normalized.includes("does not exist");
 }
 
+function isRecoverableCreateOrAppendOrderRpcError(message?: string | null) {
+  const normalized = (message ?? "").toLowerCase();
+  if (!normalized) {
+    return false;
+  }
+  if (isMissingRpcFunctionError(message, "create_or_append_order")) {
+    return true;
+  }
+  return (
+    normalized.includes("column \"channel\" is of type order_channel but expression is of type text") ||
+    normalized.includes("column \"fulfillment_status\" is of type fulfillment_status but expression is of type text") ||
+    normalized.includes("cannot cast type text to order_channel") ||
+    normalized.includes("cannot cast type text to fulfillment_status") ||
+    normalized.includes("operator does not exist: order_channel = text") ||
+    normalized.includes("operator does not exist: fulfillment_status = text")
+  );
+}
+
 const ORDER_STATUS_TRANSITIONS: Record<OrderStatus, ReadonlySet<OrderStatus>> = {
   pending: new Set(["preparing", "ready", "served", "cancelled"]),
   preparing: new Set(["pending", "ready", "served", "cancelled"]),
@@ -2472,7 +2490,7 @@ export async function listTableRequests(
       }
 
       const selectColumns = includeTableNumber
-        ? "id, table_id, request_type, status, note, created_at, resolved_at, tables(table_number)"
+        ? "id, table_id, request_type, status, note, created_at, resolved_at, tables(table_number,name)"
         : "id, table_id, request_type, status, note, created_at, resolved_at";
       let query = innerSupabase
         .from("table_requests")
@@ -2694,8 +2712,17 @@ export async function createOrder(input: {
     revalidateOperationsCaches();
     return { ok: true, id: rpcOrder.order_id, usingDemoData: false };
   }
-  if (rpcResult.error && !isMissingRpcFunctionError(rpcResult.error.message, "create_or_append_order")) {
-    return { ok: false, error: rpcResult.error.message };
+  if (rpcResult.error) {
+    if (!isRecoverableCreateOrAppendOrderRpcError(rpcResult.error.message)) {
+      return { ok: false, error: rpcResult.error.message };
+    }
+    console.warn("[orders.create] create_or_append_order RPC failed, falling back to direct writes", {
+      error: rpcResult.error.message,
+      businessId: input.businessId ?? scope.businessId ?? null,
+      branchId: input.branchId ?? scope.branchId ?? null,
+      tableId: input.tableId ?? null,
+      channel,
+    });
   }
 
   type OrderMergeCandidate = {
@@ -2933,7 +2960,7 @@ type OrderRow = {
   fulfillment_status?: FulfillmentStatus;
   status: OrderStatus;
   created_at: string;
-  tables: { table_number: number } | { table_number: number }[] | null;
+  tables: { table_number: number; name?: string | null } | { table_number: number; name?: string | null }[] | null;
 };
 
 type OrderItemRow = {
@@ -2969,6 +2996,9 @@ type RuntimePaymentSummaryCacheEntry = {
 
 const ORDER_PAYMENT_SUMMARY_TTL_MS = 8_000;
 const ORDER_PAYMENT_SUMMARY_MAX_CACHE_ITEMS = 256;
+const ORDER_FLOW_SUMMARY_REVALIDATE_SECONDS = 1;
+const ORDER_FLOW_KITCHEN_REVALIDATE_SECONDS = 1;
+const ORDER_FLOW_RECEIPT_REVALIDATE_SECONDS = 2;
 const runtimeOrderPaymentSummaryCache = new Map<string, RuntimePaymentSummaryCacheEntry>();
 
 function buildPaymentSummaryOrderIdsFingerprint(orderIds: string[]) {
@@ -3286,6 +3316,7 @@ function mapDetailedOrders(
     branch_id: row.branch_id ?? null,
     table_id: row.table_id,
     table_number: getTableNumber(row.tables),
+    table_name: getTableName(row.tables),
     channel: row.channel ?? "dine_in",
     customer_name: row.customer_name ?? null,
     customer_phone: row.customer_phone ?? null,
@@ -3333,8 +3364,8 @@ async function getCachedOrderSummaryRows(input: {
       }
 
       const orderSummarySelect = input.includeStationStatuses
-        ? "id, check_number, branch_id, table_id, station_statuses, total_price, discount_amount, service_fee, final_price, channel, customer_name, customer_phone, delivery_address, delivery_note, courier_id, courier_name, courier_phone, fulfillment_status, status, created_at, tables(table_number)"
-        : "id, check_number, branch_id, table_id, total_price, discount_amount, service_fee, final_price, channel, customer_name, customer_phone, delivery_address, delivery_note, courier_id, courier_name, courier_phone, fulfillment_status, status, created_at, tables(table_number)";
+        ? "id, check_number, branch_id, table_id, station_statuses, total_price, discount_amount, service_fee, final_price, channel, customer_name, customer_phone, delivery_address, delivery_note, courier_id, courier_name, courier_phone, fulfillment_status, status, created_at, tables(table_number,name)"
+        : "id, check_number, branch_id, table_id, total_price, discount_amount, service_fee, final_price, channel, customer_name, customer_phone, delivery_address, delivery_note, courier_id, courier_name, courier_phone, fulfillment_status, status, created_at, tables(table_number,name)";
 
       // eslint-disable-next-line @typescript-eslint/no-explicit-any
       let ordersQuery: any = supabase.from("orders");
@@ -3381,6 +3412,7 @@ async function getCachedOrderSummaryRows(input: {
           branch_id: row.branch_id ?? null,
           table_id: row.table_id,
           table_number: getTableNumber(row.tables),
+          table_name: getTableName(row.tables),
           channel: row.channel ?? "dine_in",
           customer_name: row.customer_name ?? null,
           customer_phone: row.customer_phone ?? null,
@@ -3408,7 +3440,7 @@ async function getCachedOrderSummaryRows(input: {
       };
     },
     [cacheKey],
-    { revalidate: 5, tags: ["orders-summary"] },
+    { revalidate: ORDER_FLOW_SUMMARY_REVALIDATE_SECONDS, tags: ["orders-summary"] },
   );
 
   return reader();
@@ -3430,7 +3462,7 @@ async function getCachedOrderReceiptRow(input: {
 
       let orderQuery = supabase
         .from("orders")
-        .select("id, check_number, table_id, station_statuses, total_price, discount_amount, service_fee, final_price, channel, customer_name, customer_phone, delivery_address, delivery_note, courier_id, courier_name, courier_phone, fulfillment_status, status, created_at, tables(table_number)")
+        .select("id, check_number, table_id, station_statuses, total_price, discount_amount, service_fee, final_price, channel, customer_name, customer_phone, delivery_address, delivery_note, courier_id, courier_name, courier_phone, fulfillment_status, status, created_at, tables(table_number,name)")
         .eq("id", input.orderId);
       if (!input.useLegacySchema && input.businessId) {
         orderQuery = orderQuery.eq("business_id", input.businessId);
@@ -3482,8 +3514,9 @@ async function getCachedOrderReceiptRow(input: {
         });
       }
 
-      const tableInfo = data.tables as { table_number: number } | { table_number: number }[] | null;
+      const tableInfo = data.tables as { table_number: number; name?: string | null } | { table_number: number; name?: string | null }[] | null;
       const tableNumber = Array.isArray(tableInfo) ? tableInfo[0]?.table_number : tableInfo?.table_number;
+      const tableName = Array.isArray(tableInfo) ? tableInfo[0]?.name ?? null : tableInfo?.name ?? null;
 
       return {
         hasError: false as const,
@@ -3492,6 +3525,7 @@ async function getCachedOrderReceiptRow(input: {
           check_number: (data.check_number as string | null) ?? null,
           table_id: (data.table_id as string | null) ?? null,
           table_number: tableNumber,
+          table_name: tableName,
           channel: (data.channel as OrderChannel | null) ?? "dine_in",
           customer_name: (data.customer_name as string | null) ?? null,
           customer_phone: (data.customer_phone as string | null) ?? null,
@@ -3531,7 +3565,7 @@ async function getCachedOrderReceiptRow(input: {
       };
     },
     [cacheKey],
-    { revalidate: 8, tags: ["order-receipt", "orders-summary"] },
+    { revalidate: ORDER_FLOW_RECEIPT_REVALIDATE_SECONDS, tags: ["order-receipt", "orders-summary"] },
   );
 
   return reader();
@@ -3553,7 +3587,7 @@ async function getCachedKitchenOrdersSnapshot(input: {
 
       let ordersQuery = supabase
         .from("orders")
-        .select("id, check_number, branch_id, table_id, station_statuses, total_price, discount_amount, service_fee, final_price, channel, customer_name, delivery_address, fulfillment_status, status, created_at, tables(table_number)")
+        .select("id, check_number, branch_id, table_id, station_statuses, total_price, discount_amount, service_fee, final_price, channel, customer_name, delivery_address, fulfillment_status, status, created_at, tables(table_number,name)")
         .in("status", ["pending", "preparing", "ready", "served", "partially_paid"])
         .order("created_at", { ascending: true });
 
@@ -3602,6 +3636,7 @@ async function getCachedKitchenOrdersSnapshot(input: {
           branch_id: row.branch_id ?? null,
           table_id: row.table_id,
           table_number: getTableNumber(row.tables),
+          table_name: getTableName(row.tables),
           channel: row.channel ?? "dine_in",
           customer_name: row.customer_name ?? null,
           customer_phone: null,
@@ -3627,7 +3662,7 @@ async function getCachedKitchenOrdersSnapshot(input: {
       };
     },
     [cacheKey],
-    { revalidate: 5, tags: ["kitchen-orders", "orders-summary"] },
+    { revalidate: ORDER_FLOW_KITCHEN_REVALIDATE_SECONDS, tags: ["kitchen-orders", "orders-summary"] },
   );
 
   return reader();
@@ -3685,8 +3720,8 @@ export async function listOrders(
   }
 
   const orderSummarySelect = includeStationStatuses
-    ? "id, check_number, branch_id, table_id, station_statuses, total_price, discount_amount, service_fee, final_price, channel, customer_name, customer_phone, delivery_address, delivery_note, courier_id, courier_name, courier_phone, fulfillment_status, status, created_at, tables(table_number)"
-    : "id, check_number, branch_id, table_id, total_price, discount_amount, service_fee, final_price, channel, customer_name, customer_phone, delivery_address, delivery_note, courier_id, courier_name, courier_phone, fulfillment_status, status, created_at, tables(table_number)";
+    ? "id, check_number, branch_id, table_id, station_statuses, total_price, discount_amount, service_fee, final_price, channel, customer_name, customer_phone, delivery_address, delivery_note, courier_id, courier_name, courier_phone, fulfillment_status, status, created_at, tables(table_number,name)"
+    : "id, check_number, branch_id, table_id, total_price, discount_amount, service_fee, final_price, channel, customer_name, customer_phone, delivery_address, delivery_note, courier_id, courier_name, courier_phone, fulfillment_status, status, created_at, tables(table_number,name)";
 
   // eslint-disable-next-line @typescript-eslint/no-explicit-any
   let ordersQuery: any = supabase.from("orders");
@@ -3733,6 +3768,7 @@ export async function listOrders(
         branch_id: row.branch_id ?? null,
         table_id: row.table_id,
         table_number: getTableNumber(row.tables),
+        table_name: getTableName(row.tables),
         channel: row.channel ?? "dine_in",
         customer_name: row.customer_name ?? null,
         customer_phone: row.customer_phone ?? null,
@@ -3771,7 +3807,7 @@ export async function listOrders(
   if (itemError) {
     let fallbackQuery = supabase
         .from("orders")
-        .select("id, check_number, table_id, station_statuses, items, total_price, discount_amount, service_fee, final_price, channel, customer_name, customer_phone, delivery_address, delivery_note, courier_id, courier_name, courier_phone, fulfillment_status, status, created_at, tables(table_number)")
+        .select("id, check_number, table_id, station_statuses, items, total_price, discount_amount, service_fee, final_price, channel, customer_name, customer_phone, delivery_address, delivery_note, courier_id, courier_name, courier_phone, fulfillment_status, status, created_at, tables(table_number,name)")
         .in("status", statuses)
         .order("created_at", { ascending: true });
     if (channels && channels.length > 0) {
@@ -3792,7 +3828,7 @@ export async function listOrders(
     }
 
     const fallback = (fallbackRows.data ?? []) as Array<
-      OrderRow & { items: OrderItem[] | null; tables: { table_number: number } | { table_number: number }[] | null }
+      OrderRow & { items: OrderItem[] | null; tables: { table_number: number; name?: string | null } | { table_number: number; name?: string | null }[] | null }
     >;
     return {
       orders: fallback.map((row) => ({
@@ -3801,6 +3837,7 @@ export async function listOrders(
         branch_id: row.branch_id ?? null,
         table_id: row.table_id,
         table_number: getTableNumber(row.tables),
+        table_name: getTableName(row.tables),
         channel: row.channel ?? "dine_in",
         customer_name: row.customer_name ?? null,
         customer_phone: row.customer_phone ?? null,
@@ -3874,7 +3911,7 @@ export async function getKitchenOrdersSnapshot() {
 }
 
 export async function getCashierPageSnapshot(selectedOrderId?: string) {
-  const cashierOpenScope = (process.env.CASHIER_OPEN_SCOPE ?? "served_only").toLowerCase();
+  const cashierOpenScope = (process.env.CASHIER_OPEN_SCOPE ?? "all_open").toLowerCase();
   const cashierOpenLimit = Math.max(12, Number.parseInt(process.env.CASHIER_OPEN_LIMIT ?? "24", 10) || 24);
   const cashierPaidLimit = Math.max(4, Number.parseInt(process.env.CASHIER_PAID_LIMIT ?? "6", 10) || 6);
   const openStatuses: OrderStatus[] =
@@ -4116,7 +4153,7 @@ export async function getOrderReceipt(orderId: string) {
 
   let orderQuery = supabase
     .from("orders")
-    .select("id, check_number, table_id, station_statuses, total_price, discount_amount, service_fee, final_price, channel, customer_name, customer_phone, delivery_address, delivery_note, courier_id, courier_name, courier_phone, fulfillment_status, status, created_at, tables(table_number)")
+    .select("id, check_number, table_id, station_statuses, total_price, discount_amount, service_fee, final_price, channel, customer_name, customer_phone, delivery_address, delivery_note, courier_id, courier_name, courier_phone, fulfillment_status, status, created_at, tables(table_number,name)")
     .eq("id", orderId);
   if (!scope.useLegacySchema && scope.businessId) {
     orderQuery = orderQuery.eq("business_id", scope.businessId);
@@ -4143,8 +4180,9 @@ export async function getOrderReceipt(orderId: string) {
       .eq("order_id", orderId),
   ]);
 
-  const tableInfo = data.tables as { table_number: number } | { table_number: number }[] | null;
+  const tableInfo = data.tables as { table_number: number; name?: string | null } | { table_number: number; name?: string | null }[] | null;
   const tableNumber = Array.isArray(tableInfo) ? tableInfo[0]?.table_number : tableInfo?.table_number;
+  const tableName = Array.isArray(tableInfo) ? tableInfo[0]?.name ?? null : tableInfo?.name ?? null;
   const groupedModifiers = new Map<string, OrderItemModifierSelection[]>();
   for (const row of (modifierRows ?? []) as Array<{
     product_id: string | null;
@@ -4172,6 +4210,7 @@ export async function getOrderReceipt(orderId: string) {
       check_number: (data.check_number as string | null) ?? null,
       table_id: (data.table_id as string | null) ?? null,
       table_number: tableNumber,
+      table_name: tableName,
       channel: (data.channel as OrderChannel | null) ?? "dine_in",
       customer_name: (data.customer_name as string | null) ?? null,
       customer_phone: (data.customer_phone as string | null) ?? null,
@@ -4211,7 +4250,7 @@ export async function getOrderReceipt(orderId: string) {
 }
 
 function getTableNumber(
-  tables: { table_number: number } | { table_number: number }[] | null,
+  tables: { table_number: number; name?: string | null } | { table_number: number; name?: string | null }[] | null | undefined,
 ): number | undefined {
   if (!tables) {
     return undefined;
@@ -4220,6 +4259,18 @@ function getTableNumber(
     return tables[0]?.table_number;
   }
   return tables.table_number;
+}
+
+function getTableName(
+  tables: { table_number: number; name?: string | null } | { table_number: number; name?: string | null }[] | null | undefined,
+): string | null {
+  if (!tables) {
+    return null;
+  }
+  if (Array.isArray(tables)) {
+    return tables[0]?.name ?? null;
+  }
+  return tables.name ?? null;
 }
 
 export async function updateOrderStatus(orderId: string, nextStatus: OrderStatus) {
@@ -8306,6 +8357,7 @@ export async function getOpsPageSnapshot(options?: { includeSetup?: boolean }) {
       check_number: row.check_number ?? null,
       table_id: row.table_id,
       table_number: getTableNumber(row.tables),
+      table_name: getTableName(row.tables),
       channel: row.channel ?? "dine_in",
       customer_name: row.customer_name ?? null,
       total_price: Number(row.total_price),
@@ -8382,6 +8434,7 @@ export async function getDashboardData() {
     check_number: row.check_number ?? null,
     table_id: row.table_id,
     table_number: getTableNumber(row.tables),
+    table_name: getTableName(row.tables),
     channel: row.channel ?? "dine_in",
     customer_name: row.customer_name ?? null,
     customer_phone: row.customer_phone ?? null,
@@ -8738,20 +8791,20 @@ async function getCachedOpsPageRow(input: {
         ? (input.branchId
             ? supabase
                 .from("orders")
-                .select("id, check_number, table_id, total_price, final_price, channel, customer_name, status, created_at, tables(table_number)")
+                .select("id, check_number, table_id, total_price, final_price, channel, customer_name, status, created_at, tables(table_number,name)")
                 .eq("business_id", input.businessId)
                 .eq("branch_id", input.branchId)
                 .order("created_at", { ascending: false })
                 .limit(recentOrderLimit)
             : supabase
                 .from("orders")
-                .select("id, check_number, table_id, total_price, final_price, channel, customer_name, status, created_at, tables(table_number)")
+                .select("id, check_number, table_id, total_price, final_price, channel, customer_name, status, created_at, tables(table_number,name)")
                 .eq("business_id", input.businessId)
                 .order("created_at", { ascending: false })
                 .limit(recentOrderLimit))
         : supabase
             .from("orders")
-            .select("id, check_number, table_id, total_price, final_price, channel, customer_name, status, created_at, tables(table_number)")
+            .select("id, check_number, table_id, total_price, final_price, channel, customer_name, status, created_at, tables(table_number,name)")
             .order("created_at", { ascending: false })
             .limit(recentOrderLimit),
       !input.useLegacySchema && input.businessId

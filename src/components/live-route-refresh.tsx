@@ -12,6 +12,9 @@ type LiveRouteRefreshProps = {
 };
 
 function isRelevant(event: LivePosEvent, tables: string[]) {
+  if (event.sourceEvent === "POLL") {
+    return true;
+  }
   if (event.type === "heartbeat") {
     return false;
   }
@@ -26,6 +29,7 @@ export function LiveRouteRefresh({
   const router = useRouter();
   const pathname = usePathname();
   const timeoutRef = useRef<ReturnType<typeof setTimeout> | null>(null);
+  const scheduledRefreshAtRef = useRef(0);
   const lastRefreshAtRef = useRef(0);
   const lastFingerprintRef = useRef<string | null>(null);
   const lastEventAtRef = useRef(0);
@@ -54,20 +58,27 @@ export function LiveRouteRefresh({
     };
   }, []);
 
-  const queueRefresh = useEffectEvent(() => {
+  const queueRefresh = useEffectEvent((event?: Pick<LivePosEvent, "sourceEvent" | "type">) => {
     const profile = profileRef.current;
     const effectiveDebounceMs = debounceMs ?? profile.refreshDebounceMs;
     const effectiveMinIntervalMs = minIntervalMs ?? profile.refreshMinIntervalMs;
     const elapsed = Date.now() - lastRefreshAtRef.current;
     const timeSinceInteraction = Date.now() - lastUserInteractionAtRef.current;
+    const skipInteractionGuard = event?.sourceEvent === "POLL" || event?.type === "order_created";
     const interactionGuardMs = timeSinceInteraction < profile.interactionGuardMs
-      ? profile.interactionGuardMs - timeSinceInteraction
+      ? (skipInteractionGuard ? 0 : profile.interactionGuardMs - timeSinceInteraction)
       : 0;
     const waitMs = Math.max(effectiveDebounceMs, effectiveMinIntervalMs - elapsed, interactionGuardMs);
+    const targetAt = Date.now() + waitMs;
+    if (timeoutRef.current && scheduledRefreshAtRef.current > 0 && scheduledRefreshAtRef.current <= targetAt) {
+      return;
+    }
     if (timeoutRef.current) {
       clearTimeout(timeoutRef.current);
     }
+    scheduledRefreshAtRef.current = targetAt;
     timeoutRef.current = setTimeout(() => {
+      scheduledRefreshAtRef.current = 0;
       lastRefreshAtRef.current = Date.now();
       router.refresh();
     }, waitMs);
@@ -103,7 +114,7 @@ export function LiveRouteRefresh({
       document.removeEventListener("visibilitychange", handleVisibilityChange);
       window.removeEventListener("focus", handleWindowFocus);
     };
-  }, [flushPendingIfVisible]);
+  }, []);
 
   useEffect(() => {
     const unsubscribe = addLivePosEventListener((event) => {
@@ -116,13 +127,13 @@ export function LiveRouteRefresh({
       }
       const fingerprint = `${event.sourceTable}:${event.sourceEvent}:${event.type}:${event.orderId ?? "no-order"}:${event.tableId ?? "no-table"}`;
       const profile = profileRef.current;
-      const duplicateWindowMs = profile.duplicateWindowMs;
+      const duplicateWindowMs = event.sourceEvent === "POLL" ? Math.min(300, profile.duplicateWindowMs) : profile.duplicateWindowMs;
       if (fingerprint === lastFingerprintRef.current && event.at - lastEventAtRef.current < duplicateWindowMs) {
         return;
       }
       lastFingerprintRef.current = fingerprint;
       lastEventAtRef.current = event.at;
-      queueRefresh();
+      queueRefresh(event);
     });
 
     return () => {
@@ -130,8 +141,9 @@ export function LiveRouteRefresh({
       if (timeoutRef.current) {
         clearTimeout(timeoutRef.current);
       }
+      scheduledRefreshAtRef.current = 0;
     };
-  }, [queueRefresh, tables]);
+  }, [tables]);
 
   return null;
 }
