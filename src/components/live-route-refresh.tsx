@@ -1,20 +1,15 @@
 "use client";
 
 import { useEffect, useEffectEvent, useRef } from "react";
-import { useRouter } from "next/navigation";
+import { usePathname, useRouter } from "next/navigation";
 import { addLivePosEventListener, type LivePosEvent } from "@/lib/live-events";
+import { getWebPerfProfile } from "@/lib/web-perf-profile";
 
 type LiveRouteRefreshProps = {
   tables: string[];
   debounceMs?: number;
   minIntervalMs?: number;
 };
-
-const MOBILE_DEBOUNCE_FLOOR_MS = 650;
-const MOBILE_MIN_INTERVAL_FLOOR_MS = 3200;
-const DESKTOP_DEBOUNCE_FLOOR_MS = 600;
-const DESKTOP_MIN_INTERVAL_FLOOR_MS = 6000;
-const USER_INTERACTION_COOLDOWN_MS = 1800;
 
 function isRelevant(event: LivePosEvent, tables: string[]) {
   if (event.type === "heartbeat") {
@@ -25,29 +20,22 @@ function isRelevant(event: LivePosEvent, tables: string[]) {
 
 export function LiveRouteRefresh({
   tables,
-  debounceMs = 220,
-  minIntervalMs = 1400,
+  debounceMs,
+  minIntervalMs,
 }: LiveRouteRefreshProps) {
   const router = useRouter();
+  const pathname = usePathname();
   const timeoutRef = useRef<ReturnType<typeof setTimeout> | null>(null);
   const lastRefreshAtRef = useRef(0);
   const lastFingerprintRef = useRef<string | null>(null);
   const lastEventAtRef = useRef(0);
-  const coarsePointerRef = useRef(false);
   const lastUserInteractionAtRef = useRef(0);
+  const pendingHiddenRefreshRef = useRef(false);
+  const profileRef = useRef(getWebPerfProfile(pathname));
 
   useEffect(() => {
-    if (typeof window === "undefined") {
-      return;
-    }
-    const media = window.matchMedia("(hover: none) and (pointer: coarse)");
-    const apply = () => {
-      coarsePointerRef.current = media.matches;
-    };
-    apply();
-    media.addEventListener("change", apply);
-    return () => media.removeEventListener("change", apply);
-  }, []);
+    profileRef.current = getWebPerfProfile(pathname);
+  }, [pathname]);
 
   useEffect(() => {
     if (typeof window === "undefined") {
@@ -67,16 +55,13 @@ export function LiveRouteRefresh({
   }, []);
 
   const queueRefresh = useEffectEvent(() => {
-    const effectiveDebounceMs = coarsePointerRef.current
-      ? Math.max(debounceMs, MOBILE_DEBOUNCE_FLOOR_MS)
-      : Math.max(debounceMs, DESKTOP_DEBOUNCE_FLOOR_MS);
-    const effectiveMinIntervalMs = coarsePointerRef.current
-      ? Math.max(minIntervalMs, MOBILE_MIN_INTERVAL_FLOOR_MS)
-      : Math.max(minIntervalMs, DESKTOP_MIN_INTERVAL_FLOOR_MS);
+    const profile = profileRef.current;
+    const effectiveDebounceMs = debounceMs ?? profile.refreshDebounceMs;
+    const effectiveMinIntervalMs = minIntervalMs ?? profile.refreshMinIntervalMs;
     const elapsed = Date.now() - lastRefreshAtRef.current;
     const timeSinceInteraction = Date.now() - lastUserInteractionAtRef.current;
-    const interactionGuardMs = timeSinceInteraction < USER_INTERACTION_COOLDOWN_MS
-      ? USER_INTERACTION_COOLDOWN_MS - timeSinceInteraction
+    const interactionGuardMs = timeSinceInteraction < profile.interactionGuardMs
+      ? profile.interactionGuardMs - timeSinceInteraction
       : 0;
     const waitMs = Math.max(effectiveDebounceMs, effectiveMinIntervalMs - elapsed, interactionGuardMs);
     if (timeoutRef.current) {
@@ -88,16 +73,50 @@ export function LiveRouteRefresh({
     }, waitMs);
   });
 
+  const flushPendingIfVisible = useEffectEvent(() => {
+    if (typeof document !== "undefined" && document.hidden) {
+      return;
+    }
+    if (!pendingHiddenRefreshRef.current) {
+      return;
+    }
+    pendingHiddenRefreshRef.current = false;
+    queueRefresh();
+  });
+
+  useEffect(() => {
+    if (typeof document === "undefined") {
+      return;
+    }
+
+    const handleVisibilityChange = () => {
+      flushPendingIfVisible();
+    };
+
+    const handleWindowFocus = () => {
+      flushPendingIfVisible();
+    };
+
+    document.addEventListener("visibilitychange", handleVisibilityChange);
+    window.addEventListener("focus", handleWindowFocus);
+    return () => {
+      document.removeEventListener("visibilitychange", handleVisibilityChange);
+      window.removeEventListener("focus", handleWindowFocus);
+    };
+  }, [flushPendingIfVisible]);
+
   useEffect(() => {
     const unsubscribe = addLivePosEventListener((event) => {
       if (!isRelevant(event, tables)) {
         return;
       }
       if (typeof document !== "undefined" && document.hidden) {
+        pendingHiddenRefreshRef.current = true;
         return;
       }
       const fingerprint = `${event.sourceTable}:${event.sourceEvent}:${event.type}:${event.orderId ?? "no-order"}:${event.tableId ?? "no-table"}`;
-      const duplicateWindowMs = coarsePointerRef.current ? 1800 : 1200;
+      const profile = profileRef.current;
+      const duplicateWindowMs = profile.duplicateWindowMs;
       if (fingerprint === lastFingerprintRef.current && event.at - lastEventAtRef.current < duplicateWindowMs) {
         return;
       }
@@ -112,7 +131,7 @@ export function LiveRouteRefresh({
         clearTimeout(timeoutRef.current);
       }
     };
-  }, [minIntervalMs, queueRefresh, tables]);
+  }, [queueRefresh, tables]);
 
   return null;
 }

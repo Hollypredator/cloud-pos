@@ -22,6 +22,21 @@ const contentSecurityPolicy = [
 
 const nextConfig: NextConfig = {
   distDir: process.env.NEXT_DIST_DIR || ".next",
+  output: process.env.NEXT_OUTPUT_STANDALONE === "1" ? "standalone" : undefined,
+  env: {
+    NEXT_PUBLIC_WEB_PERF_FERRARI_CASHIER:
+      process.env.NEXT_PUBLIC_WEB_PERF_FERRARI_CASHIER ?? process.env.WEB_PERF_FERRARI_CASHIER ?? "",
+    NEXT_PUBLIC_WEB_PERF_FERRARI_KITCHEN:
+      process.env.NEXT_PUBLIC_WEB_PERF_FERRARI_KITCHEN ?? process.env.WEB_PERF_FERRARI_KITCHEN ?? "",
+    NEXT_PUBLIC_WEB_PERF_FERRARI_OPS:
+      process.env.NEXT_PUBLIC_WEB_PERF_FERRARI_OPS ?? process.env.WEB_PERF_FERRARI_OPS ?? "",
+    NEXT_PUBLIC_WEB_PERF_FERRARI_TABLES:
+      process.env.NEXT_PUBLIC_WEB_PERF_FERRARI_TABLES ?? process.env.WEB_PERF_FERRARI_TABLES ?? "",
+    NEXT_PUBLIC_WEB_PERF_FERRARI_SERVICE:
+      process.env.NEXT_PUBLIC_WEB_PERF_FERRARI_SERVICE ?? process.env.WEB_PERF_FERRARI_SERVICE ?? "",
+    NEXT_PUBLIC_WEB_PERF_FERRARI_DELIVERY:
+      process.env.NEXT_PUBLIC_WEB_PERF_FERRARI_DELIVERY ?? process.env.WEB_PERF_FERRARI_DELIVERY ?? "",
+  },
   async headers() {
     return [
       {

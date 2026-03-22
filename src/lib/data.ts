@@ -8725,7 +8725,7 @@ async function getCachedOpsPageRow(input: {
   useLegacySchema: boolean;
 }) {
   const queryOpsPageRow = async (supabase: TenantSupabaseClient) => {
-    const recentOrderLimit = 8;
+    const recentOrderLimit = 6;
 
     const [opsAggregate, { data: recentOrderRows }, { data: lowStockRows }] = await Promise.all([
       getOpsSnapshotAggregateForScope({

@@ -4,6 +4,7 @@ import { useEffect, useEffectEvent, useMemo, useRef, useState } from "react";
 import { usePathname } from "next/navigation";
 import { emitLivePosEvent, type LivePosEvent } from "@/lib/live-events";
 import { getSupabaseAuthBrowserClient } from "@/lib/supabase/auth-browser";
+import { getWebPerfProfile } from "@/lib/web-perf-profile";
 
 type LiveOpsBridgeProps = {
   tables: string[];
@@ -19,35 +20,33 @@ const REALTIME_CONNECTING_TIMEOUT_MS = 8000;
 const REALTIME_DISCONNECT_GRACE_MS = 15000;
 const REALTIME_POST_CONNECT_HOLD_MS = 12000;
 
-function getRefreshProfile(pathname: string | null) {
-  if (pathname === "/ops") {
-    return {
-      debounceMs: OPS_REFRESH_DEBOUNCE_MS,
-      minIntervalMs: OPS_REFRESH_MIN_INTERVAL_MS,
-    };
-  }
-
-  return {
-    debounceMs: LIVE_REFRESH_DEBOUNCE_MS,
-    minIntervalMs: LIVE_REFRESH_MIN_INTERVAL_MS,
-  };
-}
-
 export function LiveOpsBridge({ tables, enableSound = false, fallbackIntervalMs }: LiveOpsBridgeProps) {
   const pathname = usePathname();
   const timeoutRef = useRef<ReturnType<typeof setTimeout> | null>(null);
   const connectTimeoutRef = useRef<ReturnType<typeof setTimeout> | null>(null);
   const disconnectTimeoutRef = useRef<ReturnType<typeof setTimeout> | null>(null);
+  const stateTransitionRef = useRef<ReturnType<typeof setTimeout> | null>(null);
   const lastRealtimeFingerprintRef = useRef<string | null>(null);
   const lastRealtimeEventAtRef = useRef(0);
   const lastDispatchAtRef = useRef(0);
   const lastSubscribedAtRef = useRef(0);
+  const lastConnectionStateChangedAtRef = useRef(0);
   const hasSubscribedOnceRef = useRef(false);
   const [connectionState, setConnectionState] = useState<"connecting" | "online" | "offline">("connecting");
   const connectionStateRef = useRef<"connecting" | "online" | "offline">("connecting");
   const channelKey = useMemo(() => [...tables].sort().join("-"), [tables]);
   const stableTables = useMemo(() => [...tables].sort(), [channelKey]);
-  const refreshProfile = useMemo(() => getRefreshProfile(pathname), [pathname]);
+  const refreshProfile = useMemo(() => {
+    const profile = getWebPerfProfile(pathname);
+    return {
+      debounceMs:
+        profile.mode === "ferrari_safe" ? profile.bridgeDebounceMs : (pathname === "/ops" ? OPS_REFRESH_DEBOUNCE_MS : LIVE_REFRESH_DEBOUNCE_MS),
+      minIntervalMs:
+        profile.mode === "ferrari_safe" ? profile.bridgeMinIntervalMs : (pathname === "/ops" ? OPS_REFRESH_MIN_INTERVAL_MS : LIVE_REFRESH_MIN_INTERVAL_MS),
+      duplicateWindowMs: profile.duplicateWindowMs,
+      connectionStateMinHoldMs: profile.connectionStateMinHoldMs,
+    };
+  }, [pathname]);
   const disconnectGraceMs = Math.max(REALTIME_DISCONNECT_GRACE_MS, Number(fallbackIntervalMs ?? 0) || 0);
   const clearConnectionTimers = useEffectEvent(() => {
     if (connectTimeoutRef.current) {
@@ -58,13 +57,42 @@ export function LiveOpsBridge({ tables, enableSound = false, fallbackIntervalMs 
       clearTimeout(disconnectTimeoutRef.current);
       disconnectTimeoutRef.current = null;
     }
+    if (stateTransitionRef.current) {
+      clearTimeout(stateTransitionRef.current);
+      stateTransitionRef.current = null;
+    }
   });
-  const setStableConnectionState = useEffectEvent((nextState: "connecting" | "online" | "offline") => {
+  const commitConnectionState = useEffectEvent((nextState: "connecting" | "online" | "offline") => {
     if (connectionStateRef.current === nextState) {
       return;
     }
     connectionStateRef.current = nextState;
+    lastConnectionStateChangedAtRef.current = Date.now();
     setConnectionState(nextState);
+  });
+  const requestConnectionState = useEffectEvent((nextState: "connecting" | "online" | "offline") => {
+    if (connectionStateRef.current === nextState) {
+      return;
+    }
+
+    const now = Date.now();
+    const elapsed = now - lastConnectionStateChangedAtRef.current;
+    const holdMs = Math.max(0, refreshProfile.connectionStateMinHoldMs - elapsed);
+
+    if (stateTransitionRef.current) {
+      clearTimeout(stateTransitionRef.current);
+      stateTransitionRef.current = null;
+    }
+
+    if (holdMs <= 0 || lastConnectionStateChangedAtRef.current === 0) {
+      commitConnectionState(nextState);
+      return;
+    }
+
+    stateTransitionRef.current = setTimeout(() => {
+      stateTransitionRef.current = null;
+      commitConnectionState(nextState);
+    }, holdMs);
   });
   const handleRealtimeChannelStatus = useEffectEvent((status: string) => {
     if (status === "SUBSCRIBED") {
@@ -78,7 +106,7 @@ export function LiveOpsBridge({ tables, enableSound = false, fallbackIntervalMs 
         clearTimeout(disconnectTimeoutRef.current);
         disconnectTimeoutRef.current = null;
       }
-      setStableConnectionState("online");
+      requestConnectionState("online");
       return;
     }
 
@@ -94,7 +122,7 @@ export function LiveOpsBridge({ tables, enableSound = false, fallbackIntervalMs 
       disconnectTimeoutRef.current = setTimeout(
         () => {
           disconnectTimeoutRef.current = null;
-          setStableConnectionState(hasSubscribedOnceRef.current ? "offline" : "connecting");
+          requestConnectionState(hasSubscribedOnceRef.current ? "offline" : "connecting");
         },
         holdMs,
       );
@@ -102,7 +130,7 @@ export function LiveOpsBridge({ tables, enableSound = false, fallbackIntervalMs 
     }
 
     if (!hasSubscribedOnceRef.current) {
-      setStableConnectionState("connecting");
+      requestConnectionState("connecting");
     }
   });
 
@@ -150,10 +178,10 @@ export function LiveOpsBridge({ tables, enableSound = false, fallbackIntervalMs 
     let channel: ReturnType<NonNullable<typeof supabase>["channel"]> | null = null;
 
     if (supabase) {
-      setStableConnectionState("connecting");
+      requestConnectionState("connecting");
       connectTimeoutRef.current = setTimeout(() => {
         if (!hasSubscribedOnceRef.current) {
-          setStableConnectionState("offline");
+          requestConnectionState("offline");
         }
       }, REALTIME_CONNECTING_TIMEOUT_MS);
       channel = supabase.channel(`ops-live-${channelKey}`);
@@ -172,16 +200,13 @@ export function LiveOpsBridge({ tables, enableSound = false, fallbackIntervalMs 
             const now = Date.now();
             if (
               fingerprint === lastRealtimeFingerprintRef.current &&
-              now - lastRealtimeEventAtRef.current < refreshProfile.minIntervalMs
+              now - lastRealtimeEventAtRef.current < refreshProfile.duplicateWindowMs
             ) {
               return;
             }
             lastRealtimeFingerprintRef.current = fingerprint;
             lastRealtimeEventAtRef.current = now;
-            if (typeof document !== "undefined" && document.hidden) {
-              return;
-            }
-            if (pathname === "/ops" && table === "products" && payload.eventType !== "INSERT" && payload.eventType !== "DELETE") {
+            if (!shouldBroadcastRealtimeEvent(pathname, table, payload)) {
               return;
             }
             if (enableSound && table === "orders" && payload.eventType === "INSERT") {
@@ -196,7 +221,7 @@ export function LiveOpsBridge({ tables, enableSound = false, fallbackIntervalMs 
         handleRealtimeChannelStatus(status);
       });
     } else {
-      setStableConnectionState("offline");
+      requestConnectionState("offline");
     }
 
     return () => {
@@ -208,7 +233,7 @@ export function LiveOpsBridge({ tables, enableSound = false, fallbackIntervalMs 
         supabase.removeChannel(channel);
       }
     };
-  }, [channelKey, enableSound, pathname, refreshProfile.minIntervalMs, stableTables]);
+  }, [channelKey, enableSound, handleRealtimeChannelStatus, pathname, refreshProfile.duplicateWindowMs, requestConnectionState, stableTables]);
 
   return (
     <span
@@ -227,6 +252,45 @@ export function LiveOpsBridge({ tables, enableSound = false, fallbackIntervalMs 
           : "Realtime Kapali"}
     </span>
   );
+}
+
+function toFiniteNumber(value: unknown) {
+  const numeric = typeof value === "number" ? value : Number(value);
+  return Number.isFinite(numeric) ? numeric : null;
+}
+
+function isOpsDashboardPath(pathname: string | null) {
+  return pathname === "/ops" || pathname === "/m/ops";
+}
+
+function shouldBroadcastRealtimeEvent(
+  pathname: string | null,
+  table: string,
+  payload: {
+    eventType: "INSERT" | "UPDATE" | "DELETE";
+    new?: Record<string, unknown>;
+    old?: Record<string, unknown>;
+  },
+) {
+  if (!isOpsDashboardPath(pathname) || table !== "products") {
+    return true;
+  }
+
+  const nextStock = toFiniteNumber((payload.new as Record<string, unknown> | undefined)?.stock_count);
+  const prevStock = toFiniteNumber((payload.old as Record<string, unknown> | undefined)?.stock_count);
+  const wasLow = prevStock !== null ? prevStock <= 10 : false;
+  const isLow = nextStock !== null ? nextStock <= 10 : false;
+
+  if (payload.eventType === "UPDATE") {
+    return wasLow !== isLow;
+  }
+  if (payload.eventType === "INSERT") {
+    return isLow;
+  }
+  if (payload.eventType === "DELETE") {
+    return wasLow;
+  }
+  return false;
 }
 
 function mapRealtimeEvent(

@@ -20,6 +20,7 @@ import { getCurrentLocale } from "@/lib/i18n-server";
 import { getCashierPageSnapshot } from "@/lib/domains/orders";
 import { executeWebOpsCommand } from "@/lib/ops/server-action";
 import { logServerPerf, measureAsync } from "@/lib/perf";
+import { getWebPerfProfile } from "@/lib/web-perf-profile";
 import { isLikelyMobileUserAgent } from "@/lib/device";
 import type { Order, OrderItem, PaymentMethod } from "@/lib/types";
 
@@ -274,8 +275,9 @@ export default async function CashierPage({
   const locale = await getCurrentLocale();
   const localeCode = locale === "en" ? "en-US" : locale === "fr" ? "fr-FR" : "tr-TR";
   const { order: selectedOrderId, feedback, tone } = await searchParams;
+  const perfProfile = getWebPerfProfile("/cashier");
   const cashierSnapshotResult = await measureAsync("cashier_snapshot", () => getCashierPageSnapshot(selectedOrderId));
-  logServerPerf("/cashier", [cashierSnapshotResult]);
+  logServerPerf(`/cashier profile=${perfProfile.mode}:${perfProfile.bucket}`, [cashierSnapshotResult]);
   const { servedOrders, paidOrders, selectedOrder, usingDemoData } = cashierSnapshotResult.value;
 
   const servedTotals = totals(servedOrders);

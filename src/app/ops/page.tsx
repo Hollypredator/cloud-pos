@@ -1,15 +1,17 @@
 import Link from "next/link";
 import { headers } from "next/headers";
 import { redirect } from "next/navigation";
+import { Suspense } from "react";
 import { BackofficePage, ContentCard, EmptyPanel, SidebarPanel, SummaryCard, WorkflowGuide } from "@/components/backoffice-ui";
 import { MobileTaskCard, MobileTaskList } from "@/components/mobile-ops-ui";
 import { OpsLiveBadge } from "@/components/ops-live-badge";
 import { isLikelyMobileUserAgent } from "@/lib/device";
 import { getCurrentUserWithRole } from "@/lib/auth";
-import { getOpsPageSnapshot } from "@/lib/data";
+import { getOpsPageSnapshot, getSetupChecklistSummary } from "@/lib/data";
 import { getCurrentLocale } from "@/lib/i18n-server";
 import { translateUiText } from "@/lib/i18n";
 import { logServerPerf, measureAsync } from "@/lib/perf";
+import { getWebPerfProfile } from "@/lib/web-perf-profile";
 
 function statusTone(status: string) {
   if (status === "pending") return "bg-amber-100 text-amber-800";
@@ -69,6 +71,111 @@ function checklistTone(done: boolean) {
   return done ? "bg-emerald-100 text-emerald-700" : "bg-amber-100 text-amber-800";
 }
 
+async function DeferredSetupPrompt({
+  canOwner,
+  locale,
+  metricsOpenOrders,
+  metricsTodayRevenue,
+}: {
+  canOwner: boolean;
+  locale: "tr" | "en" | "fr";
+  metricsOpenOrders: number;
+  metricsTodayRevenue: number;
+}) {
+  const setup = await getSetupChecklistSummary();
+  const showSetupPrompt =
+    setup.counts.businesses === 0 ||
+    setup.counts.products === 0 ||
+    setup.counts.tables === 0 ||
+    setup.counts.staff < 4;
+
+  if (!showSetupPrompt) {
+    return null;
+  }
+
+  const setupSteps = [
+    {
+      label: translateUiText("Isletme bilgileri", locale),
+      description: translateUiText("Marka, telefon, adres ve demo modu ayarlari", locale),
+      done: setup.counts.businesses > 0,
+      href: "/admin/onboarding",
+      cta: translateUiText("Kurulum merkezine git", locale),
+    },
+    {
+      label: translateUiText("Urun katalogu", locale),
+      description: translateUiText("Kategori, urun ve modifier kurulumunu tamamla", locale),
+      done: setup.counts.products > 0,
+      href: "/admin/products",
+      cta: translateUiText("Urunleri ac", locale),
+    },
+    {
+      label: translateUiText("Salon ve masalar", locale),
+      description: translateUiText("Masa isimleri, QR ve aktif salon yapisi", locale),
+      done: setup.counts.tables > 0,
+      href: "/admin/tables",
+      cta: translateUiText("Masalari ac", locale),
+    },
+    {
+      label: translateUiText("Ekip ve roller", locale),
+      description: translateUiText("Kasiyer, garson ve mutfak hesaplarini hazirla", locale),
+      done: setup.counts.staff >= 4,
+      href: "/admin/roles",
+      cta: translateUiText("Personeli ac", locale),
+      ownerOnly: true,
+    },
+    {
+      label: translateUiText("Ilk siparis testi", locale),
+      description: translateUiText("Manuel siparis, mutfak, kasa ve tahsilati uctan uca dene", locale),
+      done: metricsOpenOrders > 0 || metricsTodayRevenue > 0,
+      href: "/admin/orders",
+      cta: translateUiText("Siparis gir", locale),
+    },
+  ];
+  const completedSetupSteps = setupSteps.filter((step) => step.done).length;
+
+  return (
+    <section className="app-mobile-hide rounded-[28px] border border-amber-200 bg-gradient-to-r from-amber-50 to-orange-50 p-4 shadow-[0_10px_20px_rgba(251,191,36,0.12)] sm:p-6">
+      <div className="flex flex-wrap items-start justify-between gap-6">
+        <div className="max-w-3xl">
+          <p className="text-xs font-bold uppercase tracking-[0.18em] text-amber-700">{translateUiText("Ilk Kurulum", locale)}</p>
+          <h2 className="mt-2 text-xl font-semibold tracking-tight text-slate-900 sm:text-2xl">{translateUiText("Canli operasyon icin tamamlanmasi gereken adimlar var", locale)}</h2>
+          <p className="mt-3 text-sm leading-7 text-slate-600">
+            {translateUiText("Urun, masa, ekip ve ilk test siparisi tamamlanmadan sistem tam operasyon hazir sayilmaz. Eksik kalan adimlari bu merkezden bitir.", locale)}
+          </p>
+        </div>
+        <div className="w-full rounded-[24px] border border-amber-200 bg-white/80 px-5 py-4 sm:w-auto">
+          <p className="text-xs font-bold uppercase tracking-[0.16em] text-amber-700">{translateUiText("Kurulum Ilerlemesi", locale)}</p>
+          <p className="mt-3 text-4xl font-semibold tracking-tight text-slate-900">
+            {completedSetupSteps}/{setupSteps.length}
+          </p>
+          <p className="mt-2 text-sm text-slate-600">{translateUiText("Temel operasyon adimi tamamlandi", locale)}</p>
+        </div>
+      </div>
+
+      <div className="mt-5 grid gap-3 xl:grid-cols-2">
+        {setupSteps.filter((step) => !step.ownerOnly || canOwner).map((step) => (
+          <div key={step.label} className="rounded-[24px] border border-amber-200 bg-white/85 px-4 py-4">
+            <div className="flex flex-col items-start justify-between gap-4 sm:flex-row">
+              <div>
+                <p className="text-base font-semibold text-slate-900">{step.label}</p>
+                <p className="mt-1 text-sm text-slate-500">{step.description}</p>
+              </div>
+              <span className={`rounded-full px-3 py-1 text-xs font-semibold ${checklistTone(step.done)}`}>
+                {step.done ? translateUiText("Hazir", locale) : translateUiText("Eksik", locale)}
+              </span>
+            </div>
+            <div className="mt-4">
+              <Link href={step.href} className="inline-flex w-full justify-center rounded-2xl bg-slate-900 px-4 py-3 text-sm font-semibold text-white transition hover:bg-slate-800 sm:w-auto">
+                {step.cta}
+              </Link>
+            </div>
+          </div>
+        ))}
+      </div>
+    </section>
+  );
+}
+
 export default async function OpsPage({
   searchParams,
 }: {
@@ -103,61 +210,19 @@ export default async function OpsPage({
   const allowAll = auth.usingDemoData;
   const isManagement = role === "owner" || role === "admin";
   const canAdmin = allowAll || isManagement;
+  const perfProfile = getWebPerfProfile("/ops");
   const opsSnapshotResult = await opsSnapshotPromise;
-  logServerPerf("/ops", [authResult, opsSnapshotResult]);
+  logServerPerf(`/ops profile=${perfProfile.mode}:${perfProfile.bucket}`, [authResult, opsSnapshotResult]);
   const opsSnapshot = opsSnapshotResult.value;
   const {
     dashboard: { metrics, recentOrders, lowStockProducts, usingDemoData },
     ops,
-    setup,
   } = opsSnapshot;
   const canOwner = allowAll || role === "owner";
   const canKitchen = allowAll || isManagement || role === "kitchen";
   const canCashier = allowAll || isManagement || role === "cashier";
   const canWaiterOps = allowAll || isManagement || role === "waiter" || role === "cashier";
   const roleLabel = allowAll ? translateUiText("Demo", locale) : role ? translateUiText(role, locale) : translateUiText("Guest", locale);
-  const showSetupPrompt =
-    includeSetupInInitialPaint &&
-    canAdmin && (setup.counts.businesses === 0 || setup.counts.products === 0 || setup.counts.tables === 0 || setup.counts.staff < 4);
-  const setupSteps = [
-    {
-      label: translateUiText("Isletme bilgileri", locale),
-      description: translateUiText("Marka, telefon, adres ve demo modu ayarlari", locale),
-      done: setup.counts.businesses > 0,
-      href: "/admin/onboarding",
-      cta: translateUiText("Kurulum merkezine git", locale),
-    },
-    {
-      label: translateUiText("Urun katalogu", locale),
-      description: translateUiText("Kategori, urun ve modifier kurulumunu tamamla", locale),
-      done: setup.counts.products > 0,
-      href: "/admin/products",
-      cta: translateUiText("Urunleri ac", locale),
-    },
-    {
-      label: translateUiText("Salon ve masalar", locale),
-      description: translateUiText("Masa isimleri, QR ve aktif salon yapisi", locale),
-      done: setup.counts.tables > 0,
-      href: "/admin/tables",
-      cta: translateUiText("Masalari ac", locale),
-    },
-    {
-      label: translateUiText("Ekip ve roller", locale),
-      description: translateUiText("Kasiyer, garson ve mutfak hesaplarini hazirla", locale),
-      done: setup.counts.staff >= 4,
-      href: "/admin/roles",
-      cta: translateUiText("Personeli ac", locale),
-      ownerOnly: true,
-    },
-    {
-      label: translateUiText("Ilk siparis testi", locale),
-      description: translateUiText("Manuel siparis, mutfak, kasa ve tahsilati uctan uca dene", locale),
-      done: metrics.openOrders > 0 || metrics.todayRevenue > 0,
-      href: "/admin/orders",
-      cta: translateUiText("Siparis gir", locale),
-    },
-  ];
-  const completedSetupSteps = setupSteps.filter((step) => step.done).length;
 
   const priorityWarnings = [
     {
@@ -406,46 +471,15 @@ export default async function OpsPage({
         <SummaryCard label={translateUiText("Servise Hazir", locale)} value={String(ops.servedOrders)} hint={translateUiText("Kasada kapanis bekleyen adisyonlar", locale)} tone="success" />
       </section>
 
-      {showSetupPrompt ? (
-        <section className="app-mobile-hide rounded-[28px] border border-amber-200 bg-gradient-to-r from-amber-50 to-orange-50 p-4 shadow-[0_10px_20px_rgba(251,191,36,0.12)] sm:p-6">
-          <div className="flex flex-wrap items-start justify-between gap-6">
-            <div className="max-w-3xl">
-              <p className="text-xs font-bold uppercase tracking-[0.18em] text-amber-700">{translateUiText("Ilk Kurulum", locale)}</p>
-              <h2 className="mt-2 text-xl font-semibold tracking-tight text-slate-900 sm:text-2xl">{translateUiText("Canli operasyon icin tamamlanmasi gereken adimlar var", locale)}</h2>
-              <p className="mt-3 text-sm leading-7 text-slate-600">
-                {translateUiText("Urun, masa, ekip ve ilk test siparisi tamamlanmadan sistem tam operasyon hazir sayilmaz. Eksik kalan adimlari bu merkezden bitir.", locale)}
-              </p>
-            </div>
-            <div className="w-full rounded-[24px] border border-amber-200 bg-white/80 px-5 py-4 sm:w-auto">
-              <p className="text-xs font-bold uppercase tracking-[0.16em] text-amber-700">{translateUiText("Kurulum Ilerlemesi", locale)}</p>
-              <p className="mt-3 text-4xl font-semibold tracking-tight text-slate-900">
-                {completedSetupSteps}/{setupSteps.length}
-              </p>
-              <p className="mt-2 text-sm text-slate-600">{translateUiText("Temel operasyon adimi tamamlandi", locale)}</p>
-            </div>
-          </div>
-
-          <div className="mt-5 grid gap-3 xl:grid-cols-2">
-            {setupSteps.filter((step) => !step.ownerOnly || canOwner).map((step) => (
-              <div key={step.label} className="rounded-[24px] border border-amber-200 bg-white/85 px-4 py-4">
-                <div className="flex flex-col items-start justify-between gap-4 sm:flex-row">
-                  <div>
-                    <p className="text-base font-semibold text-slate-900">{step.label}</p>
-                    <p className="mt-1 text-sm text-slate-500">{step.description}</p>
-                  </div>
-                  <span className={`rounded-full px-3 py-1 text-xs font-semibold ${checklistTone(step.done)}`}>
-                    {step.done ? translateUiText("Hazir", locale) : translateUiText("Eksik", locale)}
-                  </span>
-                </div>
-                <div className="mt-4">
-              <Link href={step.href} className="inline-flex w-full justify-center rounded-2xl bg-slate-900 px-4 py-3 text-sm font-semibold text-white transition hover:bg-slate-800 sm:w-auto">
-                {step.cta}
-              </Link>
-                </div>
-              </div>
-            ))}
-          </div>
-        </section>
+      {canAdmin ? (
+        <Suspense fallback={null}>
+          <DeferredSetupPrompt
+            canOwner={canOwner}
+            locale={locale}
+            metricsOpenOrders={metrics.openOrders}
+            metricsTodayRevenue={metrics.todayRevenue}
+          />
+        </Suspense>
       ) : null}
 
       <section className="app-mobile-hide grid gap-5 xl:grid-cols-[1.2fr_0.8fr]">
