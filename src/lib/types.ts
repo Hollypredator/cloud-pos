@@ -237,6 +237,26 @@ export type Payment = {
   created_at: string;
 };
 
+export type OrderPaymentSummaryAggregate = {
+  order_id: string;
+  paid: number;
+  refunds: number;
+  net: number;
+  payment_count: number;
+};
+
+export type OpsSnapshotAggregate = {
+  pending_orders: number;
+  preparing_orders: number;
+  served_orders: number;
+  delayed_kitchen_orders: number;
+  critical_kitchen_orders: number;
+  occupied_tables: number;
+  empty_tables: number;
+  open_service_requests: number;
+  today_revenue: number;
+};
+
 export type CashRegisterSession = {
   id: string;
   branch_id?: string | null;
@@ -534,4 +554,90 @@ export type SupportPlanRequest = {
   reviewed_by_support_name?: string | null;
   created_at: string;
   updated_at: string;
+};
+
+export type OpsCommandType =
+  | "ORDER_CREATE"
+  | "ORDER_STATUS_SET"
+  | "ORDER_FINANCIALS_SET"
+  | "ORDER_ITEM_CANCEL"
+  | "PAYMENT_SALE_CASH"
+  | "ORDER_CANCEL"
+  | "ORDER_REFUND_CASH"
+  | "DELIVERY_ASSIGN"
+  | "DELIVERY_COMPLETE"
+  | "TABLE_STATUS_SET"
+  | "TABLE_REQUEST_RESOLVE"
+  | "CASH_SESSION_OPEN"
+  | "CASH_SESSION_CLOSE";
+
+export type OpsCommand = {
+  command_id: string;
+  idempotency_key: string;
+  type: OpsCommandType;
+  business_id: string | null;
+  branch_id: string | null;
+  actor_id: string | null;
+  device_id: string;
+  created_at: string;
+  payload: Record<string, unknown>;
+};
+
+export type OpsCommandResultStatus = "ACK" | "RETRY" | "REJECT" | "CONFLICT";
+
+export type OpsCommandResult = {
+  command_id: string;
+  idempotency_key: string;
+  status: OpsCommandResultStatus;
+  message?: string;
+  applied_at?: string;
+  conflict_code?: string;
+  retry_after_ms?: number;
+  data?: Record<string, unknown>;
+};
+
+export type SyncPushRequest = {
+  device_id: string;
+  branch_id: string;
+  business_id?: string | null;
+  lock_token?: string;
+  commands: OpsCommand[];
+};
+
+export type SyncPushResponse = {
+  ok: boolean;
+  accepted_count: number;
+  rejected_count: number;
+  conflict_count: number;
+  retry_count: number;
+  results: OpsCommandResult[];
+};
+
+export type SyncEvent = {
+  sequence: number;
+  business_id: string | null;
+  branch_id: string | null;
+  event_type: string;
+  entity_type: string;
+  entity_id: string;
+  payload: Record<string, unknown>;
+  created_at: string;
+};
+
+export type SyncPullResponse = {
+  ok: boolean;
+  next_cursor: string;
+  events: SyncEvent[];
+};
+
+export type BranchLockState = {
+  branch_id: string;
+  business_id: string | null;
+  device_id: string;
+  lock_token: string;
+  status: "active" | "released" | "expired";
+  acquired_at: string;
+  renewed_at: string;
+  expires_at: string;
+  actor_id: string | null;
 };
