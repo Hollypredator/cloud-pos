@@ -1,11 +1,12 @@
 {
   "name": "pos-sistem",
   "version": "0.1.0",
+  "main": "electron/main.cjs",
   "private": true,
   "scripts": {
     "dev": "next dev",
     "dev:webpack": "next dev --webpack",
-    "build": "next build",
+    "build": "next build --webpack",
     "start": "next start",
     "lint": "eslint src/app/api src/lib/auth.ts src/lib/data.ts src/lib/domains src/lib/platform-owner.ts src/lib/qr-access.ts src/components/order-status-widget.tsx src/components/order-history-widget.tsx src/components/qr-ordering-client.tsx scripts middleware.ts next.config.ts",
     "typecheck": "tsc --noEmit",
@@ -24,13 +25,23 @@
     "monitor:synthetic": "node scripts/synthetic-health-check.mjs",
     "phase7:uat": "node scripts/phase7-uat-gate-check.mjs",
     "phase8:pilot": "node scripts/phase8-pilot-readiness-check.mjs",
-    "phase9:concurrency": "node scripts/phase9-concurrency-regression-check.mjs"
+    "phase9:concurrency": "node scripts/phase9-concurrency-regression-check.mjs",
+    "desktop:open": "electron .",
+    "desktop:dev": "node scripts/desktop-dev.mjs",
+    "desktop:build": "node scripts/build-desktop.mjs",
+    "desktop:security-check": "node scripts/check-desktop-artifact-secrets.mjs",
+    "desktop:signing-check": "node scripts/check-desktop-signing-env.mjs",
+    "desktop:dist": "npm run desktop:build && npm run desktop:security-check && electron-builder --win nsis --x64",
+    "desktop:dist:signed": "npm run desktop:signing-check && npm run desktop:dist",
+    "desktop:prepare-feed": "node scripts/desktop-prepare-update-feed.mjs"
   },
   "dependencies": {
     "@supabase/ssr": "^0.8.0",
     "@supabase/supabase-js": "^2.98.0",
     "@vercel/analytics": "^2.0.0",
     "@vercel/speed-insights": "^2.0.0",
+    "better-sqlite3": "^11.10.0",
+    "electron-updater": "^6.8.3",
     "next": "16.1.6",
     "nodemailer": "^7.0.5",
     "react": "19.2.3",
@@ -42,9 +53,55 @@
     "@types/nodemailer": "^6.4.17",
     "@types/react": "^19",
     "@types/react-dom": "^19",
+    "electron": "^35.1.3",
+    "electron-builder": "^26.0.13",
     "eslint": "^9",
     "eslint-config-next": "16.1.6",
     "tailwindcss": "^4",
     "typescript": "^5"
+  },
+  "build": {
+    "appId": "com.cloudpos.desktop",
+    "productName": "CloudPOS",
+    "asar": true,
+    "asarUnpack": [
+      "**/*.node",
+      "**/better-sqlite3/**/*",
+      ".next/standalone/**/*",
+      ".next/static/**/*",
+      "public/**/*"
+    ],
+    "files": [
+      "electron/**/*",
+      ".next/standalone/**/*",
+      ".next/static/**/*",
+      "public/**/*",
+      "package.json"
+    ],
+    "extraMetadata": {
+      "main": "electron/main.cjs"
+    },
+    "directories": {
+      "output": "release"
+    },
+    "win": {
+      "icon": "electron/assets/icon.ico",
+      "target": [
+        {
+          "target": "nsis",
+          "arch": [
+            "x64"
+          ]
+        }
+      ]
+    },
+    "nsis": {
+      "oneClick": false,
+      "perMachine": false,
+      "allowToChangeInstallationDirectory": true,
+      "installerIcon": "electron/assets/icon.ico",
+      "uninstallerIcon": "electron/assets/icon.ico",
+      "installerHeaderIcon": "electron/assets/icon.ico"
+    }
   }
 }
