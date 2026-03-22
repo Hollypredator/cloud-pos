@@ -18,6 +18,14 @@ function buildScopedGeneralSettingsKey(activeBusinessSlug?: string) {
   return `general_settings:${normalizeBusinessSlug(activeBusinessSlug)}`;
 }
 
+function readBooleanSetting(input: unknown, key: string, fallback: boolean) {
+  if (!input || typeof input !== "object") {
+    return fallback;
+  }
+  const value = (input as Record<string, unknown>)[key];
+  return typeof value === "boolean" ? value : fallback;
+}
+
 async function getCachedAppShellSettingsRows(activeBusinessSlug?: string) {
   const generalSettingsKey = buildScopedGeneralSettingsKey(activeBusinessSlug);
   const cachedReader = unstable_cache(
@@ -82,6 +90,16 @@ export async function getAppShellUiSettings(activeBusinessSlug?: string) {
 }
 
 export function getFallbackAppShellPayload(): AppShellPayload {
+  const fallbackMobileAppExperienceEnabled = readBooleanSetting(
+    defaultApplicationSettings,
+    "mobileAppExperienceEnabled",
+    true,
+  );
+  const fallbackMobileReadOnlyPwaEnabled = readBooleanSetting(
+    defaultApplicationSettings,
+    "mobileReadOnlyPwaEnabled",
+    false,
+  );
   return {
     role: null,
     hasUser: false,
@@ -102,14 +120,24 @@ export function getFallbackAppShellPayload(): AppShellPayload {
     sidebarAccentColor: defaultApplicationSettings.sidebarAccentColor,
     ownerSidebarOrder: defaultApplicationSettings.ownerSidebarOrder,
     adminSidebarOrder: defaultApplicationSettings.adminSidebarOrder,
-    mobileAppExperienceEnabled: defaultApplicationSettings.mobileAppExperienceEnabled,
-    mobileReadOnlyPwaEnabled: defaultApplicationSettings.mobileReadOnlyPwaEnabled,
+    mobileAppExperienceEnabled: fallbackMobileAppExperienceEnabled,
+    mobileReadOnlyPwaEnabled: fallbackMobileReadOnlyPwaEnabled,
   };
 }
 
 export const getAppShellPayload = cache(async (): Promise<AppShellPayload> => {
   const shellSnapshot = await getAppShellContext();
   const { generalSettings, applicationSettings } = await getAppShellUiSettings(shellSnapshot.activeBusinessSlug);
+  const mobileAppExperienceEnabled = readBooleanSetting(
+    applicationSettings,
+    "mobileAppExperienceEnabled",
+    true,
+  );
+  const mobileReadOnlyPwaEnabled = readBooleanSetting(
+    applicationSettings,
+    "mobileReadOnlyPwaEnabled",
+    false,
+  );
 
   const activeBusiness =
     shellSnapshot.businesses.find((item) => item.slug === shellSnapshot.activeBusinessSlug) ??
@@ -135,7 +163,7 @@ export const getAppShellPayload = cache(async (): Promise<AppShellPayload> => {
     sidebarAccentColor: applicationSettings.sidebarAccentColor,
     ownerSidebarOrder: applicationSettings.ownerSidebarOrder,
     adminSidebarOrder: applicationSettings.adminSidebarOrder,
-    mobileAppExperienceEnabled: applicationSettings.mobileAppExperienceEnabled,
-    mobileReadOnlyPwaEnabled: applicationSettings.mobileReadOnlyPwaEnabled,
+    mobileAppExperienceEnabled,
+    mobileReadOnlyPwaEnabled,
   };
 });
