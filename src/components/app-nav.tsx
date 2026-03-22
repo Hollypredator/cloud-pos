@@ -2,7 +2,7 @@
 
 import Link from "next/link";
 import Image from "next/image";
-import { usePathname, useRouter, useSearchParams } from "next/navigation";
+import { usePathname, useRouter } from "next/navigation";
 import { useEffect, useMemo, useRef, useState } from "react";
 import { LogoutButton } from "@/components/logout-button";
 import { ALL_BRANCHES_VALUE } from "@/lib/business";
@@ -130,6 +130,7 @@ export function AppNav({
   sidebarAccentColor,
   ownerSidebarOrder,
   adminSidebarOrder,
+  mobileAppMode = false,
 }: {
   role: AppRole | null;
   hasUser: boolean;
@@ -147,13 +148,13 @@ export function AppNav({
   sidebarAccentColor: ApplicationSettings["sidebarAccentColor"];
   ownerSidebarOrder: ApplicationSettings["ownerSidebarOrder"];
   adminSidebarOrder: ApplicationSettings["adminSidebarOrder"];
+  mobileAppMode?: boolean;
 }) {
   const sidebarScrollRef = useRef<HTMLDivElement | null>(null);
   const lastPathRef = useRef<string | null>(null);
   const linkRefs = useRef<Record<string, HTMLAnchorElement | null>>({});
   const pathname = usePathname();
   const router = useRouter();
-  const searchParams = useSearchParams();
   const [isSwitching, setIsSwitching] = useState(false);
   const [collapsed, setCollapsed] = useState(false);
   const [mobileOpen, setMobileOpen] = useState(false);
@@ -169,7 +170,7 @@ export function AppNav({
 
   useEffect(() => {
     setMobileOpen(false);
-  }, [pathname]);
+  }, [mobileAppMode, pathname]);
 
   useEffect(() => {
     const node = sidebarScrollRef.current;
@@ -207,13 +208,14 @@ export function AppNav({
     if (!slug || slug === activeBusinessSlug) return;
     setIsSwitching(true);
     try {
-      await fetch("/api/business/active", {
+      const response = await fetch("/api/business/active", {
         method: "POST",
         headers: { "Content-Type": "application/json" },
         body: JSON.stringify({ slug }),
       });
-      const query = searchParams.toString();
-      router.replace(query ? `${pathname}?${query}` : pathname);
+      if (!response.ok) {
+        return;
+      }
       router.refresh();
       window.dispatchEvent(new Event("app-shell:refresh"));
     } finally {
@@ -231,11 +233,8 @@ export function AppNav({
         body: JSON.stringify({ branchId }),
       });
       if (!response.ok) {
-        setIsSwitching(false);
         return;
       }
-      const query = searchParams.toString();
-      router.replace(query ? `${pathname}?${query}` : pathname);
       router.refresh();
       window.dispatchEvent(new Event("app-shell:refresh"));
     } finally {
@@ -273,6 +272,57 @@ export function AppNav({
   );
   const activeHref = resolveActiveHref(pathname, visibleLinks.map((link) => link.href));
   const mobilePrimaryLinks = visibleLinks.slice(0, 4);
+
+  useEffect(() => {
+    const candidates = visibleLinks
+      .filter((link) => !link.feature || hasFeature(currentPlan, link.feature))
+      .map((link) => link.href)
+      .slice(0, 6);
+
+    if (candidates.length === 0) {
+      return;
+    }
+
+    let cancelled = false;
+    let timer: ReturnType<typeof setTimeout> | null = null;
+    let idleId: number | null = null;
+
+    const prefetchLinks = () => {
+      if (cancelled) {
+        return;
+      }
+      for (const href of candidates) {
+        void router.prefetch(href);
+      }
+    };
+
+    if (typeof window !== "undefined" && "requestIdleCallback" in window) {
+      idleId = (
+        window as Window & {
+          requestIdleCallback: (
+            callback: () => void,
+            options?: { timeout?: number },
+          ) => number;
+        }
+      ).requestIdleCallback(prefetchLinks, { timeout: 1200 });
+    } else {
+      timer = setTimeout(prefetchLinks, 450);
+    }
+
+    return () => {
+      cancelled = true;
+      if (timer) {
+        clearTimeout(timer);
+      }
+      if (idleId !== null && typeof window !== "undefined" && "cancelIdleCallback" in window) {
+        (
+          window as Window & {
+            cancelIdleCallback: (id: number) => void;
+          }
+        ).cancelIdleCallback(idleId);
+      }
+    };
+  }, [currentPlan, router, visibleLinks]);
 
   useEffect(() => {
     if (!pathname) {
@@ -318,29 +368,31 @@ export function AppNav({
 
   return (
     <>
-      <nav className="sticky top-0 z-30 border-b border-slate-200 bg-white/95 px-3 py-2.5 backdrop-blur md:hidden">
-        <div className="flex items-center justify-between gap-3">
-          <div className="min-w-0">
-            <p className="truncate text-sm font-semibold text-slate-900">{brandName}</p>
-            <p className="truncate text-xs text-slate-500">
-              {roleLabel(role, usingDemoData)} · {businesses.find((item) => item.slug === activeBusinessSlug)?.name ?? activeBusinessSlug}
-            </p>
+      {!mobileAppMode ? (
+        <nav className="sticky top-0 z-30 border-b border-slate-200 bg-white/95 px-3 py-2.5 backdrop-blur md:hidden">
+          <div className="flex items-center justify-between gap-3">
+            <div className="min-w-0">
+              <p className="truncate text-sm font-semibold text-slate-900">{brandName}</p>
+              <p className="truncate text-xs text-slate-500">
+                {roleLabel(role, usingDemoData)} - {businesses.find((item) => item.slug === activeBusinessSlug)?.name ?? activeBusinessSlug}
+              </p>
+            </div>
+            <div className="flex items-center gap-2">
+              <button
+                type="button"
+                onClick={() => setMobileOpen((prev) => !prev)}
+                className="inline-flex h-9 w-9 items-center justify-center rounded-xl border border-slate-200 bg-white text-base text-slate-700 shadow-sm"
+                aria-label={translateUiText("Menu", locale)}
+              >
+                {mobileOpen ? "x" : "="}
+              </button>
+              {!hasUser ? <Link href="/login" className="rounded-xl bg-slate-900 px-3 py-2 text-sm text-white">{translateUiText("Giris", locale)}</Link> : <LogoutButton />}
+            </div>
           </div>
-          <div className="flex items-center gap-2">
-            <button
-              type="button"
-              onClick={() => setMobileOpen((prev) => !prev)}
-              className="inline-flex h-9 w-9 items-center justify-center rounded-xl border border-slate-200 bg-white text-base text-slate-700 shadow-sm"
-              aria-label={translateUiText("Menu", locale)}
-            >
-              {mobileOpen ? "×" : "≡"}
-            </button>
-            {!hasUser ? <Link href="/login" className="rounded-xl bg-slate-900 px-3 py-2 text-sm text-white">{translateUiText("Giris", locale)}</Link> : <LogoutButton />}
-          </div>
-        </div>
-      </nav>
+        </nav>
+      ) : null}
 
-      {mobileOpen ? (
+      {!mobileAppMode && mobileOpen ? (
         <div className="no-print fixed inset-0 z-40 bg-slate-950/40 md:hidden" onClick={() => setMobileOpen(false)}>
           <div
             className="absolute inset-x-0 top-[58px] max-h-[calc(100vh-72px)] overflow-y-auto rounded-t-[28px] border-t border-slate-200 bg-white px-3 py-3 shadow-[0_-10px_30px_rgba(15,23,42,0.18)]"
@@ -414,7 +466,7 @@ export function AppNav({
         </div>
       ) : null}
 
-      {mobilePrimaryLinks.length > 0 ? (
+      {!mobileAppMode && mobilePrimaryLinks.length > 0 ? (
         <div className="no-print fixed inset-x-0 bottom-0 z-30 border-t border-slate-200 bg-white/95 px-2 py-1.5 shadow-[0_-10px_24px_rgba(15,23,42,0.08)] backdrop-blur md:hidden">
           <div className="grid grid-cols-4 gap-2">
             {mobilePrimaryLinks.map((link) => (
@@ -635,3 +687,4 @@ export function AppNav({
     </>
   );
 }
+
