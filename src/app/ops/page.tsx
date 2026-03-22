@@ -1,8 +1,10 @@
 import Link from "next/link";
+import { headers } from "next/headers";
 import { redirect } from "next/navigation";
 import { BackofficePage, ContentCard, EmptyPanel, SidebarPanel, SummaryCard, WorkflowGuide } from "@/components/backoffice-ui";
 import { MobileTaskCard, MobileTaskList } from "@/components/mobile-ops-ui";
 import { OpsLiveBadge } from "@/components/ops-live-badge";
+import { isLikelyMobileUserAgent } from "@/lib/device";
 import { getCurrentUserWithRole } from "@/lib/auth";
 import { getOpsPageSnapshot } from "@/lib/data";
 import { getCurrentLocale } from "@/lib/i18n-server";
@@ -73,6 +75,8 @@ export default async function OpsPage({
   searchParams: Promise<{ ordersPage?: string }>;
 }) {
   const includeSetupInInitialPaint = false;
+  const requestHeaders = await headers();
+  const renderMobileMarkup = isLikelyMobileUserAgent(requestHeaders.get("user-agent"));
   const locale = await getCurrentLocale();
   const { ordersPage: ordersPageParam } = await searchParams;
   const ordersPage = Number.isFinite(Number(ordersPageParam)) ? Math.max(1, Number(ordersPageParam)) : 1;
@@ -345,7 +349,8 @@ export default async function OpsPage({
         </div>
       }
     >
-      <MobileTaskList>
+      {renderMobileMarkup ? (
+        <MobileTaskList>
         <MobileTaskCard
           title={translateUiText("Canli Operasyon", locale)}
           subtitle={translateUiText("Oncelik kuyruğu", locale)}
@@ -391,7 +396,8 @@ export default async function OpsPage({
             {translateUiText("Tahsilat", locale)}
           </Link>
         </div>
-      </MobileTaskList>
+        </MobileTaskList>
+      ) : null}
 
       <section className="app-mobile-hide grid gap-4 md:grid-cols-2 xl:grid-cols-4">
         <SummaryCard label={translateUiText("Acik Siparis", locale)} value={String(metrics.openOrders)} hint={translateUiText("Pending, hazirlaniyor ve kasada bekleyen toplam siparis", locale)} tone="accent" />

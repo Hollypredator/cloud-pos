@@ -3874,23 +3874,23 @@ export async function getKitchenOrdersSnapshot() {
 }
 
 export async function getCashierPageSnapshot(selectedOrderId?: string) {
-  const cashierOpenScope = (process.env.CASHIER_OPEN_SCOPE ?? "all").toLowerCase();
-  const cashierOpenLimit = Math.max(20, Number.parseInt(process.env.CASHIER_OPEN_LIMIT ?? "40", 10) || 40);
-  const cashierPaidLimit = Math.max(6, Number.parseInt(process.env.CASHIER_PAID_LIMIT ?? "8", 10) || 8);
+  const cashierOpenScope = (process.env.CASHIER_OPEN_SCOPE ?? "served_only").toLowerCase();
+  const cashierOpenLimit = Math.max(12, Number.parseInt(process.env.CASHIER_OPEN_LIMIT ?? "24", 10) || 24);
+  const cashierPaidLimit = Math.max(4, Number.parseInt(process.env.CASHIER_PAID_LIMIT ?? "6", 10) || 6);
   const openStatuses: OrderStatus[] =
     cashierOpenScope === "served_only" ? ["ready", "served", "partially_paid"] : ["pending", "preparing", "ready", "served", "partially_paid"];
 
-  const [servedResult, paidResult, selectedOrderResult, supabase] = await Promise.all([
+  const [servedResult, paidResult, selectedOrderResult] = await Promise.all([
     listOrders(openStatuses, {
       includeItems: false,
-      includePaymentSummary: false,
+      includePaymentSummary: true,
       includeStationStatuses: false,
       limit: cashierOpenLimit,
       ascending: false,
     }),
     listOrders(["paid"], {
       includeItems: false,
-      includePaymentSummary: false,
+      includePaymentSummary: true,
       includeStationStatuses: false,
       limit: cashierPaidLimit,
       ascending: false,
@@ -3898,13 +3898,10 @@ export async function getCashierPageSnapshot(selectedOrderId?: string) {
     typeof selectedOrderId === "string"
       ? getOrderReceipt(selectedOrderId)
       : Promise.resolve({ order: null as Order | null, usingDemoData: false }),
-    getTenantDataClient(),
   ]);
 
-  const orderIds = [...servedResult.orders, ...paidResult.orders].map((order) => order.id);
-  const paymentSummary = await getOrderPaymentSummaryMap(supabase, orderIds);
-  const servedWithPayments = applyPaymentSummaryToOrders(servedResult.orders, paymentSummary);
-  const paidWithPayments = applyPaymentSummaryToOrders(paidResult.orders, paymentSummary).map((order) =>
+  const servedWithPayments = servedResult.orders;
+  const paidWithPayments = paidResult.orders.map((order) =>
     order.status === "cancelled" || order.status === "refunded"
       ? order
       : { ...order, status: "paid" as OrderStatus },
