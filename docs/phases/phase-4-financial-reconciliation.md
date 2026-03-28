@@ -1,27 +1,27 @@
-# Faz 4 - Finans Dogrulugu ve Mutabakat
+# Faz 4 - Finans Doğruluğu ve Mutabakat
 
 Durum: `completed`  
-Baslangic tarihi: `2026-03-11`  
-Hedef bitis: `1 hafta`
+Başlangıç tarihi: `2026-03-11`  
+Hedef bitiş: `1 hafta`
 
 ## Hedef
 - Finans metriklerini tek hesap kaynagindan uretmek.
-- Gun sonu mutabakat farklarini threshold ile izlemek.
+- Gün sonu mutabakat farklarini threshold ile izlemek.
 
-## P0 Gorevleri
-1. Finans metriklerinde tek aggregation kaynagi
-2. Gun sonu mutabakat farki runtime kontrolu
+## P0 Görevleri
+1. Finans metriklerinde tek aggregation kaynağı
+2. Gün sonu mutabakat farkı runtime kontrolü
 3. Dashboard/rapor ekranlarinda ayni net hesap patikasi
 
-## Bu Fazda Yapilanlar
+## Bu Fazda Yapılanlar
 - [x] Ortak payment aggregation helper eklendi (`listScopedFinancePayments`, `aggregateFinancePayments`).
-- [x] `getSalesReportSummary` bu helper uzerine alindi.
-- [x] `getFinancialInsights` bu helper uzerine alindi.
-- [x] `getPaymentOverview` bu helper uzerine alindi.
-- [x] `getOpsSummary.todayRevenue` bu helper uzerine alindi.
+- [x] `getSalesReportSummary` bu helper üzerine alındı.
+- [x] `getFinancialInsights` bu helper üzerine alındı.
+- [x] `getPaymentOverview` bu helper üzerine alındı.
+- [x] `getOpsSummary.todayRevenue` bu helper üzerine alındı.
 - [x] Faz 4 mutabakat kontrol scripti eklendi: `npm run phase4:reconciliation`.
-- [x] Finans hesaplama UAT checklist dokumani eklendi: `docs/finance-uat-checklist.md`.
-- [x] Faz 4 mutabakat kontrolu CI'da staging secret'leriyle ayri job olarak baglandi.
+- [x] Finans hesaplama UAT checklist dokümanı eklendi: `docs/finance-uat-checklist.md`.
+- [x] Faz 4 mutabakat kontrolü CI'da staging secret'leriyle ayri job olarak baglandi.
 
-## Acik Kalanlar
+## Açık Kalanlar
 - [x] Finans UAT checklistinin staging ortaminda calistirilip onaylanmasi

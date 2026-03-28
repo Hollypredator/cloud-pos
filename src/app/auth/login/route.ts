@@ -75,13 +75,13 @@ export async function POST(request: NextRequest) {
     const { error } = await withTimeout(
       supabase.auth.signInWithPassword({ email, password }),
       LOGIN_TIMEOUT_MS,
-      "Giris istegi zaman asimina ugradi.",
+      "Giriş isteği zaman asimina ugradi.",
     );
     if (error) {
       return buildErrorResponse(`/login?error=${encodeURIComponent(error.message)}`, error.message);
     }
   } catch (error) {
-    const message = error instanceof Error ? error.message : "Giris istegi basarisiz.";
+    const message = error instanceof Error ? error.message : "Giriş isteği başarısız.";
     return buildErrorResponse(`/login?error=${encodeURIComponent(message)}`, message);
   }
 
@@ -89,7 +89,7 @@ export async function POST(request: NextRequest) {
   if (!hasAuthCookie) {
     return buildErrorResponse(
       "/login?error=Oturum%20olusturulamadi.%20Lutfen%20tekrar%20deneyin.",
-      "Oturum olusturulamadi. Lutfen tekrar deneyin.",
+      "Oturum oluşturulamadı. Lütfen tekrar deneyin.",
     );
   }
 

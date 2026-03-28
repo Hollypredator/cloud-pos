@@ -9,7 +9,7 @@ export default async function SupportAuditPage() {
     <main className="mx-auto w-full max-w-7xl space-y-6 px-4 py-8 md:px-8">
       <header>
         <p className="text-sm text-slate-500">Support Audit</p>
-        <h1 className="text-3xl font-semibold text-slate-900">Merkez ekip islem kayitlari</h1>
+        <h1 className="text-3xl font-semibold text-slate-900">Merkez ekip işlem kayıtları</h1>
       </header>
 
       <section className="space-y-4">

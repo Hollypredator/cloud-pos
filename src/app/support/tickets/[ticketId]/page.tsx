@@ -93,7 +93,7 @@ export default async function SupportTicketDetailPage({
       <section className="grid gap-6 xl:grid-cols-[1.05fr_0.95fr]">
         <div className="space-y-4">
           <article className="rounded-2xl bg-white p-6 shadow-sm">
-            <p className="text-sm font-semibold text-slate-900">{translateUiText("Iletisim ve Notlar", locale)}</p>
+            <p className="text-sm font-semibold text-slate-900">{translateUiText("İletişim ve Notlar", locale)}</p>
             <div className="mt-4 space-y-3">
               {messages.map((message) => (
                 <div key={message.id} className="rounded-xl border border-slate-200 bg-slate-50 px-4 py-3">
@@ -129,7 +129,7 @@ export default async function SupportTicketDetailPage({
 
         <div className="space-y-4">
           <article className="rounded-2xl bg-white p-6 shadow-sm">
-            <p className="text-sm font-semibold text-slate-900">{translateUiText("Ticket Yonetimi", locale)}</p>
+            <p className="text-sm font-semibold text-slate-900">{translateUiText("Ticket Yönetimi", locale)}</p>
             <div className="mt-4 grid gap-3 md:grid-cols-2">
               <div className="rounded-xl border border-slate-200 bg-slate-50 px-4 py-3">
                 <p className="text-xs uppercase tracking-[0.18em] text-slate-500">{translateUiText("Atanan kisi", locale)}</p>
@@ -162,7 +162,7 @@ export default async function SupportTicketDetailPage({
                   <option value="resolved">Resolved</option>
                   <option value="closed">Closed</option>
                 </select>
-                <button type="submit" className="rounded-xl border border-slate-300 px-4 py-2 text-sm font-semibold text-slate-700">{translateUiText("Durumu Guncelle", locale)}</button>
+                <button type="submit" className="rounded-xl border border-slate-300 px-4 py-2 text-sm font-semibold text-slate-700">{translateUiText("Durumu Güncelle", locale)}</button>
               </form>
             </div>
           </article>

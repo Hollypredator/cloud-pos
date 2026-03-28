@@ -5,32 +5,32 @@ import { requireRole } from "@/lib/auth";
 const qaScenarios = [
   {
     title: "Masa ve QR",
-    description: "Masa ac, QR goruntule, musteri siparisini masa bazli olustur.",
+    description: "Masa ac, QR görüntüle, müşteri siparisini masa bazli oluştur.",
     href: "/admin/tables",
   },
   {
-    title: "Siparis ve Mutfak",
-    description: "Siparisi mutfaga dusur, hazirla, servise hazir ve geri al akisini dene.",
+    title: "Sipariş ve Mutfak",
+    description: "Siparisi mutfaga dusur, hazırla, servise hazır ve geri al akisini dene.",
     href: "/kitchen",
   },
   {
-    title: "Kasa ve Bolunmus Odeme",
+    title: "Kasa ve Bolunmus Ödeme",
     description: "Nakit, kart, karma ve split payment akislarini tamamla.",
     href: "/cashier",
   },
   {
     title: "Teslimat",
-    description: "Kurye ekle, siparisi ata, teslimi tamamla.",
+    description: "Kurye ekle, siparişi ata, teslimi tamamla.",
     href: "/delivery",
   },
   {
     title: "Rapor ve Finans",
-    description: "Aktif sube ve tum subeler filtreleriyle ozetleri kontrol et.",
+    description: "Aktif şube ve tüm şubeler filtreleriyle ozetleri kontrol et.",
     href: "/admin/reports",
   },
   {
-    title: "Personel ve Sube Erisimi",
-    description: "Tek sube personeli ile patron hesabinin gordugu alanlari ayri ayri test et.",
+    title: "Personel ve Şube Erisimi",
+    description: "Tek şube personeli ile patron hesabinin gordugu alanlari ayri ayri test et.",
     href: "/admin/roles",
   },
 ];
@@ -41,7 +41,7 @@ export default async function AdminSetupPage() {
   return (
     <BackofficePage
       title="Product Ready Kontrol"
-      description="Canliya cikmadan once kritik akislari tek tek dogrula."
+      description="Canliya cikmadan önce kritik akışları tek tek doğrula."
       actions={
         <Link href="/ops" className="w-full rounded-2xl border border-slate-200 bg-white px-5 py-3 text-center text-sm font-semibold text-slate-800 sm:w-auto">
           Operasyona Don
@@ -50,7 +50,7 @@ export default async function AdminSetupPage() {
     >
       <section className="grid gap-4 xl:grid-cols-3">
         <SummaryCard label="Kritik Senaryo" value={String(qaScenarios.length)} hint="Canli oncesi tamamlanacak akış" tone="accent" />
-        <SummaryCard label="Kapsam" value="Uctan Uca" hint="Siparis, mutfak, kasa, teslimat" />
+        <SummaryCard label="Kapsam" value="Uctan Uca" hint="Sipariş, mutfak, kasa, teslimat" />
         <SummaryCard label="Hedef" value="Stabil Yayın" hint="Sessiz fail ve yetki sizintisi kalmasin" tone="success" />
       </section>
 
@@ -58,9 +58,9 @@ export default async function AdminSetupPage() {
         title="QA 3 Asama"
         description="Tek tek ekran bakmak yerine butun operasyon hikayesini test et."
         steps={[
-          { title: "Akisi tetikle", description: "Masa, siparis, mutfak veya teslimat verisini olustur." },
-          { title: "Sonucu dogrula", description: "Karsilik gelen ekranda branch, rol ve durum akislarini izle." },
-          { title: "Raporu kontrol et", description: "Islem sonunda kasa, rapor ve finans ozetlerinin dogru guncellendigini gor." },
+          { title: "Akışı tetikle", description: "Masa, sipariş, mutfak veya teslimat verisini oluştur." },
+          { title: "Sonucu doğrula", description: "Karsilik gelen ekranda branch, rol ve durum akislarini izle." },
+          { title: "Raporu kontrol et", description: "İşlem sonunda kasa, rapor ve finans ozetlerinin doğru guncellendigini gör." },
         ]}
       />
 

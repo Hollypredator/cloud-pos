@@ -1,12 +1,12 @@
 import React from "react";
 
 const DEMO_REVIEWS = [
-  { name: "Ayse Yilmaz", comment: "Kahveler harikaydi, servis cok hizliydi. Atmosfere bayildim!", rating: 5, time: "2 saat once" },
-  { name: "Caner Yildiz", comment: "Ozelikle tatlilar efsane. Garsonlar cok ilgiliydi.", rating: 5, time: "1 gun once" },
+  { name: "Ayse Yilmaz", comment: "Kahveler harikaydi, servis çok hizliydi. Atmosfere bayildim!", rating: 5, time: "2 saat önce" },
+  { name: "Caner Yildiz", comment: "Ozelikle tatlilar efsane. Garsonlar çok ilgiliydi.", rating: 5, time: "1 gun önce" },
   { name: "Merve Kaya", comment: "Hafta sonu kalabalik olmasina ragmen hic beklemedik. Guler yuzlu bir ekip.", rating: 5, time: "Dun" },
-  { name: "Burak Celik", comment: "Cok temiz ve kaliteli bir mekan. Kesinlikle favori yerim oldu.", rating: 5, time: "3 gun once" },
-  { name: "Selin Sahin", comment: "Harika muzikler ve mukemmel kahveler. Herkese tavsiye ederim.", rating: 5, time: "1 hafta once" },
-  { name: "Kemal Demir", comment: "Ozelikle sunum ve personelin ilgisi cok iyiydi.", rating: 5, time: "2 hafta once" },
+  { name: "Burak Celik", comment: "Çok temiz ve kaliteli bir mekan. Kesinlikle favori yerim oldu.", rating: 5, time: "3 gun önce" },
+  { name: "Selin Sahin", comment: "Harika muzikler ve mukemmel kahveler. Herkese tavsiye ederim.", rating: 5, time: "1 hafta önce" },
+  { name: "Kemal Demir", comment: "Ozelikle sunum ve personelin ilgisi çok iyiydi.", rating: 5, time: "2 hafta önce" },
 ];
 
 export default function ReviewsAdvertisementPage() {
@@ -90,7 +90,7 @@ export default function ReviewsAdvertisementPage() {
         <footer className="relative mt-auto border-t border-white/5 bg-black/40 py-8 backdrop-blur-xl">
           <div className="mx-auto flex w-full max-w-7xl flex-col items-center justify-between gap-4 px-4 sm:flex-row sm:px-6 lg:px-8">
             <p className="text-sm text-slate-400">
-              Siz de geri bildirim birakmak icin masadaki QR kodu okutabilirsiniz.
+              Siz de geri bildirim birakmak için masadaki QR kodu okutabilirsiniz.
             </p>
             <div className="h-12 w-32 rounded-xl bg-white/10 animate-pulse"></div>
           </div>

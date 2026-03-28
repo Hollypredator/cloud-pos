@@ -19,14 +19,14 @@ type MobileAction = {
 };
 
 const mobileActions: MobileAction[] = [
-  { href: "/m/tables", label: "Masa Akisi", icon: "MS", roles: ["admin", "waiter", "cashier"], group: "order" },
-  { href: "/m/tables?flow=new-order", label: "Siparis Ac", icon: "SP", roles: ["owner", "admin", "waiter", "cashier"], group: "order" },
+  { href: "/m/tables", label: "Masa Akışı", icon: "MS", roles: ["admin", "waiter", "cashier"], group: "order" },
+  { href: "/m/tables?flow=new-order", label: "Sipariş Ac", icon: "SP", roles: ["owner", "admin", "waiter", "cashier"], group: "order" },
   { href: "/m/cashier", label: "Adisyon", icon: "AD", roles: ["admin", "cashier"], group: "order" },
   { href: "/m/kitchen", label: "Mutfak", icon: "MK", roles: ["admin", "kitchen"], group: "ops", feature: "kitchen_display" },
   { href: "/m/delivery", label: "Teslimat", icon: "DL", roles: ["admin", "waiter", "cashier"], group: "ops", feature: "delivery_dispatch" },
   { href: "/m/service-requests", label: "Talepler", icon: "TR", roles: ["admin", "waiter", "cashier"], group: "ops" },
   { href: "/cashier/session", label: "Gun Islemleri", icon: "GI", roles: ["admin", "cashier"], group: "management" },
-  { href: "/admin/tables", label: "Masa Yonetimi", icon: "MY", roles: ["owner", "admin"], group: "management" },
+  { href: "/admin/tables", label: "Masa Yönetimi", icon: "MY", roles: ["owner", "admin"], group: "management" },
 ];
 
 function resolveMobileTitle(pathname: string | null) {
@@ -45,9 +45,9 @@ function canAccessAction(role: AppRole | null, usingDemoData: boolean, allowedRo
 }
 
 function actionGroupLabel(group: MobileAction["group"]) {
-  if (group === "order") return "Siparis ve Kasa";
+  if (group === "order") return "Sipariş ve Kasa";
   if (group === "ops") return "Servis ve Dagitim";
-  return "Yonetim";
+  return "Yönetim";
 }
 
 function buildQueryString(searchParams: ReturnType<typeof useSearchParams>) {
@@ -223,7 +223,7 @@ export function MobileOpsShell({
           </div>
           {isOffline ? (
             <div className="border-t border-amber-200 bg-amber-50 px-4 py-2 text-xs font-medium text-amber-900">
-              Baglanti gerekli. Offline modda yalnizca okunabilir kullanim acik.
+              Baglanti gerekli. Offline modda yalnızca okunabilir kullanım açık.
             </div>
           ) : null}
         </header>
@@ -259,7 +259,7 @@ export function MobileOpsShell({
             >
               <div className="mx-auto w-full max-w-[980px] space-y-3">
                 <div className="mb-1 flex items-center justify-between gap-3">
-                  <p className="text-sm font-semibold uppercase tracking-[0.16em] text-slate-500">Hizli Is Akislari</p>
+                  <p className="text-sm font-semibold uppercase tracking-[0.16em] text-slate-500">Hızlı Is Akışları</p>
                   <button
                     type="button"
                     onClick={() => setActionsOpen(false)}
@@ -311,7 +311,7 @@ export function MobileOpsShell({
                       href="/login"
                       className="inline-flex min-h-[46px] items-center justify-center rounded-2xl bg-slate-900 px-4 py-3 text-sm font-semibold text-white"
                     >
-                      Giris
+                      Giriş
                     </Link>
                   )}
                 </div>

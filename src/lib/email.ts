@@ -79,7 +79,7 @@ async function sendMailWithResend(
     } catch {
       detail = "";
     }
-    return { ok: false as const, error: `Resend gonderimi basarisiz (${response.status})${detail ? `: ${detail}` : ""}` };
+    return { ok: false as const, error: `Resend gonderimi başarısız (${response.status})${detail ? `: ${detail}` : ""}` };
   }
 
   return { ok: true as const };
@@ -142,12 +142,12 @@ export async function notifySalesLeadCreated(input: {
   }
 
   const lines = [
-    "Yeni landing lead kaydi olustu.",
-    `Isletme: ${input.companyName}`,
+    "Yeni landing lead kaydı oluştu.",
+    `İşletme: ${input.companyName}`,
     `Yetkili: ${input.contactName}`,
     `Telefon: ${input.phone || "-"}`,
     `E-posta: ${input.email || "-"}`,
-    `Sube sayisi: ${input.branchCount || 1}`,
+    `Şube sayısı: ${input.branchCount || 1}`,
     `Not: ${input.note || "-"}`,
   ];
 
@@ -155,13 +155,13 @@ export async function notifySalesLeadCreated(input: {
     to: settings.notificationEmail,
     subject: `Yeni lead: ${input.companyName}`,
     text: lines.join("\n"),
-    html: `<p>Yeni landing lead kaydi olustu.</p>
+    html: `<p>Yeni landing lead kaydı oluştu.</p>
 <ul>
-  <li><strong>Isletme:</strong> ${input.companyName}</li>
+  <li><strong>İşletme:</strong> ${input.companyName}</li>
   <li><strong>Yetkili:</strong> ${input.contactName}</li>
   <li><strong>Telefon:</strong> ${input.phone || "-"}</li>
   <li><strong>E-posta:</strong> ${input.email || "-"}</li>
-  <li><strong>Sube sayisi:</strong> ${input.branchCount || 1}</li>
+  <li><strong>Şube sayısı:</strong> ${input.branchCount || 1}</li>
   <li><strong>Not:</strong> ${input.note || "-"}</li>
 </ul>`,
   });

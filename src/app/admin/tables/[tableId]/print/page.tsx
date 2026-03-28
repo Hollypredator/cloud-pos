@@ -37,7 +37,7 @@ export default async function PrintTableQrPage({
     <div className="min-h-screen bg-white p-8 text-slate-900 print:p-0">
       <div className="mx-auto max-w-[720px] rounded-[28px] border border-slate-300 bg-white p-8 shadow-sm print:max-w-none print:rounded-none print:border-0 print:p-10 print:shadow-none">
         <div className="text-center">
-          <p className="text-sm font-semibold uppercase tracking-[0.24em] text-slate-500">QR Siparis</p>
+          <p className="text-sm font-semibold uppercase tracking-[0.24em] text-slate-500">QR Sipariş</p>
           <h1 className="mt-3 text-5xl font-black tracking-tight">{table.name || `Masa ${table.table_number}`}</h1>
           <p className="mt-3 text-xl text-slate-500">Masa {table.table_number}</p>
         </div>
@@ -48,7 +48,7 @@ export default async function PrintTableQrPage({
 
         <div className="mt-8 rounded-[24px] bg-slate-50 p-5 text-center">
           <p className="text-lg font-semibold">Telefonunuzla QR kodu okutun</p>
-          <p className="mt-2 text-sm text-slate-500">Menuyu goruntuleyin, siparis verin ve masa taleplerini iletin.</p>
+          <p className="mt-2 text-sm text-slate-500">Menuyu goruntuleyin, sipariş verin ve masa taleplerini iletin.</p>
           <p className="mt-4 break-all text-xs text-slate-400">{qrTarget}</p>
         </div>
 

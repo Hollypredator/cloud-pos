@@ -382,11 +382,11 @@ export function AppNav({
                 type="button"
                 onClick={() => setMobileOpen((prev) => !prev)}
                 className="inline-flex h-9 w-9 items-center justify-center rounded-xl border border-slate-200 bg-white text-base text-slate-700 shadow-sm"
-                aria-label={translateUiText("Menu", locale)}
+                aria-label={translateUiText("Menü", locale)}
               >
                 {mobileOpen ? "x" : "="}
               </button>
-              {!hasUser ? <Link href="/login" className="rounded-xl bg-slate-900 px-3 py-2 text-sm text-white">{translateUiText("Giris", locale)}</Link> : <LogoutButton />}
+              {!hasUser ? <Link href="/login" className="rounded-xl bg-slate-900 px-3 py-2 text-sm text-white">{translateUiText("Giriş", locale)}</Link> : <LogoutButton />}
             </div>
           </div>
         </nav>
@@ -400,7 +400,7 @@ export function AppNav({
           >
             <div className="space-y-3">
               <div className="rounded-[22px] border border-slate-200 bg-slate-50 p-3">
-                <p className="text-[11px] uppercase tracking-[0.2em] text-slate-500">{translateUiText("Aktif isletme", locale)}</p>
+                <p className="text-[11px] uppercase tracking-[0.2em] text-slate-500">{translateUiText("Aktif işletme", locale)}</p>
                 <select
                   className="mt-2 w-full rounded-xl border border-slate-200 bg-white px-3 py-3 text-sm text-slate-900 outline-none"
                   value={activeBusinessSlug}
@@ -416,14 +416,14 @@ export function AppNav({
               </div>
 
               <div className="rounded-[22px] border border-slate-200 bg-slate-50 p-3">
-                <p className="text-[11px] uppercase tracking-[0.2em] text-slate-500">{translateUiText("Aktif sube", locale)}</p>
+                <p className="text-[11px] uppercase tracking-[0.2em] text-slate-500">{translateUiText("Aktif şube", locale)}</p>
                 <select
                   className="mt-2 w-full rounded-xl border border-slate-200 bg-white px-3 py-3 text-sm text-slate-900 outline-none"
                   value={activeBranchId}
                   disabled={isSwitching || branches.length === 0 || !canSwitchBranches}
                   onChange={(event) => void switchBranch(event.target.value)}
                 >
-                  {branchAccessScope === "business" ? <option value={ALL_BRANCHES_VALUE}>{translateUiText("Tum Subeler", locale)}</option> : null}
+                  {branchAccessScope === "business" ? <option value={ALL_BRANCHES_VALUE}>{translateUiText("Tüm Subeler", locale)}</option> : null}
                   {branches.map((item) => (
                     <option key={item.id} value={item.id}>
                       {item.name}
@@ -532,7 +532,7 @@ export function AppNav({
           {!collapsed ? (
             <>
               <div className="mb-4 rounded-[22px] border border-white/10 bg-[rgba(255,255,255,0.06)] p-3 backdrop-blur">
-                <p className="text-[11px] uppercase tracking-[0.2em] text-white/50">{translateUiText("Aktif isletme", locale)}</p>
+                <p className="text-[11px] uppercase tracking-[0.2em] text-white/50">{translateUiText("Aktif işletme", locale)}</p>
                 <select
                   className="mt-2 w-full rounded-xl border border-white/10 bg-black/10 px-3 py-2 text-sm text-white outline-none"
                   value={activeBusinessSlug}
@@ -545,10 +545,10 @@ export function AppNav({
                     </option>
                   ))}
                 </select>
-                <p className="mt-2 text-xs text-white/50">{isSwitching ? translateUiText("Isletme degistiriliyor...", locale) : roleLabel(role, usingDemoData)}</p>
+                <p className="mt-2 text-xs text-white/50">{isSwitching ? translateUiText("İşletme degistiriliyor...", locale) : roleLabel(role, usingDemoData)}</p>
               </div>
               <div className="mt-3 rounded-[22px] border border-white/10 bg-[rgba(255,255,255,0.05)] p-3 backdrop-blur">
-                <p className="text-[11px] uppercase tracking-[0.2em] text-white/50">{translateUiText("Aktif sube", locale)}</p>
+                <p className="text-[11px] uppercase tracking-[0.2em] text-white/50">{translateUiText("Aktif şube", locale)}</p>
                 <select
                   className="mt-2 w-full rounded-xl border border-white/10 bg-black/10 px-3 py-2 text-sm text-white outline-none"
                   value={activeBranchId}
@@ -557,7 +557,7 @@ export function AppNav({
                 >
                   {branchAccessScope === "business" ? (
                     <option value={ALL_BRANCHES_VALUE} className="text-slate-900">
-                      {translateUiText("Tum Subeler", locale)}
+                      {translateUiText("Tüm Subeler", locale)}
                     </option>
                   ) : null}
                   {branches.map((item) => (
@@ -568,8 +568,8 @@ export function AppNav({
                 </select>
                 <p className="mt-2 text-xs text-white/45">
                   {branchAccessScope === "business"
-                    ? translateUiText("Tum subeleri gorebilirsin.", locale)
-                    : translateUiText("Bu kullanici yalnizca atanmis subeyi gorur.", locale)}
+                    ? translateUiText("Tüm subeleri gorebilirsin.", locale)
+                    : translateUiText("Bu kullanıcı yalnızca atanmış şubeyi görür.", locale)}
                 </p>
               </div>
             </>
@@ -597,12 +597,12 @@ export function AppNav({
               if (locked) {
                 const requiredPlan = link.feature ? getRequiredPlan(link.feature) : "growth";
                 return (
-                  <div key={link.href} title={`${translateUiText(link.label, locale)} - ${getPlanLabel(requiredPlan)} ${translateUiText("ile acilir", locale)}`} className={className}>
+                  <div key={link.href} title={`${translateUiText(link.label, locale)} - ${getPlanLabel(requiredPlan)} ${translateUiText("ile açılır", locale)}`} className={className}>
                     <span className={iconClassName}>{link.icon}</span>
                   {!collapsed ? (
                       <div className="min-w-0 flex-1">
                         <div className="truncate">{translateUiText(link.label, locale)}</div>
-                        <div className="mt-1 text-[11px] uppercase tracking-[0.16em] text-white/35">{getPlanLabel(requiredPlan)} {translateUiText("ile acilir", locale)}</div>
+                        <div className="mt-1 text-[11px] uppercase tracking-[0.16em] text-white/35">{getPlanLabel(requiredPlan)} {translateUiText("ile açılır", locale)}</div>
                       </div>
                     ) : null}
                   </div>
@@ -677,7 +677,7 @@ export function AppNav({
           ) : null}
           {!hasUser ? (
             <Link href="/login" className="block rounded-2xl bg-[linear-gradient(135deg,#ff6a3d_0%,#f2b44f_100%)] px-4 py-3 text-center text-sm font-semibold text-white shadow-[0_14px_24px_rgba(255,106,61,0.24)]">
-              {translateUiText("Giris", locale)}
+              {translateUiText("Giriş", locale)}
             </Link>
           ) : (
             <LogoutButton />

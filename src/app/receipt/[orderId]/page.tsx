@@ -47,7 +47,7 @@ export default async function ReceiptPage({
   const businessName = process.env.NEXT_PUBLIC_BUSINESS_NAME || "Cloud POS";
   const businessPhone = process.env.NEXT_PUBLIC_BUSINESS_PHONE || "";
   const businessAddress = process.env.NEXT_PUBLIC_BUSINESS_ADDRESS || "";
-  const receiptFooter = process.env.NEXT_PUBLIC_RECEIPT_FOOTER || "Bizi tercih ettiginiz icin tesekkur ederiz.";
+  const receiptFooter = process.env.NEXT_PUBLIC_RECEIPT_FOOTER || "Bizi tercih ettiginiz için tesekkur ederiz.";
   const logoUrl = process.env.NEXT_PUBLIC_RECEIPT_LOGO_URL || "";
   const vatRate = Math.max(0, Number(process.env.NEXT_PUBLIC_VAT_RATE ?? 10));
   const vatIncludedAmount = vatRate > 0 ? final - final / (1 + vatRate / 100) : 0;
@@ -63,12 +63,12 @@ export default async function ReceiptPage({
             </div>
             {logoUrl && !hideLogo ? (
               // eslint-disable-next-line @next/next/no-img-element
-              <img src={logoUrl} alt="isletme logo" className={`${compact ? "h-8 w-8" : "h-12 w-12"} rounded object-cover`} />
+              <img src={logoUrl} alt="işletme logo" className={`${compact ? "h-8 w-8" : "h-12 w-12"} rounded object-cover`} />
             ) : null}
           </div>
           {businessPhone ? <p className={`${compact ? "text-[10px]" : "text-xs"} text-slate-600`}>Tel: {businessPhone}</p> : null}
           {businessAddress ? <p className={`${compact ? "text-[10px]" : "text-xs"} break-words text-slate-600`}>{businessAddress}</p> : null}
-          <p className={`${compact ? "text-[11px]" : "text-sm"} break-words text-slate-600`}>Siparis #{orderRef(order)} - {orderSourceLabel(order)}</p>
+          <p className={`${compact ? "text-[11px]" : "text-sm"} break-words text-slate-600`}>Sipariş #{orderRef(order)} - {orderSourceLabel(order)}</p>
           {order.customer_phone ? <p className={`${compact ? "text-[10px]" : "text-xs"} text-slate-600`}>Telefon: {order.customer_phone}</p> : null}
           {order.delivery_address ? <p className={`${compact ? "text-[10px] leading-tight" : "text-xs"} break-words text-slate-600`}>{order.delivery_address}</p> : null}
           <p className={`${compact ? "text-[10px]" : "text-xs"} text-slate-500`}>{new Date(order.created_at).toLocaleString("tr-TR")}</p>

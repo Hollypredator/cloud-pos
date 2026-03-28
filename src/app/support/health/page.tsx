@@ -35,7 +35,7 @@ export default async function SupportHealthPage({
           className="rounded-xl border border-slate-300 px-4 py-3 text-sm"
         />
         <select name="status" defaultValue={statusFilter || "all"} className="rounded-xl border border-slate-300 px-4 py-3 text-sm">
-          <option value="all">{translateUiText("Tum durumlar", locale)}</option>
+          <option value="all">{translateUiText("Tüm durumlar", locale)}</option>
           <option value="healthy">{translateUiText("Healthy", locale)}</option>
           <option value="warning">{translateUiText("Warning", locale)}</option>
           <option value="critical">{translateUiText("Critical", locale)}</option>
@@ -60,15 +60,15 @@ export default async function SupportHealthPage({
             </div>
             <div className="mt-4 space-y-2 text-sm text-slate-600">
               <p>{translateUiText("Paket", locale)}: {item.plan}</p>
-              <p>{translateUiText("Son siparis", locale)}: {item.last_order_at ? new Date(item.last_order_at).toLocaleString("tr-TR") : "-"}</p>
-              <p>{translateUiText("Son odeme", locale)}: {item.last_payment_at ? new Date(item.last_payment_at).toLocaleString("tr-TR") : "-"}</p>
-              <p>{translateUiText("Acik ticket", locale)}: {item.open_ticket_count}</p>
+              <p>{translateUiText("Son sipariş", locale)}: {item.last_order_at ? new Date(item.last_order_at).toLocaleString("tr-TR") : "-"}</p>
+              <p>{translateUiText("Son ödeme", locale)}: {item.last_payment_at ? new Date(item.last_payment_at).toLocaleString("tr-TR") : "-"}</p>
+              <p>{translateUiText("Açık ticket", locale)}: {item.open_ticket_count}</p>
             </div>
           </article>
         ))}
         {filteredHealth.length === 0 ? (
           <div className="rounded-2xl border border-dashed border-slate-300 bg-white px-6 py-10 text-sm text-slate-500 md:col-span-2 xl:col-span-3">
-            {translateUiText("Filtreye uygun tenant health kaydi bulunamadi.", locale)}
+            {translateUiText("Filtreye uygun tenant health kaydı bulunamadi.", locale)}
           </div>
         ) : null}
       </section>

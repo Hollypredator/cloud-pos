@@ -1,6 +1,6 @@
 # Staging Queue Rollout (Tables -> Cashier -> Auth Perf)
 
-Bu runbook, queue rollout'unu iki dalgada guvenli sekilde acmak ve auth perf baseline almak icin kullanilir.
+Bu runbook, queue rollout'unu iki dalgada güvenli şekilde açmak ve auth perf baseline almak için kullanılır.
 
 ## 1) Preflight
 
@@ -9,7 +9,7 @@ npm run rollout:preflight
 ```
 
 Manuel onaylar:
-- Staging deploy guncel.
+- Staging deploy güncel.
 - `20260321_*` migration'lari staging'de uygulanmis.
 - Admin test hesabi aktif (`/ops`, `/kitchen`, `/cashier`, `/admin/*`).
 
@@ -20,7 +20,7 @@ Staging env:
 - `NEXT_PUBLIC_POS_CLIENT_QUEUE_CASHIER=false`
 - (Gerekirse) `VERCEL_PROTECTION_BYPASS=<bypass-token>`
 
-Redeploy sonrasi:
+Redeploy sonrası:
 
 ```powershell
 $env:NEXT_PUBLIC_APP_URL="https://<staging-domain>"
@@ -33,8 +33,8 @@ npm run rollout:wave:tables
 Manual smoke:
 1. `/tables` render.
 2. `empty -> reserved -> empty`.
-3. Optimistic `Isleniyor` ve ACK sonrasi kalicilik.
-4. Duplicate submit kontrolu.
+3. Optimistic `Isleniyor` ve ACK sonrası kalicilik.
+4. Duplicate submit kontrolü.
 
 ## 3) Wave-2: Cashier
 
@@ -43,7 +43,7 @@ Staging env:
 - `NEXT_PUBLIC_POS_CLIENT_QUEUE_CASHIER=true`
 - (Gerekirse) `VERCEL_PROTECTION_BYPASS=<bypass-token>`
 
-Redeploy sonrasi:
+Redeploy sonrası:
 
 ```powershell
 $env:NEXT_PUBLIC_APP_URL="https://<staging-domain>"
@@ -59,7 +59,7 @@ Manual smoke:
 3. `ORDER_ITEM_CANCEL`
 4. `ORDER_CANCEL`
 5. `ORDER_REFUND_CASH`
-6. ACK/REJECT feedback ve UI tutarliligi
+6. ACK/REJECT feedback ve UI tutarlılığı
 
 ## 4) Auth Perf Baseline
 
@@ -85,4 +85,4 @@ Gate:
 ## 5) Rollback
 
 - Wave-1 fail: `NEXT_PUBLIC_POS_CLIENT_QUEUE_TABLES=false`, redeploy.
-- Wave-2 fail: yalnizca `NEXT_PUBLIC_POS_CLIENT_QUEUE_CASHIER=false`, redeploy (`Tables=true` kalir).
+- Wave-2 fail: yalnızca `NEXT_PUBLIC_POS_CLIENT_QUEUE_CASHIER=false`, redeploy (`Tables=true` kalir).

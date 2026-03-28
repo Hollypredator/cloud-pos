@@ -84,7 +84,7 @@ export default async function SupportIncidentsPage() {
                   <option value="resolved">{translateUiText("Resolved", locale)}</option>
                   <option value="closed">{translateUiText("Closed", locale)}</option>
                 </select>
-                <button type="submit" className="rounded-xl border border-slate-300 px-4 py-2 text-sm font-semibold text-slate-700">{translateUiText("Guncelle", locale)}</button>
+                <button type="submit" className="rounded-xl border border-slate-300 px-4 py-2 text-sm font-semibold text-slate-700">{translateUiText("Güncelle", locale)}</button>
               </form>
             </div>
           </article>

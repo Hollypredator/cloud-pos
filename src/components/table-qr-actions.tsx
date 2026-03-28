@@ -45,7 +45,7 @@ export function TableQrActions({
               <div>
                 <p className="text-xs font-bold uppercase tracking-[0.2em] text-slate-500">Masa QR</p>
                 <h3 className="mt-2 text-2xl font-semibold tracking-tight text-slate-900">{tableName}</h3>
-                <p className="mt-1 text-sm text-slate-500">Masa {tableNumber} icin musteri deneyimini ayni ekranda onizle.</p>
+                <p className="mt-1 text-sm text-slate-500">Masa {tableNumber} için müşteri deneyimini ayni ekranda onizle.</p>
               </div>
               <button
                 type="button"

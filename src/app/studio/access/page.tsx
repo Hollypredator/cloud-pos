@@ -52,7 +52,7 @@ export default async function StudioAccessPage() {
           </select>
         </div>
         <div className="mt-4 flex justify-end">
-          <button type="submit" className="rounded-xl bg-slate-900 px-5 py-3 text-sm font-semibold text-white">Kullanici Ekle</button>
+          <button type="submit" className="rounded-xl bg-slate-900 px-5 py-3 text-sm font-semibold text-white">Kullanıcı Ekle</button>
         </div>
       </form>
 

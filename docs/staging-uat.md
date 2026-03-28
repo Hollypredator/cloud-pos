@@ -7,14 +7,14 @@
 
 ## Kritik Senaryolar
 - [x] Login (admin/cashier/kitchen/waiter)
-- [x] `/admin/orders` uzerinden siparis acma
+- [x] `/admin/orders` uzerinden sipariş acma
 - [x] `/kitchen` durum gecisi (`pending -> preparing -> served`)
-- [x] `/cashier` tahsilat, iade ve adisyon kapanis
+- [x] `/cashier` tahsilat, iade ve adisyon kapanış
 - [x] `/cashier/session` gun basi / gun sonu
-- [x] `/admin/tables` masa ekleme/guncelle/silme/tasima
-- [x] `/service-requests` talep olusturma ve cozme
+- [x] `/admin/tables` masa ekleme/güncelle/silme/taşıma
+- [x] `/service-requests` talep oluşturma ve cozme
 - [x] `/api/health` ve `npm run ops:smoke`
 
-## Sonuc
+## Sonuç
 - [x] UAT passed
 - [ ] UAT blocked (detaylari issue olarak ac)

@@ -67,7 +67,7 @@ function normalizeCommandFromBody(body: CommandRequestBody, actor: SyncActorCont
   }
 
   if (!body.type || !isRecord(body.payload)) {
-    return { ok: false as const, error: "Komut govdesi gecersiz. command veya type+payload gonderin." };
+    return { ok: false as const, error: "Komut govdesi geçersiz. command veya type+payload gonderin." };
   }
 
   const command = makeOpsCommandEnvelope({
@@ -107,7 +107,7 @@ export async function POST(request: Request) {
     try {
       body = (await request.json()) as CommandRequestBody;
     } catch {
-      return json({ ok: false, message: "Gecersiz istek govdesi." }, { status: 400 });
+      return json({ ok: false, message: "Geçersiz istek govdesi." }, { status: 400 });
     }
 
     const deviceId = normalizeDeviceId(request, body);
@@ -119,7 +119,7 @@ export async function POST(request: Request) {
     const command = normalizedCommand.value;
 
     if (command.branch_id && !canAccessBranch({ actor: actorResult.value, branchId: command.branch_id })) {
-      return json({ ok: false, message: "Bu sube icin komut yazma yetkiniz yok." }, { status: 403 });
+      return json({ ok: false, message: "Bu şube için komut yazma yetkiniz yok." }, { status: 403 });
     }
 
     const lockToken = typeof body.lock_token === "string" ? body.lock_token.trim() : "";
@@ -188,6 +188,6 @@ export async function POST(request: Request) {
   } catch (error) {
     const message = error instanceof Error ? error.message : "unknown";
     logApiEvent("error", "ops.command.unhandled", { correlationId, error: message });
-    return json({ ok: false, message: "Komut calistirilirken beklenmeyen hata olustu." }, { status: 500 });
+    return json({ ok: false, message: "Komut çalıştırılırken beklenmeyen hata oluştu." }, { status: 500 });
   }
 }

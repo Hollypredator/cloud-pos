@@ -5,7 +5,7 @@ export default function manifest(): MetadataRoute.Manifest {
     id: "/",
     name: "Cloud POS",
     short_name: "CloudPOS",
-    description: "Web tabanli POS, QR menu ve restoran operasyon sistemi",
+    description: "Web tabanli POS, QR menü ve restoran operasyon sistemi",
     start_url: "/ops",
     scope: "/",
     display: "standalone",

@@ -1,11 +1,11 @@
 # Backup & Monitoring Baseline
 
 ## Backup
-- PostgreSQL icin gunluk otomatik yedek aktif olmali.
+- PostgreSQL için gunluk otomatik yedek aktif olmalı.
 - RPO hedefi: <= 24 saat.
 - RTO hedefi: <= 2 saat.
 - Her ay en az 1 restore testi yap.
-- Aktivasyon kaydi:
+- Aktivasyon kaydı:
   - Ortam: `production`
   - Durum: `active`
   - Son dogrulama: `2026-03-11`
@@ -39,5 +39,5 @@
 
 ## Incident Escalation
 - `sev-1`: aninda telefon/war-room
-- `sev-2`: 15 dakika icinde owner bilgilendirme
-- `sev-3`: mesai icinde backlog
+- `sev-2`: 15 dakika içinde owner bilgilendirme
+- `sev-3`: mesai içinde backlog

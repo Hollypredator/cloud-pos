@@ -13,7 +13,7 @@ export default async function StudioLayout({
           <div className="flex flex-wrap items-start justify-between gap-3">
             <div>
               <p className="text-xs uppercase tracking-[0.28em] text-slate-500">Studio</p>
-              <h1 className="mt-2 text-2xl font-semibold text-slate-900">Site ve backoffice yonetimi</h1>
+              <h1 className="mt-2 text-2xl font-semibold text-slate-900">Site ve backoffice yönetimi</h1>
             </div>
             <LogoutButton redirectPath="/studio/login" />
           </div>

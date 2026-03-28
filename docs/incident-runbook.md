@@ -1,13 +1,13 @@
 # Incident Runbook
 
 ## 1. Tespit
-- Alarm kaynagini not et (`alert_type`, timestamp, etkilenen endpoint/sube).
-- Etkiyi siniflandir:
-  - `sev-1`: siparis/tahsilat tamamen durdu
-  - `sev-2`: kritik akista yavaslama veya bolgesel hata
-  - `sev-3`: ikincil fonksiyon bozulmasi
+- Alarm kaynağını not et (`alert_type`, timestamp, etkilenen endpoint/şube).
+- Etkiyi sınıflandır:
+  - `sev-1`: sipariş/tahsilat tamamen durdu
+  - `sev-2`: kritik akışta yavaşlama veya bölgesel hata
+  - `sev-3`: ikincil fonksiyon bozulması
 
-## 2. Ilk Tepki (0-10 dk)
+## 2. İlk Tepki (0-10 dk)
 - `/api/health` cevabini kontrol et.
 - Son deploy ve migration kaydini kontrol et.
 - Hata kapsaminda auth, db, webhook, rate limit etkisini ayristir.
@@ -15,48 +15,48 @@
 
 ## 3. Koruma
 - Gerekirse etkilenen aksiyonu gecici kapat:
-  - `ALERT_DISPATCH_SECRET` dogrulamasi
+  - `ALERT_DISPATCH_SECRET` doğrulaması
   - API seviyesinde gecici blok/rate limit arttirimi
-- Veri tutarliligi riski varsa yazma islemlerini durdur.
+- Veri tutarlılığı riski varsa yazma işlemlerini durdur.
 
 ## 4. Kök Neden ve Duzeltme
-- Hata sinifi:
+- Hata sınıfı:
   - auth/permission
   - schema/migration
   - entegrasyon/webhook
   - performans/zaman asimi
 - Log inceleme:
-  - `event` bazli filtreleme yap (`orders.create.*`, `table_requests.create.*`, `alerts.dispatch.*`, `metrics.ops.*`).
-  - Ayni `correlationId` ile request zincirini uc noktaya kadar takip et.
+  - `event` bazlı filtreleme yap (`orders.create.*`, `table_requests.create.*`, `alerts.dispatch.*`, `metrics.ops.*`).
+  - Aynı `correlationId` ile request zincirini uç noktaya kadar takip et.
 - Fix branch ac, `typecheck + lint + build` gecmeden production'a alma.
 
-## 5. Geri Donus / Onay
-- Fix deploy sonrasi:
+## 5. Geri Dönüş / Onay
+- Fix deploy sonrası:
   - `/api/health`
   - kritik ekranlar: `/ops`, `/cashier`, `/kitchen`, `/admin/tables`
   - alert durumu: `/api/alerts/dispatch` (secret ile)
 
 ## 6. Postmortem
-- 24 saat icinde su maddeleri kaydet:
-  - olay zamani (baslangic/bitis)
-  - etki (tenant/sube/istek sayisi)
+- 24 saat içinde su maddeleri kaydet:
+  - olay zamanı (başlangıç/bitiş)
+  - etki (tenant/şube/istek sayısı)
   - kök neden
-  - kalici aksiyonlar
+  - kalıcı aksiyonlar
 
 
-## 7. Ozel Prosedur - `payment_status_reconcile_failed`
+## 7. Özel Prosedur - `payment_status_reconcile_failed`
 - Semptom:
   - `alert_dispatches.alert_type = payment_status_reconcile_failed`
-  - Odeme/iade alindigi halde siparis durumu beklenen seviyeye gecmiyor.
-- Ilk kontrol:
-  - Etkilenen `orderId` icin `payments` kayitlarini listele.
-  - `orders.status`, `orders.final_price` ile odeme netini karsilastir.
-  - `idempotency_key` tekrarlarini kontrol et.
+  - Ödeme/iade alındığı halde sipariş durumu beklenen seviyeye geçmiyor.
+- İlk kontrol:
+  - Etkilenen `orderId` için `payments` kayitlarini listele.
+  - `orders.status`, `orders.final_price` ile ödeme netini karsilastir.
+  - `idempotency_key` tekrarlarını kontrol et.
 - Acil aksiyon:
   - `npm run phase5:consistency` calistir.
-  - Tutarsiz order'lari manuel olarak net odeme sonucuna gore `served/paid/refunded` durumuna cek.
-  - Gerekirse ilgili table status'unu (`empty/occupied`) duzelt.
+  - Tutarsız order'lari manuel olarak net ödeme sonucuna göre `served/paid/refunded` durumuna cek.
+  - Gerekirse ilgili table status'unu (`empty/occupied`) düzelt.
 - Kalici aksiyon:
-  - Retryable hata tipini loglardan siniflandir.
+  - Retryable hata tipini loglardan sınıflandır.
   - Gerekli ise timeout/retry limitlerini revize et.
   - Olayi postmortem'e "finans durum uzlasmazligi" basligiyla ekle.

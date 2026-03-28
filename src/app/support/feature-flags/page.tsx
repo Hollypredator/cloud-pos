@@ -10,7 +10,7 @@ export default async function SupportFeatureFlagsPage() {
     <main className="mx-auto w-full max-w-7xl space-y-6 px-4 py-8 md:px-8">
       <header>
         <p className="text-sm text-slate-500">Feature Flags</p>
-        <h1 className="text-3xl font-semibold text-slate-900">Tenant bazli modul governance</h1>
+        <h1 className="text-3xl font-semibold text-slate-900">Tenant bazli modül governance</h1>
       </header>
 
       <section className="space-y-4">
@@ -25,14 +25,14 @@ export default async function SupportFeatureFlagsPage() {
                 <p className="mt-2 text-sm text-slate-600">{override.note || "Not girilmedi."}</p>
               </div>
               <span className={`rounded-full px-3 py-1 text-xs font-semibold ${override.enabled ? "bg-emerald-100 text-emerald-700" : "bg-slate-200 text-slate-700"}`}>
-                {override.enabled ? "Acik" : "Kapali"}
+                {override.enabled ? "Açık" : "Kapali"}
               </span>
             </div>
           </article>
         ))}
         {overrides.length === 0 ? (
           <div className="rounded-2xl border border-dashed border-slate-300 bg-white px-6 py-10 text-sm text-slate-500">
-            Henuz feature override tanimlanmamis. Plan varsayilanlari kullaniliyor.
+            Henüz feature override tanimlanmamis. Plan varsayilanlari kullaniliyor.
           </div>
         ) : null}
       </section>

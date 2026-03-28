@@ -16,7 +16,7 @@ export default async function SupportLayout({
           <div className="flex flex-wrap items-start justify-between gap-3">
             <div>
               <p className="text-xs uppercase tracking-[0.28em] text-slate-500">{translateUiText("Support", locale)}</p>
-              <h1 className="mt-2 text-2xl font-semibold text-slate-900">{translateUiText("Musteri ve destek operasyonlari", locale)}</h1>
+              <h1 className="mt-2 text-2xl font-semibold text-slate-900">{translateUiText("Müşteri ve destek operasyonlari", locale)}</h1>
             </div>
             <LogoutButton redirectPath="/support/login" />
           </div>

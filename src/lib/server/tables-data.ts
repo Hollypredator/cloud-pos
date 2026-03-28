@@ -143,7 +143,7 @@ async function resolveTableZoneId(
 
   const { data, error } = await query.maybeSingle();
   if (error || !data) {
-    return { ok: false as const, error: "Secilen bolge bulunamadi veya erisim disinda." };
+    return { ok: false as const, error: "Secilen bölge bulunamadi veya erişim disinda." };
   }
 
   return { ok: true as const, zoneId: data.id as string };
@@ -495,7 +495,7 @@ export async function createTableImpl(
   const scope = await deps.getDefaultBusinessScope();
   const targetBranchId = await resolveMutationBranchId(supabase, scope);
   if (!scope.useLegacySchema && scope.businessId && !targetBranchId) {
-    return { ok: false, error: "Masa eklemek icin once aktif bir sube secilmeli veya olusturulmali." };
+    return { ok: false, error: "Masa eklemek için önce aktif bir şube secilmeli veya olusturulmali." };
   }
   const resolvedZone = await resolveTableZoneId(supabase, scope, targetBranchId, zoneId);
   if (!resolvedZone.ok) {
@@ -538,7 +538,7 @@ export async function createTableImpl(
   let firstInsert = await supabase.from("tables").insert(withBusinessPayload).select("id, qr_code_identifier").single();
   if (firstInsert.error?.message?.toLowerCase().includes("zone_id")) {
     if (resolvedZone.zoneId) {
-      return { ok: false, error: "Bolge ozelligi icin veritabani migrasyonunu calistirin." };
+      return { ok: false, error: "Bölge ozelligi için veritabani migrasyonunu çalıştırın." };
     }
     firstInsert = await supabase.from("tables").insert(withBusinessPayloadWithoutZone).select("id, qr_code_identifier").single();
   }
@@ -548,7 +548,7 @@ export async function createTableImpl(
     let secondInsert = await supabase.from("tables").insert(fallbackPayload).select("id, qr_code_identifier").single();
     if (secondInsert.error?.message?.toLowerCase().includes("zone_id")) {
       if (resolvedZone.zoneId) {
-        return { ok: false, error: "Bolge ozelligi icin veritabani migrasyonunu calistirin." };
+        return { ok: false, error: "Bölge ozelligi için veritabani migrasyonunu çalıştırın." };
       }
       secondInsert = await supabase.from("tables").insert(fallbackPayloadWithoutZone).select("id, qr_code_identifier").single();
     }
@@ -563,7 +563,7 @@ export async function createTableImpl(
     return { ok: false, error: error.message };
   }
   if (!data) {
-    return { ok: false, error: "Masa olusturulamadi." };
+    return { ok: false, error: "Masa oluşturulamadı." };
   }
 
   await deps.logAuditEvent({
@@ -585,18 +585,18 @@ export async function createTableImpl(
 export async function createTableZoneImpl(name: string, deps: MutationDeps): Promise<CreateZoneResult> {
   const supabase = getSupabaseServerClient();
   if (!supabase) {
-    return { ok: false, error: "Demo modda bolge olusturma pasif." };
+    return { ok: false, error: "Demo modda bölge oluşturma pasif." };
   }
 
   const normalizedName = name.trim().replace(/\s+/g, " ");
   if (normalizedName.length < 2) {
-    return { ok: false, error: "Bolge adi en az 2 karakter olmali." };
+    return { ok: false, error: "Bölge adi en az 2 karakter olmali." };
   }
 
   const scope = await deps.getDefaultBusinessScope();
   const targetBranchId = await resolveMutationBranchId(supabase, scope);
   if (!scope.businessId || !targetBranchId) {
-    return { ok: false, error: "Bolge olusturmak icin once aktif isletme ve sube secilmeli." };
+    return { ok: false, error: "Bölge olusturmak için önce aktif işletme ve şube secilmeli." };
   }
 
   const sortQuery = supabase
@@ -623,7 +623,7 @@ export async function createTableZoneImpl(name: string, deps: MutationDeps): Pro
 
   if (error) {
     if (error.message.toLowerCase().includes("table_zones_business_branch_name_unique")) {
-      return { ok: false, error: "Bu isimde bir bolge zaten var." };
+      return { ok: false, error: "Bu isimde bir bölge zaten var." };
     }
     return { ok: false, error: error.message };
   }
@@ -645,7 +645,7 @@ export async function assignTableZoneImpl(
 ) {
   const supabase = getSupabaseServerClient();
   if (!supabase) {
-    return { ok: false, error: "Demo modda bolge atama pasif." };
+    return { ok: false, error: "Demo modda bölge atama pasif." };
   }
 
   const scope = await deps.getDefaultBusinessScope();
@@ -686,7 +686,7 @@ export async function assignTableZoneImpl(
   const { error } = await updateQuery;
   if (error) {
     if (isDuplicateTableNumberError(error.message)) {
-      return { ok: false, error: "Hedef bolgede ayni masa numarasi oldugu icin atama yapilamadi." };
+      return { ok: false, error: "Hedef bolgede ayni masa numarasi oldugu için atama yapilamadi." };
     }
     return { ok: false, error: error.message };
   }
@@ -712,7 +712,7 @@ export async function bulkCreateTablesImpl(
   }
 
   if (!Number.isInteger(input.startNumber) || input.startNumber <= 0) {
-    return { ok: false, error: "Baslangic masa no pozitif bir tam sayi olmali." };
+    return { ok: false, error: "Başlangıç masa no pozitif bir tam sayi olmali." };
   }
   if (!Number.isInteger(input.count) || input.count <= 0 || input.count > 200) {
     return { ok: false, error: "Toplu acilis adedi 1 ile 200 arasinda olmali." };
@@ -721,7 +721,7 @@ export async function bulkCreateTablesImpl(
   const scope = await deps.getDefaultBusinessScope();
   const targetBranchId = await resolveMutationBranchId(supabase, scope);
   if (!scope.useLegacySchema && scope.businessId && !targetBranchId) {
-    return { ok: false, error: "Toplu masa acmak icin once aktif bir sube secilmeli veya olusturulmali." };
+    return { ok: false, error: "Toplu masa acmak için önce aktif bir şube secilmeli veya olusturulmali." };
   }
 
   const resolvedZone = await resolveTableZoneId(supabase, scope, targetBranchId, input.zoneId ?? null);
@@ -772,7 +772,7 @@ export async function bulkCreateTablesImpl(
   const { error: insertError } = await supabase.from("tables").insert(rowsToInsert);
   if (insertError) {
     if (insertError.message.toLowerCase().includes("zone_id")) {
-      return { ok: false, error: "Bolge ozelligi icin veritabani migrasyonunu calistirin." };
+      return { ok: false, error: "Bölge ozelligi için veritabani migrasyonunu çalıştırın." };
     }
     return { ok: false, error: insertError.message };
   }
@@ -810,22 +810,22 @@ export async function bulkDeleteTablesImpl(
   }
 
   if (!Number.isInteger(input.startNumber) || input.startNumber <= 0) {
-    return { ok: false, error: "Baslangic masa no pozitif bir tam sayi olmali." };
+    return { ok: false, error: "Başlangıç masa no pozitif bir tam sayi olmali." };
   }
   if (!Number.isInteger(input.endNumber) || input.endNumber <= 0) {
     return { ok: false, error: "Bitis masa no pozitif bir tam sayi olmali." };
   }
   if (input.endNumber < input.startNumber) {
-    return { ok: false, error: "Bitis masa no, baslangic no'dan kucuk olamaz." };
+    return { ok: false, error: "Bitis masa no, başlangıç no'dan küçük olamaz." };
   }
   if (input.endNumber - input.startNumber > 1000) {
-    return { ok: false, error: "Tek seferde en fazla 1001 masa araligi silinebilir." };
+    return { ok: false, error: "Tek seferde en fazla 1001 masa aralığı silinebilir." };
   }
 
   const scope = await deps.getDefaultBusinessScope();
   const targetBranchId = await resolveMutationBranchId(supabase, scope);
   if (!scope.useLegacySchema && scope.businessId && !targetBranchId) {
-    return { ok: false, error: "Toplu masa silmek icin once aktif bir sube secilmeli veya olusturulmali." };
+    return { ok: false, error: "Toplu masa silmek için önce aktif bir şube secilmeli veya olusturulmali." };
   }
 
   let resolvedZoneId: string | null | undefined = input.zoneId;
@@ -871,7 +871,7 @@ export async function bulkDeleteTablesImpl(
   const skippedCount = includeNonEmpty ? 0 : matchedRows.length - idsToDelete.length;
 
   if (idsToDelete.length === 0) {
-    return { ok: false, error: includeNonEmpty ? "Secili aralikta silinebilecek masa yok." : "Secili aralikta silinebilecek bos masa yok." };
+    return { ok: false, error: includeNonEmpty ? "Secili aralikta silinebilecek masa yok." : "Secili aralikta silinebilecek boş masa yok." };
   }
 
   let deleteQuery = supabase.from("tables").delete().in("id", idsToDelete);
@@ -929,7 +929,7 @@ export async function bulkDeleteTablesByIdsImpl(
   const scope = await deps.getDefaultBusinessScope();
   const targetBranchId = await resolveMutationBranchId(supabase, scope);
   if (!scope.useLegacySchema && scope.businessId && !targetBranchId) {
-    return { ok: false, error: "Toplu masa silmek icin once aktif bir sube secilmeli veya olusturulmali." };
+    return { ok: false, error: "Toplu masa silmek için önce aktif bir şube secilmeli veya olusturulmali." };
   }
 
   let query = supabase
@@ -950,7 +950,7 @@ export async function bulkDeleteTablesByIdsImpl(
 
   const matchedRows = (rows ?? []) as Array<{ id: string; status: TableStatus }>;
   if (matchedRows.length === 0) {
-    return { ok: false, error: "Secilen masalar bulunamadi veya erisim disinda." };
+    return { ok: false, error: "Secilen masalar bulunamadi veya erişim disinda." };
   }
 
   const includeNonEmpty = input.includeNonEmpty === true;
@@ -960,7 +960,7 @@ export async function bulkDeleteTablesByIdsImpl(
   const skippedCount = includeNonEmpty ? 0 : matchedRows.length - idsToDelete.length;
 
   if (idsToDelete.length === 0) {
-    return { ok: false, error: includeNonEmpty ? "Secilen masalar silinemedi." : "Secilen masalarin hicbiri bos degil." };
+    return { ok: false, error: includeNonEmpty ? "Secilen masalar silinemedi." : "Secilen masalarin hicbiri boş değil." };
   }
 
   let deleteQuery = supabase.from("tables").delete().in("id", idsToDelete);
@@ -1003,13 +1003,13 @@ export async function bulkDeleteTablesByIdsImpl(
 export async function deleteTableZoneImpl(zoneId: string, deps: MutationDeps): Promise<DeleteZoneResult> {
   const supabase = getSupabaseServerClient();
   if (!supabase) {
-    return { ok: false, error: "Demo modda bolge silme pasif." };
+    return { ok: false, error: "Demo modda bölge silme pasif." };
   }
 
   const scope = await deps.getDefaultBusinessScope();
   const targetBranchId = await resolveMutationBranchId(supabase, scope);
   if (!scope.businessId || !targetBranchId) {
-    return { ok: false, error: "Bolge silmek icin once aktif isletme ve sube secilmeli." };
+    return { ok: false, error: "Bölge silmek için önce aktif işletme ve şube secilmeli." };
   }
 
   let zoneQuery = supabase
@@ -1025,7 +1025,7 @@ export async function deleteTableZoneImpl(zoneId: string, deps: MutationDeps): P
 
   const { data: zoneRow, error: zoneError } = await zoneQuery.maybeSingle();
   if (zoneError || !zoneRow) {
-    return { ok: false, error: zoneError?.message ?? "Silinecek bolge bulunamadi." };
+    return { ok: false, error: zoneError?.message ?? "Silinecek bölge bulunamadi." };
   }
 
   let countQuery = supabase
@@ -1084,7 +1084,7 @@ export async function bulkDeleteTableZonesImpl(
 ): Promise<BulkDeleteZonesResult> {
   const supabase = getSupabaseServerClient();
   if (!supabase) {
-    return { ok: false, error: "Demo modda toplu bolge silme pasif." };
+    return { ok: false, error: "Demo modda toplu bölge silme pasif." };
   }
 
   const normalizedZoneIds = [...new Set(input.zoneIds.map((value) => value.trim()).filter(Boolean))];
@@ -1095,7 +1095,7 @@ export async function bulkDeleteTableZonesImpl(
   const scope = await deps.getDefaultBusinessScope();
   const targetBranchId = await resolveMutationBranchId(supabase, scope);
   if (!scope.businessId || !targetBranchId) {
-    return { ok: false, error: "Bolge silmek icin once aktif isletme ve sube secilmeli." };
+    return { ok: false, error: "Bölge silmek için önce aktif işletme ve şube secilmeli." };
   }
 
   let zoneQuery = supabase
@@ -1116,7 +1116,7 @@ export async function bulkDeleteTableZonesImpl(
 
   const scopedZoneIds = ((zoneRows ?? []) as Array<{ id: string }>).map((row) => row.id);
   if (scopedZoneIds.length === 0) {
-    return { ok: false, error: "Secilen bolgeler bulunamadi veya erisim disinda." };
+    return { ok: false, error: "Secilen bolgeler bulunamadi veya erişim disinda." };
   }
   const skippedCount = normalizedZoneIds.length - scopedZoneIds.length;
 
@@ -1197,7 +1197,7 @@ export async function updateTableDetailsImpl(input: { tableId: string; tableNumb
   const { error } = await query;
   if (error) {
     if (isDuplicateTableNumberError(error.message)) {
-      return { ok: false, error: "Bu bolgede ayni masa numarasi oldugu icin guncellenemedi." };
+      return { ok: false, error: "Bu bolgede ayni masa numarasi oldugu için güncellenemedi." };
     }
     return { ok: false, error: error.message };
   }
@@ -1305,7 +1305,7 @@ export async function updateTableStatusImpl(
 export async function deleteTableImpl(tableId: string, deps: MutationDeps) {
   const supabase = getSupabaseServerClient();
   if (!supabase) {
-    return { ok: false, error: "Demo modda silme islemi pasif." };
+    return { ok: false, error: "Demo modda silme işlemi pasif." };
   }
 
   const scope = await deps.getDefaultBusinessScope();
@@ -1323,7 +1323,7 @@ export async function deleteTableImpl(tableId: string, deps: MutationDeps) {
     return { ok: false, error: rowError?.message ?? "Masa bulunamadi." };
   }
   if ((tableRow.status as TableStatus) !== "empty") {
-    return { ok: false, error: "Yalnizca bos masalar silinebilir." };
+    return { ok: false, error: "Yalnizca boş masalar silinebilir." };
   }
 
   let deleteQuery = supabase.from("tables").delete().eq("id", tableId);
@@ -1396,7 +1396,7 @@ export async function moveTableOrderImpl(
   }
 
   if ((targetTable.status as TableStatus) !== "empty") {
-    return { ok: false, error: "Adisyon sadece bos bir masaya tasinabilir." };
+    return { ok: false, error: "Adisyon sadece boş bir masaya tasinabilir." };
   }
 
   let claimTargetQuery = supabase
@@ -1416,7 +1416,7 @@ export async function moveTableOrderImpl(
     return { ok: false, error: claimTargetError.message };
   }
   if (!claimedTargetRows || claimedTargetRows.length === 0) {
-    return { ok: false, error: "Hedef masa az once baska bir islem tarafindan dolduruldu." };
+    return { ok: false, error: "Hedef masa az önce baska bir işlem tarafindan dolduruldu." };
   }
 
   let updateOrderQuery = supabase

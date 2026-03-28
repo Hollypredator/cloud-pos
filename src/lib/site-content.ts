@@ -118,16 +118,16 @@ export const defaultLandingContent: LandingContent = {
       style: { paddingTop: 40, paddingBottom: 56, paddingX: 0, radius: 32, containerWidth: "wide", surface: "transparent", border: "none", shadow: "none", textAlign: "left" },
       type: "hero",
       badge: "Cloud POS",
-      title: "Cafe ve restoran operasyonunu tek panelden yonetin.",
+      title: "Cafe ve restoran operasyonunu tek panelden yönetin.",
       body:
-        "Cloud POS; masa, adisyon, mutfak, kasa ve yonetsel raporlari ayni sistemde toplar. Musteri menuyu kendi telefonunda gorur, siparis ve operasyon akisi personel tarafindan yonetilir.",
-      primaryCtaLabel: "Panele Giris",
+        "Cloud POS; masa, adisyon, mutfak, kasa ve yönetsel raporlari ayni sistemde toplar. Müşteri menuyu kendi telefonunda görür, sipariş ve operasyon akışı personel tarafindan yönetilir.",
+      primaryCtaLabel: "Panele Giriş",
       primaryCtaHref: "/login",
       secondaryCtaLabel: "Demo Incele",
       secondaryCtaHref: "/demo",
       heroVisualMode: "mockup",
       heroImageUrl: "",
-      heroImageAlt: "Cloud POS urun gorseli",
+      heroImageAlt: "Cloud POS ürün gorseli",
       heroImageFit: "contain",
     },
     {
@@ -137,16 +137,16 @@ export const defaultLandingContent: LandingContent = {
       eyebrow: "One Cikanlar",
       items: [
         {
-          title: "QR Menu",
-          body: "Musteri masada menuyu kendi telefonundan gorur, siparis akisi personel tarafindan yonetilir.",
+          title: "QR Menü",
+          body: "Müşteri masada menuyu kendi telefonundan görür, sipariş akışı personel tarafindan yönetilir.",
         },
         {
           title: "Canli Operasyon",
-          body: "Mutfak, kasa ve servis ekipleri ayni akisi es zamanli izler ve operasyon kopmadan ilerler.",
+          body: "Mutfak, kasa ve servis ekipleri ayni akışı es zamanli izler ve operasyon kopmadan ilerler.",
         },
         {
-          title: "Yonetsel Kontrol",
-          body: "Masa, urun, roller, finans ve raporlar tek panelden yonetilir.",
+          title: "Yönetsel Kontrol",
+          body: "Masa, ürün, roller, finans ve raporlar tek panelden yönetilir.",
         },
       ],
     },
@@ -154,11 +154,11 @@ export const defaultLandingContent: LandingContent = {
       id: "process-main",
       style: { paddingTop: 28, paddingBottom: 28, paddingX: 0, radius: 32, containerWidth: "default", surface: "transparent", border: "none", shadow: "none", textAlign: "left" },
       type: "process_steps",
-      eyebrow: "Nasil Calisir",
+      eyebrow: "Nasıl Calisir",
       items: [
-        { title: "1. Kurulum", body: "Isletme, sube, masa ve personel yapisi kisa surede hazirlanir." },
-        { title: "2. Operasyon", body: "Adisyon, mutfak, servis ve kasa akisi ayni sistemde ilerler." },
-        { title: "3. Takip", body: "Gun sonu, finans ve yonetsel raporlar panel uzerinden izlenir." },
+        { title: "1. Kurulum", body: "İşletme, şube, masa ve personel yapısı kısa surede hazırlanır." },
+        { title: "2. Operasyon", body: "Adisyon, mutfak, servis ve kasa akışı ayni sistemde ilerler." },
+        { title: "3. Takip", body: "Gun sonu, finans ve yönetsel raporlar panel uzerinden izlenir." },
       ],
     },
     {
@@ -170,17 +170,17 @@ export const defaultLandingContent: LandingContent = {
         {
           name: "Starter",
           price: "29.900 TL",
-          summary: "Tek sube, QR menu ve temel operasyon modulleriyle hizli baslangic.",
+          summary: "Tek şube, QR menü ve temel operasyon modulleriyle hızlı başlangıç.",
         },
         {
           name: "Growth",
           price: "54.900 TL",
-          summary: "Kasa, vardiya, rapor, stok ve rol bazli ekip yonetimi dahil.",
+          summary: "Kasa, vardiya, rapor, stok ve rol bazli ekip yönetimi dahil.",
         },
         {
           name: "Custom",
           price: "Teklif",
-          summary: "Marka uyarlama, ozel entegrasyonlar ve kuruma ozel operasyon kurgusu.",
+          summary: "Marka uyarlama, özel entegrasyonlar ve kuruma özel operasyon kurgusu.",
         },
       ],
     },
@@ -189,18 +189,18 @@ export const defaultLandingContent: LandingContent = {
       style: { paddingTop: 28, paddingBottom: 28, paddingX: 0, radius: 32, containerWidth: "default", surface: "transparent", border: "none", shadow: "none", textAlign: "left" },
       type: "credibility",
       eyebrow: "Neden Cloud POS",
-      title: "Operasyonun diline uygun, sahada kullanima hazir",
+      title: "Operasyonun diline uygun, sahada kullanima hazır",
       body:
-        "Mutfak, kasa, servis ve yonetim ekranlari rol bazli ayrilir. Boylesiyle ekipler kendi is akisini gorur, yonetim ise tum resmi tek panelden takip eder.",
+        "Mutfak, kasa, servis ve yönetim ekranlari rol bazli ayrilir. Boylesiyle ekipler kendi is akisini görür, yönetim ise tüm resmi tek panelden takip eder.",
       references: ["Nord Roast", "Atelier Bakehouse", "Mimoza Brasserie", "Kule Kahve"],
     },
     {
       id: "contact-main",
       style: { paddingTop: 28, paddingBottom: 32, paddingX: 0, radius: 32, containerWidth: "default", surface: "transparent", border: "none", shadow: "none", textAlign: "left" },
       type: "contact_cta",
-      eyebrow: "Iletisim",
-      title: "Demo ve kurulum sureci icin bizimle iletisime gecin",
-      body: "Bilgilerinizi birakin. Isterseniz dogrudan WhatsApp veya telefon uzerinden de bize ulasabilirsiniz.",
+      eyebrow: "İletişim",
+      title: "Demo ve kurulum sureci için bizimle iletisime gecin",
+      body: "Bilgilerinizi birakin. Isterseniz doğrudan WhatsApp veya telefon uzerinden de bize ulasabilirsiniz.",
     },
     {
       id: "faq-main",
@@ -210,15 +210,15 @@ export const defaultLandingContent: LandingContent = {
       items: [
         {
           title: "Kurulum ne kadar surer?",
-          body: "Kurulum suresi isletmenin sube, urun ve operasyon yapisina gore planlanir. Pilot kurulumlar kisa surede baslatilabilir.",
+          body: "Kurulum süresi işletmenin şube, ürün ve operasyon yapısına göre planlanir. Pilot kurulumlar kısa surede baslatilabilir.",
         },
         {
           title: "Ekipler farkli ekran mi kullanir?",
-          body: "Evet. Mutfak, kasa, servis ve yonetim ayni sistemin rol bazli ayri ekranlarini kullanir.",
+          body: "Evet. Mutfak, kasa, servis ve yönetim ayni sistemin rol bazli ayri ekranlarini kullanir.",
         },
         {
-          title: "QR ile siparis aliniyor mu?",
-          body: "Hayir. QR tarafi su an sadece menu goruntuleme icin kullanilir; siparis ekleme personel ekranlarindan yapilir.",
+          title: "QR ile sipariş aliniyor mu?",
+          body: "Hayır. QR tarafı su an sadece menü görüntüleme için kullanılır; sipariş ekleme personel ekranlarından yapilir.",
         },
       ],
     },
@@ -354,20 +354,20 @@ function modernizeLandingText(value: string) {
   return value
     .replace(/Hospitality OS/gi, "Cloud POS")
     .replace(/Hospitality Control System/gi, "Cloud POS")
-    .replace(/QR Siparis/gi, "QR Menu")
-    .replace(/QR siparis/gi, "QR menu")
+    .replace(/QR Sipariş/gi, "QR Menü")
+    .replace(/QR sipariş/gi, "QR menü")
     .replace(/Demo ve Teklif/gi, "Demo Talebi")
-    .replace(/Musteri gorusmesini buradan kapat/gi, "Isletmeniz icin uygun kurulumu birlikte planlayalim")
+    .replace(/Müşteri gorusmesini buradan kapat/gi, "Isletmeniz için uygun kurulumu birlikte planlayalim")
     .replace(/Demo tarihi netlestir/gi, "WhatsApp veya telefonla bize ulasin")
-    .replace(/Hizli Iletisim/gi, "Dogrudan Iletisim")
+    .replace(/Hızlı İletişim/gi, "Doğrudan İletişim")
     .replace(/Teklif Talebi Gonder/gi, "Talep Gonder")
     .replace(/WhatsApp ile Teklif Al/gi, "WhatsApp ile Ulas")
     .replace(/Hemen Ara/gi, "Telefonla Ara")
-    .replace(/QR uzerinden dogrudan siparis kapali\. Lutfen garsona iletin\./gi, "QR uzerinden siparis alinmiyor. Siparisler personel tarafindan yonetilir.")
-    .replace(/Masaya oturan musteri menuyu acsin, siparisi dogrudan sisteme dussun\./gi, "Masaya oturan musteri menuyu kendi telefonunda acsin, siparisi ekip yonetsin.")
-    .replace(/Musteri menuyu acsin, siparisi dogrudan sisteme dussun\./gi, "Musteri menuyu acsin, siparis akisini ekip yonetsin.")
-    .replace(/QR siparis zorunlu mu\?/gi, "QR ile siparis aliniyor mu?")
-    .replace(/Hayir\. Masa bazli operasyon QR ile veya personel ekranlari uzerinden birlikte yurutulebilir\./gi, "Hayir. QR tarafi sadece menu goruntuleme icindir; siparis ekleme personel ekranlarindan yapilir.");
+    .replace(/QR uzerinden doğrudan sipariş kapali\. Lütfen garsona iletin\./gi, "QR uzerinden sipariş alinmiyor. Siparisler personel tarafindan yönetilir.")
+    .replace(/Masaya oturan müşteri menuyu açsın, siparişi doğrudan sisteme düşsün\./gi, "Masaya oturan müşteri menuyu kendi telefonunda açsın, siparişi ekip yönetsin.")
+    .replace(/Müşteri menuyu açsın, siparişi doğrudan sisteme düşsün\./gi, "Müşteri menuyu açsın, sipariş akisini ekip yönetsin.")
+    .replace(/QR sipariş zorunlu mu\?/gi, "QR ile sipariş aliniyor mu?")
+    .replace(/Hayır\. Masa bazli operasyon QR ile veya personel ekranlari uzerinden birlikte yürütülebilir\./gi, "Hayır. QR tarafı sadece menü görüntüleme icindir; sipariş ekleme personel ekranlarından yapilir.");
 }
 
 function modernizeLandingSection(section: LandingSection): LandingSection {
@@ -650,7 +650,7 @@ export function createLandingSectionTemplate(type: LandingSection["type"]): Land
       badge: "Yeni Blok",
       title: "Baslik girin",
       body: "Bu hero blokunu studio icinden duzenleyin.",
-      primaryCtaLabel: "Giris Yap",
+      primaryCtaLabel: "Giriş Yap",
       primaryCtaHref: "/login",
       secondaryCtaLabel: "Demo Ac",
       secondaryCtaHref: "/demo",
@@ -717,8 +717,8 @@ export function createLandingSectionTemplate(type: LandingSection["type"]): Land
     id: baseId,
     style: { paddingTop: 24, paddingBottom: 32, paddingX: 0, radius: 32, containerWidth: "default", surface: "transparent", border: "none", shadow: "none", textAlign: "left" },
     type: "contact_cta",
-    eyebrow: "Iletisim",
-    title: "Iletisim basligi",
+    eyebrow: "İletişim",
+    title: "İletişim basligi",
     body: "Aciklama",
   };
 }

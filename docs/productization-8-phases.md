@@ -1,66 +1,66 @@
 # Productization Plan (8 Faz)
 
-Durum: `Faz 8 engineering tamamlandi, operasyonel pilot onayi bekleniyor`  
+Durum: `Faz 8 engineering tamamlandı, operasyonel pilot onayı bekleniyor`  
 Not: Fiziksel POS, e-Fatura ve e-Arsiv entegrasyonlari son fazlara saklanmistir.
 
-## Faz Ozeti
+## Faz Özeti
 1. Faz 1 - Stabilization ve Scope Freeze
-2. Faz 2 - Yetki ve Veri Guvenligi Sertlestirme
-3. Faz 3 - POS'suz Odeme Akisi Saglamlastirma
-4. Faz 4 - Finans Dogrulugu ve Mutabakat
-5. Faz 5 - Dayaniklilik ve Hata Yonetimi
-6. Faz 6 - Operasyonel Gozlemlenebilirlik ve Support
-7. Faz 7 - Staging UAT ve Pilot Hazirlik
-8. Faz 8 - POS'suz Pilot Canliya Gecis
+2. Faz 2 - Yetki ve Veri Güvenliği Sertleştirme
+3. Faz 3 - POS'suz Ödeme Akışı Sağlamlaştırma
+4. Faz 4 - Finans Doğruluğu ve Mutabakat
+5. Faz 5 - Dayanıklılık ve Hata Yönetimi
+6. Faz 6 - Operasyonel Gözlemlenebilirlik ve Support
+7. Faz 7 - Staging UAT ve Pilot Hazırlık
+8. Faz 8 - POS'suz Pilot Canlıya Geçiş
 
 ## Faz 1 - Stabilization ve Scope Freeze
-- Amac: Urun kapsamini dondurup kritik operasyon akislarini tek listede kilitlemek.
-- Cikis kriteri:
-  - Scope freeze dokumani onayli
+- Amaç: Ürün kapsamını döndürüp kritik operasyon akışlarını tek listede kilitlemek.
+- Çıkış kriteri:
+  - Scope freeze dokümanı onayli
   - Kritik akis listesi tamam
-  - Definition of Done (DoD) tanimli
-  - Onceliklendirilmis backlog hazir
+  - Definition of Done (DoD) tanımlı
+  - Önceliklendirilmiş backlog hazır
 
-## Faz 2 - Yetki ve Veri Guvenligi Sertlestirme
-- Amac: Endpoint, tenant ve branch izolasyonunun testle garanti altina alinmasi.
-- Cikis kriteri:
+## Faz 2 - Yetki ve Veri Güvenliği Sertleştirme
+- Amaç: Endpoint, tenant ve branch izolasyonunun testle garanti altina alinmasi.
+- Çıkış kriteri:
   - Tum kritik write endpoint'lerde guard + audit
   - Tenant isolation negatif testleri yesil
 
-## Faz 3 - POS'suz Odeme Akisi Saglamlastirma
-- Amac: Nakit/kart/karma odeme akisini cihaz bagimsiz sekilde guvenli hale getirmek.
-- Cikis kriteri:
-  - Idempotent odeme islemleri
-  - Split, iade, iptal senaryolari tutarli
+## Faz 3 - POS'suz Ödeme Akışı Sağlamlaştırma
+- Amaç: Nakit/kart/karma ödeme akışını cihaz bağımsız şekilde güvenli hale getirmek.
+- Çıkış kriteri:
+  - Idempotent ödeme işlemleri
+  - Split, iade, iptal senaryoları tutarlı
 
-## Faz 4 - Finans Dogrulugu ve Mutabakat
-- Amac: Rapor ve operasyon ekranlarinda finans tutarliligi.
-- Cikis kriteri:
-  - Gun sonu mutabakat farklari kabul edilen esigin altinda
+## Faz 4 - Finans Doğruluğu ve Mutabakat
+- Amaç: Rapor ve operasyon ekranlarinda finans tutarlılığı.
+- Çıkış kriteri:
+  - Gün sonu mutabakat farklari kabul edilen esigin altında
   - Finans metrikleri tek kaynak uzerinden uretiliyor
 
-## Faz 5 - Dayaniklilik ve Hata Yonetimi
-- Amac: Retry/timeout/race/duplicate gibi hata siniflarini kontrol altina almak.
-- Cikis kriteri:
-  - Kritik akislarda "yarim kalmis islem" problemi kalmiyor
+## Faz 5 - Dayanıklılık ve Hata Yönetimi
+- Amaç: Retry/timeout/race/duplicate gibi hata siniflarini kontrol altina almak.
+- Çıkış kriteri:
+  - Kritik akislarda "yarim kalmis işlem" problemi kalmiyor
 
-## Faz 6 - Operasyonel Gozlemlenebilirlik ve Support
-- Amac: Olay tespiti ve mudahele suresini dusurmek.
-- Cikis kriteri:
+## Faz 6 - Operasyonel Gözlemlenebilirlik ve Support
+- Amaç: Olay tespiti ve mudahele suresini dusurmek.
+- Çıkış kriteri:
   - Structured log + correlation id
-  - Alert akisi ve runbook operasyonel
+  - Alert akışı ve runbook operasyonel
 
-## Faz 7 - Staging UAT ve Pilot Hazirlik
-- Amac: Gercek isletme senaryolariyla onayli staging testi.
-- Cikis kriteri:
-  - `docs/staging-uat.md` checklist tamamlaniyor
+## Faz 7 - Staging UAT ve Pilot Hazırlık
+- Amaç: Gercek işletme senaryolariyla onayli staging testi.
+- Çıkış kriteri:
+  - `docs/staging-uat.md` checklist tamamlanıyor
   - Bloklayici hata kalmiyor
 
-## Faz 8 - POS'suz Pilot Canliya Gecis
-- Amac: Cihaz entegrasyonu olmadan ilk ticari kullanimin guvenli acilisi.
-- Cikis kriteri:
+## Faz 8 - POS'suz Pilot Canlıya Geçiş
+- Amaç: Cihaz entegrasyonu olmadan ilk ticari kullanımın güvenli açılışı.
+- Çıkış kriteri:
   - Pilot subede kritik incident yok
-  - KPI ve gun sonu mutabakat hedefleri saglaniyor
+  - KPI ve gun sonu mutabakat hedefleri sağlanıyor
 
 ## Sonraki Asama (Faz 9+)
 - Fiziksel POS cihaz baglantisi

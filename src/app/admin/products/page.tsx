@@ -99,7 +99,7 @@ async function addCategoryAction(formData: FormData) {
   const sortOrder = Number(formData.get("sortOrder"));
   const prepStation = normalizePrepStation(formData.get("prepStation"));
   if (typeof name !== "string" || !Number.isFinite(sortOrder)) {
-    redirect(await resolveProductsFeedbackPath("error", "Kategori bilgisi gecersiz."));
+    redirect(await resolveProductsFeedbackPath("error", "Kategori bilgisi geçersiz."));
   }
 
   const result = await createCategory(name, sortOrder, prepStation);
@@ -116,12 +116,12 @@ async function updateCategoryStationAction(formData: FormData) {
   const categoryId = formData.get("categoryId");
   const prepStation = normalizePrepStation(formData.get("prepStation"));
   if (typeof categoryId !== "string") {
-    redirect(await resolveProductsFeedbackPath("error", "Kategori secimi gecersiz."));
+    redirect(await resolveProductsFeedbackPath("error", "Kategori secimi geçersiz."));
   }
 
   const result = await updateCategoryPrepStation(categoryId, prepStation);
   if (!result.ok) {
-    redirect(await resolveProductsFeedbackPath("error", actionErrorMessage(result, "Istasyon guncellenemedi.")));
+    redirect(await resolveProductsFeedbackPath("error", actionErrorMessage(result, "Istasyon güncellenemedi.")));
   }
   redirect(await resolveProductsReturnPath());
 }
@@ -131,7 +131,7 @@ async function reorderCategoriesAction(ids: string[]) {
   await requireRole(["admin"], "/admin/products");
   const result = await reorderCategories(ids);
   if (!result.ok) {
-    redirect(await resolveProductsFeedbackPath("error", actionErrorMessage(result, "Kategori sirasi guncellenemedi.")));
+    redirect(await resolveProductsFeedbackPath("error", actionErrorMessage(result, "Kategori sirasi güncellenemedi.")));
   }
   redirect(await resolveProductsReturnPath());
 }
@@ -142,7 +142,7 @@ async function deleteCategoryAction(formData: FormData) {
 
   const categoryId = formData.get("categoryId");
   if (typeof categoryId !== "string") {
-    redirect(await resolveProductsFeedbackPath("error", "Kategori secimi gecersiz."));
+    redirect(await resolveProductsFeedbackPath("error", "Kategori secimi geçersiz."));
   }
 
   const result = await deleteCategory(categoryId);
@@ -163,12 +163,12 @@ async function addProductAction(formData: FormData) {
   const description = formData.get("description");
 
   if (typeof categoryId !== "string" || typeof name !== "string" || !Number.isFinite(price) || !Number.isFinite(stockCount)) {
-    redirect(await resolveProductsFeedbackPath("error", "Urun bilgileri gecersiz."));
+    redirect(await resolveProductsFeedbackPath("error", "Ürün bilgileri geçersiz."));
   }
 
   const imageResult = await resolveProductImageUrl({ formData });
   if (!imageResult.ok) {
-    redirect(await resolveProductsFeedbackPath("error", imageResult.error || "Gorsel yuklenemedi."));
+    redirect(await resolveProductsFeedbackPath("error", imageResult.error || "Görsel yuklenemedi."));
   }
 
   const result = await createProduct({
@@ -181,7 +181,7 @@ async function addProductAction(formData: FormData) {
     isAvailable: true,
   });
   if (!result.ok) {
-    redirect(await resolveProductsFeedbackPath("error", actionErrorMessage(result, "Urun eklenemedi.")));
+    redirect(await resolveProductsFeedbackPath("error", actionErrorMessage(result, "Ürün eklenemedi.")));
   }
   redirect(await resolveProductsReturnPath());
 }
@@ -206,12 +206,12 @@ async function updateProductAction(formData: FormData) {
     !Number.isFinite(price) ||
     !Number.isFinite(stockCount)
   ) {
-    redirect(await resolveProductsFeedbackPath("error", "Urun guncelleme bilgileri gecersiz."));
+    redirect(await resolveProductsFeedbackPath("error", "Ürün guncelleme bilgileri geçersiz."));
   }
 
   const imageResult = await resolveProductImageUrl({ formData, currentImageUrl });
   if (!imageResult.ok) {
-    redirect(await resolveProductsFeedbackPath("error", imageResult.error || "Gorsel yuklenemedi."));
+    redirect(await resolveProductsFeedbackPath("error", imageResult.error || "Görsel yuklenemedi."));
   }
 
   const result = await updateProduct({
@@ -225,7 +225,7 @@ async function updateProductAction(formData: FormData) {
     isAvailable,
   });
   if (!result.ok) {
-    redirect(await resolveProductsFeedbackPath("error", actionErrorMessage(result, "Urun guncellenemedi.")));
+    redirect(await resolveProductsFeedbackPath("error", actionErrorMessage(result, "Ürün güncellenemedi.")));
   }
   redirect(await resolveProductsReturnPath());
 }
@@ -236,12 +236,12 @@ async function deleteProductAction(formData: FormData) {
 
   const productId = formData.get("productId");
   if (typeof productId !== "string") {
-    redirect(await resolveProductsFeedbackPath("error", "Urun secimi gecersiz."));
+    redirect(await resolveProductsFeedbackPath("error", "Ürün secimi geçersiz."));
   }
 
   const result = await deleteProduct(productId);
   if (!result.ok) {
-    redirect(await resolveProductsFeedbackPath("error", actionErrorMessage(result, "Urun silinemedi.")));
+    redirect(await resolveProductsFeedbackPath("error", actionErrorMessage(result, "Ürün silinemedi.")));
   }
   redirect(await resolveProductsReturnPath());
 }
@@ -253,12 +253,12 @@ async function bulkPriceAction(formData: FormData) {
   const categoryId = formData.get("categoryId");
   const percent = Number(formData.get("percent"));
   if (typeof categoryId !== "string" || !Number.isFinite(percent)) {
-    redirect(await resolveProductsFeedbackPath("error", "Toplu fiyat bilgileri gecersiz."));
+    redirect(await resolveProductsFeedbackPath("error", "Toplu fiyat bilgileri geçersiz."));
   }
 
   const result = await bulkUpdateCategoryPrices(categoryId, percent);
   if (!result.ok) {
-    redirect(await resolveProductsFeedbackPath("error", actionErrorMessage(result, "Toplu fiyat guncelleme basarisiz.")));
+    redirect(await resolveProductsFeedbackPath("error", actionErrorMessage(result, "Toplu fiyat guncelleme başarısız.")));
   }
   redirect(await resolveProductsReturnPath());
 }
@@ -269,7 +269,7 @@ async function addIngredientAction(formData: FormData) {
   const name = formData.get("name");
   const unit = formData.get("unit");
   if (typeof name !== "string" || typeof unit !== "string") {
-    redirect(await resolveProductsFeedbackPath("error", "Malzeme bilgileri gecersiz."));
+    redirect(await resolveProductsFeedbackPath("error", "Malzeme bilgileri geçersiz."));
   }
   const result = await createIngredient(name, unit);
   if (!result.ok) {
@@ -283,7 +283,7 @@ async function deleteIngredientAction(formData: FormData) {
   await requireRole(["admin"], "/admin/products");
   const ingredientId = formData.get("ingredientId");
   if (typeof ingredientId !== "string") {
-    redirect(await resolveProductsFeedbackPath("error", "Malzeme secimi gecersiz."));
+    redirect(await resolveProductsFeedbackPath("error", "Malzeme secimi geçersiz."));
   }
   const result = await deleteIngredient(ingredientId);
   if (!result.ok) {
@@ -299,7 +299,7 @@ async function attachIngredientAction(formData: FormData) {
   const ingredientId = formData.get("ingredientId");
   const quantity = Number(formData.get("quantity"));
   if (typeof productId !== "string" || typeof ingredientId !== "string" || !Number.isFinite(quantity) || quantity <= 0) {
-    redirect(await resolveProductsFeedbackPath("error", "Malzeme baglama bilgileri gecersiz."));
+    redirect(await resolveProductsFeedbackPath("error", "Malzeme baglama bilgileri geçersiz."));
   }
   const result = await attachIngredientToProduct({ productId, ingredientId, quantity });
   if (!result.ok) {
@@ -314,7 +314,7 @@ async function detachIngredientAction(formData: FormData) {
   const productId = formData.get("productId");
   const ingredientId = formData.get("ingredientId");
   if (typeof productId !== "string" || typeof ingredientId !== "string") {
-    redirect(await resolveProductsFeedbackPath("error", "Malzeme ayirma bilgileri gecersiz."));
+    redirect(await resolveProductsFeedbackPath("error", "Malzeme ayirma bilgileri geçersiz."));
   }
   const result = await detachIngredientFromProduct(productId, ingredientId);
   if (!result.ok) {
@@ -332,7 +332,7 @@ async function addModifierGroupAction(formData: FormData) {
   const maxSelect = Number(formData.get("maxSelect"));
   const isRequired = formData.get("isRequired") === "on";
   if (typeof productId !== "string" || typeof name !== "string") {
-    redirect(await resolveProductsFeedbackPath("error", "Modifier grup bilgileri gecersiz."));
+    redirect(await resolveProductsFeedbackPath("error", "Modifier grup bilgileri geçersiz."));
   }
   const result = await createProductModifierGroup({ productId, name, minSelect, maxSelect, isRequired });
   if (!result.ok) {
@@ -349,7 +349,7 @@ async function addModifierOptionAction(formData: FormData) {
   const priceDelta = Number(formData.get("priceDelta"));
   const isDefault = formData.get("isDefault") === "on";
   if (typeof groupId !== "string" || typeof name !== "string") {
-    redirect(await resolveProductsFeedbackPath("error", "Modifier opsiyon bilgileri gecersiz."));
+    redirect(await resolveProductsFeedbackPath("error", "Modifier opsiyon bilgileri geçersiz."));
   }
   const result = await createProductModifierOption({ groupId, name, priceDelta, isDefault });
   if (!result.ok) {
@@ -363,7 +363,7 @@ async function deleteModifierGroupAction(formData: FormData) {
   await requireRole(["admin"], "/admin/products");
   const groupId = formData.get("groupId");
   if (typeof groupId !== "string") {
-    redirect(await resolveProductsFeedbackPath("error", "Modifier grubu secimi gecersiz."));
+    redirect(await resolveProductsFeedbackPath("error", "Modifier grubu secimi geçersiz."));
   }
   const result = await deleteProductModifierGroup(groupId);
   if (!result.ok) {
@@ -377,7 +377,7 @@ async function deleteModifierOptionAction(formData: FormData) {
   await requireRole(["admin"], "/admin/products");
   const optionId = formData.get("optionId");
   if (typeof optionId !== "string") {
-    redirect(await resolveProductsFeedbackPath("error", "Modifier opsiyonu secimi gecersiz."));
+    redirect(await resolveProductsFeedbackPath("error", "Modifier opsiyonu secimi geçersiz."));
   }
   const result = await deleteProductModifierOption(optionId);
   if (!result.ok) {
@@ -456,7 +456,7 @@ export default async function AdminProductsPage({
 
   return (
     <BackofficePage
-      title={translateUiText("Urun ve Kategori Yonetimi", locale)}
+      title={translateUiText("Ürün ve Kategori Yönetimi", locale)}
       description={translateUiText("Katalog, modifier, recete ve stok temel ayarlari", locale)}
       actions={
         <form action={addProductAction} className="flex flex-wrap items-stretch gap-3">
@@ -467,17 +467,17 @@ export default async function AdminProductsPage({
               </option>
             ))}
           </select>
-          <input name="name" required placeholder={translateUiText("Yeni Urun", locale)} className="w-full min-w-0 rounded-2xl border border-slate-200 bg-slate-50 px-4 py-3 text-sm sm:flex-1" />
+          <input name="name" required placeholder={translateUiText("Yeni Ürün", locale)} className="w-full min-w-0 rounded-2xl border border-slate-200 bg-slate-50 px-4 py-3 text-sm sm:flex-1" />
           <input name="price" type="number" min="0" step="0.01" required placeholder="Fiyat" className="w-full rounded-2xl border border-slate-200 bg-slate-50 px-4 py-3 text-sm sm:w-28" />
           <input name="stockCount" type="number" min="0" required placeholder="Stok" className="w-full rounded-2xl border border-slate-200 bg-slate-50 px-4 py-3 text-sm sm:w-28" />
           <FileDropInput
             name="imageFile"
-            label="Urun gorseli"
-            helper="Masaustunden surukle birak ile ekleyebilirsin."
+            label="Ürün gorseli"
+            helper="Masaüstünden sürükle bırak ile ekleyebilirsin."
             className="w-full sm:min-w-[280px] sm:flex-1"
           />
           <button type="submit" className="w-full rounded-2xl bg-gradient-to-r from-[#ff5a34] to-[#f0b14f] px-5 py-3 text-sm font-semibold text-white sm:w-auto">
-            {translateUiText("Yeni Urun", locale)}
+            {translateUiText("Yeni Ürün", locale)}
           </button>
         </form>
       }
@@ -485,24 +485,24 @@ export default async function AdminProductsPage({
       <div className="rounded-[28px] border border-slate-200 bg-white p-4 shadow-[0_10px_20px_rgba(15,23,42,0.04)]">
         <WorkspaceTabs
           tabs={[
-            { label: translateUiText("Urun & Kategori Yonetimi", locale), active: activeTab === "catalog", href: "/admin/products?tab=catalog" },
-            { label: translateUiText("Menu Yonetimi", locale), active: activeTab === "menu", href: "/admin/products?tab=menu" },
+            { label: translateUiText("Ürün & Kategori Yönetimi", locale), active: activeTab === "catalog", href: "/admin/products?tab=catalog" },
+            { label: translateUiText("Menü Yönetimi", locale), active: activeTab === "menu", href: "/admin/products?tab=menu" },
             { label: "Ana Kategoriler", active: activeTab === "categories", href: "/admin/products?tab=categories" },
             { label: "Toplu Islemler", active: activeTab === "bulk", href: "/admin/products?tab=bulk" },
-            { label: "Urun Ozellikleri", active: activeTab === "features", href: "/admin/products?tab=features" },
+            { label: "Ürün Ozellikleri", active: activeTab === "features", href: "/admin/products?tab=features" },
           ]}
         />
 
         {usingDemoData ? (
           <div className="mt-4 rounded-2xl border border-amber-200 bg-amber-50 px-4 py-3 text-sm text-amber-900">
-            {translateUiText("Demo veride kalici urun ve kategori aksiyonlari sinirlidir.", locale)}
+            {translateUiText("Demo veride kalici ürün ve kategori aksiyonlari sinirlidir.", locale)}
           </div>
         ) : null}
         {feedback ? (
           <div className="mt-4">
             <NoticeBanner
               tone={tone === "error" ? "error" : "success"}
-              title={tone === "error" ? "Islem tamamlanamadi" : "Islem tamamlandi"}
+              title={tone === "error" ? "İşlem tamamlanamadi" : "İşlem tamamlandı"}
               description={feedback}
             />
           </div>
@@ -510,9 +510,9 @@ export default async function AdminProductsPage({
 
         <div className="mt-6 grid gap-4 md:grid-cols-2 xl:grid-cols-4">
           <SummaryCard label={translateUiText("Kategori", locale)} value={String(orderedCategories.length)} hint={translateUiText("Toplam ana kategori", locale)} tone="accent" />
-          <SummaryCard label={translateUiText("Urun", locale)} value={String(products.length)} hint={translateUiText("Tum kayitli urunler", locale)} />
-          <SummaryCard label={translateUiText("Satista", locale)} value={String(availableProducts)} hint={translateUiText("Aktif ve gorunen urunler", locale)} tone="success" />
-          <SummaryCard label={translateUiText("Kritik Stok", locale)} value={String(lowStockProducts)} hint={translateUiText("10 ve alti stoklu urun", locale)} tone={lowStockProducts > 0 ? "danger" : "neutral"} />
+          <SummaryCard label={translateUiText("Ürün", locale)} value={String(products.length)} hint={translateUiText("Tüm kayitli ürünler", locale)} />
+          <SummaryCard label={translateUiText("Satista", locale)} value={String(availableProducts)} hint={translateUiText("Aktif ve gorunen ürünler", locale)} tone="success" />
+          <SummaryCard label={translateUiText("Kritik Stok", locale)} value={String(lowStockProducts)} hint={translateUiText("10 ve alti stoklu ürün", locale)} tone={lowStockProducts > 0 ? "danger" : "neutral"} />
         </div>
 
         {activeTab === "catalog" ? (
@@ -574,7 +574,7 @@ export default async function AdminProductsPage({
                   </select>
                   <input name="percent" type="number" step="0.1" placeholder="Yuzde" required className="w-full rounded-2xl border border-slate-200 bg-white px-4 py-3 text-sm sm:w-28" />
                   <button type="submit" className="w-full rounded-2xl border border-slate-200 bg-white px-4 py-3 text-sm font-semibold text-slate-800 sm:w-auto">
-                    Toplu Guncelle
+                    Toplu Güncelle
                   </button>
                 </form>
               </div>
@@ -600,7 +600,7 @@ export default async function AdminProductsPage({
 
               {visibleProducts.length === 0 ? (
                 <div className="mt-4">
-                  <EmptyPanel title="Urun Yok" description="Secili kategori icin urun kaydi bulunmuyor." />
+                  <EmptyPanel title="Ürün Yok" description="Secili kategori için ürün kaydı bulunmuyor." />
                 </div>
               ) : (
                 <div className="mt-4 grid gap-4 lg:grid-cols-2 2xl:grid-cols-3">
@@ -648,8 +648,8 @@ export default async function AdminProductsPage({
                             </div>
                             <FileDropInput
                               name="imageFile"
-                              label="Urun gorseli"
-                              helper={product.image_url ? "Yeni dosya birakirsan mevcut gorselin uzerine yazilir." : "Masaustunden surukle birak ile gorsel ekle."}
+                              label="Ürün gorseli"
+                              helper={product.image_url ? "Yeni dosya birakirsan mevcut gorselin uzerine yazilir." : "Masaüstünden sürükle bırak ile görsel ekle."}
                             />
                             {product.image_url ? (
                               <label className="flex items-center gap-2 text-sm font-medium text-slate-700">
@@ -660,7 +660,7 @@ export default async function AdminProductsPage({
                             <textarea name="description" rows={2} defaultValue={product.description ?? ""} className="w-full rounded-2xl border border-slate-200 bg-slate-50 px-4 py-3 text-sm" />
                             <label className="flex items-center gap-2 text-sm font-medium text-slate-700">
                               <input name="isAvailable" type="checkbox" defaultChecked={product.is_available} />
-                              Satisa acik
+                              Satisa açık
                             </label>
                             <button type="submit" className="w-full rounded-2xl bg-[#ff5a34] px-4 py-3 text-sm font-semibold text-white sm:w-auto">
                               Kaydet
@@ -810,7 +810,7 @@ export default async function AdminProductsPage({
                     <p className="mt-2 text-2xl font-semibold tracking-tight text-slate-900 sm:text-3xl">{orderedCategories.length}</p>
                   </div>
                   <div className="rounded-2xl border border-slate-200 bg-slate-50 px-4 py-4">
-                    <p className="text-sm text-slate-500">Toplam urun</p>
+                    <p className="text-sm text-slate-500">Toplam ürün</p>
                     <p className="mt-2 text-2xl font-semibold tracking-tight text-slate-900 sm:text-3xl">{products.length}</p>
                   </div>
                   <div className="rounded-2xl border border-slate-200 bg-slate-50 px-4 py-4">
@@ -828,7 +828,7 @@ export default async function AdminProductsPage({
           <div className="mt-6 grid gap-5 xl:grid-cols-[320px_1fr]">
             <section className="rounded-[24px] border border-slate-200 bg-[#f6f7f9] p-4">
               <div className="flex items-center justify-between gap-3">
-                <h2 className="text-xl font-semibold tracking-tight text-slate-900 sm:text-2xl">Menu Kategorileri</h2>
+                <h2 className="text-xl font-semibold tracking-tight text-slate-900 sm:text-2xl">Menü Kategorileri</h2>
                 <span className="inline-flex h-10 min-w-10 items-center justify-center rounded-full bg-[#ff5a34] px-3 text-sm font-bold text-white">
                   {orderedCategories.length}
                 </span>
@@ -837,14 +837,14 @@ export default async function AdminProductsPage({
                 {orderedCategories.map((category) => (
                   <div key={category.id} className="rounded-[22px] border border-slate-200 bg-white px-4 py-4">
                     <p className="text-lg font-semibold text-slate-900">{category.name}</p>
-                    <p className="mt-1 text-sm text-slate-500">{productCountMap.get(category.id) ?? 0} menu urunu</p>
+                    <p className="mt-1 text-sm text-slate-500">{productCountMap.get(category.id) ?? 0} menü urunu</p>
                     <p className="mt-1 text-xs font-semibold uppercase tracking-[0.12em] text-slate-400">{prepStationLabel(category.prep_station)} Istasyonu</p>
                   </div>
                 ))}
               </div>
             </section>
             <section className="rounded-[24px] border border-slate-200 bg-[#f6f7f9] p-4">
-              <h2 className="text-xl font-semibold tracking-tight text-slate-900 sm:text-2xl">Menu Akisi</h2>
+              <h2 className="text-xl font-semibold tracking-tight text-slate-900 sm:text-2xl">Menü Akışı</h2>
               <div className="mt-4 flex flex-wrap gap-2">
                 {orderedCategories.map((category) => {
                   const isActive = category.id === selectedCategoryId;
@@ -869,7 +869,7 @@ export default async function AdminProductsPage({
                         <img src={product.image_url} alt={product.name} className="h-16 w-16 rounded-xl object-cover" />
                       ) : (
                         <div className="flex h-16 w-16 items-center justify-center rounded-xl border border-dashed border-slate-300 bg-slate-50 text-[10px] font-semibold uppercase tracking-[0.1em] text-slate-500">
-                          Gorsel Yok
+                          Görsel Yok
                         </div>
                       )}
                       <div className="min-w-0">
@@ -895,7 +895,7 @@ export default async function AdminProductsPage({
                       <input type="hidden" name="description" value={product.description ?? ""} />
                       <input type="hidden" name="currentImageUrl" value={product.image_url ?? ""} />
                       <input type="hidden" name="isAvailable" value={product.is_available ? "on" : "off"} />
-                      <FileDropInput name="imageFile" label="Urun gorseli" helper="Dosyayi surukleyip birak veya sec." />
+                      <FileDropInput name="imageFile" label="Ürün gorseli" helper="Dosyayi surukleyip bırak veya sec." />
                       {product.image_url ? (
                         <label className="flex items-center gap-2 text-sm font-medium text-slate-700">
                           <input name="clearImage" type="checkbox" />
@@ -911,7 +911,7 @@ export default async function AdminProductsPage({
               </div>
               {visibleProducts.length === 0 ? (
                 <div className="mt-4">
-                  <EmptyPanel title="Menu urunu yok" description="Secilen kategori altinda gosterilecek urun bulunmuyor." />
+                  <EmptyPanel title="Menü urunu yok" description="Secilen kategori altinda gosterilecek ürün bulunmuyor." />
                 </div>
               ) : null}
             </section>
@@ -920,7 +920,7 @@ export default async function AdminProductsPage({
 
         {activeTab === "categories" ? (
           <div className="mt-6">
-            <ContentCard title="Ana Kategori Yonetimi">
+            <ContentCard title="Ana Kategori Yönetimi">
               <CategorySortManager
                 categories={orderedCategories.map((category) => ({
                   ...category,
@@ -944,7 +944,7 @@ export default async function AdminProductsPage({
                   ))}
                 </select>
                 <input name="percent" type="number" step="0.1" required placeholder="Yuzde degisim" className="rounded-2xl border border-slate-200 bg-slate-50 px-4 py-3 text-sm" />
-                <button type="submit" className="rounded-2xl bg-gradient-to-r from-[#ff5a34] to-[#f0b14f] px-4 py-3 text-sm font-semibold text-white">Toplu Fiyat Guncelle</button>
+                <button type="submit" className="rounded-2xl bg-gradient-to-r from-[#ff5a34] to-[#f0b14f] px-4 py-3 text-sm font-semibold text-white">Toplu Fiyat Güncelle</button>
               </form>
             </ContentCard>
             <ContentCard title="Stok ve Fiyat Listesi">
@@ -952,7 +952,7 @@ export default async function AdminProductsPage({
                 <table className="responsive-table w-full text-left text-sm">
                   <thead className="bg-slate-50 text-slate-500">
                     <tr>
-                      <th className="px-4 py-4 font-semibold">Urun</th>
+                      <th className="px-4 py-4 font-semibold">Ürün</th>
                       <th className="px-4 py-4 font-semibold">Kategori</th>
                       <th className="px-4 py-4 font-semibold">Stok</th>
                       <th className="px-4 py-4 font-semibold">Fiyat</th>
@@ -997,7 +997,7 @@ export default async function AdminProductsPage({
                 ))}
               </div>
             </ContentCard>
-            <ContentCard title="Urun Ozellikleri">
+            <ContentCard title="Ürün Ozellikleri">
               <div className="space-y-3">
                 {products.map((product) => (
                   <div key={product.id} className="rounded-2xl border border-slate-200 bg-slate-50 p-4">

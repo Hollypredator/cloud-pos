@@ -10,29 +10,29 @@ Durum: `template`
 - Branch:
 
 ## Senaryolar
-1. Gunluk net tutarlilik:
-- [ ] `/admin/finance?days=1` ekranindaki `Net` degeri, ayni gun `sales - refunds` ile esit.
+1. Gunluk net tutarlılık:
+- [ ] `/admin/finance?days=1` ekranindaki `Net` degeri, ayni gun `sales - refunds` ile eşit.
 
-2. Odeme yontemi kirilimi:
-- [ ] Nakit/Kart/Karma net toplami = `summary.netSales`.
-- [ ] Yontem bazli iade toplamlari payments kayitlari ile esit.
+2. Ödeme yöntemi kırılımı:
+- [ ] Nakit/Kart/Karma net toplamı = `summary.netSales`.
+- [ ] Yöntem bazlı iade toplamları payments kayıtları ile eşit.
 
-3. Saatlik satis:
-- [ ] Saatlik grafik toplami = brut satis toplami.
+3. Saatlik satış:
+- [ ] Saatlik grafik toplamı = brüt satış toplamı.
 - [ ] Iadeler saatlik satisa eklenmiyor (ayri gider etkisi).
 
 4. Kasa gun sonu mutabakat:
-- [ ] `/cashier/session` kapanisinda `expectedCash` hesaplamasi acilis + nakit satis - nakit iade ile uyumlu.
-- [ ] Esik ustu farkta `cash_reconciliation_mismatch` dispatch kaydi olusuyor.
+- [ ] `/cashier/session` kapanışında `expectedCash` hesaplaması açılış + nakit satış - nakit iade ile uyumlu.
+- [ ] Eşik üstü farkta `cash_reconciliation_mismatch` dispatch kaydı oluşuyor.
 
-5. Iade ve iptal etkisi:
-- [ ] Iade sonrasi finans ekrani net satisi dogru dusuruyor.
-- [ ] Tahsilat alinmis siparis iptal blokaji aktif.
+5. İade ve iptal etkisi:
+- [ ] İade sonrası finans ekrani net satışı doğru düşürüyor.
+- [ ] Tahsilat alinmis sipariş iptal blokaji aktif.
 
-## Komut Dogrulama
+## Komut Doğrulama
 - [ ] `npm run phase3:runtime`
 - [ ] `npm run phase4:reconciliation`
 
-## Sonuc
+## Sonuç
 - [ ] UAT passed
 - [ ] UAT blocked (issue linkleri eklendi)

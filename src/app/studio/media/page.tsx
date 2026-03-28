@@ -52,25 +52,25 @@ export default async function AdminMediaPage() {
           <Link href="/" className="rounded-lg bg-slate-900 px-4 py-2 text-sm font-medium text-white">Siteyi Ac</Link>
         </header>
 
-        {usingDemoData ? <p className="rounded-lg bg-amber-100 px-3 py-2 text-sm text-amber-900">Demo medya kayitlari gosteriliyor.</p> : null}
+        {usingDemoData ? <p className="rounded-lg bg-amber-100 px-3 py-2 text-sm text-amber-900">Demo medya kayıtları gosteriliyor.</p> : null}
 
         <form action={createMediaAssetAction} className="rounded-2xl bg-white p-6 shadow-sm">
           <div className="grid gap-4 md:grid-cols-2">
             <input name="title" placeholder="Baslik" className="rounded-xl border border-slate-300 px-4 py-3 text-sm" />
             <select name="kind" className="rounded-xl border border-slate-300 px-4 py-3 text-sm">
-              <option value="image">Gorsel</option>
+              <option value="image">Görsel</option>
               <option value="document">Dokuman</option>
               <option value="video">Video</option>
               <option value="other">Diger</option>
             </select>
             <label className="flex flex-col gap-2 rounded-xl border border-dashed border-slate-300 px-4 py-3 text-sm text-slate-600 md:col-span-2">
-              <span className="font-medium text-slate-800">Masaustunden dosya sec</span>
+              <span className="font-medium text-slate-800">Masaüstünden dosya sec</span>
               <input name="file" type="file" className="text-sm text-slate-600 file:mr-3 file:rounded-lg file:border-0 file:bg-slate-900 file:px-3 file:py-2 file:text-white" />
             </label>
             <input name="fileUrl" placeholder="Dosya URL" className="rounded-xl border border-slate-300 px-4 py-3 text-sm md:col-span-2" />
             <input name="altText" placeholder="Alt metin" className="rounded-xl border border-slate-300 px-4 py-3 text-sm md:col-span-2" />
           </div>
-          <p className="mt-3 text-xs text-slate-500">Dosya secersen once Supabase Storage&apos;a yuklenir. URL alani harici medya icin kullanilabilir.</p>
+          <p className="mt-3 text-xs text-slate-500">Dosya secersen önce Supabase Storage&apos;a yuklenir. URL alani harici medya için kullanilabilir.</p>
           <div className="mt-4 flex justify-end">
             <button type="submit" className="rounded-xl bg-slate-900 px-5 py-3 text-sm font-semibold text-white">Medya Ekle</button>
           </div>

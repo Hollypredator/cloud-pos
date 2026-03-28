@@ -36,13 +36,13 @@ type MobileQuickAction = {
 
 const mobileQuickActions: MobileQuickAction[] = [
   { href: "/tables", label: "Masa Takip", icon: "MT", roles: ["admin", "waiter", "kitchen", "cashier"], group: "order_flow" },
-  { href: "/admin/orders", label: "Siparis Baslat", icon: "SP", roles: ["owner", "admin", "waiter", "cashier"], group: "order_flow" },
+  { href: "/admin/orders", label: "Sipariş Baslat", icon: "SP", roles: ["owner", "admin", "waiter", "cashier"], group: "order_flow" },
   { href: "/cashier", label: "Adisyonlar", icon: "AD", roles: ["admin", "cashier"], group: "order_flow" },
   { href: "/service-requests", label: "Masa Talepleri", icon: "SR", roles: ["admin", "waiter", "cashier"], group: "service_flow" },
   { href: "/delivery", label: "Teslimat", icon: "DL", roles: ["admin", "waiter", "cashier"], group: "service_flow", feature: "delivery_dispatch" },
   { href: "/kitchen", label: "Mutfak", icon: "MK", roles: ["admin", "kitchen"], group: "service_flow", feature: "kitchen_display" },
   { href: "/cashier/session", label: "Gun Islemleri", icon: "GI", roles: ["admin", "cashier"], group: "management" },
-  { href: "/tables", label: "Masa Yonetimi", icon: "MY", roles: ["owner", "admin"], group: "management" },
+  { href: "/tables", label: "Masa Yönetimi", icon: "MY", roles: ["owner", "admin"], group: "management" },
 ];
 
 function getLocale() {
@@ -83,7 +83,7 @@ function resolveMobileTitle(pathname: string | null, locale: "tr" | "en" | "fr")
   }
   if (pathname === "/ops" || pathname.startsWith("/ops/")) return translateUiText("Operasyon Merkezi", locale);
   if (pathname === "/tables" || pathname.startsWith("/tables/")) return translateUiText("Masa Takip", locale);
-  if (pathname === "/admin/orders" || pathname.startsWith("/admin/orders/")) return translateUiText("Siparis Akisi", locale);
+  if (pathname === "/admin/orders" || pathname.startsWith("/admin/orders/")) return translateUiText("Sipariş Akışı", locale);
   if (pathname === "/admin/tables" || pathname.startsWith("/admin/tables/")) return translateUiText("Masa Takip", locale);
   if (pathname === "/cashier" || pathname.startsWith("/cashier/")) return translateUiText("Kasa Ekrani", locale);
   if (pathname === "/kitchen" || pathname.startsWith("/kitchen/")) return translateUiText("Mutfak Board", locale);
@@ -149,7 +149,7 @@ export function AppShell({
     return [
       {
         key: "order_flow" as const,
-        title: translateUiText("Siparis ve Kasa", locale),
+        title: translateUiText("Sipariş ve Kasa", locale),
         description: translateUiText("Masa ac, adisyona gec, tahsilat yap.", locale),
         actions: byGroup.order_flow,
       },
@@ -161,7 +161,7 @@ export function AppShell({
       },
       {
         key: "management" as const,
-        title: translateUiText("Yonetim", locale),
+        title: translateUiText("Yönetim", locale),
         description: translateUiText("Gunluk oturum ve ayar aksiyonlari.", locale),
         actions: byGroup.management,
       },
@@ -353,7 +353,7 @@ export function AppShell({
         >
           {!mobileAppMode && isOffline && pwaRuntimeEnabled ? (
             <div className="no-print sticky top-0 z-30 border-b border-amber-200 bg-amber-50 px-4 py-3 text-sm font-medium text-amber-900">
-              {translateUiText("Baglanti kesildi. Offline modda yalnizca okunabilir kullanim acik.", locale)}
+              {translateUiText("Baglanti kesildi. Offline modda yalnızca okunabilir kullanım açık.", locale)}
             </div>
           ) : null}
           {children}
@@ -379,7 +379,7 @@ export function AppShell({
               </div>
               {isOffline ? (
                 <div className="border-t border-amber-200 bg-amber-50 px-4 py-2 text-xs font-medium text-amber-900">
-                  {translateUiText("Baglanti gerekli. Offline modda sadece okunabilir kullanim acik.", locale)}
+                  {translateUiText("Baglanti gerekli. Offline modda sadece okunabilir kullanım açık.", locale)}
                 </div>
               ) : null}
             </div>
@@ -413,7 +413,7 @@ export function AppShell({
                   <div className="mx-auto w-full max-w-[980px]">
                     <div className="mb-3 flex items-center justify-between gap-3">
                       <p className="text-sm font-semibold uppercase tracking-[0.16em] text-slate-500">
-                        {translateUiText("Hizli Aksiyonlar", locale)}
+                        {translateUiText("Hızlı Aksiyonlar", locale)}
                       </p>
                       <button
                         type="button"
@@ -469,7 +469,7 @@ export function AppShell({
                           href="/login"
                           className="inline-flex min-h-[46px] items-center justify-center rounded-2xl bg-slate-900 px-4 py-3 text-sm font-semibold text-white"
                         >
-                          {translateUiText("Giris", locale)}
+                          {translateUiText("Giriş", locale)}
                         </Link>
                       )}
                     </div>

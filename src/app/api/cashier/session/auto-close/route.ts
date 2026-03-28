@@ -98,14 +98,14 @@ function applySessionScope<T extends { eq: (column: string, value: unknown) => T
 async function runAutoCloseTick(input: { dryRun: boolean; correlationId: string }) {
   const supabase = getSupabaseServerClient();
   if (!supabase) {
-    return { ok: false as const, status: 503, message: "Supabase service role tanimli degil." };
+    return { ok: false as const, status: 503, message: "Supabase service role tanımlı değil." };
   }
 
   const { settings } = await getApplicationSettings();
   const timeZone = process.env.AUTO_SESSION_CLOSE_TZ || DEFAULT_TIMEZONE;
   const cutoffMinutes = parseHourMinuteToMinutes(settings.autoSessionCloseTime);
   if (cutoffMinutes === null) {
-    return { ok: false as const, status: 500, message: "autoSessionCloseTime gecersiz formatta." };
+    return { ok: false as const, status: 500, message: "autoSessionCloseTime geçersiz formatta." };
   }
 
   if (!settings.autoSessionCloseEnabled) {
@@ -282,7 +282,7 @@ function unauthorized(correlationId: string) {
 function misconfigured(correlationId: string) {
   logApiEvent("error", "cashier.session.auto_close.secret_missing", { correlationId });
   return withCorrelationId(
-    NextResponse.json({ ok: false, message: "AUTO_SESSION_CLOSE_SECRET tanimli degil." }, { status: 503 }),
+    NextResponse.json({ ok: false, message: "AUTO_SESSION_CLOSE_SECRET tanımlı değil." }, { status: 503 }),
     correlationId,
   );
 }

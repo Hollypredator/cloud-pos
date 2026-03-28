@@ -244,11 +244,11 @@ export default async function AdminSettingsPage() {
   if (!auth.usingDemoData && auth.role !== "owner") {
     return (
       <BackofficePage
-        title="Isletme Ayarlari"
-        description="Bu alan yalnizca patron hesabi tarafindan yonetilir."
+        title="İşletme Ayarlari"
+        description="Bu alan yalnızca patron hesabi tarafindan yönetilir."
       >
         <div className="rounded-[24px] border border-amber-200 bg-amber-50 px-5 py-4 text-sm text-amber-900">
-          Paket, demo modu, sidebar duzeni ve isletme marka ayarlari yalnizca patron tarafindan degistirilebilir.
+          Paket, demo modu, sidebar duzeni ve işletme marka ayarlari yalnızca patron tarafindan degistirilebilir.
         </div>
       </BackofficePage>
     );
@@ -264,14 +264,14 @@ export default async function AdminSettingsPage() {
 
   return (
     <BackofficePage
-      title="Isletme Ayarlari"
+      title="İşletme Ayarlari"
       description="Isletmeye teslim edilecek operasyon, marka ve uygulama ayarlari"
       sidebar={
         <SidebarPanel title="Ayarlar">
           <div className="space-y-3">
             <div className="rounded-2xl border border-[#ff8b73] bg-[#fff8ee] px-4 py-4">
-              <p className="text-lg font-semibold text-slate-900">Isletme</p>
-              <p className="mt-1 text-sm text-slate-500">Marka kimligi, iletisim ve destek bilgileri</p>
+              <p className="text-lg font-semibold text-slate-900">İşletme</p>
+              <p className="mt-1 text-sm text-slate-500">Marka kimligi, iletişim ve destek bilgileri</p>
             </div>
             <div className="rounded-2xl border border-slate-200 bg-slate-50 px-4 py-4">
               <p className="text-lg font-semibold text-slate-900">Uygulama</p>
@@ -282,12 +282,12 @@ export default async function AdminSettingsPage() {
             </div>
             <div className="rounded-2xl border border-slate-200 bg-slate-50 px-4 py-4">
               <p className="text-lg font-semibold text-slate-900">Calisma Modu</p>
-              <p className="mt-1 text-sm text-slate-500">{applicationSettings.demoMode ? "Demo modu acik" : "Canli mod"}</p>
+              <p className="mt-1 text-sm text-slate-500">{applicationSettings.demoMode ? "Demo modu açık" : "Canli mod"}</p>
             </div>
             <div className="rounded-2xl border border-slate-200 bg-slate-50 px-4 py-4">
               <p className="text-lg font-semibold text-slate-900">Paket</p>
               <p className="mt-1 text-sm text-slate-500">{getPlanLabel(planContext.plan)} paketi aktif</p>
-              <p className="mt-2 text-xs uppercase tracking-[0.14em] text-slate-400">{activeFeatureCount} modul acik</p>
+              <p className="mt-2 text-xs uppercase tracking-[0.14em] text-slate-400">{activeFeatureCount} modül açık</p>
             </div>
             <div className="rounded-2xl border border-slate-200 bg-slate-50 px-4 py-4">
               <p className="text-lg font-semibold text-slate-900">Marka Durumu</p>
@@ -309,9 +309,9 @@ export default async function AdminSettingsPage() {
             <div className="rounded-[24px] border border-slate-200 bg-slate-50 p-5">
               <p className="text-xs font-bold uppercase tracking-[0.16em] text-slate-500">Aktif Paket</p>
               <p className="mt-3 text-2xl font-semibold tracking-tight text-slate-900 sm:text-3xl">{getPlanLabel(planContext.plan)}</p>
-              <p className="mt-2 text-sm text-slate-500">{activeFeatureCount} modul acik</p>
+              <p className="mt-2 text-sm text-slate-500">{activeFeatureCount} modül açık</p>
               <div className="mt-4 rounded-2xl border border-slate-200 bg-white px-4 py-4 text-sm text-slate-600">
-                Paket degisikligi isletme panelinden yapilamaz. Upgrade veya downgrade islemleri merkez ekip tarafindan yonetilir.
+                Paket degisikligi işletme panelinden yapilamaz. Upgrade veya downgrade islemleri merkez ekip tarafindan yönetilir.
               </div>
             </div>
             <div className="grid gap-3 sm:grid-cols-2">
@@ -329,7 +329,7 @@ export default async function AdminSettingsPage() {
                           : "bg-slate-200 text-slate-600"
                       }`}
                     >
-                      {hasFeature(planContext.plan, featureKey as keyof typeof FEATURE_META) ? "Acik" : getPlanLabel(meta.requiredPlan)}
+                      {hasFeature(planContext.plan, featureKey as keyof typeof FEATURE_META) ? "Açık" : getPlanLabel(meta.requiredPlan)}
                     </span>
                   </div>
                 </div>
@@ -417,7 +417,7 @@ export default async function AdminSettingsPage() {
                 />
               </div>
               <div className="rounded-[24px] border border-dashed border-slate-200 bg-white px-5 py-4 text-sm text-slate-500">
-                Demo mod mevcut isletmede ornek kasa oturumu, mutfak siparisleri, odeme bekleyen adisyon ve paket servis kaydi olusturur.
+                Demo mod mevcut işletmede ornek kasa oturumu, mutfak siparisleri, ödeme bekleyen adisyon ve paket servis kaydı olusturur.
                 Kapatmak yeni veri uretimini durdurur; mevcut demo kayitlarini otomatik silmez.
               </div>
               <div className="mt-6 flex justify-end">
@@ -433,7 +433,7 @@ export default async function AdminSettingsPage() {
           <ContentCard title="Destek Talebi">
             <div className="space-y-4">
               <div className="rounded-[24px] border border-slate-200 bg-slate-50 px-5 py-4 text-sm text-slate-600">
-                Paket degisikligi, entegrasyon veya teknik destek ihtiyaciniz icin merkez ekibe talep iletebilirsiniz.
+                Paket degisikligi, entegrasyon veya teknik destek ihtiyaciniz için merkez ekibe talep iletebilirsiniz.
               </div>
               <Field label="Konu" name="subject" defaultValue="" />
               <label className="block">
@@ -447,7 +447,7 @@ export default async function AdminSettingsPage() {
               </label>
               <div className="flex justify-end">
                 <button type="submit" className="w-full rounded-2xl bg-slate-900 px-5 py-3 text-sm font-semibold text-white sm:w-auto">
-                  Talep Olustur
+                  Talep Oluştur
                 </button>
               </div>
             </div>
@@ -464,7 +464,7 @@ export default async function AdminSettingsPage() {
           <ContentCard title="Operasyon Verisini Sifirla">
             <div className="space-y-4">
               <div className="rounded-[24px] border border-rose-200 bg-rose-50 px-5 py-4 text-sm text-rose-900">
-                Bu islem aktif isletmedeki adisyonlari, odemeleri, masa taleplerini, kurye ve kasa oturumlarini temizler.
+                Bu işlem aktif isletmedeki adisyonlari, odemeleri, masa taleplerini, kurye ve kasa oturumlarini temizler.
                 Urunler, kategoriler, personel ve ayarlar korunur.
               </div>
               <label className="flex items-center gap-3 rounded-2xl border border-slate-200 bg-slate-50 px-4 py-4 text-sm text-slate-700">
@@ -473,7 +473,7 @@ export default async function AdminSettingsPage() {
               </label>
               <div className="flex justify-end">
                 <button type="submit" className="w-full rounded-2xl border border-rose-300 bg-white px-5 py-3 text-sm font-semibold text-rose-700 sm:w-auto">
-                  Isletme Operasyonunu Temizle
+                  İşletme Operasyonunu Temizle
                 </button>
               </div>
             </div>
@@ -483,9 +483,9 @@ export default async function AdminSettingsPage() {
 
       <section>
         <form action={updateGeneralSettingsAction}>
-          <ContentCard title="Isletme Bilgileri">
+          <ContentCard title="İşletme Bilgileri">
             <div className="grid gap-4 md:grid-cols-2">
-              <Field label="Isletme adi" name="siteName" defaultValue={generalSettings.siteName} />
+              <Field label="İşletme adi" name="siteName" defaultValue={generalSettings.siteName} />
               <Field label="Telefon" name="contactPhone" defaultValue={generalSettings.contactPhone} />
               <Field label="WhatsApp" name="whatsappPhone" defaultValue={generalSettings.whatsappPhone} />
               <Field label="Destek e-postasi" name="supportEmail" defaultValue={generalSettings.supportEmail} type="email" />
@@ -496,7 +496,7 @@ export default async function AdminSettingsPage() {
             </div>
             <div className="mt-6 flex justify-end">
               <button type="submit" className="w-full rounded-2xl bg-gradient-to-r from-[#ff5a34] to-[#f0b14f] px-5 py-3 text-sm font-semibold text-white sm:w-auto">
-                Isletme Bilgilerini Kaydet
+                İşletme Bilgilerini Kaydet
               </button>
             </div>
           </ContentCard>

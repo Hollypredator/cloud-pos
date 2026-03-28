@@ -1,27 +1,27 @@
 # Migration Strategy (Supabase)
 
-Bu projede migration sayisi hizli buyudugu icin, kurulum hizi ve bakim kolayligi adina `baseline + delta` modeline gecildi.
+Bu projede migration sayısı hızlı buyudugu için, kurulum hizi ve bakım kolayligi adina `baseline + delta` modeline gecildi.
 
 ## Mevcut Durum
 
 - Tarih: 2026-03-16
-- Klasik migration sayisi: 54 dosya (`supabase/migrations`)
+- Klasik migration sayısı: 54 dosya (`supabase/migrations`)
 - Baseline dosyasi: `supabase/baseline/20260316_baseline.sql`
 
 ## Kurallar
 
 - Mevcut (canli/staging) ortamlarda eski migration dosyalarini silmeyin veya yeniden adlandirmayin.
-- Mevcut ortamlarda sadece yeni migration dosyalarini ekleyin ve uygulayin.
-- Yeni ortamlar icin once baseline, sonra baseline tarihinden sonraki migration dosyalari uygulanir.
+- Mevcut ortamlarda sadece yeni migration dosyalarini ekleyin ve uygulayın.
+- Yeni ortamlar için once baseline, sonra baseline tarihinden sonraki migration dosyaları uygulanir.
 
 ## Yeni Ortam Kurulumu
 
 1. `supabase/baseline/20260316_baseline.sql` dosyasini calistirin.
-2. `supabase/migrations` altinda `20260316` sonrasi dosyalari tarih sirasiyla uygulayin.
+2. `supabase/migrations` altında `20260316` sonrası dosyaları tarih sırasıyla uygulayın.
 
 ## Baseline Guncelleme
 
-Yeni bir major release oncesi veya migration sayisi belirgin arttiginda baseline yenileyin.
+Yeni bir major release öncesi veya migration sayısı belirgin arttiginda baseline yenileyin.
 
 Komut:
 
@@ -32,7 +32,7 @@ powershell -NoProfile -ExecutionPolicy Bypass -File scripts/build-supabase-basel
 Opsiyonel:
 
 - `-UpToVersion 20260316` ile belirli tarihe kadar baseline uretebilirsiniz.
-- Script, README'deki migration sirasini baz alir; boylece bagimlilik sirasi korunur.
+- Script, README'deki migration sirasini baz alir; boylece bağımlılık sirasi korunur.
 
 ## Neden Bu Model
 

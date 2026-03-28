@@ -136,7 +136,7 @@ export default async function AdminBlogPage({
                 <div>
                   <p className="text-xs font-semibold uppercase tracking-[0.24em] text-slate-500">Editor</p>
                   <h2 className="mt-2 text-2xl font-semibold text-slate-900">
-                    {selectedPost ? "Yaziyi duzenle" : "Yeni yazi olustur"}
+                    {selectedPost ? "Yaziyi duzenle" : "Yeni yazi oluştur"}
                   </h2>
                 </div>
                 {selectedPost ? (
@@ -183,13 +183,13 @@ export default async function AdminBlogPage({
                   <input
                     name="coverImageUrl"
                     defaultValue={selectedPost?.cover_image_url ?? ""}
-                    placeholder="Kapak gorsel URL"
+                    placeholder="Kapak görsel URL"
                     className="rounded-xl border border-slate-300 px-4 py-3 text-sm"
                   />
                   <textarea
                     name="excerpt"
                     defaultValue={selectedPost?.excerpt ?? ""}
-                    placeholder="Kisa ozet"
+                    placeholder="Kisa özet"
                     rows={3}
                     className="rounded-xl border border-slate-300 px-4 py-3 text-sm"
                   />

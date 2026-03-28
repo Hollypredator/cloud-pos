@@ -56,8 +56,8 @@ export default async function KitchenTicketPage({
         }`}
       >
         <header className="border-b border-slate-200 pb-4 text-center">
-          <p className="text-xs font-bold uppercase tracking-[0.22em] text-slate-500">Mutfak Siparis Fisi</p>
-          <h1 className={`mt-2 font-semibold text-slate-900 ${thermal ? "text-xl" : "text-3xl"}`}>Siparis #{orderRef(order)}</h1>
+          <p className="text-xs font-bold uppercase tracking-[0.22em] text-slate-500">Mutfak Sipariş Fisi</p>
+          <h1 className={`mt-2 font-semibold text-slate-900 ${thermal ? "text-xl" : "text-3xl"}`}>Sipariş #{orderRef(order)}</h1>
           <p className="mt-2 text-sm text-slate-600">{orderSourceLabel(order)}</p>
           <p className="mt-1 text-xs text-slate-500">{new Date(order.created_at).toLocaleString("tr-TR")}</p>
           <div className="mt-3 flex justify-center">

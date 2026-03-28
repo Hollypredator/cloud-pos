@@ -57,7 +57,7 @@ export async function POST(request: Request) {
     try {
       rawBody = await request.json();
     } catch {
-      return json({ ok: false, message: "Gecersiz istek govdesi." }, { status: 400 });
+      return json({ ok: false, message: "Geçersiz istek govdesi." }, { status: 400 });
     }
 
     const parsed = parseSyncPushRequest(rawBody);
@@ -66,11 +66,11 @@ export async function POST(request: Request) {
     }
 
     if (!parsed.value.lock_token) {
-      return json({ ok: false, message: "Push icin lock_token zorunlu." }, { status: 400 });
+      return json({ ok: false, message: "Push için lock_token zorunlu." }, { status: 400 });
     }
 
     if (!canAccessBranch({ actor: actor.value, branchId: parsed.value.branch_id })) {
-      return json({ ok: false, message: "Bu sube icin sync push yetkiniz yok." }, { status: 403 });
+      return json({ ok: false, message: "Bu şube için sync push yetkiniz yok." }, { status: 403 });
     }
 
     const lockStateResult = await getBranchLockState(parsed.value.branch_id);
@@ -158,6 +158,6 @@ export async function POST(request: Request) {
       correlationId,
       error: error instanceof Error ? error.message : "unknown",
     });
-    return json({ ok: false, message: "Push senkronu sirasinda beklenmeyen hata olustu." }, { status: 500 });
+    return json({ ok: false, message: "Push senkronu sırasında beklenmeyen hata oluştu." }, { status: 500 });
   }
 }

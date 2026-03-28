@@ -47,7 +47,7 @@ export function StaffLoginForm({ next, error, labels }: StaffLoginFormProps) {
     submitTimeoutRef.current = setTimeout(() => {
       controller.abort();
       setSubmitting(false);
-      setLocalError("Giris istegi zaman asimina ugradi. Lutfen tekrar deneyin.");
+      setLocalError("Giriş isteği zaman asimina ugradi. Lütfen tekrar deneyin.");
     }, 20_000);
 
     try {
@@ -65,7 +65,7 @@ export function StaffLoginForm({ next, error, labels }: StaffLoginFormProps) {
       });
 
       if (!response.ok) {
-        setLocalError("Giris istegi tamamlanamadi. Lutfen tekrar deneyin.");
+        setLocalError("Giriş isteği tamamlanamadi. Lütfen tekrar deneyin.");
         return;
       }
 
@@ -86,9 +86,9 @@ export function StaffLoginForm({ next, error, labels }: StaffLoginFormProps) {
       window.location.assign(redirectTo);
     } catch (requestError) {
       if ((requestError as { name?: string } | null)?.name === "AbortError") {
-        setLocalError("Giris istegi zaman asimina ugradi. Lutfen tekrar deneyin.");
+        setLocalError("Giriş isteği zaman asimina ugradi. Lütfen tekrar deneyin.");
       } else {
-        setLocalError("Giris istegi tamamlanamadi. Lutfen tekrar deneyin.");
+        setLocalError("Giriş isteği tamamlanamadi. Lütfen tekrar deneyin.");
       }
     } finally {
       if (submitTimeoutRef.current) {

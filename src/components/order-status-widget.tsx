@@ -28,13 +28,13 @@ function orderRef(order: Pick<LatestOrder, "id" | "checkNumber">) {
 }
 
 function statusLabel(status: OrderStatus) {
-  if (status === "pending") return "Siparis alindi";
+  if (status === "pending") return "Sipariş alındı";
   if (status === "preparing") return "Hazirlaniyor";
-  if (status === "ready") return "Servise hazir";
-  if (status === "served") return "Servise hazir";
-  if (status === "partially_paid") return "Kismi odeme";
-  if (status === "paid") return "Odeme tamamlandi";
-  if (status === "partially_refunded") return "Kismi iade";
+  if (status === "ready") return "Servise hazır";
+  if (status === "served") return "Servise hazır";
+  if (status === "partially_paid") return "Kısmi ödeme";
+  if (status === "paid") return "Ödeme tamamlandı";
+  if (status === "partially_refunded") return "Kısmi iade";
   if (status === "cancelled") return "Iptal edildi";
   if (status === "refunded") return "Iade edildi";
   return status;
@@ -137,11 +137,11 @@ export function OrderStatusWidget({
 
   return (
     <section className="rounded-2xl border border-slate-200 bg-white p-4">
-      <h2 className="text-sm font-semibold text-slate-900">Siparis Durumu</h2>
+      <h2 className="text-sm font-semibold text-slate-900">Sipariş Durumu</h2>
       {loading ? (
         <p className="mt-2 text-sm text-slate-500">Durum yukleniyor...</p>
       ) : !order ? (
-        <p className="mt-2 text-sm text-slate-500">Bu masa icin aktif siparis bulunmuyor.</p>
+        <p className="mt-2 text-sm text-slate-500">Bu masa için aktif sipariş bulunmuyor.</p>
       ) : (
         <div className="mt-2 space-y-2">
           <div className="flex flex-col items-start justify-between gap-2 sm:flex-row sm:items-center">
@@ -152,7 +152,7 @@ export function OrderStatusWidget({
           </div>
           <StatusTimeline status={order.status} />
           <p className="text-xs text-slate-500">{new Date(order.createdAt).toLocaleString("tr-TR")}</p>
-          <p className="text-xs text-slate-500">Tahmini kalan sure: {estimateEta(order.status, order.createdAt)}</p>
+          <p className="text-xs text-slate-500">Tahmini kalan süre: {estimateEta(order.status, order.createdAt)}</p>
           <p className="text-sm text-slate-700">Toplam: {Number(order.finalPrice).toFixed(2)} TL</p>
         </div>
       )}
@@ -164,8 +164,8 @@ function StatusTimeline({ status }: { status: OrderStatus }) {
   const steps: Array<{ key: OrderStatus | "done"; label: string }> = [
     { key: "pending", label: "Alindi" },
     { key: "preparing", label: "Hazirlaniyor" },
-    { key: "ready", label: "Hazir" },
-    { key: "paid", label: "Odeme" },
+    { key: "ready", label: "Hazır" },
+    { key: "paid", label: "Ödeme" },
   ];
   const timelineStatus: OrderStatus = status === "served" ? "ready" : status;
   const order = ["pending", "preparing", "ready", "paid"] as const;

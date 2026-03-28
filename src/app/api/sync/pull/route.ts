@@ -31,7 +31,7 @@ export async function GET(request: Request) {
     }
 
     if (!canAccessBranch({ actor: actor.value, branchId })) {
-      return json({ ok: false, message: "Bu sube icin pull yetkiniz yok." }, { status: 403 });
+      return json({ ok: false, message: "Bu şube için pull yetkiniz yok." }, { status: 403 });
     }
 
     const result = await listSyncEvents({
@@ -57,6 +57,6 @@ export async function GET(request: Request) {
       correlationId,
       error: error instanceof Error ? error.message : "unknown",
     });
-    return json({ ok: false, message: "Pull senkronu sirasinda beklenmeyen hata olustu." }, { status: 500 });
+    return json({ ok: false, message: "Pull senkronu sırasında beklenmeyen hata oluştu." }, { status: 500 });
   }
 }

@@ -9,7 +9,7 @@ export async function GET(
   const auth = await getCurrentUserWithRole();
   const canAccess = canUseDemoModeBypass(auth.usingDemoData) || (!!auth.user && hasRoleAccess(auth.role, ["admin"]));
   if (!canAccess) {
-    return NextResponse.json({ ok: false, message: "Yetkisiz erisim." }, { status: 403 });
+    return NextResponse.json({ ok: false, message: "Yetkisiz erişim." }, { status: 403 });
   }
 
   const params = await context.params;

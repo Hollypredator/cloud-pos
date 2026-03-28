@@ -1,28 +1,28 @@
-# Faz 3 - POS'suz Odeme Akisi Saglamlastirma
+# Faz 3 - POS'suz Ödeme Akışı Sağlamlaştırma
 
 Durum: `completed`  
-Baslangic tarihi: `2026-03-11`  
-Hedef bitis: `1 hafta`
+Başlangıç tarihi: `2026-03-11`  
+Hedef bitiş: `1 hafta`
 
 ## Hedef
-- Nakit/kart/karma odeme akislarini idempotent hale getirmek.
+- Nakit/kart/karma ödeme akışlarını idempotent hale getirmek.
 - Split, iade ve iptal senaryolarinda finansal tutarsizliklari engellemek.
 
-## P0 Gorevleri
-1. Odeme ve iade islemlerinde request-key idempotency
-2. Iade tutari ust limit dogrulamasi (over-refund engeli)
+## P0 Görevleri
+1. Ödeme ve iade işlemlerinde request-key idempotency
+2. İade tutarı üst limit doğrulaması (over-refund engeli)
 3. Tahsilat alinmis sipariste iptal blokaji
 
-## Bu Fazda Yapilanlar
+## Bu Fazda Yapılanlar
 - [x] `payments.idempotency_key` kolonu ve unique index migration'i eklendi.
-- [x] `completeOrderPayment` idempotency kontrolu eklendi (`requestKey`).
-- [x] `refundOrder` idempotency kontrolu ve duplicate replay handling eklendi.
-- [x] `cancelOrder` idempotency kontrolu (cancel note tekrarini engelleme) eklendi.
-- [x] `refundOrder` iade edilebilir bakiye kontrolu eklendi.
-- [x] `cancelOrder` icin "net tahsilat varsa iptal etme" kurali eklendi.
-- [x] Kasa UI formlarinda `requestKey` hidden alanlari eklendi.
+- [x] `completeOrderPayment` idempotency kontrolü eklendi (`requestKey`).
+- [x] `refundOrder` idempotency kontrolü ve duplicate replay handling eklendi.
+- [x] `cancelOrder` idempotency kontrolü (cancel note tekrarini engelleme) eklendi.
+- [x] `refundOrder` iade edilebilir bakiye kontrolü eklendi.
+- [x] `cancelOrder` için "net tahsilat varsa iptal etme" kurali eklendi.
+- [x] Kasa UI formlarinda `requestKey` hidden alanları eklendi.
 - [x] Faz 3 runtime finansal butunluk kontrol scripti eklendi: `npm run phase3:runtime`.
 
-## Acik Kalanlar
-- [x] Odeme aksiyonlari icin kullaniciya operasyon sonucu geri bildirimi (idempotent replay, limit asimi vb.)
+## Açık Kalanlar
+- [x] Ödeme aksiyonlari için kullaniciya operasyon sonucu geri bildirimi (idempotent replay, limit asimi vb.)
 - [x] Faz 3 runtime test seti (payment duplicate + refund limit + cancel block)

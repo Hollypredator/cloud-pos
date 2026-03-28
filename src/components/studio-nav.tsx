@@ -8,7 +8,7 @@ const links = [
   { href: "/studio/media", label: "Medya" },
   { href: "/studio/blog", label: "Blog" },
   { href: "/studio/leads", label: "Leadler" },
-  { href: "/studio/access", label: "Erisim" },
+  { href: "/studio/access", label: "Erişim" },
   { href: "/studio/onboarding", label: "Wizard" },
 ];
 

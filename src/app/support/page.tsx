@@ -10,19 +10,19 @@ export default async function SupportHomePage() {
     <main className="mx-auto w-full max-w-7xl space-y-6 px-4 py-8 md:px-8">
       <section className="grid gap-4 md:grid-cols-4 xl:grid-cols-11">
         <div className="rounded-2xl bg-white p-6 shadow-sm">
-          <p className="text-xs uppercase tracking-[0.24em] text-slate-500">Aktif Isletme</p>
+          <p className="text-xs uppercase tracking-[0.24em] text-slate-500">Aktif İşletme</p>
           <p className="mt-3 text-3xl font-semibold text-slate-900">{snapshot.metrics.activeBusinesses}</p>
         </div>
         <div className="rounded-2xl bg-white p-6 shadow-sm">
-          <p className="text-xs uppercase tracking-[0.24em] text-slate-500">Support Kullanici</p>
+          <p className="text-xs uppercase tracking-[0.24em] text-slate-500">Support Kullanıcı</p>
           <p className="mt-3 text-3xl font-semibold text-slate-900">{snapshot.metrics.activeSupportUsers}</p>
         </div>
         <div className="rounded-2xl bg-white p-6 shadow-sm">
-          <p className="text-xs uppercase tracking-[0.24em] text-slate-500">Acik Ticket</p>
+          <p className="text-xs uppercase tracking-[0.24em] text-slate-500">Açık Ticket</p>
           <p className="mt-3 text-3xl font-semibold text-slate-900">{snapshot.metrics.openTickets}</p>
         </div>
         <div className="rounded-2xl bg-white p-6 shadow-sm">
-          <p className="text-xs uppercase tracking-[0.24em] text-slate-500">Acik Paket Talebi</p>
+          <p className="text-xs uppercase tracking-[0.24em] text-slate-500">Açık Paket Talebi</p>
           <p className="mt-3 text-3xl font-semibold text-slate-900">{snapshot.metrics.openPlanRequests}</p>
         </div>
         <div className="rounded-2xl bg-white p-6 shadow-sm">
@@ -30,7 +30,7 @@ export default async function SupportHomePage() {
           <p className="mt-3 text-3xl font-semibold text-slate-900">{snapshot.metrics.criticalTenants}</p>
         </div>
         <div className="rounded-2xl bg-white p-6 shadow-sm">
-          <p className="text-xs uppercase tracking-[0.24em] text-slate-500">Acik Incident</p>
+          <p className="text-xs uppercase tracking-[0.24em] text-slate-500">Açık Incident</p>
           <p className="mt-3 text-3xl font-semibold text-slate-900">{snapshot.metrics.openIncidents}</p>
         </div>
         <div className="rounded-2xl bg-white p-6 shadow-sm">

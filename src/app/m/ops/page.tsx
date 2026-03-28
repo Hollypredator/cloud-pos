@@ -26,9 +26,9 @@ function orderSourceLabel(order: { channel?: string; table_number?: number; cust
 function statusLabel(status: string) {
   if (status === "pending") return "Bekliyor";
   if (status === "preparing") return "Hazirlaniyor";
-  if (status === "ready") return "Servise Hazir";
-  if (status === "served") return "Servise Hazir";
-  if (status === "partially_paid") return "Kismi Odeme";
+  if (status === "ready") return "Servise Hazır";
+  if (status === "served") return "Servise Hazır";
+  if (status === "partially_paid") return "Kısmi Ödeme";
   if (status === "paid") return "Kapandi";
   return status;
 }
@@ -53,7 +53,7 @@ export default async function MobileOpsPage() {
     {
       title: "Mutfak Gecikme",
       value: ops.delayedKitchenOrders,
-      description: `${ops.criticalKitchenOrders} kritik siparis`,
+      description: `${ops.criticalKitchenOrders} kritik sipariş`,
       href: "/m/kitchen",
       cta: "Mutfaga Git",
       tone: toneClass(ops.delayedKitchenOrders, true),
@@ -75,9 +75,9 @@ export default async function MobileOpsPage() {
       tone: toneClass(ops.openServiceRequests),
     },
     {
-      title: "Masa Akisi",
+      title: "Masa Akışı",
       value: metrics.occupiedTables,
-      description: `${metrics.emptyTables} bos masa hazir`,
+      description: `${metrics.emptyTables} boş masa hazır`,
       href: "/m/tables",
       cta: "Masalari Ac",
       tone: metrics.occupiedTables > metrics.emptyTables ? "m-tone-warning" : "m-tone-success",
@@ -85,7 +85,7 @@ export default async function MobileOpsPage() {
   ];
 
   const quickActions = [
-    { href: "/m/tables?flow=new-order", label: "Siparis Ac" },
+    { href: "/m/tables?flow=new-order", label: "Sipariş Ac" },
     { href: "/m/cashier", label: "Tahsilat" },
     { href: "/m/kitchen", label: "Mutfak" },
     { href: "/m/delivery", label: "Teslimat" },
@@ -98,7 +98,7 @@ export default async function MobileOpsPage() {
 
       {usingDemoData ? (
         <div className="m-card m-banner-warning">
-          Demo veri modu aktif. Mobil operasyon akislari deneme verisiyle calisiyor.
+          Demo veri modu aktif. Mobil operasyon akışları deneme verisiyle calisiyor.
         </div>
       ) : null}
 
@@ -109,9 +109,9 @@ export default async function MobileOpsPage() {
           <p className="m-muted">Canli tahsilat toplam net tutar</p>
         </article>
         <article className="m-card">
-          <p className="m-label">Acik Siparis</p>
+          <p className="m-label">Açık Sipariş</p>
           <p className="m-value">{metrics.openOrders}</p>
-          <p className="m-muted">Bekleyen + hazirlanan + servis hazir</p>
+          <p className="m-muted">Bekleyen + hazirlanan + servis hazır</p>
         </article>
       </section>
 
@@ -134,7 +134,7 @@ export default async function MobileOpsPage() {
       </section>
 
       <section className="m-card mt-3">
-        <p className="m-label">Hizli Baslat</p>
+        <p className="m-label">Hızlı Baslat</p>
         <div className="mt-2 grid grid-cols-2 gap-2">
           {quickActions.map((action) => (
             <Link key={action.href} href={action.href} className="m-btn-secondary inline-flex items-center justify-center">
@@ -148,11 +148,11 @@ export default async function MobileOpsPage() {
         <div className="flex items-center justify-between gap-3">
           <p className="m-label">Son Siparisler</p>
           <Link href="/m/tables" className="text-xs font-semibold text-slate-700">
-            Tumunu gor
+            Tumunu gör
           </Link>
         </div>
         {recentOrders.length === 0 ? (
-          <p className="m-muted mt-2">Son siparis kaydi bulunmuyor.</p>
+          <p className="m-muted mt-2">Son sipariş kaydı bulunmuyor.</p>
         ) : (
           <div className="mt-2 space-y-2">
             {recentOrders.slice(0, 8).map((order) => (

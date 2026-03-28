@@ -115,13 +115,13 @@ function checkRateLimit(request: NextRequest, correlationId: string) {
   if (pathname === "/auth/login" || pathname.startsWith("/auth/login/")) {
     const redirectUrl = request.nextUrl.clone();
     redirectUrl.pathname = "/login";
-    redirectUrl.searchParams.set("error", "Cok fazla giris denemesi. Lutfen 1 dakika bekleyip tekrar deneyin.");
+    redirectUrl.searchParams.set("error", "Çok fazla giriş denemesi. Lütfen 1 dakika bekleyip tekrar deneyin.");
     return withSecurityAndCorrelation(NextResponse.redirect(redirectUrl), correlationId);
   }
 
   return withSecurityAndCorrelation(
     NextResponse.json(
-      { ok: false, message: "Cok fazla istek gonderildi. Lutfen kisa bir sure sonra tekrar deneyin." },
+      { ok: false, message: "Çok fazla istek gönderildi. Lütfen kısa bir süre sonra tekrar deneyin." },
       { status: 429 },
     ),
     correlationId,

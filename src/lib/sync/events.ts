@@ -67,7 +67,7 @@ export async function listSyncEvents(input: {
     if (isMissingTableError(error.message, "ops_sync_events")) {
       return {
         ok: false as const,
-        error: "ops_sync_events tablosu bulunamadi. Migration calistirin.",
+        error: "ops_sync_events tablosu bulunamadi. Migration çalıştırın.",
         events: [] as SyncEvent[],
         nextCursor: String(cursor),
       };

@@ -51,7 +51,7 @@ export default async function SupportPlanRequestsPage({
           className="rounded-xl border border-slate-300 px-4 py-3 text-sm"
         />
         <select name="status" defaultValue={statusFilter || "all"} className="rounded-xl border border-slate-300 px-4 py-3 text-sm">
-          <option value="all">{translateUiText("Tum durumlar", locale)}</option>
+          <option value="all">{translateUiText("Tüm durumlar", locale)}</option>
           <option value="open">{translateUiText("Open", locale)}</option>
           <option value="approved">{translateUiText("Approved", locale)}</option>
           <option value="rejected">{translateUiText("Rejected", locale)}</option>
@@ -79,7 +79,7 @@ export default async function SupportPlanRequestsPage({
                 <option value="rejected">{translateUiText("Rejected", locale)}</option>
                 <option value="cancelled">{translateUiText("Cancelled", locale)}</option>
               </select>
-              <button type="submit" className="rounded-xl border border-slate-300 px-4 py-2 text-sm font-semibold text-slate-700">{translateUiText("Guncelle", locale)}</button>
+              <button type="submit" className="rounded-xl border border-slate-300 px-4 py-2 text-sm font-semibold text-slate-700">{translateUiText("Güncelle", locale)}</button>
             </form>
           </article>
         ))}

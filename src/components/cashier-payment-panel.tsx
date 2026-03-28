@@ -20,8 +20,8 @@ export function CashierPaymentPanel({
   requestKey,
   action,
   onSubmit,
-  submitIdleLabel = "Odeme Al",
-  submitPendingLabel = "Odeme Isleniyor...",
+  submitIdleLabel = "Ödeme Al",
+  submitPendingLabel = "Ödeme Isleniyor...",
   forcePending = false,
 }: {
   orderId: string;
@@ -146,7 +146,7 @@ export function CashierPaymentPanel({
           <div className="flex flex-col items-start justify-between gap-3 sm:flex-row sm:items-center">
             <div>
               <p className="text-xs font-bold uppercase tracking-[0.16em] text-slate-500">Esit Paylastir</p>
-              <p className="mt-1 text-sm text-slate-500">Tek dokunusta kisi basi tahsilat olustur.</p>
+              <p className="mt-1 text-sm text-slate-500">Tek dokunusta kisi basi tahsilat oluştur.</p>
             </div>
             <span className="rounded-full bg-[#fff2ee] px-3 py-1 text-xs font-semibold text-[#ff5a34]">Split Bill</span>
           </div>
@@ -172,7 +172,7 @@ export function CashierPaymentPanel({
         <div className="rounded-[20px] border border-slate-200 bg-white p-4">
           <div className="flex flex-col items-start justify-between gap-3 sm:flex-row sm:items-center">
             <div>
-              <p className="text-xs font-bold uppercase tracking-[0.16em] text-slate-500">Hizli Tutar</p>
+              <p className="text-xs font-bold uppercase tracking-[0.16em] text-slate-500">Hızlı Tutar</p>
               <p className="mt-1 text-sm text-slate-500">Kalan bakiyeden tek hamlede tutar sec.</p>
             </div>
             <span className="rounded-full bg-emerald-100 px-3 py-1 text-xs font-semibold text-emerald-700">
@@ -202,8 +202,8 @@ export function CashierPaymentPanel({
       <div className="rounded-[20px] border border-slate-200 bg-white p-4">
         <div className="flex flex-col items-start justify-between gap-3 sm:flex-row sm:items-center">
           <div>
-            <p className="text-xs font-bold uppercase tracking-[0.16em] text-slate-500">Urun Bazli Bol</p>
-            <p className="mt-1 text-sm text-slate-500">Bu odemeye dahil olacak urun miktarlarini sec.</p>
+            <p className="text-xs font-bold uppercase tracking-[0.16em] text-slate-500">Ürün Bazli Bol</p>
+            <p className="mt-1 text-sm text-slate-500">Bu odemeye dahil olacak ürün miktarlarini sec.</p>
           </div>
           <button
             type="button"
@@ -250,7 +250,7 @@ export function CashierPaymentPanel({
         <input type="hidden" name="method" value={method} />
 
         <div>
-          <p className="text-xs font-bold uppercase tracking-[0.16em] text-slate-500">Odeme Tipi</p>
+          <p className="text-xs font-bold uppercase tracking-[0.16em] text-slate-500">Ödeme Tipi</p>
           <div className="mt-2 grid gap-2 sm:grid-cols-3">
             {[
               ["cash", "Nakit"],
@@ -286,7 +286,7 @@ export function CashierPaymentPanel({
           <input
             value={note}
             onChange={(event) => setNote(event.target.value)}
-            placeholder="Odeme notu (opsiyonel)"
+            placeholder="Ödeme notu (opsiyonel)"
             className="rounded-2xl border border-slate-300 px-4 py-3 text-sm"
           />
         </div>
@@ -297,7 +297,7 @@ export function CashierPaymentPanel({
             <span className="font-semibold">{safeAmount.toFixed(2)} TL</span>
           </p>
           <p className="flex items-center justify-between text-emerald-800">
-            <span>Islem sonrasi kalan</span>
+            <span>İşlem sonrasi kalan</span>
             <span className="font-semibold">{remainingAfterPayment.toFixed(2)} TL</span>
           </p>
         </div>

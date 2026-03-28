@@ -23,7 +23,7 @@ export async function POST(request: Request) {
       body = (await request.json()) as Body;
     } catch {
       logApiEvent("warn", "table_requests.create.invalid_body", { correlationId });
-      return json({ ok: false, message: "Gecersiz istek govdesi." }, { status: 400 });
+      return json({ ok: false, message: "Geçersiz istek govdesi." }, { status: 400 });
     }
 
     if (!body.qrCodeIdentifier || !body.requestType) {
@@ -36,7 +36,7 @@ export async function POST(request: Request) {
         correlationId,
         requestType: body.requestType,
       });
-      return json({ ok: false, message: "Gecersiz talep tipi." }, { status: 400 });
+      return json({ ok: false, message: "Geçersiz talep tipi." }, { status: 400 });
     }
 
     const tokenCheck = verifyQrAccessToken({
@@ -50,7 +50,7 @@ export async function POST(request: Request) {
         return json({ ok: false, message: "QR API token ayari eksik." }, { status: 503 });
       }
       logApiEvent("warn", "table_requests.create.invalid_token", { correlationId });
-      return json({ ok: false, message: "QR API erisim token gecersiz." }, { status: 403 });
+      return json({ ok: false, message: "QR API erişim token geçersiz." }, { status: 403 });
     }
 
     const result = await createTableRequest({
@@ -62,7 +62,7 @@ export async function POST(request: Request) {
 
     if (!result.ok) {
       logApiEvent("error", "table_requests.create.failed", { correlationId });
-      return json({ ok: false, message: result.error ?? "Talep olusturulamadi." }, { status: 500 });
+      return json({ ok: false, message: result.error ?? "Talep oluşturulamadı." }, { status: 500 });
     }
 
     logApiEvent("info", "table_requests.create.success", {
@@ -76,6 +76,6 @@ export async function POST(request: Request) {
       correlationId,
       error: error instanceof Error ? error.message : "unknown",
     });
-    return json({ ok: false, message: "Talep olusturulurken beklenmeyen hata olustu." }, { status: 500 });
+    return json({ ok: false, message: "Talep oluşturulurken beklenmeyen hata oluştu." }, { status: 500 });
   }
 }

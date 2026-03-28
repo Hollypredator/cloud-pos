@@ -48,7 +48,7 @@ export default async function AdminStockPage() {
             <thead>
               <tr className="border-b border-slate-200 text-slate-500">
                 <th className="py-2">{translateUiText("Tarih", locale)}</th>
-                <th className="py-2">{translateUiText("Urun", locale)}</th>
+                <th className="py-2">{translateUiText("Ürün", locale)}</th>
                 <th className="py-2">{translateUiText("Degisim", locale)}</th>
                 <th className="py-2">{translateUiText("Onceki", locale)}</th>
                 <th className="py-2">{translateUiText("Yeni", locale)}</th>
@@ -77,7 +77,7 @@ export default async function AdminStockPage() {
               {movements.length === 0 ? (
                 <tr>
                   <td colSpan={6} className="py-6 text-center text-slate-500">
-                    {translateUiText("Kayit bulunamadi.", locale)}
+                    {translateUiText("Kayıt bulunamadi.", locale)}
                   </td>
                 </tr>
               ) : null}

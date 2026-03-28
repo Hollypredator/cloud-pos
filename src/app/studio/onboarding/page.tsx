@@ -12,7 +12,7 @@ export default async function AdminOnboardingPage() {
       <main className="mx-auto w-full max-w-6xl space-y-6">
         <header>
           <p className="text-sm text-slate-500">Studio Wizard</p>
-          <h1 className="text-3xl font-semibold text-slate-900">Musteri kurulum akisi</h1>
+          <h1 className="text-3xl font-semibold text-slate-900">Müşteri kurulum akışı</h1>
         </header>
 
         <section className="rounded-2xl bg-slate-900 p-6 text-white shadow-sm">
@@ -27,7 +27,7 @@ export default async function AdminOnboardingPage() {
               <div className="flex items-center justify-between gap-3">
                 <div>
                   <p className="text-sm font-semibold text-slate-900">{item.title}</p>
-                  <p className="mt-2 text-sm text-slate-600">{item.done ? "Hazir" : "Eksik"}</p>
+                  <p className="mt-2 text-sm text-slate-600">{item.done ? "Hazır" : "Eksik"}</p>
                 </div>
                 <Link href={item.href} className="rounded-xl bg-slate-900 px-4 py-2 text-sm font-semibold text-white">
                   Ac

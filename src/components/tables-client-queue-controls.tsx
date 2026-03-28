@@ -87,8 +87,8 @@ export function TableStatusQueueButton({
   const successMessage = useMemo(
     () =>
       nextStatus === "reserved"
-        ? "Masa rezerveye alindi."
-        : "Masa tekrar bos duruma alindi.",
+        ? "Masa rezerveye alındı."
+        : "Masa tekrar boş duruma alındı.",
     [nextStatus],
   );
 
@@ -106,7 +106,7 @@ export function TableStatusQueueButton({
       router.refresh();
     } else if (lastResult.status === "CONFLICT" || lastResult.status === "REJECT") {
       router.replace(
-        feedbackHref("error", lastResult.message ?? "Masa durumu guncellenemedi.", returnStatusFilter),
+        feedbackHref("error", lastResult.message ?? "Masa durumu güncellenemedi.", returnStatusFilter),
         { scroll: false },
       );
       router.refresh();
@@ -138,7 +138,7 @@ export function TableStatusQueueButton({
 
     setTrackedCommandId(queued.commandId);
 
-    router.replace(feedbackHref("success", "Masa islemi kuyruga alindi.", returnStatusFilter), { scroll: false });
+    router.replace(feedbackHref("success", "Masa işlemi kuyruga alındı.", returnStatusFilter), { scroll: false });
     void flushPosCommandQueue({
       onResolved: () => router.refresh(),
     });

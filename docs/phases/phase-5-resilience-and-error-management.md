@@ -1,26 +1,26 @@
-# Faz 5 - Dayaniklilik ve Hata Yonetimi
+# Faz 5 - Dayanıklılık ve Hata Yönetimi
 
 Durum: `completed`  
-Baslangic tarihi: `2026-03-11`  
-Hedef bitis: `1 hafta`
+Başlangıç tarihi: `2026-03-11`  
+Hedef bitiş: `1 hafta`
 
 ## Hedef
-- Retry/timeout/race/duplicate hatalarinda yarim kalmis islem riskini dusurmek.
-- Siparis durumunu odeme kayitlariyla tutarli tutmak.
+- Retry/timeout/race/duplicate hatalarinda yarim kalmis işlem riskini dusurmek.
+- Sipariş durumunu ödeme kayitlariyla tutarlı tutmak.
 
-## P0 Gorevleri
-1. Kritik odeme mutasyonlarinda retry stratejisi
-2. Odeme kaydi sonrasi durumun DB ozetinden yeniden hesaplanmasi
-3. Runtime siparis-durum tutarlilik kontrolu
+## P0 Görevleri
+1. Kritik ödeme mutasyonlarinda retry stratejisi
+2. Ödeme kaydı sonrası durumun DB ozetinden yeniden hesaplanmasi
+3. Runtime sipariş-durum tutarlılık kontrolü
 
-## Bu Fazda Yapilanlar
+## Bu Fazda Yapılanlar
 - [x] Retryable mutation yardimcilari eklendi (`retryMutation`, `isRetryableMutationError`).
-- [x] `completeOrderPayment` odeme sonrasi net tutari DB'den tekrar okuyup status hesaplayacak sekilde guncellendi.
-- [x] `refundOrder` odeme sonrasi net tutari DB'den tekrar okuyup status hesaplayacak sekilde guncellendi.
-- [x] `cancelOrder` update/table bosaltma adimlari retry stratejisine baglandi.
-- [x] Durum uzlasmazliginda operasyonel alert kaydi eklendi (`payment_status_reconcile_failed`).
+- [x] `completeOrderPayment` ödeme sonrası net tutarı DB'den tekrar okuyup status hesaplayacak şekilde güncellendi.
+- [x] `refundOrder` ödeme sonrası net tutarı DB'den tekrar okuyup status hesaplayacak şekilde güncellendi.
+- [x] `cancelOrder` update/table bosaltma adımları retry stratejisine baglandi.
+- [x] Durum uzlasmazliginda operasyonel alert kaydı eklendi (`payment_status_reconcile_failed`).
 - [x] Faz 5 runtime consistency scripti eklendi: `npm run phase5:consistency`.
 
-## Acik Kalanlar
+## Açık Kalanlar
 - [x] CI entegrasyonu (env varsa phase5 runtime check calissin)
-- [x] `payment_status_reconcile_failed` icin support runbook adimi
+- [x] `payment_status_reconcile_failed` için support runbook adimi

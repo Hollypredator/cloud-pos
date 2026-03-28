@@ -16,7 +16,7 @@ export async function POST(request: Request) {
   try {
     body = (await request.json()) as Body;
   } catch {
-    return NextResponse.json({ ok: false, message: "Gecersiz istek govdesi." }, { status: 400 });
+    return NextResponse.json({ ok: false, message: "Geçersiz istek govdesi." }, { status: 400 });
   }
 
   if (!body.slug) {

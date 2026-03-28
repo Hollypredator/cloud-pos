@@ -9,39 +9,39 @@ export default async function AdminOnboardingPage() {
 
   const steps = [
     {
-      title: "Isletme ayarlarini tamamla",
-      description: "Marka, iletisim ve paket ayarlarini netlestir.",
+      title: "İşletme ayarlarini tamamla",
+      description: "Marka, iletişim ve paket ayarlarini netlestir.",
       done: counts.businesses > 0,
       href: "/admin/settings",
       cta: "Ayarlari ac",
     },
     {
-      title: "Sube ve salon yapisini kur",
-      description: "Subeleri, masalari ve QR akislarini hazirla.",
+      title: "Şube ve salon yapisini kur",
+      description: "Subeleri, masalari ve QR akislarini hazırla.",
       done: counts.tables > 0,
       href: "/admin/tables",
       cta: "Masalari ac",
     },
     {
-      title: "Urun katalugunu doldur",
-      description: "Kategori, urun, modifier ve fiyatlari gir.",
+      title: "Ürün katalugunu doldur",
+      description: "Kategori, ürün, modifier ve fiyatlari gir.",
       done: counts.products > 0,
       href: "/admin/products",
       cta: "Urunleri ac",
     },
     {
       title: "Ekibi tanimla",
-      description: "Personel hesaplari, roller ve sube erisimlerini ata.",
+      description: "Personel hesaplari, roller ve şube erisimlerini ata.",
       done: counts.staff >= 2,
       href: "/admin/roles",
       cta: "Personeli ac",
     },
     {
       title: "Ilk operasyon testini yap",
-      description: "Siparis, mutfak, kasa ve teslimat akislarini dene.",
+      description: "Sipariş, mutfak, kasa ve teslimat akislarini dene.",
       done: false,
       href: "/admin/orders",
-      cta: "Siparis gir",
+      cta: "Sipariş gir",
     },
   ];
 
@@ -50,7 +50,7 @@ export default async function AdminOnboardingPage() {
   return (
     <BackofficePage
       title="Kurulum Merkezi"
-      description="Ilk kez kuruluyorsa tum temel operasyon adimlarini tek yerden tamamla."
+      description="Ilk kez kuruluyorsa tüm temel operasyon adimlarini tek yerden tamamla."
       actions={
         <Link href="/ops" className="w-full rounded-2xl border border-slate-200 bg-white px-5 py-3 text-center text-sm font-semibold text-slate-800 sm:w-auto">
           Operasyona Don
@@ -65,16 +65,16 @@ export default async function AdminOnboardingPage() {
         <SummaryCard label="Kurulum Ilerlemesi" value={`${completed}/${steps.length}`} hint="Tamamlanan setup adimi" tone="accent" />
         <SummaryCard label="Urunler" value={String(counts.products)} hint="Katalog hazirligi" />
         <SummaryCard label="Masalar" value={String(counts.tables)} hint="Salon kurulumu" tone="success" />
-        <SummaryCard label="Personel" value={String(counts.staff)} hint="Hazir ekip sayisi" />
+        <SummaryCard label="Personel" value={String(counts.staff)} hint="Hazır ekip sayısı" />
       </section>
 
       <WorkflowGuide
         title="Kurulum 3 Faz"
-        description="Kurulum bir teknik proje gibi degil, acilisa hazirlik akisi gibi ilerlemeli."
+        description="Kurulum bir teknik proje gibi değil, acilisa hazirlik akışı gibi ilerlemeli."
         steps={[
-          { title: "Yapiyi kur", description: "Isletme, sube ve masa yapisini once netlestir." },
+          { title: "Yapiyi kur", description: "İşletme, şube ve masa yapisini önce netlestir." },
           { title: "Operasyonu tanimla", description: "Urunler, personel ve teslimat akislarini ekle." },
-          { title: "Canli prova yap", description: "Siparis al, mutfaga dusur, kasada kapat ve raporda kontrol et." },
+          { title: "Canli prova yap", description: "Sipariş al, mutfaga dusur, kasada kapat ve raporda kontrol et." },
         ]}
       />
 
@@ -83,7 +83,7 @@ export default async function AdminOnboardingPage() {
           <ContentCard key={step.title} title={step.title}>
             <div className="space-y-4">
               <span className={`inline-flex rounded-full px-3 py-1 text-xs font-semibold ${step.done ? "bg-emerald-100 text-emerald-700" : "bg-amber-100 text-amber-800"}`}>
-                {step.done ? "Hazir" : "Eksik"}
+                {step.done ? "Hazır" : "Eksik"}
               </span>
               <p className="text-sm leading-7 text-slate-600">{step.description}</p>
               <Link href={step.href} className="inline-flex rounded-2xl bg-slate-900 px-4 py-3 text-sm font-semibold text-white">

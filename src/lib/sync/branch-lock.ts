@@ -54,7 +54,7 @@ export async function getBranchLockState(branchId: string): Promise<LockResult> 
 
   if (error) {
     if (isMissingTableError(error.message)) {
-      return { ok: false, error: "Sync lock tablosu bulunamadi. Migration calistirin." };
+      return { ok: false, error: "Sync lock tablosu bulunamadi. Migration çalıştırın." };
     }
     return { ok: false, error: error.message };
   }
@@ -112,7 +112,7 @@ export async function acquireBranchLock(input: {
     .maybeSingle();
 
   if (write.error && isMissingTableError(write.error.message)) {
-    return { ok: false, error: "Sync lock tablosu bulunamadi. Migration calistirin." };
+    return { ok: false, error: "Sync lock tablosu bulunamadi. Migration çalıştırın." };
   }
 
   if (write.error) {
@@ -121,7 +121,7 @@ export async function acquireBranchLock(input: {
 
   const state = mapRow((write.data ?? null) as Record<string, unknown> | null);
   if (!state) {
-    return { ok: false, error: "Branch lock kaydi olusturulamadi." };
+    return { ok: false, error: "Branch lock kaydı oluşturulamadı." };
   }
 
   return { ok: true, state };
@@ -172,7 +172,7 @@ export async function renewBranchLock(input: {
 
   if (error) {
     if (isMissingTableError(error.message)) {
-      return { ok: false, error: "Sync lock tablosu bulunamadi. Migration calistirin." };
+      return { ok: false, error: "Sync lock tablosu bulunamadi. Migration çalıştırın." };
     }
     return { ok: false, error: error.message };
   }
@@ -225,7 +225,7 @@ export async function releaseBranchLock(input: {
 
   if (error) {
     if (isMissingTableError(error.message)) {
-      return { ok: false, error: "Sync lock tablosu bulunamadi. Migration calistirin." };
+      return { ok: false, error: "Sync lock tablosu bulunamadi. Migration çalıştırın." };
     }
     return { ok: false, error: error.message };
   }
@@ -245,13 +245,13 @@ export function validateLockForDevice(input: {
     return { ok: false, error: "Branch lock bulunamadi." };
   }
   if (input.state.status !== "active") {
-    return { ok: false, error: "Branch lock aktif degil." };
+    return { ok: false, error: "Branch lock aktif değil." };
   }
   if (new Date(input.state.expires_at).valueOf() <= Date.now()) {
-    return { ok: false, error: "Branch lock suresi doldu." };
+    return { ok: false, error: "Branch lock süresi doldu." };
   }
   if (input.state.device_id !== input.deviceId || input.state.lock_token !== input.lockToken) {
-    return { ok: false, error: "Branch lock cihaza ait degil." };
+    return { ok: false, error: "Branch lock cihaza ait değil." };
   }
   return { ok: true };
 }

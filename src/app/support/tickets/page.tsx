@@ -76,14 +76,14 @@ export default async function SupportTicketsPage({
           className="rounded-xl border border-slate-300 px-4 py-3 text-sm"
         />
         <select name="status" defaultValue={statusFilter || "all"} className="rounded-xl border border-slate-300 px-4 py-3 text-sm">
-          <option value="all">{translateUiText("Tum durumlar", locale)}</option>
+          <option value="all">{translateUiText("Tüm durumlar", locale)}</option>
           <option value="open">Open</option>
           <option value="in_progress">In Progress</option>
           <option value="resolved">Resolved</option>
           <option value="closed">Closed</option>
         </select>
         <select name="type" defaultValue={typeFilter || "all"} className="rounded-xl border border-slate-300 px-4 py-3 text-sm">
-          <option value="all">{translateUiText("Tum tipler", locale)}</option>
+          <option value="all">{translateUiText("Tüm tipler", locale)}</option>
           <option value="support">Support</option>
           <option value="plan_change">Plan Change</option>
           <option value="billing">Billing</option>
@@ -91,7 +91,7 @@ export default async function SupportTicketsPage({
           <option value="incident">Incident</option>
         </select>
         <select name="queue" defaultValue={queueFilter || "all"} className="rounded-xl border border-slate-300 px-4 py-3 text-sm">
-          <option value="all">{translateUiText("Tum kuyruklar", locale)}</option>
+          <option value="all">{translateUiText("Tüm kuyruklar", locale)}</option>
           <option value="mine">{translateUiText("Benim ticketlarim", locale)}</option>
           <option value="breached">{translateUiText("SLA ihlali", locale)}</option>
           <option value="urgent">{translateUiText("Acil kuyruk", locale)}</option>
@@ -147,7 +147,7 @@ export default async function SupportTicketsPage({
                   <option value="resolved">Resolved</option>
                   <option value="closed">Closed</option>
                 </select>
-                <button type="submit" className="rounded-xl border border-slate-300 px-4 py-2 text-sm font-semibold text-slate-700">{translateUiText("Guncelle", locale)}</button>
+                <button type="submit" className="rounded-xl border border-slate-300 px-4 py-2 text-sm font-semibold text-slate-700">{translateUiText("Güncelle", locale)}</button>
               </form>
             </div>
           </article>

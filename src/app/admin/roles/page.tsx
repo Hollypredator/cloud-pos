@@ -100,7 +100,7 @@ async function assignAuthUserAction(formData: FormData) {
   }
 
   if (!roles.includes(role as AppRole)) {
-    redirect(feedbackHref("error", "Secilen rol gecersiz."));
+    redirect(feedbackHref("error", "Secilen rol geçersiz."));
   }
 
   const result = await assignExistingAuthUserToBusiness({
@@ -150,11 +150,11 @@ async function updateStaffAction(formData: FormData) {
     password: typeof password === "string" ? password : undefined,
   });
   if (!result.ok) {
-    redirect(feedbackHref("error", result.error ?? "Personel guncellenemedi.", profileId));
+    redirect(feedbackHref("error", result.error ?? "Personel güncellenemedi.", profileId));
   }
 
   revalidatePath("/admin/roles");
-  redirect(feedbackHref("success", "Personel bilgileri guncellendi.", profileId));
+  redirect(feedbackHref("success", "Personel bilgileri güncellendi.", profileId));
 }
 
 async function deleteStaffAction(formData: FormData) {
@@ -184,7 +184,7 @@ function roleLabel(role: AppRole) {
 }
 
 function scopeLabel(scope?: StaffAccessScope) {
-  return scope === "business" ? "Tum Subeler" : "Tek Sube";
+  return scope === "business" ? "Tüm Subeler" : "Tek Şube";
 }
 
 export default async function AdminRolesPage({
@@ -202,7 +202,7 @@ export default async function AdminRolesPage({
     await Promise.allSettled([profilesPromise, branchesPromise]);
     logServerPerf("/admin/roles", [featureAccessResult]);
     return (
-      <BackofficePage title="Personel" description="Ekip ve rol yonetimi">
+      <BackofficePage title="Personel" description="Ekip ve rol yönetimi">
         <FeatureLockedState
           title={featureAccess.title}
           description={featureAccess.description}
@@ -222,7 +222,7 @@ export default async function AdminRolesPage({
     [profilesResult, branchesResult] = await Promise.all([profilesPromise, branchesPromise]);
   } catch (error) {
     console.error("[admin/roles] data fetch failed", error);
-    fetchFeedback = "Personel verileri gecici olarak yuklenemedi. Lutfen sayfayi yenileyin.";
+    fetchFeedback = "Personel verileri gecici olarak yuklenemedi. Lütfen sayfayi yenileyin.";
     fetchFeedbackTone = "error";
     profilesResult = {
       label: "list_profiles",
@@ -260,7 +260,7 @@ export default async function AdminRolesPage({
       title="Ekip ve Roller"
       description="Personeli ekle, gorev rolunu belirle ve vardiya dagilimini netlestir."
       sidebar={
-        <SidebarPanel title="Ekip Ozet" description="Aktif kadroyu operasyon rollerine gore dengele.">
+        <SidebarPanel title="Ekip Özet" description="Aktif kadroyu operasyon rollerine göre dengele.">
           <div className="rounded-[24px] bg-gradient-to-br from-slate-900 via-slate-800 to-slate-700 p-5 text-white">
             <p className="text-xs font-bold uppercase tracking-[0.18em] text-slate-300">Toplam Personel</p>
             <p className="mt-4 text-3xl font-semibold tracking-tight sm:text-4xl">{staffProfiles.length}</p>
@@ -276,7 +276,7 @@ export default async function AdminRolesPage({
             </div>
           </div>
           <div className="rounded-[24px] border border-slate-200 bg-slate-50 px-4 py-4 text-sm text-slate-600">
-            Bu ekranda sadece isletme personeli yonetilir. Demo ekip, sunum akisi ve platform notlari gosterilmez.
+            Bu ekranda sadece işletme personeli yönetilir. Demo ekip, sunum akışı ve platform notlari gosterilmez.
           </div>
         </SidebarPanel>
       }
@@ -301,19 +301,19 @@ export default async function AdminRolesPage({
       ) : null}
 
       <section className="grid gap-4 xl:grid-cols-4">
-        <SummaryCard label="Patron" value={String(roleCounts.owner)} hint="Tum subeler" tone="accent" />
-        <SummaryCard label="Yonetici" value={String(roleCounts.admin)} hint="Atanmis sube" />
+        <SummaryCard label="Patron" value={String(roleCounts.owner)} hint="Tüm şubeler" tone="accent" />
+        <SummaryCard label="Yonetici" value={String(roleCounts.admin)} hint="Atanmis şube" />
         <SummaryCard label="Kasa" value={String(roleCounts.cashier)} hint="Tahsilat ve gun sonu" />
         <SummaryCard label="Mutfak" value={String(roleCounts.kitchen)} hint="Hazirlama kuyrugu" tone="danger" />
       </section>
 
       <WorkflowGuide
         title="Personeli 3 Adimda Hazirla"
-        description="Yeni biri sisteme eklendiginde ekip yapisi hizla kurulabilsin."
+        description="Yeni biri sisteme eklendiginde ekip yapısı hizla kurulabilsin."
         steps={[
-          { title: "Yeni kullaniciyi ekle", description: "Ad soyad, e-posta ve gecici sifre ile personel hesabini olustur." },
-          { title: "Dogru rolu sec", description: "Patron tum subeleri, yonetici ise atanmis subeyi yonetsin." },
-          { title: "Listeden kontrol et", description: "Olusan personeli listeden dogrula ve gerekirse rolu hemen guncelle." },
+          { title: "Yeni kullaniciyi ekle", description: "Ad soyad, e-posta ve gecici sifre ile personel hesabini oluştur." },
+          { title: "Dogru rolu sec", description: "Patron tüm subeleri, yönetici ise atanmış şubeyi yönetsin." },
+          { title: "Listeden kontrol et", description: "Olusan personeli listeden doğrula ve gerekirse rolu hemen güncelle." },
         ]}
       />
 
@@ -330,7 +330,7 @@ export default async function AdminRolesPage({
               type="email"
               name="email"
               required
-              placeholder="personel@isletme.com"
+              placeholder="personel@işletme.com"
               className="rounded-2xl border border-slate-200 bg-slate-50 px-4 py-3 text-sm"
             />
             <input
@@ -349,8 +349,8 @@ export default async function AdminRolesPage({
               ))}
             </select>
             <select name="accessScope" defaultValue="branch" className="rounded-2xl border border-slate-200 bg-slate-50 px-4 py-3 text-sm">
-              <option value="branch">Tek Sube Erisimi</option>
-              <option value="business">Tum Subeler (yalnizca patron)</option>
+              <option value="branch">Tek Şube Erisimi</option>
+              <option value="business">Tüm Subeler (yalnızca patron)</option>
             </select>
             <select name="branchId" defaultValue={branches[0]?.id ?? ""} className="rounded-2xl border border-slate-200 bg-slate-50 px-4 py-3 text-sm">
               {branches.map((branch) => (
@@ -360,7 +360,7 @@ export default async function AdminRolesPage({
               ))}
             </select>
             <button type="submit" className="rounded-2xl bg-gradient-to-r from-[#ff5a34] to-[#f0b14f] px-4 py-3 text-sm font-semibold text-white">
-              Personel Olustur
+              Personel Oluştur
             </button>
           </form>
         </ContentCard>
@@ -387,8 +387,8 @@ export default async function AdminRolesPage({
               ))}
             </select>
             <select name="accessScope" defaultValue="branch" className="rounded-2xl border border-slate-200 bg-slate-50 px-4 py-3 text-sm">
-              <option value="branch">Tek Sube Erisimi</option>
-              <option value="business">Tum Subeler (yalnizca patron)</option>
+              <option value="branch">Tek Şube Erisimi</option>
+              <option value="business">Tüm Subeler (yalnızca patron)</option>
             </select>
             <select name="branchId" defaultValue={branches[0]?.id ?? ""} className="rounded-2xl border border-slate-200 bg-slate-50 px-4 py-3 text-sm">
               {branches.map((branch) => (
@@ -414,7 +414,7 @@ export default async function AdminRolesPage({
                 <article key={profile.id} className="rounded-[22px] border border-slate-200 bg-slate-50 p-4">
                   <div className="flex flex-wrap items-start justify-between gap-3">
                     <div>
-                      <p className="text-lg font-semibold text-slate-900">{profile.full_name ?? "Isimsiz kullanici"}</p>
+                      <p className="text-lg font-semibold text-slate-900">{profile.full_name ?? "Isimsiz kullanıcı"}</p>
                       <p className="mt-1 text-sm text-slate-500">{profile.email ?? "E-posta bilgisi yok"}</p>
                       <p className="mt-2 text-xs font-semibold uppercase tracking-[0.16em] text-slate-400">
                         {scopeLabel(profile.access_scope)}
@@ -437,7 +437,7 @@ export default async function AdminRolesPage({
                       ))}
                     </select>
                     <button type="submit" className="w-full rounded-xl bg-slate-900 px-4 py-2 text-sm font-semibold text-white sm:w-auto">
-                      Rol Guncelle
+                      Rol Güncelle
                     </button>
                     <Link href={`/admin/roles?staff=${profile.id}`} className="w-full rounded-xl border border-slate-200 bg-white px-4 py-2 text-center text-sm font-semibold text-slate-700 sm:w-auto">
                       Yonet
@@ -455,8 +455,8 @@ export default async function AdminRolesPage({
           <div className="panel-surface h-[100dvh] w-full max-w-4xl overflow-auto rounded-none p-4 sm:max-h-[92vh] sm:h-auto sm:rounded-[32px] sm:p-6">
             <div className="mb-5 flex flex-wrap items-start justify-between gap-4 border-b border-slate-200 pb-5">
               <div>
-                <p className="text-xs font-bold uppercase tracking-[0.16em] text-slate-500">Personel Yonetimi</p>
-                <h2 className="font-display mt-2 text-2xl font-semibold tracking-tight text-slate-900 sm:text-3xl">{selectedStaff.full_name ?? "Isimsiz kullanici"}</h2>
+                <p className="text-xs font-bold uppercase tracking-[0.16em] text-slate-500">Personel Yönetimi</p>
+                <h2 className="font-display mt-2 text-2xl font-semibold tracking-tight text-slate-900 sm:text-3xl">{selectedStaff.full_name ?? "Isimsiz kullanıcı"}</h2>
                 <p className="mt-1 text-sm text-slate-500">{selectedStaff.email ?? "E-posta bilgisi yok"}</p>
               </div>
               <Link href="/admin/roles" className="rounded-2xl border border-slate-200 bg-white px-4 py-3 text-sm font-semibold text-slate-700">
@@ -480,13 +480,13 @@ export default async function AdminRolesPage({
                     name="email"
                     defaultValue={selectedStaff.email ?? ""}
                     required
-                    placeholder="personel@isletme.com"
+                    placeholder="personel@işletme.com"
                     className="rounded-2xl border border-slate-200 bg-slate-50 px-4 py-3 text-sm"
                   />
                   <input
                     type="password"
                     name="password"
-                    placeholder="Yeni sifre (bos birakilabilir)"
+                    placeholder="Yeni sifre (boş birakilabilir)"
                     className="rounded-2xl border border-slate-200 bg-slate-50 px-4 py-3 text-sm"
                   />
                   <select name="role" defaultValue={selectedStaff.role} className="rounded-2xl border border-slate-200 bg-slate-50 px-4 py-3 text-sm">
@@ -501,8 +501,8 @@ export default async function AdminRolesPage({
                     defaultValue={selectedStaff.access_scope ?? (selectedStaff.role === "owner" ? "business" : "branch")}
                     className="rounded-2xl border border-slate-200 bg-slate-50 px-4 py-3 text-sm"
                   >
-                    <option value="branch">Tek Sube Erisimi</option>
-                    <option value="business">Tum Subeler (yalnizca patron)</option>
+                    <option value="branch">Tek Şube Erisimi</option>
+                    <option value="business">Tüm Subeler (yalnızca patron)</option>
                   </select>
                   <select
                     name="branchId"
@@ -524,7 +524,7 @@ export default async function AdminRolesPage({
               <ContentCard title="Personeli Kaldir">
                 <div className="space-y-4">
                   <div className="rounded-[22px] border border-slate-200 bg-slate-50 p-4 text-sm text-slate-600">
-                    Personel silinince giris hesabi da kaldirilir. Son patron hesap silinemez.
+                    Personel silinince giriş hesabi da kaldirilir. Son patron hesap silinemez.
                   </div>
                   <form action={deleteStaffAction}>
                     <input type="hidden" name="profileId" value={selectedStaff.id} />

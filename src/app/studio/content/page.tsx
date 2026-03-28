@@ -65,7 +65,7 @@ async function createSitePageAction(formData: FormData) {
   const pageTitle = readValue(formData, "pageTitle", "Yeni Sayfa");
   const result = await createSitePage({ slug, pageTitle });
   if (!result.ok || !result.slug) {
-    redirect(`/studio/content?error=${encodeURIComponent(result.error ?? "Sayfa olusturulamadi.")}`);
+    redirect(`/studio/content?error=${encodeURIComponent(result.error ?? "Sayfa oluşturulamadı.")}`);
   }
 
   revalidatePath("/");
@@ -241,7 +241,7 @@ export default async function AdminContentPage({
             <div>
               <p className="text-xs font-semibold uppercase tracking-[0.24em] text-slate-500">Sayfa Islemeleri</p>
               <p className="mt-1 text-sm text-slate-600">
-                {activePage.path} icin builder icerigini yonetiyorsun. Test sayfalari icin bos bir canvas gerekiyorsa buradan sifirlayabilirsin.
+                {activePage.path} için builder icerigini yonetiyorsun. Test sayfalari için boş bir canvas gerekiyorsa buradan sifirlayabilirsin.
               </p>
             </div>
             <div className="flex flex-wrap gap-3">

@@ -16,7 +16,7 @@ export async function GET(request: Request) {
     if (tokenCheck.reason === "misconfigured") {
       return NextResponse.json({ ok: false, message: "QR API token ayari eksik." }, { status: 503 });
     }
-    return NextResponse.json({ ok: false, message: "QR API erisim token gecersiz." }, { status: 403 });
+    return NextResponse.json({ ok: false, message: "QR API erişim token geçersiz." }, { status: 403 });
   }
 
   const table = await getTableByQr(qrCodeIdentifier, businessSlug);

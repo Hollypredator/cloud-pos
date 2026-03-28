@@ -38,7 +38,7 @@ export async function POST(request: Request) {
     try {
       body = (await request.json()) as LockRequestBody;
     } catch {
-      return json({ ok: false, message: "Gecersiz istek govdesi." }, { status: 400 });
+      return json({ ok: false, message: "Geçersiz istek govdesi." }, { status: 400 });
     }
 
     const action = (body.action ?? "state") as LockAction;
@@ -53,7 +53,7 @@ export async function POST(request: Request) {
     }
 
     if (!canAccessBranch({ actor: actor.value, branchId })) {
-      return json({ ok: false, message: "Bu sube icin lock yetkiniz yok." }, { status: 403 });
+      return json({ ok: false, message: "Bu şube için lock yetkiniz yok." }, { status: 403 });
     }
 
     if (action === "state") {
@@ -93,7 +93,7 @@ export async function POST(request: Request) {
 
     if (action === "renew") {
       if (!lockToken) {
-        return json({ ok: false, message: "renew icin lock_token zorunlu." }, { status: 400 });
+        return json({ ok: false, message: "renew için lock_token zorunlu." }, { status: 400 });
       }
       const result = await renewBranchLock({
         branchId,
@@ -117,7 +117,7 @@ export async function POST(request: Request) {
 
     if (action === "release") {
       if (!lockToken) {
-        return json({ ok: false, message: "release icin lock_token zorunlu." }, { status: 400 });
+        return json({ ok: false, message: "release için lock_token zorunlu." }, { status: 400 });
       }
 
       const result = await releaseBranchLock({
@@ -146,6 +146,6 @@ export async function POST(request: Request) {
       correlationId,
       error: message,
     });
-    return json({ ok: false, message: "Lock islemi sirasinda beklenmeyen hata olustu." }, { status: 500 });
+    return json({ ok: false, message: "Lock işlemi sırasında beklenmeyen hata oluştu." }, { status: 500 });
   }
 }

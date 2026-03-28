@@ -2,58 +2,58 @@
 
 ## Slide 1 - Baslik
 - Cloud POS
-- Kafe/Restoran operasyonu icin yeni nesil POS platformu
-- QR siparis + operasyon paneli + finans kontrolu
+- Kafe/Restoran operasyonu için yeni nesil POS platformu
+- QR sipariş + operasyon paneli + finans kontrolü
 
 ## Slide 2 - Problem
-- Siparis, mutfak, kasa ve servis akislari daginik
+- Sipariş, mutfak, kasa ve servis akışları dağınık
 - Kanal cogaldikca operasyon karmasasi artiyor
-- Rapor ve mutabakat manuel takipte hataya acik
+- Rapor ve mutabakat manuel takipte hataya açık
 
-## Slide 3 - Cozum
-- Tek panelde siparisten tahsilata uc uca akisi yonetiyoruz
-- Rol bazli ekranlar ile ekipler sadece kendi akisina odaklaniyor
+## Slide 3 - Çözüm
+- Tek panelde siparisten tahsilata uç uca akışı yönetiyoruz
+- Rol bazlı ekranlar ile ekipler sadece kendi akisina odaklaniyor
 - Finans ve operasyon metrikleri merkezi izleniyor
 
-## Slide 4 - Bugun Hazir Olan Urun
-- QR masa siparis
-- Mutfak kuyrugu
-- Kasa ve odeme islemleri (POS'suz/manual)
-- Servis talep yonetimi
+## Slide 4 - Bugün Hazır Olan Ürün
+- QR masa sipariş
+- Mutfak kuyruğu
+- Kasa ve ödeme işlemleri (POS'suz/manual)
+- Servis talep yönetimi
 - Raporlama ve audit
-- Coklu sube ve rol yetkileri
+- Coklu şube ve rol yetkileri
 
-## Slide 5 - Guvenlik ve Dayaniklilik
+## Slide 5 - Güvenlik ve Dayanıklılık
 - Tenant/branch isolation
 - Rate limiting + security headers
-- Idempotent odeme yapisi
-- Retry ve tutarlilik kontrolleri
+- Idempotent ödeme yapisi
+- Retry ve tutarlılık kontrolleri
 - Correlation id ile izlenebilirlik
 
-## Slide 6 - Ticari Kullanim Durumu
-- Mevcut haliyle manuel POS kullanan isletmeler icin uygun
+## Slide 6 - Ticari Kullanım Durumu
+- Mevcut haliyle manuel POS kullanan isletmeler için uygun
 - Faz 1-8 engineering tamam
 - Operasyonel izleme ve alert otomasyonu aktif tasarlandi
 
-## Slide 7 - Sonraki Buyume: Faz 9-12
+## Slide 7 - Sonraki Büyüme: Faz 9-12
 - Faz 9: Fiziksel POS cihaz entegrasyonu
 - Faz 10: Trendyol Yemek + Yemeksepeti entegrasyonu
 - Faz 11: e-Fatura/e-Arsiv
-- Faz 12: Kurumsal SLA, DR ve olcekleme
+- Faz 12: Kurumsal SLA, DR ve ölçekleme
 
 ## Slide 8 - Pazar Yeri Entegrasyon Vizyonu
-- Tek panelden tum kanal siparislerinin yonetimi
+- Tek panelden tum kanal siparislerinin yönetimi
 - Menu/fiyat/stok senkronizasyonu
 - Kanal komisyonu ve net kar takibi
-- Siparis durumlarinin cift yonlu senkronu
+- Sipariş durumlarının çift yönlü senkronu
 
 ## Slide 9 - Is Modeli
 - Kurulum + lisans bedeli
-- Aylik bakim/SLA
-- Entegrasyon bazli ek paketler
-- Sube/kanal artisina bagli upsell modeli
+- Aylık bakım/SLA
+- Entegrasyon bazlı ek paketler
+- Şube/kanal artışına bağlı upsell modeli
 
-## Slide 10 - Kapanis
-- Hedef: POS yazilimi degil, tam operasyon platformu
+## Slide 10 - Kapanış
+- Hedef: POS yazılımı değil, tam operasyon platformu
 - Yol haritasi net: manuel POS'tan tam entegre ekosisteme
-- Bir sonraki adim: Faz 9 kapsam/fiyat onayi ile baslangic
+- Bir sonraki adım: Faz 9 kapsam/fiyat onayı ile başlangıç

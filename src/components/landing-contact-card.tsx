@@ -12,8 +12,8 @@ export function LandingContactCard({
   leadStatus,
   supportEmail,
   eyebrow = "Demo Talebi",
-  title = "Isletmeniz icin uygun kurulumu birlikte planlayalim",
-  body = "Bilgilerinizi birakin. Isterseniz WhatsApp veya telefon uzerinden de dogrudan bize ulasabilirsiniz.",
+  title = "Isletmeniz için uygun kurulumu birlikte planlayalim",
+  body = "Bilgilerinizi birakin. Isterseniz WhatsApp veya telefon uzerinden de doğrudan bize ulasabilirsiniz.",
   previewMode = false,
   locale = "tr",
 }: {
@@ -49,10 +49,10 @@ export function LandingContactCard({
               `Branch count: ${branchCount || "-"}`,
             ].join("\n")
           : [
-              "Merhaba, Cloud POS icin bilgi ve demo talep etmek istiyorum.",
-              `Isletme: ${companyName || "-"}`,
+              "Merhaba, Cloud POS için bilgi ve demo talep etmek istiyorum.",
+              `İşletme: ${companyName || "-"}`,
               `Yetkili: ${contactName || "-"}`,
-              `Sube sayisi: ${branchCount || "-"}`,
+              `Şube sayısı: ${branchCount || "-"}`,
             ].join("\n");
 
     if (!phone) {

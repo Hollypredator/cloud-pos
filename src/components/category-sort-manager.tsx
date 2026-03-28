@@ -74,7 +74,7 @@ export function CategorySortManager({
                   <span className="mt-1 text-slate-400">::</span>
                   <div>
                     <p className="text-xl font-semibold text-slate-900">{category.name}</p>
-                    <p className="mt-1 text-sm text-slate-500">{category.productCount} urun</p>
+                    <p className="mt-1 text-sm text-slate-500">{category.productCount} ürün</p>
                     <p className="mt-1 text-xs font-semibold uppercase tracking-[0.12em] text-slate-400">
                       {(category.prep_station === "bar" ? "Bar" : category.prep_station === "dessert" ? "Tatli" : "Mutfak")} Istasyonu
                     </p>
@@ -96,7 +96,7 @@ export function CategorySortManager({
             </form>
             <div className="mt-4 flex items-center justify-between gap-3">
               <p className="text-xs font-medium uppercase tracking-[0.14em] text-slate-400">
-                {isPending ? "Sira guncelleniyor..." : "Surukle birak ile yer degistir"}
+                {isPending ? "Sira guncelleniyor..." : "Sürükle bırak ile yer degistir"}
               </p>
               <form action={onDelete}>
                 <input type="hidden" name="categoryId" value={category.id} />

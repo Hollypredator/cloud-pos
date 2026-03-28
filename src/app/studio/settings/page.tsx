@@ -56,7 +56,7 @@ async function sendSmtpTestAction(formData: FormData) {
   const recipient = readString(formData, "testRecipient");
   const result = await sendSmtpTestEmail(recipient);
   if (!result.ok) {
-    redirect(`/studio/settings?mail=error&detail=${encodeURIComponent(result.error ?? "Mail gonderimi basarisiz.")}`);
+    redirect(`/studio/settings?mail=error&detail=${encodeURIComponent(result.error ?? "Mail gonderimi başarısız.")}`);
   }
   redirect("/studio/settings?mail=success");
 }
@@ -145,7 +145,7 @@ export default async function AdminSettingsPage({
 
         {mailStatus === "success" ? (
           <p className="rounded-lg bg-emerald-100 px-3 py-2 text-sm text-emerald-900">
-            Test maili basariyla gonderildi. Gelen kutusu ve spam klasorunu kontrol et.
+            Test maili basariyla gönderildi. Gelen kutusu ve spam klasorunu kontrol et.
           </p>
         ) : null}
         {mailStatus === "error" ? (
@@ -156,10 +156,10 @@ export default async function AdminSettingsPage({
 
         <section className="grid gap-4 lg:grid-cols-[1fr_1fr]">
           <article className="rounded-2xl bg-slate-900 p-6 text-white shadow-sm">
-            <p className="text-xs uppercase tracking-[0.28em] text-slate-400">WordPress Benzeri Yapi</p>
-            <h2 className="mt-3 text-3xl font-semibold">Marka ve iletisim ayarlarini koddan ayir</h2>
+            <p className="text-xs uppercase tracking-[0.28em] text-slate-400">WordPress Benzeri Yapı</p>
+            <h2 className="mt-3 text-3xl font-semibold">Marka ve iletişim ayarlarini koddan ayir</h2>
             <p className="mt-3 text-sm leading-7 text-slate-300">
-              Bu ekran logo, telefon, e-posta, footer notu ve SMTP gonderici ayarlarini panelden yonetmek icin var.
+              Bu ekran logo, telefon, e-posta, footer notu ve SMTP gonderici ayarlarini panelden yonetmek için var.
             </p>
           </article>
 
@@ -171,10 +171,10 @@ export default async function AdminSettingsPage({
                   smtpReady ? "bg-emerald-100 text-emerald-700" : "bg-amber-100 text-amber-800"
                 }`}
               >
-                {smtpReady ? "Hazir" : "Eksik"}
+                {smtpReady ? "Hazır" : "Eksik"}
               </span>
               <p className="text-sm text-slate-600">
-                {smtpReady ? "Lead bildirimleri ve test e-postasi gonderilebilir." : "Host, kullanici veya sifre eksik."}
+                {smtpReady ? "Lead bildirimleri ve test e-postasi gonderilebilir." : "Host, kullanıcı veya sifre eksik."}
               </p>
             </div>
           </article>
@@ -213,10 +213,10 @@ export default async function AdminSettingsPage({
                   <Field label="Port" name="port" defaultValue={smtpSettings.port} type="number" />
                   <label className="flex items-center gap-3 rounded-xl border border-slate-300 px-4 py-3 text-sm text-slate-700">
                     <input type="checkbox" name="secure" defaultChecked={smtpSettings.secure} />
-                    TLS/SSL secure baglanti
+                    TLS/SSL secure bağlantı
                   </label>
                 </div>
-                <Field label="Kullanici adi" name="username" defaultValue={smtpSettings.username} />
+                <Field label="Kullanıcı adi" name="username" defaultValue={smtpSettings.username} />
                 <Field label="Sifre" name="password" defaultValue={smtpSettings.password} type="password" />
                 <Field label="From e-posta" name="fromEmail" defaultValue={smtpSettings.fromEmail} type="email" />
                 <Field label="From ad" name="fromName" defaultValue={smtpSettings.fromName} />
@@ -238,7 +238,7 @@ export default async function AdminSettingsPage({
             <form action={sendSmtpTestAction} className="rounded-2xl bg-white p-6 shadow-sm">
               <h2 className="text-xl font-semibold text-slate-900">Test E-postasi</h2>
               <p className="mt-3 text-sm leading-7 text-slate-600">
-                Ayarlari kaydettikten sonra test mesajini dogrudan bu panelden gonder.
+                Ayarlari kaydettikten sonra test mesajini doğrudan bu panelden gonder.
               </p>
               <div className="mt-5 grid gap-4">
                 <Field

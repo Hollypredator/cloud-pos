@@ -25,10 +25,10 @@ export default async function SupportOnboardingPage() {
               </div>
             </div>
             <div className="mt-4 grid gap-3 sm:grid-cols-4">
-              <div className="rounded-xl border border-slate-200 bg-slate-50 px-4 py-3 text-sm text-slate-700">Urun: {tenant.products}</div>
+              <div className="rounded-xl border border-slate-200 bg-slate-50 px-4 py-3 text-sm text-slate-700">Ürün: {tenant.products}</div>
               <div className="rounded-xl border border-slate-200 bg-slate-50 px-4 py-3 text-sm text-slate-700">Masa: {tenant.tables}</div>
               <div className="rounded-xl border border-slate-200 bg-slate-50 px-4 py-3 text-sm text-slate-700">Personel: {tenant.staff}</div>
-              <div className="rounded-xl border border-slate-200 bg-slate-50 px-4 py-3 text-sm text-slate-700">Sube: {tenant.branches}</div>
+              <div className="rounded-xl border border-slate-200 bg-slate-50 px-4 py-3 text-sm text-slate-700">Şube: {tenant.branches}</div>
             </div>
           </article>
         ))}

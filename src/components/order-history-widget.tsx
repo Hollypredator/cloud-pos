@@ -101,11 +101,11 @@ export function OrderHistoryWidget({
 
   return (
     <section className="rounded-2xl border border-slate-200 bg-white p-4">
-      <h2 className="text-sm font-semibold text-slate-900">Son Siparis Gecmisi</h2>
+      <h2 className="text-sm font-semibold text-slate-900">Son Sipariş Gecmisi</h2>
       {loading ? (
-        <p className="mt-2 text-sm text-slate-500">Gecmis yukleniyor...</p>
+        <p className="mt-2 text-sm text-slate-500">Geçmiş yukleniyor...</p>
       ) : orders.length === 0 ? (
-        <p className="mt-2 text-sm text-slate-500">Kayit bulunmuyor.</p>
+        <p className="mt-2 text-sm text-slate-500">Kayıt bulunmuyor.</p>
       ) : (
         <ul className="mt-2 space-y-2">
           {orders.map((order) => (

@@ -66,8 +66,8 @@ export default async function SupportTenantDetailPage({
 
       <section className="grid gap-4 md:grid-cols-2 xl:grid-cols-6">
         <div className="rounded-2xl bg-white p-6 shadow-sm"><p className="text-xs uppercase tracking-[0.24em] text-slate-500">{translateUiText("Paket", locale)}</p><p className="mt-3 text-2xl font-semibold text-slate-900">{getPlanLabel(tenant.plan)}</p></div>
-        <div className="rounded-2xl bg-white p-6 shadow-sm"><p className="text-xs uppercase tracking-[0.24em] text-slate-500">{translateUiText("Sube", locale)}</p><p className="mt-3 text-2xl font-semibold text-slate-900">{tenant.branch_count}</p></div>
-        <div className="rounded-2xl bg-white p-6 shadow-sm"><p className="text-xs uppercase tracking-[0.24em] text-slate-500">{translateUiText("Acik Ticket", locale)}</p><p className="mt-3 text-2xl font-semibold text-slate-900">{tenant.open_ticket_count}</p></div>
+        <div className="rounded-2xl bg-white p-6 shadow-sm"><p className="text-xs uppercase tracking-[0.24em] text-slate-500">{translateUiText("Şube", locale)}</p><p className="mt-3 text-2xl font-semibold text-slate-900">{tenant.branch_count}</p></div>
+        <div className="rounded-2xl bg-white p-6 shadow-sm"><p className="text-xs uppercase tracking-[0.24em] text-slate-500">{translateUiText("Açık Ticket", locale)}</p><p className="mt-3 text-2xl font-semibold text-slate-900">{tenant.open_ticket_count}</p></div>
         <div className="rounded-2xl bg-white p-6 shadow-sm"><p className="text-xs uppercase tracking-[0.24em] text-slate-500">{translateUiText("Durum", locale)}</p><p className="mt-3 text-2xl font-semibold text-slate-900">{tenant.is_active ? translateUiText("Aktif", locale) : translateUiText("Pasif", locale)}</p></div>
         <div className="rounded-2xl bg-white p-6 shadow-sm"><p className="text-xs uppercase tracking-[0.24em] text-slate-500">{translateUiText("Lifecycle", locale)}</p><p className="mt-3 text-2xl font-semibold text-slate-900">{tenant.profile.lifecycle_stage}</p></div>
         <div className="rounded-2xl bg-white p-6 shadow-sm"><p className="text-xs uppercase tracking-[0.24em] text-slate-500">{translateUiText("Billing", locale)}</p><p className="mt-3 text-2xl font-semibold text-slate-900">{tenant.profile.billing_status}</p></div>
@@ -136,8 +136,8 @@ export default async function SupportTenantDetailPage({
           <article className="rounded-2xl bg-white p-6 shadow-sm">
             <p className="text-sm font-semibold text-slate-900">{translateUiText("Safe Diagnostics", locale)}</p>
             <div className="mt-4 space-y-2 text-sm text-slate-600">
-              <p>Son siparis: {tenant.diagnostics.last_order_at ? new Date(tenant.diagnostics.last_order_at).toLocaleString("tr-TR") : "-"}</p>
-              <p>Son odeme: {tenant.diagnostics.last_payment_at ? new Date(tenant.diagnostics.last_payment_at).toLocaleString("tr-TR") : "-"}</p>
+              <p>Son sipariş: {tenant.diagnostics.last_order_at ? new Date(tenant.diagnostics.last_order_at).toLocaleString("tr-TR") : "-"}</p>
+              <p>Son ödeme: {tenant.diagnostics.last_payment_at ? new Date(tenant.diagnostics.last_payment_at).toLocaleString("tr-TR") : "-"}</p>
               <p>Open incident: {tenant.diagnostics.open_incident_count}</p>
               <p>Feature override: {tenant.diagnostics.feature_flag_count}</p>
               <p>Open ticket: {tenant.diagnostics.open_ticket_count}</p>
@@ -146,7 +146,7 @@ export default async function SupportTenantDetailPage({
           <article className="rounded-2xl bg-white p-6 shadow-sm">
             <p className="text-sm font-semibold text-slate-900">{translateUiText("Sinirlar", locale)}</p>
             <p className="mt-4 text-sm text-slate-600">
-              Bu cockpit tenant metadata, lifecycle, billing, support ve feature governance icindir. Siparis satiri, musteri verisi ve odeme detay icerigi acilmaz.
+              Bu cockpit tenant metadata, lifecycle, billing, support ve feature governance icindir. Sipariş satiri, müşteri verisi ve ödeme detay icerigi acilmaz.
             </p>
           </article>
         </div>
@@ -166,16 +166,16 @@ export default async function SupportTenantDetailPage({
                     <div>
                       <p className="text-sm font-semibold text-slate-900">{meta.title}</p>
                       <p className="mt-1 text-xs text-slate-500">{meta.description}</p>
-                      <p className="mt-1 text-xs text-slate-400">{translateUiText("Plan default:", locale)} {hasFeature(tenant.plan, featureKey as FeatureKey) ? translateUiText("Acik", locale) : getPlanLabel(meta.requiredPlan)}</p>
+                      <p className="mt-1 text-xs text-slate-400">{translateUiText("Plan default:", locale)} {hasFeature(tenant.plan, featureKey as FeatureKey) ? translateUiText("Açık", locale) : getPlanLabel(meta.requiredPlan)}</p>
                     </div>
                     <select name="enabled" defaultValue={String(override?.enabled ?? hasFeature(tenant.plan, featureKey as FeatureKey))} className="rounded-lg border border-slate-300 px-3 py-2 text-sm">
-                      <option value="true">{translateUiText("Acik", locale)}</option>
+                      <option value="true">{translateUiText("Açık", locale)}</option>
                       <option value="false">{translateUiText("Kapali", locale)}</option>
                     </select>
                   </div>
                   <input name="note" defaultValue={override?.note ?? ""} placeholder={translateUiText("Override notu", locale)} className="mt-3 w-full rounded-lg border border-slate-300 px-3 py-2 text-sm" />
                   <div className="mt-3 flex justify-end">
-                    <button type="submit" className="rounded-lg border border-slate-300 px-4 py-2 text-sm font-semibold text-slate-700">{translateUiText("Flag Guncelle", locale)}</button>
+                    <button type="submit" className="rounded-lg border border-slate-300 px-4 py-2 text-sm font-semibold text-slate-700">{translateUiText("Flag Güncelle", locale)}</button>
                   </div>
                 </form>
               );
@@ -200,7 +200,7 @@ export default async function SupportTenantDetailPage({
             <div className="flex items-center justify-between gap-3">
               <p className="text-sm font-semibold text-slate-900">{translateUiText("Son Ticketlar", locale)}</p>
               <Link href={`/support/tickets?q=${encodeURIComponent(tenant.name)}`} className="text-xs font-semibold text-slate-500 hover:text-slate-900">
-                {translateUiText("Tumunu gor", locale)}
+                {translateUiText("Tumunu gör", locale)}
               </Link>
             </div>
             <div className="mt-4 space-y-3">
@@ -212,7 +212,7 @@ export default async function SupportTenantDetailPage({
               ))}
               {!(tenant.recent_tickets ?? []).length ? (
                 <div className="rounded-xl border border-dashed border-slate-200 bg-slate-50 px-4 py-3 text-sm text-slate-500">
-                  {translateUiText("Bu tenant icin support ticketi yok.", locale)}
+                  {translateUiText("Bu tenant için support ticketi yok.", locale)}
                 </div>
               ) : null}
             </div>

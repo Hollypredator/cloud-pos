@@ -31,7 +31,7 @@ export default async function SupportKnowledgePage() {
         <div className="grid gap-4 md:grid-cols-2">
           <input name="title" placeholder="Makale basligi" className="rounded-xl border border-slate-300 px-4 py-3 text-sm md:col-span-2" />
           <input name="category" placeholder="Kategori" className="rounded-xl border border-slate-300 px-4 py-3 text-sm" />
-          <input name="summary" placeholder="Kisa ozet" className="rounded-xl border border-slate-300 px-4 py-3 text-sm" />
+          <input name="summary" placeholder="Kisa özet" className="rounded-xl border border-slate-300 px-4 py-3 text-sm" />
           <textarea name="body" rows={5} placeholder="Makale icerigi" className="rounded-xl border border-slate-300 px-4 py-3 text-sm md:col-span-2" />
         </div>
         <div className="mt-4 flex justify-end">

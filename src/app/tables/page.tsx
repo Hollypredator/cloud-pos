@@ -40,11 +40,11 @@ function feedbackHref(tone: "success" | "error", message: string, filter: TableF
 function orderStatusLabel(status: string) {
   if (status === "pending") return "Bekliyor";
   if (status === "preparing") return "Hazirlaniyor";
-  if (status === "ready") return "Servise Hazir";
-  if (status === "served") return "Servise Hazir";
-  if (status === "partially_paid") return "Kismi Odeme";
+  if (status === "ready") return "Servise Hazır";
+  if (status === "served") return "Servise Hazır";
+  if (status === "partially_paid") return "Kısmi Ödeme";
   if (status === "paid") return "Kapandi";
-  if (status === "partially_refunded") return "Kismi Iade";
+  if (status === "partially_refunded") return "Kısmi Iade";
   if (status === "cancelled") return "Iptal";
   if (status === "refunded") return "Iade";
   return status;
@@ -71,7 +71,7 @@ async function setTableStatusAction(formData: FormData) {
   const returnFilter = parseTableFilter(String(formData.get("returnStatusFilter") ?? "").trim());
 
   if (!tableId || (nextStatus !== "empty" && nextStatus !== "reserved")) {
-    redirect(feedbackHref("error", "Masa durumu guncellenemedi.", returnFilter));
+    redirect(feedbackHref("error", "Masa durumu güncellenemedi.", returnFilter));
   }
 
   const result = await executeWebOpsCommand({
@@ -83,7 +83,7 @@ async function setTableStatusAction(formData: FormData) {
   });
 
   if (result.status !== "ACK") {
-    redirect(feedbackHref("error", result.message ?? "Masa durumu guncellenemedi.", returnFilter));
+    redirect(feedbackHref("error", result.message ?? "Masa durumu güncellenemedi.", returnFilter));
   }
 
   revalidatePath("/tables");
@@ -93,7 +93,7 @@ async function setTableStatusAction(formData: FormData) {
   redirect(
     feedbackHref(
       "success",
-      nextStatus === "reserved" ? "Masa rezerveye alindi." : "Masa tekrar bos duruma alindi.",
+      nextStatus === "reserved" ? "Masa rezerveye alındı." : "Masa tekrar boş duruma alındı.",
       returnFilter,
     ),
   );
@@ -158,28 +158,28 @@ export default async function TablesPage({
 
   return (
     <BackofficePage
-      title="Masa Takip ve Hizli Islem"
+      title="Masa Takip ve Hızlı İşlem"
       description="Masa durumlarini izle, adisyon ve servis akisina tek ekrandan gec"
       sidebar={
         <div className="space-y-5">
           <WorkflowGuide
-            title="Masa Akisi 3 Adim"
-            description="Servis ekibi masayi gorup dogru aksiyona hizli gecsin."
+            title="Masa Akışı 3 Adim"
+            description="Servis ekibi masayi gorup doğru aksiyona hızlı gecsin."
             steps={[
               { title: "Durumu kontrol et", description: "Bos, dolu ve rezerve masa dagilimini kartlardan anlik izle." },
-              { title: "Aksiyona gec", description: "Bos masada Siparis Ac, dolu masada adisyona veya mutfaga gec." },
-              { title: "Kuyrugu temizle", description: "Masa taleplerini kapat ve rezervasyonlari vardiya akisina gore guncelle." },
+              { title: "Aksiyona gec", description: "Bos masada Sipariş Ac, dolu masada adisyona veya mutfaga gec." },
+              { title: "Kuyrugu temizle", description: "Masa taleplerini kapat ve rezervasyonlari vardiya akisina göre güncelle." },
             ]}
           />
 
-          <SidebarPanel title="Hizli Gecis" description="Masa akisi disina cikmadan kritik ekranlara ulas.">
+          <SidebarPanel title="Hızlı Gecis" description="Masa akışı disina cikmadan kritik ekranlara ulas.">
             <div className="grid gap-3">
               <Link href="/ops" className="rounded-2xl bg-slate-100 px-4 py-4 text-sm font-semibold text-slate-800 transition hover:bg-slate-200">
                 Operasyon Merkezine Don
               </Link>
               {canOpenOrders ? (
                 <Link href="/admin/orders" className="rounded-2xl bg-slate-100 px-4 py-4 text-sm font-semibold text-slate-800 transition hover:bg-slate-200">
-                  Siparis Girisine Git
+                  Sipariş Girisine Git
                 </Link>
               ) : null}
               {canUseCashier ? (
@@ -201,7 +201,7 @@ export default async function TablesPage({
           <LiveOpsBridge tables={["tables", "orders", "table_requests"]} />
           {canManageTables ? (
             <Link href="/admin/tables" className="w-full rounded-2xl border border-slate-200 bg-white px-5 py-3 text-center text-sm font-semibold text-slate-800 sm:w-auto">
-              Masa Yonetimi
+              Masa Yönetimi
             </Link>
           ) : null}
           <Link href="/ops" className="w-full rounded-2xl border border-slate-200 bg-white px-5 py-3 text-center text-sm font-semibold text-slate-800 sm:w-auto">
@@ -213,7 +213,7 @@ export default async function TablesPage({
       {feedback ? (
         <NoticeBanner
           tone={tone === "error" ? "error" : "success"}
-          title={tone === "error" ? "Masa islemi tamamlanamadi" : "Masa islemi tamamlandi"}
+          title={tone === "error" ? "Masa işlemi tamamlanamadi" : "Masa işlemi tamamlandı"}
           description={feedback}
         />
       ) : null}
@@ -227,7 +227,7 @@ export default async function TablesPage({
       <QuerySnapshotSeed queryKey={posQueryKeys.tablesSnapshot} data={tablesSnapshotSeed} />
 
       <MobileTaskList>
-        <MobileTaskCard title="Masa Oncelik Akisi" subtitle="Tek dokunusla masa operasyonu">
+        <MobileTaskCard title="Masa Öncelik Akışı" subtitle="Tek dokunuşla masa operasyonu">
           <div className="grid grid-cols-3 gap-2">
             <div className="rounded-xl bg-emerald-50 px-2 py-2 text-center">
               <p className="text-[10px] font-semibold uppercase tracking-[0.12em] text-emerald-700">Bos</p>
@@ -246,16 +246,16 @@ export default async function TablesPage({
 
         <MobileStickySegment
           items={[
-            { href: filterHref("all"), label: "Tum", active: activeFilter === "all" },
+            { href: filterHref("all"), label: "Tüm", active: activeFilter === "all" },
             { href: filterHref("empty"), label: "Bos", active: activeFilter === "empty" },
             { href: filterHref("occupied"), label: "Dolu", active: activeFilter === "occupied" },
             { href: filterHref("reserved"), label: "Rezerve", active: activeFilter === "reserved" },
           ]}
         />
 
-        <MobileTaskCard title="Anlik Ozet">
+        <MobileTaskCard title="Anlik Özet">
           <div className="flex items-center justify-between rounded-xl bg-slate-100 px-3 py-2 text-sm">
-            <span className="text-slate-600">Acik adisyon</span>
+            <span className="text-slate-600">Açık adisyon</span>
             <span className="font-semibold text-slate-900">{openOrderCount}</span>
           </div>
         </MobileTaskCard>
@@ -268,7 +268,7 @@ export default async function TablesPage({
           filteredTables.map((table) => {
             const latestOrder = ordersByTableId.get(table.id);
             const requestCount = requestCountByTableId.get(table.id) ?? 0;
-            const zoneName = table.zone_id ? zoneNameById.get(table.zone_id) ?? "Bolge silinmis" : "Bolgesiz";
+            const zoneName = table.zone_id ? zoneNameById.get(table.zone_id) ?? "Bölge silinmis" : "Bolgesiz";
             const supervisor = supervisorByTableId.get(table.id);
             const hasOpenOrder = latestOrder ? isOpenOrderStatus(latestOrder.status) : false;
 
@@ -283,13 +283,13 @@ export default async function TablesPage({
                   />
                 </div>
                 <div className="mt-3 space-y-1 text-sm text-slate-600">
-                  <p>Bolge: <span className="font-semibold text-slate-900">{zoneName}</span></p>
+                  <p>Bölge: <span className="font-semibold text-slate-900">{zoneName}</span></p>
                   <p>Sorumlu: <span className="font-semibold text-slate-900">{supervisor?.full_name ?? "Atanmamis"}</span></p>
                 </div>
 
                 {latestOrder ? (
                   <div className="mt-3 rounded-xl border border-slate-200 bg-slate-50 px-3 py-3 text-sm">
-                    <p className="text-xs font-semibold uppercase tracking-[0.12em] text-slate-500">Acik Adisyon</p>
+                    <p className="text-xs font-semibold uppercase tracking-[0.12em] text-slate-500">Açık Adisyon</p>
                     <div className="mt-1 flex items-center justify-between">
                       <span className="font-semibold text-slate-900">#{orderRef(latestOrder)}</span>
                       <span className="rounded-full bg-white px-2.5 py-1 text-xs font-semibold text-slate-700">{orderStatusLabel(latestOrder.status)}</span>
@@ -300,13 +300,13 @@ export default async function TablesPage({
                   </div>
                 ) : (
                   <div className="mt-3 rounded-xl border border-dashed border-slate-200 bg-slate-50 px-3 py-3 text-sm text-slate-500">
-                    Bu masada acik adisyon yok.
+                    Bu masada açık adisyon yok.
                   </div>
                 )}
 
                 {requestCount > 0 ? (
                   <div className="mt-3 rounded-xl bg-amber-100 px-3 py-2 text-sm font-semibold text-amber-800">
-                    {requestCount} acik servis talebi var.
+                    {requestCount} açık servis talebi var.
                   </div>
                 ) : null}
 
@@ -316,7 +316,7 @@ export default async function TablesPage({
                       href={`/admin/orders?table=${encodeURIComponent(table.id)}`}
                       className="mobile-cta-primary inline-flex min-h-[46px] items-center justify-center px-4 py-3 text-sm font-semibold"
                     >
-                      {latestOrder && hasOpenOrder ? "Siparise Ekle" : "Siparis Ac"}
+                      {latestOrder && hasOpenOrder ? "Siparise Ekle" : "Sipariş Ac"}
                     </Link>
                   ) : null}
 
@@ -395,17 +395,17 @@ export default async function TablesPage({
       </MobileTaskList>
 
       <section className="app-mobile-hide grid gap-4 xl:grid-cols-5">
-        <SummaryCard label="Toplam Masa" value={String(sortedTables.length)} hint="Aktif sube masa adedi" tone="accent" />
-        <SummaryCard label="Bos Masa" value={String(emptyCount)} hint="Yeni servis icin hazir" tone="success" />
+        <SummaryCard label="Toplam Masa" value={String(sortedTables.length)} hint="Aktif şube masa adedi" tone="accent" />
+        <SummaryCard label="Bos Masa" value={String(emptyCount)} hint="Yeni servis için hazır" tone="success" />
         <SummaryCard label="Dolu Masa" value={String(occupiedCount)} hint="Aktif adisyon var" />
         <SummaryCard label="Rezerve Masa" value={String(reservedCount)} hint="Misafir bekleyen masa" />
-        <SummaryCard label="Acik Talep" value={openRequestCountLabel} hint={hasMoreOpenRequests ? "Ilk 200 talep gosteriliyor" : "Acik garson/hesap talepleri"} tone="danger" />
+        <SummaryCard label="Açık Talep" value={openRequestCountLabel} hint={hasMoreOpenRequests ? "Ilk 200 talep gosteriliyor" : "Açık garson/hesap talepleri"} tone="danger" />
       </section>
 
       <ContentCard title="Masa Filtreleri" className="app-mobile-hide mobile-sticky-filter-card">
         <div className="mobile-task-tabs flex flex-wrap gap-2">
           {([
-            { value: "all" as const, label: "Tum Masalar" },
+            { value: "all" as const, label: "Tüm Masalar" },
             { value: "empty" as const, label: "Bos" },
             { value: "occupied" as const, label: "Dolu" },
             { value: "reserved" as const, label: "Rezerve" },
@@ -424,7 +424,7 @@ export default async function TablesPage({
             </Link>
           ))}
           <span className="ml-auto rounded-2xl border border-slate-200 bg-white px-4 py-2 text-sm font-semibold text-slate-700 mobile-tone-neutral">
-            Acik adisyon: {openOrderCount}
+            Açık adisyon: {openOrderCount}
           </span>
         </div>
       </ContentCard>
@@ -437,7 +437,7 @@ export default async function TablesPage({
             {filteredTables.map((table) => {
               const latestOrder = ordersByTableId.get(table.id);
               const requestCount = requestCountByTableId.get(table.id) ?? 0;
-              const zoneName = table.zone_id ? zoneNameById.get(table.zone_id) ?? "Bolge silinmis" : "Bolgesiz";
+              const zoneName = table.zone_id ? zoneNameById.get(table.zone_id) ?? "Bölge silinmis" : "Bolgesiz";
               const supervisor = supervisorByTableId.get(table.id);
               const hasOpenOrder = latestOrder ? isOpenOrderStatus(latestOrder.status) : false;
 
@@ -456,14 +456,14 @@ export default async function TablesPage({
                   </div>
 
                   <div className="mt-3 space-y-1 text-sm text-slate-500">
-                    <p>Bolge: <span className="font-medium text-slate-700">{zoneName}</span></p>
+                    <p>Bölge: <span className="font-medium text-slate-700">{zoneName}</span></p>
                     <p>Sorumlu garson: <span className="font-medium text-slate-700">{supervisor?.full_name ?? "Atanmamis"}</span></p>
                     <p className="break-all">QR: <span className="font-medium text-slate-700">{table.qr_code_identifier}</span></p>
                   </div>
 
                   {latestOrder ? (
                     <div className="mt-4 rounded-2xl border border-slate-200 bg-slate-50 px-4 py-3">
-                      <p className="text-xs font-bold uppercase tracking-[0.16em] text-slate-500">Acik Adisyon</p>
+                      <p className="text-xs font-bold uppercase tracking-[0.16em] text-slate-500">Açık Adisyon</p>
                       <div className="mt-2 flex items-center justify-between gap-3">
                         <p className="text-sm font-semibold text-slate-900">#{orderRef(latestOrder)}</p>
                         <span className="rounded-full bg-white px-3 py-1 text-xs font-semibold text-slate-700">
@@ -479,13 +479,13 @@ export default async function TablesPage({
                     </div>
                   ) : (
                     <div className="mt-4 rounded-2xl border border-dashed border-slate-200 bg-slate-50 px-4 py-3 text-sm text-slate-500">
-                      Bu masada acik adisyon yok.
+                      Bu masada açık adisyon yok.
                     </div>
                   )}
 
                   {requestCount > 0 ? (
                     <div className="mt-3 rounded-2xl bg-amber-100 px-4 py-3 text-sm font-semibold text-amber-800">
-                      Bu masada {requestCount} acik servis talebi var.
+                      Bu masada {requestCount} açık servis talebi var.
                     </div>
                   ) : null}
 
@@ -495,7 +495,7 @@ export default async function TablesPage({
                         href={`/admin/orders?table=${encodeURIComponent(table.id)}`}
                         className="inline-flex min-h-11 items-center justify-center rounded-2xl bg-gradient-to-r from-[#ff6a3d] to-[#f2b44f] px-4 py-3 text-center text-sm font-semibold text-white"
                       >
-                        {latestOrder && hasOpenOrder ? "Siparise Ekle" : "Siparis Ac"}
+                        {latestOrder && hasOpenOrder ? "Siparise Ekle" : "Sipariş Ac"}
                       </Link>
                     ) : null}
 

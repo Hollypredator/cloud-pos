@@ -20,16 +20,16 @@ async function createBranchAction(formData: FormData) {
   const name = formData.get("name");
   const slug = formData.get("slug");
   if (typeof name !== "string" || typeof slug !== "string") {
-    redirect(feedbackHref("error", "Sube bilgileri eksik."));
+    redirect(feedbackHref("error", "Şube bilgileri eksik."));
   }
 
   const result = await createBranch({ name, slug });
   if (!result.ok) {
-    redirect(feedbackHref("error", result.error ?? "Sube olusturulamadi."));
+    redirect(feedbackHref("error", result.error ?? "Şube oluşturulamadı."));
   }
 
   revalidatePath("/admin/businesses");
-  redirect(feedbackHref("success", "Yeni sube olusturuldu.", result.id));
+  redirect(feedbackHref("success", "Yeni şube oluşturuldu.", result.id));
 }
 
 async function updateBranchAction(formData: FormData) {
@@ -40,16 +40,16 @@ async function updateBranchAction(formData: FormData) {
   const name = formData.get("name");
   const slug = formData.get("slug");
   if (typeof branchId !== "string" || typeof name !== "string" || typeof slug !== "string") {
-    redirect(feedbackHref("error", "Guncellenecek sube bulunamadi."));
+    redirect(feedbackHref("error", "Guncellenecek şube bulunamadi."));
   }
 
   const result = await updateBranch({ branchId, name, slug });
   if (!result.ok) {
-    redirect(feedbackHref("error", result.error ?? "Sube guncellenemedi.", branchId));
+    redirect(feedbackHref("error", result.error ?? "Şube güncellenemedi.", branchId));
   }
 
   revalidatePath("/admin/businesses");
-  redirect(feedbackHref("success", "Sube bilgileri guncellendi.", branchId));
+  redirect(feedbackHref("success", "Şube bilgileri güncellendi.", branchId));
 }
 
 async function toggleBranchAction(formData: FormData) {
@@ -59,16 +59,16 @@ async function toggleBranchAction(formData: FormData) {
   const branchId = formData.get("branchId");
   const isActive = formData.get("isActive") === "true";
   if (typeof branchId !== "string") {
-    redirect(feedbackHref("error", "Sube bulunamadi."));
+    redirect(feedbackHref("error", "Şube bulunamadi."));
   }
 
   const result = await setBranchActiveStatus({ branchId, isActive });
   if (!result.ok) {
-    redirect(feedbackHref("error", result.error ?? "Sube durumu guncellenemedi.", branchId));
+    redirect(feedbackHref("error", result.error ?? "Şube durumu güncellenemedi.", branchId));
   }
 
   revalidatePath("/admin/businesses");
-  redirect(feedbackHref("success", isActive ? "Sube aktif edildi." : "Sube pasife alindi.", branchId));
+  redirect(feedbackHref("success", isActive ? "Şube aktif edildi." : "Şube pasife alındı.", branchId));
 }
 
 async function deleteBranchAction(formData: FormData) {
@@ -77,16 +77,16 @@ async function deleteBranchAction(formData: FormData) {
 
   const branchId = formData.get("branchId");
   if (typeof branchId !== "string") {
-    redirect(feedbackHref("error", "Silinecek sube bulunamadi."));
+    redirect(feedbackHref("error", "Silinecek şube bulunamadi."));
   }
 
   const result = await deleteBranch(branchId);
   if (!result.ok) {
-    redirect(feedbackHref("error", result.error ?? "Sube silinemedi.", branchId));
+    redirect(feedbackHref("error", result.error ?? "Şube silinemedi.", branchId));
   }
 
   revalidatePath("/admin/businesses");
-  redirect(feedbackHref("success", "Sube silindi."));
+  redirect(feedbackHref("success", "Şube silindi."));
 }
 
 type BranchParams = {
@@ -111,7 +111,7 @@ export default async function AdminBusinessesPage({
   if (!featureAccess.enabled) {
     logServerPerf("/admin/businesses", [authContextResult, featureAccessResult]);
     return (
-      <BackofficePage title="Subeler" description="Coklu sube ve merkezden yonetim">
+      <BackofficePage title="Subeler" description="Coklu şube ve merkezden yönetim">
         <FeatureLockedState
           title={featureAccess.title}
           description={featureAccess.description}
@@ -131,12 +131,12 @@ export default async function AdminBusinessesPage({
 
   return (
     <BackofficePage
-      title="Sube Yonetimi"
+      title="Şube Yönetimi"
       description="Sublere ayrilan operasyonlari merkezden duzenle ve aktif/pasif durumunu yonet."
       sidebar={
-        <SidebarPanel title="Sube Ozet" description="Coklu sube kullaniminda aktif yapinin dengeli kalmasini sagla.">
+        <SidebarPanel title="Şube Özet" description="Coklu şube kullaniminda aktif yapinin dengeli kalmasini sagla.">
           <div className="rounded-[24px] bg-gradient-to-br from-slate-900 via-slate-800 to-slate-700 p-5 text-white">
-            <p className="text-xs font-bold uppercase tracking-[0.18em] text-slate-300">Toplam Sube</p>
+            <p className="text-xs font-bold uppercase tracking-[0.18em] text-slate-300">Toplam Şube</p>
             <p className="mt-4 text-3xl font-semibold tracking-tight sm:text-4xl">{branches.length}</p>
             <div className="mt-5 grid gap-3 sm:grid-cols-2">
               <div className="rounded-2xl bg-white/10 p-3">
@@ -152,9 +152,9 @@ export default async function AdminBusinessesPage({
           <WorkflowGuide
             title="Subeyi 3 Adimda Hazirla"
             steps={[
-              { title: "Sube kaydini ac", description: "Ad ve slug ile yeni subeyi olustur." },
+              { title: "Şube kaydini ac", description: "Ad ve slug ile yeni şubeyi oluştur." },
               { title: "Durumunu belirle", description: "Kullanilmiyorsa pasif yap, operasyon aciksa aktif tut." },
-              { title: "Operasyonu ayir", description: "Masalar, siparisler ve vardiyalar secili subede calisir." },
+              { title: "Operasyonu ayir", description: "Masalar, siparişler ve vardiyalar secili subede çalışır." },
             ]}
           />
         </SidebarPanel>
@@ -168,35 +168,35 @@ export default async function AdminBusinessesPage({
       {feedback ? (
         <NoticeBanner
           tone={tone === "error" ? "error" : "success"}
-          title={tone === "error" ? "Sube islemi tamamlanamadi" : "Sube islemi tamamlandi"}
+          title={tone === "error" ? "Şube işlemi tamamlanamadi" : "Şube işlemi tamamlandı"}
           description={feedback}
         />
       ) : null}
 
       {usingDemoData ? (
-        <NoticeBanner tone="warning" title="Demo mod aktif" description="Sube listesi ornek veriyle gosteriliyor." />
+        <NoticeBanner tone="warning" title="Demo mod aktif" description="Şube listesi ornek veriyle gosteriliyor." />
       ) : null}
 
       <section className="grid gap-4 xl:grid-cols-3">
-        <SummaryCard label="Toplam Sube" value={String(branches.length)} hint="Bu isletmede tanimli sube sayisi" tone="accent" />
-        <SummaryCard label="Aktif Sube" value={String(activeCount)} hint="Operasyonda kullanilan subeler" tone="success" />
-        <SummaryCard label="Secili Sube" value={branches.find((branch) => branch.id === activeBranchId)?.name ?? "-"} hint="Shell uzerindeki aktif operasyon subesi" />
+        <SummaryCard label="Toplam Şube" value={String(branches.length)} hint="Bu işletmede tanimli şube sayısı" tone="accent" />
+        <SummaryCard label="Aktif Şube" value={String(activeCount)} hint="Operasyonda kullanilan şubeler" tone="success" />
+        <SummaryCard label="Secili Şube" value={branches.find((branch) => branch.id === activeBranchId)?.name ?? "-"} hint="Shell uzerindeki aktif operasyon subesi" />
       </section>
 
       <section className="grid gap-5 xl:grid-cols-[0.9fr_1.1fr]">
-        <ContentCard title="Yeni Sube Ekle">
+        <ContentCard title="Yeni Şube Ekle">
           <form action={createBranchAction} className="grid gap-3">
-            <input name="name" required placeholder="Sube adi" className="rounded-2xl border border-slate-200 bg-slate-50 px-4 py-3 text-sm" />
-            <input name="slug" required placeholder="sube-slug" className="rounded-2xl border border-slate-200 bg-slate-50 px-4 py-3 text-sm" />
+            <input name="name" required placeholder="Şube adi" className="rounded-2xl border border-slate-200 bg-slate-50 px-4 py-3 text-sm" />
+            <input name="slug" required placeholder="şube-slug" className="rounded-2xl border border-slate-200 bg-slate-50 px-4 py-3 text-sm" />
             <button type="submit" className="rounded-2xl bg-gradient-to-r from-[#ff5a34] to-[#f0b14f] px-4 py-3 text-sm font-semibold text-white">
-              Sube Olustur
+              Şube Oluştur
             </button>
           </form>
         </ContentCard>
 
-        <ContentCard title="Sube Listesi">
+        <ContentCard title="Şube Listesi">
           {branches.length === 0 ? (
-            <EmptyPanel title="Sube yok" description="Ilk subeyi ekledikten sonra operasyon ayrimi burada baslar." />
+            <EmptyPanel title="Şube yok" description="Ilk şubeyi ekledikten sonra operasyon ayrimi burada baslar." />
           ) : (
             <div className="space-y-3">
               {branches.map((branch) => (
@@ -239,7 +239,7 @@ export default async function AdminBusinessesPage({
           <div className="panel-surface h-[100dvh] w-full max-w-3xl overflow-auto rounded-none p-4 sm:max-h-[92vh] sm:h-auto sm:rounded-[32px] sm:p-6">
             <div className="mb-5 flex flex-wrap items-start justify-between gap-4 border-b border-slate-200 pb-5">
               <div>
-                <p className="text-xs font-bold uppercase tracking-[0.16em] text-slate-500">Sube Yonetimi</p>
+                <p className="text-xs font-bold uppercase tracking-[0.16em] text-slate-500">Şube Yönetimi</p>
                 <h2 className="font-display mt-2 text-2xl font-semibold tracking-tight text-slate-900 sm:text-3xl">{selectedBranch.name}</h2>
                 <p className="mt-1 text-sm text-slate-500">Slug: /{selectedBranch.slug}</p>
               </div>
@@ -249,13 +249,13 @@ export default async function AdminBusinessesPage({
             </div>
 
             <div className="grid gap-5 xl:grid-cols-[1fr_0.9fr]">
-              <ContentCard title="Sube Bilgileri">
+              <ContentCard title="Şube Bilgileri">
                 <form action={updateBranchAction} className="grid gap-3">
                   <input type="hidden" name="branchId" value={selectedBranch.id} />
                   <input name="name" defaultValue={selectedBranch.name} required className="rounded-2xl border border-slate-200 bg-slate-50 px-4 py-3 text-sm" />
                   <input name="slug" defaultValue={selectedBranch.slug} required className="rounded-2xl border border-slate-200 bg-slate-50 px-4 py-3 text-sm" />
                   <button type="submit" className="rounded-2xl bg-slate-900 px-4 py-3 text-sm font-semibold text-white">
-                    Sube Bilgilerini Kaydet
+                    Şube Bilgilerini Kaydet
                   </button>
                 </form>
               </ContentCard>
@@ -263,7 +263,7 @@ export default async function AdminBusinessesPage({
               <ContentCard title="Subeyi Kaldir">
                 <div className="space-y-4">
                   <div className="rounded-[22px] border border-slate-200 bg-slate-50 p-4 text-sm text-slate-600">
-                    Sube silinmeden once bu subeye bagli masa, siparis ve kurye kayitlari temizlenmis olmalidir.
+                    Şube silinmeden önce bu subeye bağlı masa, sipariş ve kurye kayıtları temizlenmis olmalidir.
                   </div>
                   <form action={deleteBranchAction}>
                     <input type="hidden" name="branchId" value={selectedBranch.id} />

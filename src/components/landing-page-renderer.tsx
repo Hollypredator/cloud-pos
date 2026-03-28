@@ -65,7 +65,7 @@ type LandingHeaderCopy = {
 function getLandingHeaderCopy(locale: AppLocale): LandingHeaderCopy {
   if (locale === "fr") {
     return {
-      menuLabel: "Menu",
+      menuLabel: "Menü",
       solutionsLabel: "Solutions Produits",
       requestDemoLabel: "Demander une Demo",
       nav: {
@@ -95,7 +95,7 @@ function getLandingHeaderCopy(locale: AppLocale): LandingHeaderCopy {
 
   if (locale === "en") {
     return {
-      menuLabel: "Menu",
+      menuLabel: "Menü",
       solutionsLabel: "Product Solutions",
       requestDemoLabel: "Request Demo",
       nav: {
@@ -124,21 +124,21 @@ function getLandingHeaderCopy(locale: AppLocale): LandingHeaderCopy {
   }
 
   return {
-    menuLabel: "Menu",
-    solutionsLabel: "Urun Cozumleri",
+    menuLabel: "Menü",
+    solutionsLabel: "Ürün Cozumleri",
     requestDemoLabel: "Demo Talep Et",
     nav: {
       posSystems: "POS Sistemleri",
-      orderSolutions: "Siparis Cozumleri",
-      businessSolutions: "Isletme Cozumleri",
+      orderSolutions: "Sipariş Cozumleri",
+      businessSolutions: "İşletme Cozumleri",
       corporate: "Kurumsal",
       pricing: "Fiyatlama",
     },
     tabs: {
       allInOnePos: "Cloud POS Core",
-      bossApp: "Yonetim Paneli",
-      staffManagement: "Personel Yonetimi",
-      qrOrdering: "QR ve Siparis",
+      bossApp: "Yönetim Paneli",
+      staffManagement: "Personel Yönetimi",
+      qrOrdering: "QR ve Sipariş",
       kioskSolutions: "Self-Servis",
     },
     stats: {
@@ -163,7 +163,7 @@ function getHeaderMegaMenus(locale: AppLocale): Partial<Record<HeaderNavKey, Hea
           { badge: "RS", title: "Restaurant", body: "Gestion de table, cuisine et service." },
           { badge: "DL", title: "Livraison", body: "Flux en salle et livraison sur le meme ecran." },
           { badge: "IN", title: "Integrations", body: "Connexions vers paiements et canaux externes." },
-          { badge: "QR", title: "QR Menu", body: "Consultation menu et demande de service par QR." },
+          { badge: "QR", title: "QR Menü", body: "Consultation menü et demande de service par QR." },
         ],
       },
       orders: {
@@ -171,7 +171,7 @@ function getHeaderMegaMenus(locale: AppLocale): Partial<Record<HeaderNavKey, Hea
         ctaLabel: "Voir les Flux de Commande",
         cards: [
           { badge: "MB", title: "Mobile POS", body: "Operation depuis tablette et mobile." },
-          { badge: "QR", title: "QR Menu", body: "Consultation menu et suivi de commande." },
+          { badge: "QR", title: "QR Menü", body: "Consultation menü et suivi de commande." },
           { badge: "WB", title: "Web", body: "Gestion operationnelle depuis navigateur." },
           { badge: "KS", title: "Kiosque", body: "Libre-service avec suggestion panier." },
         ],
@@ -199,7 +199,7 @@ function getHeaderMegaMenus(locale: AppLocale): Partial<Record<HeaderNavKey, Hea
           { badge: "RS", title: "Restaurant", body: "Table, kitchen, and service orchestration." },
           { badge: "DL", title: "Delivery", body: "In-store and delivery flow on one screen." },
           { badge: "IN", title: "Integrations", body: "Connections to payments and external channels." },
-          { badge: "QR", title: "QR Menu", body: "Menu browse and service request via QR." },
+          { badge: "QR", title: "QR Menü", body: "Menü browse and service request via QR." },
         ],
       },
       orders: {
@@ -207,7 +207,7 @@ function getHeaderMegaMenus(locale: AppLocale): Partial<Record<HeaderNavKey, Hea
         ctaLabel: "Explore Order Flows",
         cards: [
           { badge: "MB", title: "Mobile POS", body: "Operate from tablet and phone." },
-          { badge: "QR", title: "QR Menu", body: "Menu viewing and order status tracking." },
+          { badge: "QR", title: "QR Menü", body: "Menü viewing and order status tracking." },
           { badge: "WB", title: "Web Panel", body: "Operational control from browser." },
           { badge: "KS", title: "Kiosk", body: "Self-order flow with basket upsell." },
         ],
@@ -228,33 +228,33 @@ function getHeaderMegaMenus(locale: AppLocale): Partial<Record<HeaderNavKey, Hea
   return {
     pos: {
       title: "POS Sistemleri",
-      ctaLabel: "Cozum Paketlerini Incele",
+      ctaLabel: "Çözüm Paketlerini Incele",
       cards: [
-        { badge: "CF", title: "Kafe", body: "Hizli checkout ve masa operasyonu." },
+        { badge: "CF", title: "Kafe", body: "Hızlı checkout ve masa operasyonu." },
         { badge: "RS", title: "Restoran", body: "Masa, mutfak ve servis orkestrasyonu." },
-        { badge: "DL", title: "Paket-Siparis", body: "Salon ve teslimat akisi tek ekranda." },
-        { badge: "IN", title: "Entegrasyonlar", body: "Odeme ve dis kanal baglantilari." },
-        { badge: "QR", title: "QR Menu", body: "QR ile menu goruntuleme ve servis talebi." },
+        { badge: "DL", title: "Paket-Sipariş", body: "Salon ve teslimat akışı tek ekranda." },
+        { badge: "IN", title: "Entegrasyonlar", body: "Ödeme ve dis kanal baglantilari." },
+        { badge: "QR", title: "QR Menü", body: "QR ile menü görüntüleme ve servis talebi." },
       ],
     },
     orders: {
-      title: "Siparis Cozumleri",
-      ctaLabel: "Siparis Akislarini Kesfet",
+      title: "Sipariş Cozumleri",
+      ctaLabel: "Sipariş Akislarini Kesfet",
       cards: [
         { badge: "MB", title: "Mobil POS", body: "Tablet ve telefonla operasyon." },
-        { badge: "QR", title: "QR Menu", body: "Menu goruntuleme ve siparis durumu." },
-        { badge: "WB", title: "Web Panel", body: "Tarayicidan operasyon yonetimi." },
-        { badge: "KS", title: "Kiosk Siparis", body: "Self-servis siparis akisi." },
+        { badge: "QR", title: "QR Menü", body: "Menü görüntüleme ve sipariş durumu." },
+        { badge: "WB", title: "Web Panel", body: "Tarayicidan operasyon yönetimi." },
+        { badge: "KS", title: "Kiosk Sipariş", body: "Self-servis sipariş akışı." },
       ],
     },
     business: {
-      title: "Isletme Cozumleri",
-      ctaLabel: "Tum Modulleri Incele",
+      title: "İşletme Cozumleri",
+      ctaLabel: "Tüm Modülleri Incele",
       cards: [
         { badge: "HR", title: "Personel", body: "Rol, vardiya, hedef ve ekip takibi." },
-        { badge: "ST", title: "Stok", body: "Recete bazli maliyet ve stok yonetimi." },
-        { badge: "RP", title: "Raporlar", body: "Saatlik, gunluk, sube bazli raporlama." },
-        { badge: "BR", title: "Sube", body: "Merkezden coklu sube yonetimi." },
+        { badge: "ST", title: "Stok", body: "Recete bazli maliyet ve stok yönetimi." },
+        { badge: "RP", title: "Raporlar", body: "Saatlik, gunluk, şube bazli raporlama." },
+        { badge: "BR", title: "Şube", body: "Merkezden coklu şube yönetimi." },
       ],
     },
   };
@@ -639,7 +639,7 @@ function renderSection(
                 <div className="flex h-full items-center justify-center rounded-[1.1rem] border border-dashed border-slate-300 bg-slate-50/80 p-6 text-center">
                   <div>
                     <p className="text-sm font-semibold text-slate-700">Hero gorseli bekleniyor</p>
-                    <p className="mt-2 text-xs leading-6 text-slate-500">Studio icinde "Gorsel URL" alanini doldurdugunuzda burada gosterilir.</p>
+                    <p className="mt-2 text-xs leading-6 text-slate-500">Studio icinde "Görsel URL" alanini doldurdugunuzda burada gosterilir.</p>
                   </div>
                 </div>
               ) : (
@@ -962,7 +962,7 @@ export function LandingPageRenderer({
                   onClick={() => setIsMobileMenuOpen((prev) => !prev)}
                   className="rounded-lg border border-slate-200 bg-white px-3 py-2 text-xs font-semibold uppercase tracking-[0.14em] text-slate-700 shadow-sm"
                   aria-expanded={isMobileMenuOpen}
-                  aria-controls="landing-mobile-menu"
+                  aria-controls="landing-mobile-menü"
                 >
                   {headerCopy.menuLabel}
                 </button>
@@ -971,7 +971,7 @@ export function LandingPageRenderer({
 
             {isMobileMenuOpen ? (
               <div
-                id="landing-mobile-menu"
+                id="landing-mobile-menü"
                 className="z-40 max-h-[calc(100vh-7rem)] overflow-y-auto border-t border-slate-200 p-3 lg:hidden"
               >
                 <nav className="grid gap-2">

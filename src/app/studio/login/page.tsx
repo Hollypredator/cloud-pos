@@ -17,7 +17,7 @@ export default async function StudioLoginPage({
         <div className="mx-auto max-w-3xl rounded-[2rem] border border-white/10 bg-white/5 p-8">
           <p className="text-xs uppercase tracking-[0.28em] text-slate-400">Studio Access</p>
           <h1 className="mt-4 text-4xl font-semibold">Supabase baglantisi olmadan studio acilmaz</h1>
-          <p className="mt-4 text-sm leading-7 text-slate-300">Backoffice yalnizca canli auth ve ayarlar verisiyle calisir.</p>
+          <p className="mt-4 text-sm leading-7 text-slate-300">Backoffice yalnızca canli auth ve ayarlar verisiyle çalışır.</p>
         </div>
       </div>
     );
@@ -39,7 +39,7 @@ export default async function StudioLoginPage({
             </p>
             <h1 className="mt-6 max-w-xl text-5xl font-semibold tracking-tight">Sirket sitesi ve growth backoffice</h1>
             <p className="mt-5 max-w-xl text-sm leading-7 text-slate-300">
-              Bu alan tenant musterilere degil, urun sahibine acik. Landing, SEO, medya, blog, SMTP ve lead takibi burada yonetilir.
+              Bu alan tenant musterilere değil, ürün sahibine açık. Landing, SEO, medya, blog, SMTP ve lead takibi burada yönetilir.
             </p>
             <div className="mt-8 grid gap-4 sm:grid-cols-3">
               <div className="rounded-2xl border border-white/10 bg-black/10 p-4">
@@ -48,7 +48,7 @@ export default async function StudioLoginPage({
               </div>
               <div className="rounded-2xl border border-white/10 bg-black/10 p-4">
                 <p className="text-xs uppercase tracking-[0.24em] text-slate-400">CRM</p>
-                <p className="mt-2 text-sm text-slate-200">Lead, not ve takip akisi</p>
+                <p className="mt-2 text-sm text-slate-200">Lead, not ve takip akışı</p>
               </div>
               <div className="rounded-2xl border border-white/10 bg-black/10 p-4">
                 <p className="text-xs uppercase tracking-[0.24em] text-slate-400">SEO</p>

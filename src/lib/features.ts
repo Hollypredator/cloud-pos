@@ -30,52 +30,52 @@ export const FEATURE_META: Record<
 > = {
   kitchen_display: {
     title: "Mutfak Operasyonu",
-    description: "Istasyon bazli mutfak akisi ve hazirlama board'u Growth paketle acilir.",
+    description: "Istasyon bazli mutfak akışı ve hazirlama board'u Growth paketle açılır.",
     requiredPlan: "growth",
   },
   delivery_dispatch: {
     title: "Teslimat ve Kurye",
-    description: "Kurye atama, dispatch ve teslimat yonetimi Growth paketle acilir.",
+    description: "Kurye atama, dispatch ve teslimat yönetimi Growth paketle açılır.",
     requiredPlan: "growth",
   },
   advanced_reports: {
     title: "Gelismis Raporlar",
-    description: "Detayli satis, cari ve personel raporlari Growth paketle acilir.",
+    description: "Detayli satis, cari ve personel raporlari Growth paketle açılır.",
     requiredPlan: "growth",
   },
   finance_dashboard: {
     title: "Finans Panosu",
-    description: "Gelir-gider, odeme dagilimlari ve detayli finans yorumu Growth paketle acilir.",
+    description: "Gelir-gider, ödeme dagilimlari ve detayli finans yorumu Growth paketle açılır.",
     requiredPlan: "growth",
   },
   staff_management: {
     title: "Personel ve Roller",
-    description: "Ekip yonetimi ve rol bazli erisim Growth paketle acilir.",
+    description: "Ekip yönetimi ve rol bazli erişim Growth paketle açılır.",
     requiredPlan: "growth",
   },
   inventory_management: {
     title: "Stok ve Reçete",
-    description: "Stok hareketleri ve urun takibi Growth paketle acilir.",
+    description: "Stok hareketleri ve ürün takibi Growth paketle açılır.",
     requiredPlan: "growth",
   },
   audit_logs: {
-    title: "Islem Loglari",
-    description: "Operasyon gecmisi ve denetim kayitlari Growth paketle acilir.",
+    title: "İşlem Loglari",
+    description: "Operasyon gecmisi ve denetim kayıtları Growth paketle açılır.",
     requiredPlan: "growth",
   },
   shift_management: {
     title: "Gun Islemleri",
-    description: "Vardiya ve kasa gun sonu akisi Growth paketle acilir.",
+    description: "Vardiya ve kasa gun sonu akışı Growth paketle açılır.",
     requiredPlan: "growth",
   },
   custom_branding: {
-    title: "Ozel Markalama",
-    description: "Marka uyarlama ve ozel ekran tasarimlari Custom paketle acilir.",
+    title: "Özel Markalama",
+    description: "Marka uyarlama ve özel ekran tasarimlari Custom paketle açılır.",
     requiredPlan: "custom",
   },
   multi_branch: {
-    title: "Coklu Sube",
-    description: "Coklu sube ve merkezden yonetim Custom paketle acilir.",
+    title: "Coklu Şube",
+    description: "Coklu şube ve merkezden yönetim Custom paketle açılır.",
     requiredPlan: "custom",
   },
 };

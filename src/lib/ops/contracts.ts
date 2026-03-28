@@ -61,7 +61,7 @@ export function parseOpsCommand(input: unknown): { ok: true; value: OpsCommand }
     return { ok: false, error: "device_id zorunlu." };
   }
   if (!isOpsCommandType(type)) {
-    return { ok: false, error: "type gecersiz." };
+    return { ok: false, error: "type geçersiz." };
   }
 
   const payload = isObjectRecord(input.payload) ? input.payload : {};
@@ -84,7 +84,7 @@ export function parseOpsCommand(input: unknown): { ok: true; value: OpsCommand }
 
 export function parseSyncPushRequest(input: unknown): { ok: true; value: SyncPushRequest } | { ok: false; error: string } {
   if (!isObjectRecord(input)) {
-    return { ok: false, error: "Push istegi gecerli bir obje olmali." };
+    return { ok: false, error: "Push isteği gecerli bir obje olmali." };
   }
 
   const deviceId = asNonEmptyString(input.device_id);

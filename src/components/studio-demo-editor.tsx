@@ -136,7 +136,7 @@ export function StudioDemoEditor({
     !showPresentationFlow
       ? {
           key: "presentation",
-          label: "Sunum Akisi",
+          label: "Sunum Akışı",
           onAdd: () => {
             setShowPresentationFlow(true);
             if (presentationFlow.length === 0) {
@@ -282,7 +282,7 @@ export function StudioDemoEditor({
 
       {showPresentationFlow ? (
         <SectionShell
-          eyebrow="Sunum Akisi"
+          eyebrow="Sunum Akışı"
           title="Adimlari yonet"
           description="Bu bolumu tamamen kaldirip daha sonra tekrar ekleyebilirsin."
           onRemove={() => setShowPresentationFlow(false)}
@@ -408,7 +408,7 @@ export function StudioDemoEditor({
                 </label>
                 <div className="md:col-span-2">
                   <TextArea
-                    label="Ozet"
+                    label="Özet"
                     value={account.summary}
                     onChange={(value) =>
                       setStaffAccounts((current) =>
@@ -435,9 +435,9 @@ export function StudioDemoEditor({
 
       {showRecentOrders ? (
         <SectionShell
-          eyebrow="Siparis Tablosu"
-          title="Son siparisler bolumu"
-          description="Siparis tablosunu gizleyip tekrar aktif edebilirsin."
+          eyebrow="Sipariş Tablosu"
+          title="Son siparişler bolumu"
+          description="Sipariş tablosunu gizleyip tekrar aktif edebilirsin."
           onRemove={() => setShowRecentOrders(false)}
         >
         <div className="grid gap-4 md:grid-cols-2">
@@ -450,8 +450,8 @@ export function StudioDemoEditor({
       {showTableStatus ? (
         <SectionShell
           eyebrow="Masa Durumu"
-          title="Masa ozeti bolumu"
-          description="Dolu ve bos masa kutularini tamamen kaldirip yeniden ekleyebilirsin."
+          title="Masa özeti bolumu"
+          description="Dolu ve boş masa kutularini tamamen kaldirip yeniden ekleyebilirsin."
           onRemove={() => setShowTableStatus(false)}
         >
         <TextInput label="Bolum basligi" value={tableStatusTitle} onChange={setTableStatusTitle} />
@@ -467,7 +467,7 @@ export function StudioDemoEditor({
         >
         <div className="grid gap-4 md:grid-cols-2">
           <TextInput label="Bolum basligi" value={lowStockTitle} onChange={setLowStockTitle} />
-          <TextInput label="Sag ust etiket" value={lowStockLabel} onChange={setLowStockLabel} />
+          <TextInput label="Sag üst etiket" value={lowStockLabel} onChange={setLowStockLabel} />
         </div>
         </SectionShell>
       ) : null}
@@ -511,7 +511,7 @@ export function StudioDemoEditor({
                   }
                 />
                 <TextArea
-                  label="Ozet"
+                  label="Özet"
                   value={item.summary}
                   onChange={(value) =>
                     setPackages((current) =>

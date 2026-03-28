@@ -52,13 +52,13 @@ export async function addTableAction(formData: FormData) {
   try {
     const result = await createTable(tableNumber, tableName, { zoneId });
     if (!result.ok) {
-      redirect(feedbackHref("error", result.error ?? "Masa olusturulamadi."));
+      redirect(feedbackHref("error", result.error ?? "Masa oluşturulamadı."));
     }
     revalidatePath("/admin/tables");
     revalidatePath("/tables");
-    redirect(feedbackHref("success", "Yeni masa olusturuldu."));
+    redirect(feedbackHref("success", "Yeni masa oluşturuldu."));
   } catch {
-    redirect(feedbackHref("error", "Masa olusturulamadi. Numara zaten kullaniliyor olabilir."));
+    redirect(feedbackHref("error", "Masa oluşturulamadı. Numara zaten kullaniliyor olabilir."));
   }
 }
 
@@ -69,19 +69,19 @@ export async function updateTableAction(formData: FormData) {
   const tableNumber = Number(formData.get("tableNumber"));
   const tableName = String(formData.get("tableName") ?? "").trim();
   if (!tableId || !Number.isInteger(tableNumber) || tableNumber <= 0) {
-    redirect(feedbackHref("error", "Masa bilgilerini kaydetmek icin gecerli bir masa no girin."));
+    redirect(feedbackHref("error", "Masa bilgilerini kaydetmek için gecerli bir masa no girin."));
   }
 
   try {
     const result = await updateTableDetails({ tableId, tableNumber, name: tableName });
     if (!result.ok) {
-      redirect(feedbackHref("error", result.error ?? "Masa bilgileri guncellenemedi."));
+      redirect(feedbackHref("error", result.error ?? "Masa bilgileri güncellenemedi."));
     }
     revalidatePath("/admin/tables");
     revalidatePath("/tables");
-    redirect(feedbackHref("success", "Masa bilgileri guncellendi."));
+    redirect(feedbackHref("success", "Masa bilgileri güncellendi."));
   } catch {
-    redirect(feedbackHref("error", "Masa bilgileri guncellenemedi."));
+    redirect(feedbackHref("error", "Masa bilgileri güncellenemedi."));
   }
 }
 
@@ -91,19 +91,19 @@ export async function updateTableStatusAction(formData: FormData) {
   const tableId = String(formData.get("tableId") ?? "").trim();
   const status = String(formData.get("status") ?? "").trim() as "empty" | "reserved";
   if (!tableId || (status !== "empty" && status !== "reserved")) {
-    redirect(feedbackHref("error", "Masa durumu guncellemek icin gecerli alanlar gerekli."));
+    redirect(feedbackHref("error", "Masa durumu guncellemek için gecerli alanlar gerekli."));
   }
 
   try {
     const result = await updateTableStatus({ tableId, status });
     if (!result.ok) {
-      redirect(feedbackHref("error", result.error ?? "Masa durumu guncellenemedi."));
+      redirect(feedbackHref("error", result.error ?? "Masa durumu güncellenemedi."));
     }
     revalidatePath("/admin/tables");
     revalidatePath("/tables");
-    redirect(feedbackHref("success", status === "reserved" ? "Masa rezerveye alindi." : "Masa bos duruma alindi."));
+    redirect(feedbackHref("success", status === "reserved" ? "Masa rezerveye alındı." : "Masa boş duruma alındı."));
   } catch {
-    redirect(feedbackHref("error", "Masa durumu guncellenemedi."));
+    redirect(feedbackHref("error", "Masa durumu güncellenemedi."));
   }
 }
 
@@ -134,7 +134,7 @@ export async function moveTableOrderAction(formData: FormData) {
   const sourceTableId = String(formData.get("sourceTableId") ?? "");
   const targetTableId = String(formData.get("targetTableId") ?? "");
   if (!sourceTableId || !targetTableId) {
-    redirect(feedbackHref("error", "Adisyonu tasimak icin kaynak ve hedef masa secilmeli."));
+    redirect(feedbackHref("error", "Adisyonu tasimak için kaynak ve hedef masa secilmeli."));
   }
 
   try {
@@ -156,18 +156,18 @@ export async function createZoneAction(formData: FormData) {
 
   const zoneName = String(formData.get("zoneName") ?? "").trim();
   if (zoneName.length < 2) {
-    redirect(feedbackHref("error", "Bolge adi en az 2 karakter olmali."));
+    redirect(feedbackHref("error", "Bölge adi en az 2 karakter olmali."));
   }
 
   try {
     const result = await createTableZone(zoneName);
     if (!result.ok) {
-      redirect(feedbackHref("error", result.error ?? "Bolge olusturulamadi."));
+      redirect(feedbackHref("error", result.error ?? "Bölge oluşturulamadı."));
     }
     revalidatePath("/admin/tables");
-    redirect(feedbackHref("success", "Yeni bolge olusturuldu."));
+    redirect(feedbackHref("success", "Yeni bölge oluşturuldu."));
   } catch {
-    redirect(feedbackHref("error", "Bolge olusturulamadi."));
+    redirect(feedbackHref("error", "Bölge oluşturulamadı."));
   }
 }
 
@@ -177,19 +177,19 @@ export async function assignTableZoneAction(formData: FormData) {
   const tableId = String(formData.get("tableId") ?? "");
   const zoneId = readZoneValue(formData, "zoneId");
   if (!tableId) {
-    redirect(feedbackHref("error", "Bolge atamasi icin masa bulunamadi."));
+    redirect(feedbackHref("error", "Bölge atamasi için masa bulunamadi."));
   }
 
   try {
     const result = await assignTableZone({ tableId, zoneId });
     if (!result.ok) {
-      redirect(feedbackHref("error", result.error ?? "Masa bolgesi guncellenemedi."));
+      redirect(feedbackHref("error", result.error ?? "Masa bolgesi güncellenemedi."));
     }
     revalidatePath("/admin/tables");
     revalidatePath("/tables");
-    redirect(feedbackHref("success", "Masa bolgesi guncellendi."));
+    redirect(feedbackHref("success", "Masa bolgesi güncellendi."));
   } catch {
-    redirect(feedbackHref("error", "Masa bolgesi guncellenemedi."));
+    redirect(feedbackHref("error", "Masa bolgesi güncellenemedi."));
   }
 }
 
@@ -201,19 +201,19 @@ export async function setTableSupervisorAction(formData: FormData) {
   const profileId = !rawProfileId || rawProfileId === "__none__" ? null : rawProfileId;
 
   if (!tableId) {
-    redirect(feedbackHref("error", "Sorumlu atamasi icin masa bulunamadi."));
+    redirect(feedbackHref("error", "Sorumlu atamasi için masa bulunamadi."));
   }
 
   try {
     const result = await setTableSupervisor({ tableId, profileId });
     if (!result.ok) {
-      redirect(feedbackHref("error", result.error ?? "Sorumlu garson guncellenemedi."));
+      redirect(feedbackHref("error", result.error ?? "Sorumlu garson güncellenemedi."));
     }
     revalidatePath("/admin/tables");
     revalidatePath("/tables");
-    redirect(feedbackHref("success", profileId ? "Sorumlu garson guncellendi." : "Sorumlu garson etiketi kaldirildi."));
+    redirect(feedbackHref("success", profileId ? "Sorumlu garson güncellendi." : "Sorumlu garson etiketi kaldirildi."));
   } catch {
-    redirect(feedbackHref("error", "Sorumlu garson guncellenemedi."));
+    redirect(feedbackHref("error", "Sorumlu garson güncellenemedi."));
   }
 }
 
@@ -226,7 +226,7 @@ export async function bulkAddTablesAction(formData: FormData) {
   const zoneId = readZoneValue(formData, "zoneId");
 
   if (!Number.isInteger(startNumber) || startNumber <= 0) {
-    redirect(feedbackHref("error", "Baslangic masa no pozitif bir tam sayi olmali."));
+    redirect(feedbackHref("error", "Başlangıç masa no pozitif bir tam sayi olmali."));
   }
   if (!Number.isInteger(count) || count <= 0 || count > 200) {
     redirect(feedbackHref("error", "Toplu acilis adedi 1 ile 200 arasinda olmali."));
@@ -235,18 +235,18 @@ export async function bulkAddTablesAction(formData: FormData) {
   try {
     const result = await bulkCreateTables({ startNumber, count, namePrefix, zoneId });
     if (!result.ok) {
-      redirect(feedbackHref("error", result.error ?? "Toplu masa acilisi yapilamadi."));
+      redirect(feedbackHref("error", result.error ?? "Toplu masa açılışı yapilamadi."));
     }
     revalidatePath("/admin/tables");
     revalidatePath("/tables");
     redirect(
       feedbackHref(
         "success",
-        `${result.createdCount} masa olusturuldu${result.skippedCount > 0 ? `, ${result.skippedCount} numara atlandi` : ""}.`,
+        `${result.createdCount} masa oluşturuldu${result.skippedCount > 0 ? `, ${result.skippedCount} numara atlandi` : ""}.`,
       ),
     );
   } catch {
-    redirect(feedbackHref("error", "Toplu masa acilisi yapilamadi."));
+    redirect(feedbackHref("error", "Toplu masa açılışı yapilamadi."));
   }
 }
 
@@ -259,13 +259,13 @@ export async function bulkDeleteTablesAction(formData: FormData) {
   const includeNonEmpty = String(formData.get("includeNonEmpty") ?? "") === "1";
 
   if (!Number.isInteger(startNumber) || startNumber <= 0) {
-    redirect(feedbackHref("error", "Silme baslangic no pozitif bir tam sayi olmali."));
+    redirect(feedbackHref("error", "Silme başlangıç no pozitif bir tam sayi olmali."));
   }
   if (!Number.isInteger(endNumber) || endNumber <= 0) {
-    redirect(feedbackHref("error", "Silme bitis no pozitif bir tam sayi olmali."));
+    redirect(feedbackHref("error", "Silme bitiş no pozitif bir tam sayi olmali."));
   }
   if (endNumber < startNumber) {
-    redirect(feedbackHref("error", "Silme bitis no, baslangic no'dan kucuk olamaz."));
+    redirect(feedbackHref("error", "Silme bitiş no, başlangıç no'dan küçük olamaz."));
   }
 
   try {
@@ -280,7 +280,7 @@ export async function bulkDeleteTablesAction(formData: FormData) {
         "success",
         includeNonEmpty
           ? `${result.deletedCount} masa silindi${result.skippedCount > 0 ? `, ${result.skippedCount} masa atlandi` : ""}.`
-          : `${result.deletedCount} masa silindi${result.skippedCount > 0 ? `, ${result.skippedCount} masa (bos olmadigi icin) atlandi` : ""}.`,
+          : `${result.deletedCount} masa silindi${result.skippedCount > 0 ? `, ${result.skippedCount} masa (boş olmadigi için) atlandi` : ""}.`,
       ),
     );
   } catch {
@@ -298,7 +298,7 @@ export async function bulkDeleteSelectedTablesAction(formData: FormData) {
   const includeNonEmpty = String(formData.get("includeNonEmpty") ?? "") === "1";
 
   if (tableIds.length === 0) {
-    redirect(feedbackHref("error", "Toplu silme icin en az bir masa secin."));
+    redirect(feedbackHref("error", "Toplu silme için en az bir masa secin."));
   }
 
   try {
@@ -313,7 +313,7 @@ export async function bulkDeleteSelectedTablesAction(formData: FormData) {
         "success",
         includeNonEmpty
           ? `${result.deletedCount} masa silindi${result.skippedCount > 0 ? `, ${result.skippedCount} masa atlandi` : ""}.`
-          : `${result.deletedCount} masa silindi${result.skippedCount > 0 ? `, ${result.skippedCount} masa (bos olmadigi icin) atlandi` : ""}.`,
+          : `${result.deletedCount} masa silindi${result.skippedCount > 0 ? `, ${result.skippedCount} masa (boş olmadigi için) atlandi` : ""}.`,
       ),
     );
   } catch {
@@ -326,24 +326,24 @@ export async function deleteZoneAction(formData: FormData) {
 
   const zoneId = String(formData.get("zoneId") ?? "").trim();
   if (!zoneId) {
-    redirect(feedbackHref("error", "Silinecek bolge bulunamadi."));
+    redirect(feedbackHref("error", "Silinecek bölge bulunamadi."));
   }
 
   try {
     const result = await deleteTableZone(zoneId);
     if (!result.ok) {
-      redirect(feedbackHref("error", result.error ?? "Bolge silinemedi."));
+      redirect(feedbackHref("error", result.error ?? "Bölge silinemedi."));
     }
     revalidatePath("/admin/tables");
     revalidatePath("/tables");
     redirect(
       feedbackHref(
         "success",
-        `${result.name} bolgesi silindi${result.affectedTableCount > 0 ? `, ${result.affectedTableCount} masa atanmamis duruma alindi` : ""}.`,
+        `${result.name} bolgesi silindi${result.affectedTableCount > 0 ? `, ${result.affectedTableCount} masa atanmamış duruma alındı` : ""}.`,
       ),
     );
   } catch {
-    redirect(feedbackHref("error", "Bolge silinemedi."));
+    redirect(feedbackHref("error", "Bölge silinemedi."));
   }
 }
 
@@ -356,23 +356,23 @@ export async function bulkDeleteZonesAction(formData: FormData) {
     .filter(Boolean);
 
   if (zoneIds.length === 0) {
-    redirect(feedbackHref("error", "Toplu silme icin en az bir bolge secin."));
+    redirect(feedbackHref("error", "Toplu silme için en az bir bölge secin."));
   }
 
   try {
     const result = await bulkDeleteTableZones({ zoneIds });
     if (!result.ok) {
-      redirect(feedbackHref("error", result.error ?? "Toplu bolge silme yapilamadi."));
+      redirect(feedbackHref("error", result.error ?? "Toplu bölge silme yapilamadi."));
     }
     revalidatePath("/admin/tables");
     revalidatePath("/tables");
     redirect(
       feedbackHref(
         "success",
-        `${result.deletedCount} bolge silindi${result.skippedCount > 0 ? `, ${result.skippedCount} bolge atlandi` : ""}${result.affectedTableCount > 0 ? `, ${result.affectedTableCount} masa atanmamis duruma alindi` : ""}.`,
+        `${result.deletedCount} bölge silindi${result.skippedCount > 0 ? `, ${result.skippedCount} bölge atlandi` : ""}${result.affectedTableCount > 0 ? `, ${result.affectedTableCount} masa atanmamış duruma alındı` : ""}.`,
       ),
     );
   } catch {
-    redirect(feedbackHref("error", "Toplu bolge silme yapilamadi."));
+    redirect(feedbackHref("error", "Toplu bölge silme yapilamadi."));
   }
 }

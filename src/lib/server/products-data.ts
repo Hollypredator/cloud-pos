@@ -249,7 +249,7 @@ export async function createProductImpl(
 ) {
   const supabase = getSupabaseServerClient();
   if (!supabase) {
-    return { ok: false, error: "Demo modda urun ekleme pasif." };
+    return { ok: false, error: "Demo modda ürün ekleme pasif." };
   }
 
   const scope = await deps.getDefaultBusinessScope();
@@ -288,7 +288,7 @@ export async function createProductImpl(
     return { ok: false, error: error.message };
   }
   if (!data) {
-    return { ok: false, error: "Urun olusturulamadi." };
+    return { ok: false, error: "Ürün oluşturulamadı." };
   }
 
   fireAndForgetProductAudit(deps, {
@@ -317,7 +317,7 @@ export async function updateProductImpl(
 ) {
   const supabase = getSupabaseServerClient();
   if (!supabase) {
-    return { ok: false, error: "Demo modda urun guncelleme pasif." };
+    return { ok: false, error: "Demo modda ürün guncelleme pasif." };
   }
 
   const scope = await deps.getDefaultBusinessScope();
@@ -362,7 +362,7 @@ export async function updateProductImpl(
 export async function deleteProductImpl(productId: string, deps: ProductDeps) {
   const supabase = getSupabaseServerClient();
   if (!supabase) {
-    return { ok: false, error: "Demo modda urun silme pasif." };
+    return { ok: false, error: "Demo modda ürün silme pasif." };
   }
 
   const scope = await deps.getDefaultBusinessScope();
@@ -401,13 +401,13 @@ export async function createCategoryImpl(name: string, sortOrder: number, prepSt
     error = secondInsert.error as { message: string } | null;
   }
   if (error?.message?.toLowerCase().includes("prep_station")) {
-    return { ok: false, error: "Istasyon yonlendirmesi icin veritabani migrasyonunu calistirin." };
+    return { ok: false, error: "Istasyon yönlendirmesi için veritabani migrasyonunu çalıştırın." };
   }
   if (error) {
     return { ok: false, error: error.message };
   }
   if (!data) {
-    return { ok: false, error: "Kategori olusturulamadi." };
+    return { ok: false, error: "Kategori oluşturulamadı." };
   }
 
   fireAndForgetProductAudit(deps, {
@@ -444,7 +444,7 @@ export async function updateCategoryPrepStationImpl(
   }
   const categoryBusinessId = (categoryRow as { business_id?: string | null }).business_id ?? null;
   if (!scope.useLegacySchema && scope.businessId && categoryBusinessId && categoryBusinessId !== scope.businessId) {
-    return { ok: false, error: "Bu kategori icin istasyon guncelleme yetkin yok." };
+    return { ok: false, error: "Bu kategori için istasyon guncelleme yetkin yok." };
   }
 
   const { error } = await supabase
@@ -452,7 +452,7 @@ export async function updateCategoryPrepStationImpl(
     .update({ prep_station: input.prepStation })
     .eq("id", input.categoryId);
   if (error?.message?.toLowerCase().includes("prep_station")) {
-    return { ok: false, error: "Istasyon yonlendirmesi icin veritabani migrasyonunu calistirin." };
+    return { ok: false, error: "Istasyon yönlendirmesi için veritabani migrasyonunu çalıştırın." };
   }
   if (error) {
     return { ok: false, error: error.message };
@@ -482,7 +482,7 @@ export async function deleteCategoryImpl(categoryId: string, deps: ProductDeps) 
   }
   const { data: linkedProducts } = await linkedProductsQuery;
   if ((linkedProducts ?? []).length > 0) {
-    return { ok: false, error: "Bu kategoriye bagli urunler var." };
+    return { ok: false, error: "Bu kategoriye bağlı ürünler var." };
   }
 
   let deleteQuery = supabase.from("categories").delete().eq("id", categoryId);

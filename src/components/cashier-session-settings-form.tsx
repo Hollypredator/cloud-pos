@@ -58,8 +58,8 @@ export function CashierSessionSettingsForm({
 
       <label className="flex items-center justify-between gap-4">
         <div>
-          <p className="text-lg font-semibold text-slate-900">Acik Adisyon Kontrolu</p>
-          <p className="text-sm text-slate-500">Gun sonu oncesi acik hesaplari zorunlu kapat</p>
+          <p className="text-lg font-semibold text-slate-900">Açık Adisyon Kontrolu</p>
+          <p className="text-sm text-slate-500">Gun sonu oncesi açık hesaplari zorunlu kapat</p>
         </div>
         <span className="relative inline-flex cursor-pointer items-center">
           <input

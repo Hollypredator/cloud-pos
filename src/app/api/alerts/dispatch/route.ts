@@ -23,7 +23,7 @@ function unauthorized(correlationId: string) {
 function misconfigured(correlationId: string) {
   logApiEvent("error", "alerts.dispatch.secret_missing", { correlationId });
   return withCorrelationId(
-    NextResponse.json({ ok: false, message: "Alert secret tanimli degil." }, { status: 503 }),
+    NextResponse.json({ ok: false, message: "Alert secret tanımlı değil." }, { status: 503 }),
     correlationId,
   );
 }
@@ -84,7 +84,7 @@ export async function POST(request: Request) {
     if (!webhookUrl) {
       logApiEvent("error", "alerts.dispatch.webhook_missing", { correlationId });
       return json(
-        { ok: false, message: "ALERT_WEBHOOK_URL tanimli degil." },
+        { ok: false, message: "ALERT_WEBHOOK_URL tanımlı değil." },
         { status: 500 },
       );
     }
@@ -93,7 +93,7 @@ export async function POST(request: Request) {
     const shouldAlert = state.critical > 0 || state.delayed >= 3 || state.openRequests >= 5;
     if (!shouldAlert) {
       logApiEvent("info", "alerts.dispatch.skipped_threshold", { correlationId });
-      return json({ ok: true, skipped: true, reason: "Esik asilmadi.", state });
+      return json({ ok: true, skipped: true, reason: "Eşik aşılmadı.", state });
     }
 
     const { dispatch } = await getAlertDispatchByType("ops_summary");
@@ -124,7 +124,7 @@ export async function POST(request: Request) {
         status: response.status,
       });
       return json(
-        { ok: false, message: "Webhook gonderimi basarisiz.", status: response.status },
+        { ok: false, message: "Webhook gonderimi başarısız.", status: response.status },
         { status: 502 },
       );
     }
@@ -137,6 +137,6 @@ export async function POST(request: Request) {
       correlationId,
       error: error instanceof Error ? error.message : "unknown",
     });
-    return json({ ok: false, message: "Alert dispatch sirasinda beklenmeyen hata olustu." }, { status: 500 });
+    return json({ ok: false, message: "Alert dispatch sırasında beklenmeyen hata oluştu." }, { status: 500 });
   }
 }

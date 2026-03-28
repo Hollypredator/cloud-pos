@@ -62,7 +62,7 @@ export function LoginForm() {
         disabled={loading}
         className="w-full rounded-lg bg-slate-900 px-4 py-2 text-sm font-semibold text-white disabled:opacity-50"
       >
-        {loading ? "Giris yapiliyor..." : "Giris Yap"}
+        {loading ? "Giriş yapiliyor..." : "Giriş Yap"}
       </button>
       {error ? <p className="text-sm text-rose-700">{error}</p> : null}
     </form>

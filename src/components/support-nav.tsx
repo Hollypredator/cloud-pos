@@ -17,7 +17,7 @@ const links = [
   { href: "/support/team", label: "Ekip" },
   { href: "/support/knowledge", label: "Knowledge" },
   { href: "/support/audit", label: "Audit" },
-  { href: "/support/access", label: "Erisim" },
+  { href: "/support/access", label: "Erişim" },
 ];
 
 export function SupportNav() {

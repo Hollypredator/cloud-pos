@@ -32,12 +32,12 @@ async function openSessionAction(formData: FormData) {
       },
     });
     if (result.status !== "ACK") {
-      redirect(feedbackHref("error", result.message ?? "Gun basi islemi tamamlanamadi."));
+      redirect(feedbackHref("error", result.message ?? "Gun basi işlemi tamamlanamadi."));
     }
     revalidatePath("/cashier/session");
-    redirect(feedbackHref("success", "Gun basi basariyla acildi."));
+    redirect(feedbackHref("success", "Gun basi basariyla açıldı."));
   } catch {
-    redirect(feedbackHref("error", "Gun basi islemi tamamlanamadi."));
+    redirect(feedbackHref("error", "Gun basi işlemi tamamlanamadi."));
   }
 }
 
@@ -65,7 +65,7 @@ async function closeSessionAction(formData: FormData) {
       },
     });
     if (result.status !== "ACK") {
-      redirect(feedbackHref("error", result.message ?? "Gun sonu islemi tamamlanamadi."));
+      redirect(feedbackHref("error", result.message ?? "Gun sonu işlemi tamamlanamadi."));
     }
     revalidatePath("/cashier/session");
     const varianceValue = typeof result.data?.variance === "number" ? result.data.variance : null;
@@ -76,11 +76,11 @@ async function closeSessionAction(formData: FormData) {
         : "";
     const mismatchMessage =
       result.data?.mismatchAlertSent === true
-        ? " Mutabakat farki esigi asildigi icin operasyon alarmi olusturuldu."
+        ? " Mutabakat farki esigi asildigi için operasyon alarmi oluşturuldu."
         : "";
-    redirect(feedbackHref("success", `Gun sonu islemi tamamlandi.${varianceMessage}${mismatchMessage}`));
+    redirect(feedbackHref("success", `Gun sonu işlemi tamamlandı.${varianceMessage}${mismatchMessage}`));
   } catch {
-    redirect(feedbackHref("error", "Gun sonu islemi tamamlanamadi."));
+    redirect(feedbackHref("error", "Gun sonu işlemi tamamlanamadi."));
   }
 }
 
@@ -132,7 +132,7 @@ export default async function CashierSessionPage({
   const featureAccess = await getFeatureAccess("shift_management");
   if (!featureAccess.enabled) {
     return (
-      <BackofficePage title="Gun Islemleri" description="Kasa vardiya ve gun sonu yonetimi">
+      <BackofficePage title="Gun Islemleri" description="Kasa vardiya ve gun sonu yönetimi">
         <FeatureLockedState
           title={featureAccess.title}
           description={featureAccess.description}
@@ -152,13 +152,13 @@ export default async function CashierSessionPage({
   return (
     <BackofficePage
       title="Gun Islemleri"
-      description="Kasa acilis / kapanis ve gunluk operasyon takibi"
+      description="Kasa acilis / kapanış ve gunluk operasyon takibi"
       sidebar={
         <div className="space-y-5">
           <SidebarPanel title="Manuel Gun Islemi">
             <div className={`rounded-[22px] px-4 py-4 text-sm ${session ? "bg-sky-100 text-sky-900" : "bg-amber-100 text-amber-900"}`}>
               <p className="text-lg font-semibold">{session ? "Gun Basi Yapilmis" : "Gun Basi Yapilmamis"}</p>
-              <p className="mt-1">{session ? "Gunluk islemler devam ediyor." : "Islemlere baslamak icin gun basi yapin."}</p>
+              <p className="mt-1">{session ? "Gunluk işlemler devam ediyor." : "Islemlere baslamak için gun basi yapin."}</p>
             </div>
             {!session ? (
               <form action={openSessionAction} className="space-y-3">
@@ -199,7 +199,7 @@ export default async function CashierSessionPage({
             <p className="text-2xl font-semibold tracking-tight text-slate-900">
               {new Date().toLocaleDateString("tr-TR", { day: "2-digit", month: "long", year: "numeric" })}
             </p>
-            <p className="text-sm text-slate-500">{session ? "Acik oturum" : "Oturum kapali"}</p>
+            <p className="text-sm text-slate-500">{session ? "Açık oturum" : "Oturum kapali"}</p>
           </div>
         </>
       }
@@ -207,7 +207,7 @@ export default async function CashierSessionPage({
       {feedback ? (
         <NoticeBanner
           tone={tone === "error" ? "error" : "success"}
-          title={tone === "error" ? "Kasa islemi tamamlanamadi" : "Kasa islemi tamamlandi"}
+          title={tone === "error" ? "Kasa işlemi tamamlanamadi" : "Kasa işlemi tamamlandı"}
           description={feedback}
         />
       ) : null}
@@ -241,7 +241,7 @@ export default async function CashierSessionPage({
             <thead className="bg-slate-50 text-slate-500">
               <tr>
                 <th className="px-4 py-4 font-semibold">Durum</th>
-                <th className="px-4 py-4 font-semibold">Baslangic</th>
+                <th className="px-4 py-4 font-semibold">Başlangıç</th>
                 <th className="px-4 py-4 font-semibold">Bitis</th>
                 <th className="px-4 py-4 font-semibold">Not</th>
               </tr>
@@ -250,7 +250,7 @@ export default async function CashierSessionPage({
               {session ? (
                 <tr className="border-t border-slate-100">
                   <td className="px-4 py-4">
-                    <span className="rounded-full bg-emerald-100 px-3 py-1 text-xs font-semibold text-emerald-700">Acik</span>
+                    <span className="rounded-full bg-emerald-100 px-3 py-1 text-xs font-semibold text-emerald-700">Açık</span>
                   </td>
                   <td className="px-4 py-4 text-slate-700">{new Date(session.opened_at).toLocaleString("tr-TR")}</td>
                   <td className="px-4 py-4 text-slate-500">----</td>
@@ -259,7 +259,7 @@ export default async function CashierSessionPage({
               ) : (
                 <tr>
                   <td colSpan={4} className="px-4 py-12 text-center text-slate-500">
-                    Henuz gun islemi kaydi bulunmuyor.
+                    Henüz gun işlemi kaydı bulunmuyor.
                   </td>
                 </tr>
               )}

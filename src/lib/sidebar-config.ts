@@ -11,19 +11,19 @@ export type SidebarNavItem = {
 };
 
 export const operationLinks: SidebarNavItem[] = [
-  { href: "/ops", label: "Yonetim Paneli", icon: "YP", roles: ["admin", "waiter", "kitchen", "cashier"] },
+  { href: "/ops", label: "Yönetim Paneli", icon: "YP", roles: ["admin", "waiter", "kitchen", "cashier"] },
   { href: "/tables", label: "Masa Takip", icon: "MT", roles: ["admin", "waiter", "kitchen", "cashier"] },
   { href: "/admin/orders", label: "Siparisler", icon: "SP", roles: ["owner", "admin", "waiter", "cashier"] },
   { href: "/kitchen", label: "Mutfak", icon: "MK", roles: ["admin", "kitchen"], feature: "kitchen_display" },
   { href: "/admin/reports", label: "Raporlar", icon: "RP", roles: ["admin"], feature: "advanced_reports" },
   { href: "/cashier/session", label: "Gun Islemleri", icon: "GI", roles: ["admin", "cashier"], feature: "shift_management" },
   { href: "/cashier", label: "Adisyonlar", icon: "AD", roles: ["admin", "cashier"] },
-  { href: "/admin/audit", label: "Islem Loglari", icon: "LG", roles: ["admin"], feature: "audit_logs" },
+  { href: "/admin/audit", label: "İşlem Loglari", icon: "LG", roles: ["admin"], feature: "audit_logs" },
   { href: "/admin/finance", label: "Gelir/Gider", icon: "GG", roles: ["admin"], feature: "finance_dashboard" },
-  { href: "/admin/settings", label: "Isletme Ayarlari", icon: "AY", roles: ["owner"] },
+  { href: "/admin/settings", label: "İşletme Ayarlari", icon: "AY", roles: ["owner"] },
   { href: "/admin/businesses", label: "Subeler", icon: "SB", roles: ["owner"], feature: "multi_branch", requiresBusinessScope: true },
   { href: "/admin/products", label: "Urunler", icon: "UR", roles: ["admin"] },
-  { href: "/admin/tables", label: "Bolge ve Masa", icon: "MS", roles: ["admin"] },
+  { href: "/admin/tables", label: "Bölge ve Masa", icon: "MS", roles: ["admin"] },
   { href: "/delivery", label: "Teslimat", icon: "DL", roles: ["admin", "waiter", "cashier"], feature: "delivery_dispatch" },
   { href: "/admin/roles", label: "Personel", icon: "PR", roles: ["owner"], feature: "staff_management" },
 ];

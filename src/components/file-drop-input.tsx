@@ -143,9 +143,9 @@ export function FileDropInput({
             void applyFile(event.target.files?.[0] ?? null);
           }}
         />
-        <p className="font-medium text-slate-800">Surukle birak veya tiklayip sec</p>
+        <p className="font-medium text-slate-800">Sürükle bırak veya tiklayip sec</p>
         <p className="mt-1 text-xs text-slate-500">
-          {isProcessing ? "Gorsel optimize ediliyor..." : selectedFileName || "PNG, JPG, WEBP gibi gorsel dosyalari desteklenir."}
+          {isProcessing ? "Görsel optimize ediliyor..." : selectedFileName || "PNG, JPG, WEBP gibi görsel dosyalari desteklenir."}
         </p>
         {uploadMeta ? <p className="mt-1 text-xs font-medium text-slate-600">{uploadMeta}</p> : null}
       </div>

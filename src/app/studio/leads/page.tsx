@@ -97,7 +97,7 @@ export default async function AdminLeadsPage() {
                     {lead.phone ?? "-"} {lead.email ? `| ${lead.email}` : ""}
                   </p>
                   <p className="mt-1 text-sm text-slate-500">
-                    Sube: {lead.branch_count} | Kaynak: {lead.source ?? "-"}
+                    Şube: {lead.branch_count} | Kaynak: {lead.source ?? "-"}
                   </p>
                   {lead.note ? <p className="mt-3 max-w-3xl text-sm leading-7 text-slate-600">{lead.note}</p> : null}
                   {(notesByLead.get(lead.id) ?? []).length > 0 ? (
@@ -122,7 +122,7 @@ export default async function AdminLeadsPage() {
                       ))}
                     </select>
                     <button type="submit" className="rounded-lg bg-slate-900 px-3 py-2 text-sm text-white">
-                      Guncelle
+                      Güncelle
                     </button>
                   </form>
                   <form action={addLeadNoteAction} className="grid gap-2">
@@ -143,7 +143,7 @@ export default async function AdminLeadsPage() {
             </article>
           ))}
           {leads.length === 0 ? (
-            <p className="rounded-xl bg-white p-4 text-sm text-slate-600">Henuz lead kaydi yok.</p>
+            <p className="rounded-xl bg-white p-4 text-sm text-slate-600">Henüz lead kaydı yok.</p>
           ) : null}
         </section>
       </main>

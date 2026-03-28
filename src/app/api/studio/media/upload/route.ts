@@ -58,7 +58,7 @@ export async function POST(request: Request) {
   }
   const fileUrl = uploadResult.fileUrl;
   if (!fileUrl) {
-    return NextResponse.json({ ok: false, error: "Dosya URL olusturulamadi." }, { status: 500 });
+    return NextResponse.json({ ok: false, error: "Dosya URL oluşturulamadı." }, { status: 500 });
   }
 
   const titleInput = String(formData.get("title") ?? "").trim();
@@ -76,7 +76,7 @@ export async function POST(request: Request) {
   });
 
   if (!createResult.ok) {
-    return NextResponse.json({ ok: false, error: createResult.error ?? "Medya kaydi olusturulamadi." }, { status: 500 });
+    return NextResponse.json({ ok: false, error: createResult.error ?? "Medya kaydı oluşturulamadı." }, { status: 500 });
   }
 
   return NextResponse.json({

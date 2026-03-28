@@ -21,11 +21,11 @@ export default async function SupportTeamPage() {
           <p className="mt-3 text-3xl font-semibold text-slate-900">{activeMembers}</p>
         </div>
         <div className="rounded-2xl bg-white p-6 shadow-sm">
-          <p className="text-xs uppercase tracking-[0.24em] text-slate-500">Takim Acik Ticket</p>
+          <p className="text-xs uppercase tracking-[0.24em] text-slate-500">Takim Açık Ticket</p>
           <p className="mt-3 text-3xl font-semibold text-slate-900">{openTickets}</p>
         </div>
         <div className="rounded-2xl bg-white p-6 shadow-sm">
-          <p className="text-xs uppercase tracking-[0.24em] text-slate-500">Takim Acik Incident</p>
+          <p className="text-xs uppercase tracking-[0.24em] text-slate-500">Takim Açık Incident</p>
           <p className="mt-3 text-3xl font-semibold text-slate-900">{openIncidents}</p>
         </div>
       </section>
@@ -44,8 +44,8 @@ export default async function SupportTeamPage() {
             </div>
             <div className="mt-4 space-y-2 text-sm text-slate-600">
               <p>Rol: {member.role}</p>
-              <p>Acik ticket: {member.open_ticket_count}</p>
-              <p>Acik incident: {member.open_incident_count}</p>
+              <p>Açık ticket: {member.open_ticket_count}</p>
+              <p>Açık incident: {member.open_incident_count}</p>
             </div>
             <div className="mt-4 h-2 overflow-hidden rounded-full bg-slate-100">
               <div

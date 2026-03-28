@@ -88,11 +88,11 @@ function tableStatusLabel(status: TableStatus) {
 function orderStatusLabel(status: string) {
   if (status === "pending") return "Bekliyor";
   if (status === "preparing") return "Hazirlaniyor";
-  if (status === "ready") return "Servise Hazir";
-  if (status === "served") return "Servise Hazir";
-  if (status === "partially_paid") return "Kismi Odeme";
+  if (status === "ready") return "Servise Hazır";
+  if (status === "served") return "Servise Hazır";
+  if (status === "partially_paid") return "Kısmi Ödeme";
   if (status === "paid") return "Kapandi";
-  if (status === "partially_refunded") return "Kismi Iade";
+  if (status === "partially_refunded") return "Kısmi Iade";
   if (status === "cancelled") return "Iptal";
   if (status === "refunded") return "Iade";
   return status;
@@ -121,7 +121,7 @@ async function setTableStatusAction(formData: FormData) {
   const returnTableId = String(formData.get("returnFlowTableId") ?? "").trim() || null;
 
   if (!tableId || (nextStatus !== "empty" && nextStatus !== "reserved")) {
-    redirect(feedbackHref("error", "Masa durumu guncellenemedi.", returnFilter, returnFlow, returnTableId));
+    redirect(feedbackHref("error", "Masa durumu güncellenemedi.", returnFilter, returnFlow, returnTableId));
   }
 
   const result = await executeWebOpsCommand({
@@ -133,7 +133,7 @@ async function setTableStatusAction(formData: FormData) {
   });
 
   if (result.status !== "ACK") {
-    redirect(feedbackHref("error", result.message ?? "Masa durumu guncellenemedi.", returnFilter, returnFlow, returnTableId));
+    redirect(feedbackHref("error", result.message ?? "Masa durumu güncellenemedi.", returnFilter, returnFlow, returnTableId));
   }
 
   revalidatePath("/m/tables");
@@ -145,7 +145,7 @@ async function setTableStatusAction(formData: FormData) {
   redirect(
     feedbackHref(
       "success",
-      nextStatus === "reserved" ? "Masa rezerveye alindi." : "Masa tekrar bos duruma alindi.",
+      nextStatus === "reserved" ? "Masa rezerveye alındı." : "Masa tekrar boş duruma alındı.",
       returnFilter,
       returnFlow,
       returnTableId,
@@ -245,7 +245,7 @@ export default async function MobileTablesPage({
       {usingDemoData ? (
         <div className="m-card m-banner-warning">Demo veri modu aktif.</div>
       ) : null}
-      {orderEntryData?.usingMenuDemo ? <div className="m-card m-banner-warning">Menu demo verisi kullaniliyor.</div> : null}
+      {orderEntryData?.usingMenuDemo ? <div className="m-card m-banner-warning">Menü demo verisi kullaniliyor.</div> : null}
 
       <section className="m-grid-3 mt-3">
         <article className="m-card text-center">
@@ -277,7 +277,7 @@ export default async function MobileTablesPage({
             Rezerve
           </Link>
         </div>
-        <p className="m-muted mt-2">Acik adisyon: {openOrderCount} - Acik servis talebi: {openRequestCountLabel}</p>
+        <p className="m-muted mt-2">Açık adisyon: {openOrderCount} - Açık servis talebi: {openRequestCountLabel}</p>
       </section>
 
       <section className="m-stack mt-3">
@@ -289,7 +289,7 @@ export default async function MobileTablesPage({
           filteredTables.map((table) => {
             const latestOrder = ordersByTableId.get(table.id);
             const requestCount = requestCountByTableId.get(table.id) ?? 0;
-            const zoneName = table.zone_id ? zoneNameById.get(table.zone_id) ?? "Bolge silinmis" : "Bolgesiz";
+            const zoneName = table.zone_id ? zoneNameById.get(table.zone_id) ?? "Bölge silinmis" : "Bolgesiz";
             const supervisor = supervisorByTableId.get(table.id);
             const hasOpenOrder = latestOrder ? isOpenOrderStatus(latestOrder.status) : false;
 
@@ -306,13 +306,13 @@ export default async function MobileTablesPage({
                 </div>
 
                 <div className="mt-2 space-y-1 text-sm text-slate-600">
-                  <p>Bolge: <span className="font-semibold text-slate-900">{zoneName}</span></p>
+                  <p>Bölge: <span className="font-semibold text-slate-900">{zoneName}</span></p>
                   <p>Sorumlu: <span className="font-semibold text-slate-900">{supervisor?.full_name ?? "Atanmamis"}</span></p>
                 </div>
 
                 {latestOrder ? (
                   <div className="mt-3 rounded-xl border border-slate-200 bg-slate-50 px-3 py-3 text-sm">
-                    <p className="m-label">Acik Adisyon</p>
+                    <p className="m-label">Açık Adisyon</p>
                     <div className="mt-1 flex items-center justify-between gap-2">
                       <span className="font-semibold text-slate-900">#{orderRef(latestOrder)}</span>
                       <span className="rounded-full bg-white px-2.5 py-1 text-xs font-semibold text-slate-700">
@@ -325,20 +325,20 @@ export default async function MobileTablesPage({
                   </div>
                 ) : (
                   <div className="mt-3 rounded-xl border border-dashed border-slate-200 bg-slate-50 px-3 py-3 text-sm text-slate-500">
-                    Bu masada acik adisyon yok.
+                    Bu masada açık adisyon yok.
                   </div>
                 )}
 
                 {requestCount > 0 ? (
                   <div className="mt-3 rounded-xl bg-amber-100 px-3 py-2 text-sm font-semibold text-amber-800">
-                    {requestCount} acik servis talebi var.
+                    {requestCount} açık servis talebi var.
                   </div>
                 ) : null}
 
                 <div className="mt-3 grid gap-2">
                   {canOpenOrders ? (
                     <Link href={flowHref(activeFilter, table.id)} className="m-btn-primary inline-flex items-center justify-center">
-                      {latestOrder && hasOpenOrder ? "Siparise Ekle" : "Siparis Ac"}
+                      {latestOrder && hasOpenOrder ? "Siparise Ekle" : "Sipariş Ac"}
                     </Link>
                   ) : null}
 
@@ -395,9 +395,9 @@ export default async function MobileTablesPage({
           <div className="m-flow-shell">
             <header className="m-flow-header">
               <div>
-                <p className="m-label">Siparis Akisi</p>
+                <p className="m-label">Sipariş Akışı</p>
                 <h2 className="text-lg font-semibold text-slate-900">
-                  {selectedTable ? `${selectedTable.name || `Masa ${selectedTable.table_number}`} Siparisi` : "Yeni Siparis"}
+                  {selectedTable ? `${selectedTable.name || `Masa ${selectedTable.table_number}`} Siparisi` : "Yeni Sipariş"}
                 </h2>
               </div>
               <Link href={baseHref(activeFilter)} className="m-btn-secondary inline-flex items-center justify-center px-3">

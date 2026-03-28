@@ -25,7 +25,7 @@ export default async function PrintCenterPage() {
   return (
     <BackofficePage
       title="Yazdirma Merkezi"
-      description="Yazici olmadan adisyon, fis ve QR cikti akisini onizle ve test et"
+      description="Yazıcı olmadan adisyon, fis ve QR çıktı akisini onizle ve test et"
       actions={
         <Link href="/admin/settings" className="w-full rounded-2xl border border-slate-200 bg-white px-5 py-3 text-center text-sm font-semibold text-slate-800 sm:w-auto">
           Ayarlara Don
@@ -34,17 +34,17 @@ export default async function PrintCenterPage() {
     >
       <section className="grid gap-4 xl:grid-cols-3">
         <SummaryCard label="Yazdirma Modu" value={settings.appPrintingEnabled ? "Uygulama" : "Tarayici"} hint="Mevcut yazdirma davranisi" tone="accent" />
-        <SummaryCard label="Test Yontemi" value="PDF" hint="Yazicisiz dogrulama icin uygun" tone="success" />
-        <SummaryCard label="Son Adisyon" value={latestOrder ? `#${orderRef(latestOrder)}` : "Yok"} hint={latestOrder ? "Teste hazir" : "Ornek siparis olustur"} />
+        <SummaryCard label="Test Yontemi" value="PDF" hint="Yazicisiz doğrulama için uygun" tone="success" />
+        <SummaryCard label="Son Adisyon" value={latestOrder ? `#${orderRef(latestOrder)}` : "Yok"} hint={latestOrder ? "Teste hazır" : "Ornek sipariş oluştur"} />
       </section>
 
       <WorkflowGuide
         title="Yazicisiz Test"
-        description="Gercek yazici olmasa da print pipeline'i dogrulayabilirsin."
+        description="Gercek yazıcı olmasa da print pipeline'i dogrulayabilirsin."
         steps={[
           { title: "Duzeni sec", description: "A4 adisyon veya 80mm fis gorunumunu ac." },
-          { title: "Tarayicidan yazdir", description: "Yazdir / PDF ile cikti diyalogunu ac ve gorunumu kontrol et." },
-          { title: "PDF kaydet", description: "Sistem yazicisi gelmeden once sablon, bosluk ve okunabilirligi PDF ile dogrula." },
+          { title: "Tarayicidan yazdir", description: "Yazdir / PDF ile çıktı diyalogunu ac ve gorunumu kontrol et." },
+          { title: "PDF kaydet", description: "Sistem yazicisi gelmeden önce şablon, bosluk ve okunabilirliği PDF ile doğrula." },
         ]}
       />
 
@@ -65,7 +65,7 @@ export default async function PrintCenterPage() {
               </>
             ) : (
               <p className="rounded-2xl border border-dashed border-slate-200 bg-slate-50 px-5 py-4 text-sm text-slate-500">
-                Test icin henuz siparis yok. Once bir siparis olusturup sonra bu ekrandan fişi ac.
+                Test için henüz sipariş yok. Önce bir sipariş olusturup sonra bu ekrandan fişi ac.
               </p>
             )}
             <Link href="/admin/print-center/test-slip" className="block rounded-2xl bg-gradient-to-r from-[#ff5a34] to-[#f0b14f] px-5 py-4 text-sm font-semibold text-white">
@@ -80,14 +80,14 @@ export default async function PrintCenterPage() {
               Masa QR popup ve yazdirma akisini test et
             </Link>
             <p className="rounded-2xl border border-dashed border-slate-200 bg-white px-5 py-4 text-sm text-slate-500">
-              Bu merkez fis ve adisyon sablonunu dogrular. Masa QR kartlari icin `Bolge ve Masa` ekranindaki `Masa Yonet` popup&apos;ini kullan.
+              Bu merkez fis ve adisyon sablonunu dogrular. Masa QR kartlari için `Bölge ve Masa` ekranindaki `Masa Yonet` popup&apos;ini kullan.
             </p>
           </div>
         </ContentCard>
       </div>
 
       <div className="grid gap-5 xl:grid-cols-[1fr_1fr]">
-        <ContentCard title="Mutfak Siparis Fisi">
+        <ContentCard title="Mutfak Sipariş Fisi">
           <div className="space-y-3">
             {latestKitchenOrder ? (
               <>
@@ -100,7 +100,7 @@ export default async function PrintCenterPage() {
               </>
             ) : (
               <p className="rounded-2xl border border-dashed border-slate-200 bg-slate-50 px-5 py-4 text-sm text-slate-500">
-                Mutfak kuyrugunda siparis yok. Test icin bir siparis olustur ve mutfaga dusur.
+                Mutfak kuyrugunda sipariş yok. Test için bir sipariş oluştur ve mutfaga dusur.
               </p>
             )}
           </div>
@@ -118,7 +118,7 @@ export default async function PrintCenterPage() {
               Kapanis raporunu 58mm dar fis olarak ac
             </Link>
             <p className="rounded-2xl border border-dashed border-slate-200 bg-white px-5 py-4 text-sm text-slate-500">
-              {session ? "Acik oturumdaki nakit ve satis ozeti bu ciktiya yansir." : "Acik oturum yoksa bugunun satis ozeti kullanilir."}
+              {session ? "Açık oturumdaki nakit ve satis özeti bu çıktıya yansir." : "Açık oturum yoksa bugunun satis özeti kullanılır."}
             </p>
           </div>
         </ContentCard>

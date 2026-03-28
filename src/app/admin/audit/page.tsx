@@ -8,7 +8,7 @@ export default async function AdminAuditPage() {
   const featureAccess = await getFeatureAccess("audit_logs");
   if (!featureAccess.enabled) {
     return (
-      <BackofficePage title="Islem Loglari" description="Sistem hareketleri ve denetim kayitlari">
+      <BackofficePage title="İşlem Loglari" description="Sistem hareketleri ve denetim kayıtları">
         <FeatureLockedState
           title={featureAccess.title}
           description={featureAccess.description}
@@ -22,26 +22,26 @@ export default async function AdminAuditPage() {
 
   return (
     <BackofficePage
-      title="Islem Loglari"
+      title="İşlem Loglari"
       description="Sistem hareketleri ve degisiklik gecmisi"
       sidebar={
         <SidebarPanel title="Filtreler">
           <div className="grid gap-3">
             <div>
-              <p className="mb-2 text-sm font-semibold text-slate-800">Islem Tipi</p>
+              <p className="mb-2 text-sm font-semibold text-slate-800">İşlem Tipi</p>
               <select className="w-full rounded-2xl border border-slate-200 bg-slate-50 px-4 py-3 text-sm">
                 <option>Tumu</option>
               </select>
             </div>
             <div>
-              <p className="mb-2 text-sm font-semibold text-slate-800">Kullanici</p>
+              <p className="mb-2 text-sm font-semibold text-slate-800">Kullanıcı</p>
               <select className="w-full rounded-2xl border border-slate-200 bg-slate-50 px-4 py-3 text-sm">
                 <option>Tumu</option>
               </select>
             </div>
             <div>
               <p className="mb-2 text-sm font-semibold text-slate-800">Arama</p>
-              <input placeholder="Detay, ID veya kullanici ara..." className="w-full rounded-2xl border border-slate-200 bg-slate-50 px-4 py-3 text-sm" />
+              <input placeholder="Detay, ID veya kullanıcı ara..." className="w-full rounded-2xl border border-slate-200 bg-slate-50 px-4 py-3 text-sm" />
             </div>
           </div>
         </SidebarPanel>
@@ -51,19 +51,19 @@ export default async function AdminAuditPage() {
           <p className="text-2xl font-semibold tracking-tight text-slate-900">
             {new Date().toLocaleDateString("tr-TR", { day: "2-digit", month: "long", year: "numeric" })}
           </p>
-          <p className="text-sm text-slate-500">Son 250 kayit</p>
+          <p className="text-sm text-slate-500">Son 250 kayıt</p>
         </div>
       }
     >
       {usingDemoData ? (
         <div className="rounded-[24px] border border-amber-200 bg-amber-50 px-5 py-4 text-sm text-amber-900">
-          Demo modda audit kayitlari yok.
+          Demo modda audit kayıtları yok.
         </div>
       ) : null}
 
       <ContentCard title="Kayitlar">
         {logs.length === 0 ? (
-          <EmptyPanel title="Kayit Bulunamadi" description="Secili kriterlere uygun islem bulunamadi." />
+          <EmptyPanel title="Kayıt Bulunamadi" description="Secili kriterlere uygun işlem bulunamadi." />
         ) : (
           <div className="responsive-table-shell rounded-[22px] border border-slate-200">
             <table className="responsive-table w-full min-w-[960px] text-left text-sm">

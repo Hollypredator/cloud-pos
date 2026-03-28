@@ -16,7 +16,7 @@ export default async function LoginPage({
   const copy = getPublicCopy(locale);
   const { user, usingDemoData } = await getCurrentUserWithRole();
   const businessName = process.env.NEXT_PUBLIC_BUSINESS_NAME ?? "Cloud POS Cafe";
-  const pendingLoginCta = locale === "en" ? "Signing in..." : locale === "fr" ? "Connexion..." : "Giris yapiliyor...";
+  const pendingLoginCta = locale === "en" ? "Signing in..." : locale === "fr" ? "Connexion..." : "Giriş yapiliyor...";
   if (usingDemoData) {
     return (
       <div className="relative min-h-screen overflow-hidden bg-[linear-gradient(135deg,#f3efe5_0%,#d7e4ea_45%,#f7f8fb_100%)] px-4 py-10">

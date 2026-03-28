@@ -21,7 +21,7 @@ const demoBranches: Branch[] = [
   {
     id: "demo-branch-1",
     business_id: "demo-business-1",
-    name: "Merkez Sube",
+    name: "Merkez Şube",
     slug: "merkez",
     is_active: true,
     created_at: new Date(0).toISOString(),
@@ -30,7 +30,7 @@ const demoBranches: Branch[] = [
   {
     id: "demo-branch-2",
     business_id: "demo-business-1",
-    name: "Bahce Sube",
+    name: "Bahce Şube",
     slug: "bahce",
     is_active: true,
     created_at: new Date(0).toISOString(),

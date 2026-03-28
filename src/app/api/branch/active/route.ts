@@ -11,7 +11,7 @@ export async function POST(request: Request) {
   try {
     body = (await request.json()) as Body;
   } catch {
-    return NextResponse.json({ ok: false, message: "Gecersiz istek govdesi." }, { status: 400 });
+    return NextResponse.json({ ok: false, message: "Geçersiz istek govdesi." }, { status: 400 });
   }
 
   const branchId = normalizeBranchId(body.branchId);
@@ -21,7 +21,7 @@ export async function POST(request: Request) {
   }
   if (auth.accessScope === "branch") {
     if (!auth.primaryBranchId || (branchId && branchId !== auth.primaryBranchId)) {
-      return NextResponse.json({ ok: false, message: "Bu kullanici yalnizca atanmis subeyi gorebilir." }, { status: 403 });
+      return NextResponse.json({ ok: false, message: "Bu kullanıcı yalnızca atanmış şubeyi görebilir." }, { status: 403 });
     }
   } else if (branchId === ALL_BRANCHES_VALUE) {
     // allowed only for business-scope users

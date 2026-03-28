@@ -97,7 +97,7 @@ export function QrOrderingClient({
 
         {visibleProducts.length === 0 ? (
           <p className="rounded-2xl border border-white/10 bg-white/5 px-4 py-5 text-sm text-slate-300">
-            Bu kategori icin urun bulunmuyor.
+            Bu kategori için ürün bulunmuyor.
           </p>
         ) : (
           <div className="grid grid-cols-2 gap-3 md:grid-cols-3 lg:grid-cols-4">
@@ -119,7 +119,7 @@ export function QrOrderingClient({
                     <img src={product.image_url} alt={product.name} className="h-[104px] w-full object-cover sm:h-28" />
                   ) : (
                     <div className="flex h-[104px] w-full items-center justify-center bg-[#1a2d4a] text-[10px] font-semibold uppercase tracking-[0.12em] text-slate-300 sm:h-28">
-                      Gorsel Yok
+                      Görsel Yok
                     </div>
                   )}
                   <div className="px-2.5 py-2.5">
@@ -157,12 +157,12 @@ export function QrOrderingClient({
                 ))}
               </div>
             ) : (
-              <p className="text-sm text-slate-300">Bu urun icin secenek bilgisi bulunmuyor.</p>
+              <p className="text-sm text-slate-300">Bu ürün için secenek bilgisi bulunmuyor.</p>
             )}
           </div>
         ) : null}
 
-        <p className="mt-4 text-center text-xs text-slate-400">QR ekrani menu goruntuleme icindir. Siparisler personel tarafindan acilir.</p>
+        <p className="mt-4 text-center text-xs text-slate-400">QR ekrani menü görüntüleme icindir. Siparisler personel tarafindan açılır.</p>
       </section>
     </div>
   );

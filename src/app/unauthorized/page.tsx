@@ -12,7 +12,7 @@ export default function UnauthorizedPage() {
           </div>
           <h1 className="mt-6 text-4xl font-semibold tracking-tight text-slate-900">Yetki Yok</h1>
           <p className="mx-auto mt-4 max-w-lg text-sm leading-7 text-slate-600">
-            Bu alana erismek icin hesabinizin gerekli role sahip olmasi gerekiyor. Farkli bir hesapla giris yapin ya da
+            Bu alana erismek için hesabinizin gerekli role sahip olmasi gerekiyor. Farkli bir hesapla giriş yapin ya da
             yoneticinizden rol atamasi isteyin.
           </p>
           <div className="mt-8 flex flex-wrap items-center justify-center gap-3">
@@ -23,7 +23,7 @@ export default function UnauthorizedPage() {
               href="/login"
               className="inline-flex rounded-2xl border border-slate-300 bg-white px-5 py-3 text-sm font-semibold text-slate-700"
             >
-              Baska Hesapla Giris Yap
+              Baska Hesapla Giriş Yap
             </Link>
           </div>
         </div>

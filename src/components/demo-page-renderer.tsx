@@ -204,7 +204,7 @@ export function DemoPageRenderer({
               "metric cards",
               <section className="grid gap-4 sm:grid-cols-2 xl:grid-cols-4">
                 <article className="rounded-2xl bg-white p-5 shadow-sm">
-                  <p className="text-xs uppercase tracking-wide text-slate-500">Acik Siparis</p>
+                  <p className="text-xs uppercase tracking-wide text-slate-500">Açık Sipariş</p>
                   <p className="mt-2 text-3xl font-semibold text-slate-900">{metrics.openOrders}</p>
                 </article>
                 <article className="rounded-2xl bg-white p-5 shadow-sm">
@@ -216,7 +216,7 @@ export function DemoPageRenderer({
                   <p className="mt-2 text-3xl font-semibold text-sky-700">{metrics.preparing}</p>
                 </article>
                 <article className="rounded-2xl bg-white p-5 shadow-sm">
-                  <p className="text-xs uppercase tracking-wide text-slate-500">Bugun Ciro</p>
+                  <p className="text-xs uppercase tracking-wide text-slate-500">Bugün Ciro</p>
                   <p className="mt-2 text-3xl font-semibold text-emerald-700">{metrics.todayRevenue.toFixed(2)} TL</p>
                 </article>
               </section>,
@@ -297,7 +297,7 @@ export function DemoPageRenderer({
             {content.showRecentOrders
               ? wrapEditableSection(
                   "orders",
-                  "siparis tablosu",
+                  "sipariş tablosu",
                   <article className="rounded-2xl bg-white p-5 shadow-sm">
                     <div className="mb-4 flex items-center justify-between">
                       <h2 className="text-xl font-semibold text-slate-900">{content.recentOrdersTitle}</h2>
@@ -313,7 +313,7 @@ export function DemoPageRenderer({
                       <table className="w-full min-w-[620px] text-left text-sm">
                         <thead>
                           <tr className="border-b border-slate-200 text-slate-500">
-                            <th className="py-2">Siparis</th>
+                            <th className="py-2">Sipariş</th>
                             <th className="py-2">Masa</th>
                             <th className="py-2">Durum</th>
                             <th className="py-2">Tutar</th>
@@ -417,7 +417,7 @@ export function DemoPageRenderer({
         {content.showClosingCta
           ? wrapEditableSection(
               "closing",
-              "kapanis cta",
+              "kapanış cta",
               <section className="rounded-[2rem] bg-[linear-gradient(135deg,#0f172a_0%,#1d4ed8_55%,#22c55e_100%)] p-8 text-white shadow-[0_30px_80px_rgba(15,23,42,0.18)]">
                 <div className="flex flex-wrap items-center justify-between gap-6">
                   <div className="max-w-3xl">

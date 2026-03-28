@@ -47,7 +47,7 @@ function classifyFailure(message?: string | null): OpsCommandResultStatus {
   const normalized = (message ?? "").toLowerCase();
   if (
     normalized.includes("conflict") ||
-    normalized.includes("baska bir kullanici") ||
+    normalized.includes("baska bir kullanıcı") ||
     normalized.includes("lock") ||
     normalized.includes("kilit")
   ) {
@@ -191,7 +191,7 @@ function ensureOrderCreateInput(command: OpsCommand, payload: Record<string, unk
   const channel = isValidOrderChannel(channelRaw) ? channelRaw : "dine_in";
 
   if (items.length === 0 || totalPrice === null) {
-    return { ok: false as const, error: "ORDER_CREATE icin items ve total_price zorunlu." };
+    return { ok: false as const, error: "ORDER_CREATE için items ve total_price zorunlu." };
   }
 
   return {
@@ -234,7 +234,7 @@ export async function executeOpsCommand(command: OpsCommand, options?: ExecuteCo
         }
         const result = await createOrder(parsed.input);
         if (!result.ok) {
-          return commandResult(command, classifyFailure(result.error), { message: result.error ?? "Siparis olusturulamadi." });
+          return commandResult(command, classifyFailure(result.error), { message: result.error ?? "Sipariş oluşturulamadı." });
         }
         return commandResult(command, "ACK", {
           data: {
@@ -247,7 +247,7 @@ export async function executeOpsCommand(command: OpsCommand, options?: ExecuteCo
       case "ORDER_STATUS_SET": {
         const orderId = asString(payload.order_id);
         if (!orderId || !isValidOrderStatus(payload.status)) {
-          return commandResult(command, "REJECT", { message: "ORDER_STATUS_SET icin order_id ve status zorunlu." });
+          return commandResult(command, "REJECT", { message: "ORDER_STATUS_SET için order_id ve status zorunlu." });
         }
         const station = payload.station;
         const result =
@@ -255,7 +255,7 @@ export async function executeOpsCommand(command: OpsCommand, options?: ExecuteCo
             ? await updateOrderStationStatus(orderId, station, payload.status)
             : await updateOrderStatus(orderId, payload.status);
         if (!result.ok) {
-          const errorMessage = "error" in result && typeof result.error === "string" ? result.error : "Siparis durumu guncellenemedi.";
+          const errorMessage = "error" in result && typeof result.error === "string" ? result.error : "Sipariş durumu güncellenemedi.";
           return commandResult(command, classifyFailure(errorMessage), { message: errorMessage });
         }
         return commandResult(command, "ACK", { data: flattenResultData(result as unknown as Record<string, unknown>) });
@@ -266,11 +266,11 @@ export async function executeOpsCommand(command: OpsCommand, options?: ExecuteCo
         const discountAmount = asNumber(payload.discount_amount);
         const serviceFee = asNumber(payload.service_fee);
         if (!orderId || discountAmount === null || serviceFee === null) {
-          return commandResult(command, "REJECT", { message: "ORDER_FINANCIALS_SET icin order_id, discount_amount ve service_fee zorunlu." });
+          return commandResult(command, "REJECT", { message: "ORDER_FINANCIALS_SET için order_id, discount_amount ve service_fee zorunlu." });
         }
         const result = await applyOrderFinancials({ orderId, discountAmount, serviceFee });
         if (!result.ok) {
-          return commandResult(command, classifyFailure(result.error), { message: result.error ?? "Finansal guncelleme basarisiz." });
+          return commandResult(command, classifyFailure(result.error), { message: result.error ?? "Finansal guncelleme başarısız." });
         }
         return commandResult(command, "ACK", { data: flattenResultData(result as unknown as Record<string, unknown>) });
       }
@@ -279,7 +279,7 @@ export async function executeOpsCommand(command: OpsCommand, options?: ExecuteCo
         const orderId = asString(payload.order_id);
         const productId = asString(payload.product_id);
         if (!orderId || !productId) {
-          return commandResult(command, "REJECT", { message: "ORDER_ITEM_CANCEL icin order_id ve product_id zorunlu." });
+          return commandResult(command, "REJECT", { message: "ORDER_ITEM_CANCEL için order_id ve product_id zorunlu." });
         }
         const result = await cancelOrderItem(orderId, productId);
         if (!result.ok) {
@@ -293,10 +293,10 @@ export async function executeOpsCommand(command: OpsCommand, options?: ExecuteCo
         const method = ensureCashMethod(payload, cashOnly);
         const amount = asNumber(payload.amount);
         if (!orderId) {
-          return commandResult(command, "REJECT", { message: "PAYMENT_SALE_CASH icin order_id zorunlu." });
+          return commandResult(command, "REJECT", { message: "PAYMENT_SALE_CASH için order_id zorunlu." });
         }
         if (!method || method !== "cash") {
-          return commandResult(command, "REJECT", { message: "Offline modda sadece cash odeme kabul edilir." });
+          return commandResult(command, "REJECT", { message: "Offline modda sadece cash ödeme kabul edilir." });
         }
         const result = await completeOrderPayment({
           orderId,
@@ -307,7 +307,7 @@ export async function executeOpsCommand(command: OpsCommand, options?: ExecuteCo
           requestKey: command.idempotency_key,
         });
         if (!result.ok) {
-          return commandResult(command, classifyFailure(result.error), { message: result.error ?? "Nakit tahsilat basarisiz." });
+          return commandResult(command, classifyFailure(result.error), { message: result.error ?? "Nakit tahsilat başarısız." });
         }
         return commandResult(command, "ACK", { data: flattenResultData(result as unknown as Record<string, unknown>) });
       }
@@ -315,11 +315,11 @@ export async function executeOpsCommand(command: OpsCommand, options?: ExecuteCo
       case "ORDER_CANCEL": {
         const orderId = asString(payload.order_id);
         if (!orderId) {
-          return commandResult(command, "REJECT", { message: "ORDER_CANCEL icin order_id zorunlu." });
+          return commandResult(command, "REJECT", { message: "ORDER_CANCEL için order_id zorunlu." });
         }
         const result = await cancelOrder(orderId, asString(payload.note) ?? undefined, command.idempotency_key);
         if (!result.ok) {
-          return commandResult(command, classifyFailure(result.error), { message: result.error ?? "Siparis iptal edilemedi." });
+          return commandResult(command, classifyFailure(result.error), { message: result.error ?? "Sipariş iptal edilemedi." });
         }
         return commandResult(command, "ACK", { data: flattenResultData(result as unknown as Record<string, unknown>) });
       }
@@ -329,7 +329,7 @@ export async function executeOpsCommand(command: OpsCommand, options?: ExecuteCo
         const method = ensureCashMethod(payload, cashOnly);
         const amount = asNumber(payload.amount);
         if (!orderId) {
-          return commandResult(command, "REJECT", { message: "ORDER_REFUND_CASH icin order_id zorunlu." });
+          return commandResult(command, "REJECT", { message: "ORDER_REFUND_CASH için order_id zorunlu." });
         }
         if (!method || method !== "cash") {
           return commandResult(command, "REJECT", { message: "Offline modda sadece cash iade kabul edilir." });
@@ -343,7 +343,7 @@ export async function executeOpsCommand(command: OpsCommand, options?: ExecuteCo
           requestKey: command.idempotency_key,
         });
         if (!result.ok) {
-          return commandResult(command, classifyFailure(result.error), { message: result.error ?? "Nakit iade basarisiz." });
+          return commandResult(command, classifyFailure(result.error), { message: result.error ?? "Nakit iade başarısız." });
         }
         return commandResult(command, "ACK", { data: flattenResultData(result as unknown as Record<string, unknown>) });
       }
@@ -353,7 +353,7 @@ export async function executeOpsCommand(command: OpsCommand, options?: ExecuteCo
         const courierId = asString(payload.courier_id);
         const courierName = asString(payload.courier_name);
         if (!orderId || !courierId || !courierName) {
-          return commandResult(command, "REJECT", { message: "DELIVERY_ASSIGN icin order_id, courier_id ve courier_name zorunlu." });
+          return commandResult(command, "REJECT", { message: "DELIVERY_ASSIGN için order_id, courier_id ve courier_name zorunlu." });
         }
         const result = await assignOrderCourier({
           orderId,
@@ -362,7 +362,7 @@ export async function executeOpsCommand(command: OpsCommand, options?: ExecuteCo
           courierPhone: asString(payload.courier_phone),
         });
         if (!result.ok) {
-          return commandResult(command, classifyFailure(result.error), { message: result.error ?? "Kurye atama basarisiz." });
+          return commandResult(command, classifyFailure(result.error), { message: result.error ?? "Kurye atama başarısız." });
         }
         return commandResult(command, "ACK", { data: flattenResultData(result as unknown as Record<string, unknown>) });
       }
@@ -370,7 +370,7 @@ export async function executeOpsCommand(command: OpsCommand, options?: ExecuteCo
       case "DELIVERY_COMPLETE": {
         const orderId = asString(payload.order_id);
         if (!orderId) {
-          return commandResult(command, "REJECT", { message: "DELIVERY_COMPLETE icin order_id zorunlu." });
+          return commandResult(command, "REJECT", { message: "DELIVERY_COMPLETE için order_id zorunlu." });
         }
         const result = await markDeliveryCompleted(orderId);
         if (!result.ok) {
@@ -382,11 +382,11 @@ export async function executeOpsCommand(command: OpsCommand, options?: ExecuteCo
       case "TABLE_STATUS_SET": {
         const tableId = asString(payload.table_id);
         if (!tableId || !isValidTableStatus(payload.status)) {
-          return commandResult(command, "REJECT", { message: "TABLE_STATUS_SET icin table_id ve status zorunlu." });
+          return commandResult(command, "REJECT", { message: "TABLE_STATUS_SET için table_id ve status zorunlu." });
         }
         const result = await updateTableStatus({ tableId, status: payload.status });
         if (!result.ok) {
-          return commandResult(command, classifyFailure(result.error), { message: result.error ?? "Masa durumu guncellenemedi." });
+          return commandResult(command, classifyFailure(result.error), { message: result.error ?? "Masa durumu güncellenemedi." });
         }
         return commandResult(command, "ACK", { data: flattenResultData(result as unknown as Record<string, unknown>) });
       }
@@ -394,7 +394,7 @@ export async function executeOpsCommand(command: OpsCommand, options?: ExecuteCo
       case "TABLE_REQUEST_RESOLVE": {
         const requestId = asString(payload.request_id);
         if (!requestId) {
-          return commandResult(command, "REJECT", { message: "TABLE_REQUEST_RESOLVE icin request_id zorunlu." });
+          return commandResult(command, "REJECT", { message: "TABLE_REQUEST_RESOLVE için request_id zorunlu." });
         }
         const result = await resolveTableRequest(requestId);
         if (!result.ok) {
@@ -406,7 +406,7 @@ export async function executeOpsCommand(command: OpsCommand, options?: ExecuteCo
       case "CASH_SESSION_OPEN": {
         const openingCash = asNumber(payload.opening_cash);
         if (openingCash === null) {
-          return commandResult(command, "REJECT", { message: "CASH_SESSION_OPEN icin opening_cash zorunlu." });
+          return commandResult(command, "REJECT", { message: "CASH_SESSION_OPEN için opening_cash zorunlu." });
         }
         const result = await openCashSession(openingCash, asString(payload.note) ?? undefined, command.actor_id ?? undefined);
         if (!result.ok) {
@@ -419,7 +419,7 @@ export async function executeOpsCommand(command: OpsCommand, options?: ExecuteCo
         const sessionId = asString(payload.session_id);
         const closingCash = asNumber(payload.closing_cash);
         if (!sessionId || closingCash === null) {
-          return commandResult(command, "REJECT", { message: "CASH_SESSION_CLOSE icin session_id ve closing_cash zorunlu." });
+          return commandResult(command, "REJECT", { message: "CASH_SESSION_CLOSE için session_id ve closing_cash zorunlu." });
         }
         const result = await closeCashSession({
           sessionId,

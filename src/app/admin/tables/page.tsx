@@ -126,8 +126,8 @@ export default async function AdminTablesPage({
     zoneFilter === "__unassigned__"
       ? "Atanmamis"
       : zoneFilter
-        ? zoneById.get(zoneFilter)?.name ?? "Secili bolge"
-        : "Tum bolgeler";
+        ? zoneById.get(zoneFilter)?.name ?? "Secili bölge"
+        : "Tüm bolgeler";
   const deleteMode = deleteParam === "1";
   const zoneQueryPart = zoneFilter ? `?zone=${encodeURIComponent(zoneFilter)}` : "";
   const deleteModeHref = zoneFilter
@@ -137,7 +137,7 @@ export default async function AdminTablesPage({
 
   return (
     <BackofficePage
-      title={translateUiText("Bolge ve Masa Yonetimi", locale)}
+      title={translateUiText("Bölge ve Masa Yönetimi", locale)}
       description={translateUiText("Salon yerlesimi, QR hedefleri ve aktif masa listesi", locale)}
       actions={
         <>
@@ -158,7 +158,7 @@ export default async function AdminTablesPage({
               className="min-h-12 w-full rounded-2xl border border-slate-200 bg-slate-50 px-4 py-3 text-base sm:w-44 sm:text-sm"
             />
             <select name="zoneId" defaultValue="__none__" className="min-h-12 w-full rounded-2xl border border-slate-200 bg-slate-50 px-4 py-3 text-base sm:w-44 sm:text-sm">
-              <option value="__none__">Bolge sec (opsiyonel)</option>
+              <option value="__none__">Bölge sec (opsiyonel)</option>
               {zones.map((zone) => (
                 <option key={zone.id} value={zone.id}>
                   {zone.name}
@@ -177,7 +177,7 @@ export default async function AdminTablesPage({
       {feedback ? (
         <NoticeBanner
           tone={tone === "error" ? "error" : "success"}
-          title={tone === "error" ? "Masa islemi tamamlanamadi" : "Masa islemi tamamlandi"}
+          title={tone === "error" ? "Masa işlemi tamamlanamadi" : "Masa işlemi tamamlandı"}
           description={feedback}
         />
       ) : null}
@@ -200,31 +200,31 @@ export default async function AdminTablesPage({
         <SummaryCard
           label={translateUiText("Bos Masa", locale)}
           value={String(emptyCount)}
-          hint={translateUiText("Yeni musteri icin hazir", locale)}
+          hint={translateUiText("Yeni müşteri için hazır", locale)}
           tone="success"
           className="bg-[linear-gradient(130deg,rgba(16,185,129,0.12),rgba(255,255,255,0.9)_65%)]"
         />
         <SummaryCard
-          label={translateUiText("Acik Adisyon", locale)}
+          label={translateUiText("Açık Adisyon", locale)}
           value={String(activeOrderCount)}
-          hint={translateUiText("Masaya bagli operasyon", locale)}
+          hint={translateUiText("Masaya bağlı operasyon", locale)}
           className="bg-[linear-gradient(130deg,rgba(59,130,246,0.1),rgba(255,255,255,0.9)_65%)]"
         />
       </section>
 
       <WorkflowGuide
         title={translateUiText("Masalari 3 Adimda Hazirla", locale)}
-        description={translateUiText("Salon kurulumu ilk kez yapilsa bile masa akisi kolay anlasilsin.", locale)}
+        description={translateUiText("Salon kurulumu ilk kez yapilsa bile masa akışı kolay anlasilsin.", locale)}
         className="bg-[linear-gradient(125deg,rgba(15,23,42,0.03),rgba(255,255,255,0.92)_45%,rgba(255,106,61,0.08))]"
         steps={[
-          { title: translateUiText("Masayi olustur ve isim ver", locale), description: translateUiText("Yeni masa numarasini ve gorunur masa adini kaydet; ekip bu isimle calisir.", locale) },
+          { title: translateUiText("Masayi oluştur ve isim ver", locale), description: translateUiText("Yeni masa numarasini ve gorunur masa adini kaydet; ekip bu isimle çalışır.", locale) },
           { title: translateUiText("QR'i kontrol et", locale), description: translateUiText("QR ve yazdirma islerini Masa Yonet popup'i icinden tamamla.", locale) },
-          { title: translateUiText("Aktif siparisi buradan izle", locale), description: translateUiText("Her kartta son adisyon ozetini gor; detayli gecmisi popup icinden ac.", locale) },
+          { title: translateUiText("Aktif siparişi buradan izle", locale), description: translateUiText("Her kartta son adisyon ozetini gör; detayli gecmisi popup icinden ac.", locale) },
         ]}
       />
 
       <div className="rounded-[28px] border border-slate-200 bg-white p-4 shadow-[0_10px_20px_rgba(15,23,42,0.04)]">
-        <WorkspaceTabs tabs={[{ label: translateUiText("Isletmeler", locale) }, { label: translateUiText("Bolge ve Masa Yonetimi", locale), active: true }]} />
+        <WorkspaceTabs tabs={[{ label: translateUiText("İşletmeler", locale) }, { label: translateUiText("Bölge ve Masa Yönetimi", locale), active: true }]} />
 
         {usingDemoData ? (
           <div className="mt-4 rounded-2xl border border-amber-200 bg-amber-50 px-4 py-3 text-sm text-amber-900">
@@ -244,11 +244,11 @@ export default async function AdminTablesPage({
                 name="zoneName"
                 required
                 minLength={2}
-                placeholder="Yeni bolge adi"
+                placeholder="Yeni bölge adi"
                 className="min-h-12 rounded-2xl border border-slate-300 px-4 py-3 text-base sm:text-sm"
               />
               <PendingSubmitButton
-                idleLabel="Bolge Ac"
+                idleLabel="Bölge Ac"
                 pendingLabel="Olusturuluyor..."
                 className="min-h-12 w-full rounded-2xl bg-slate-900 px-4 py-3 text-base font-semibold text-white sm:text-sm"
               />
@@ -259,7 +259,7 @@ export default async function AdminTablesPage({
                 href="/admin/tables"
                 className={`block rounded-2xl border px-4 py-4 text-base transition sm:text-sm ${!zoneFilter ? "border-[#ff8b73] bg-[#fff8ee] text-slate-900" : "border-slate-200 bg-white text-slate-600 hover:border-slate-300"}`}
               >
-                <span className="font-semibold">Tum Bolgeler</span>
+                <span className="font-semibold">Tüm Bolgeler</span>
                 <span className="mt-1 block text-xs text-slate-500">{tables.length} masa</span>
               </Link>
               {zones.map((zone) => (
@@ -292,7 +292,7 @@ export default async function AdminTablesPage({
 
             {zones.length > 0 ? (
               <form action={bulkDeleteZonesAction} className="mt-4 grid gap-2 rounded-2xl border border-rose-200 bg-rose-50/70 p-3">
-                <p className="text-xs font-bold uppercase tracking-[0.14em] text-rose-700">Toplu Bolge Silme</p>
+                <p className="text-xs font-bold uppercase tracking-[0.14em] text-rose-700">Toplu Bölge Silme</p>
                 <select
                   name="zoneIds"
                   multiple
@@ -305,7 +305,7 @@ export default async function AdminTablesPage({
                     </option>
                   ))}
                 </select>
-                <p className="text-xs text-rose-700">Secilen bolgeler silinir; bu bolgelerdeki masalar otomatik olarak atanmamis olur.</p>
+                <p className="text-xs text-rose-700">Secilen bolgeler silinir; bu bolgelerdeki masalar otomatik olarak atanmamış olur.</p>
                 <PendingSubmitButton
                   idleLabel="Secili Bolgeleri Sil"
                   pendingLabel="Siliniyor..."
@@ -343,7 +343,7 @@ export default async function AdminTablesPage({
                 min={1}
                 inputMode="numeric"
                 required
-                placeholder="Baslangic no"
+                placeholder="Başlangıç no"
                 className="min-h-12 rounded-2xl border border-slate-300 px-4 py-3 text-base sm:text-sm"
               />
               <input
@@ -362,7 +362,7 @@ export default async function AdminTablesPage({
                 className="min-h-12 rounded-2xl border border-slate-300 px-4 py-3 text-base sm:text-sm"
               />
               <select name="zoneId" defaultValue="__none__" className="min-h-12 rounded-2xl border border-slate-300 px-4 py-3 text-base sm:text-sm">
-                <option value="__none__">Bolge sec (opsiyonel)</option>
+                <option value="__none__">Bölge sec (opsiyonel)</option>
                 {zones.map((zone) => (
                   <option key={zone.id} value={zone.id}>
                     {zone.name}
@@ -383,7 +383,7 @@ export default async function AdminTablesPage({
                 min={1}
                 inputMode="numeric"
                 required
-                placeholder="Silme baslangic"
+                placeholder="Silme başlangıç"
                 className="min-h-12 rounded-2xl border border-rose-200 bg-white px-4 py-3 text-base sm:text-sm"
               />
               <input
@@ -392,7 +392,7 @@ export default async function AdminTablesPage({
                 min={1}
                 inputMode="numeric"
                 required
-                placeholder="Silme bitis"
+                placeholder="Silme bitiş"
                 className="min-h-12 rounded-2xl border border-rose-200 bg-white px-4 py-3 text-base sm:text-sm"
               />
               <select
@@ -400,8 +400,8 @@ export default async function AdminTablesPage({
                 defaultValue={zoneFilter === "__unassigned__" ? "__none__" : zoneFilter && zoneById.has(zoneFilter) ? zoneFilter : "__all__"}
                 className="min-h-12 rounded-2xl border border-rose-200 bg-white px-4 py-3 text-base sm:text-sm"
               >
-                <option value="__all__">Tum bolgeler</option>
-                <option value="__none__">Sadece atanmamis</option>
+                <option value="__all__">Tüm bolgeler</option>
+                <option value="__none__">Sadece atanmamış</option>
                 {zones.map((zone) => (
                   <option key={zone.id} value={zone.id}>
                     {zone.name}
@@ -421,12 +421,12 @@ export default async function AdminTablesPage({
 
             {filteredTables.length === 0 ? (
               <div className="mt-4">
-                <EmptyPanel title="Masa Yok" description={`${selectedZoneLabel} icin masa bulunmuyor. Toplu acilis veya yeni masa ile devam edebilirsiniz.`} />
+                <EmptyPanel title="Masa Yok" description={`${selectedZoneLabel} için masa bulunmuyor. Toplu acilis veya yeni masa ile devam edebilirsiniz.`} />
               </div>
             ) : deleteMode ? (
               <form action={bulkDeleteSelectedTablesAction} className="mt-4 space-y-3">
                 <div className="rounded-2xl border border-rose-200 bg-rose-50/80 px-4 py-3 text-sm text-rose-700">
-                  Silme modu acik. Varsayilan olarak sadece bos masalar silinir. Istersen asagidaki onay ile dolu/rezerve
+                  Silme modu açık. Varsayilan olarak sadece boş masalar silinir. Istersen aşağıdaki onay ile dolu/rezerve
                   masalari da silebilirsin.
                 </div>
                 <div className="grid gap-4 md:grid-cols-2 xl:grid-cols-3 2xl:grid-cols-4">
@@ -451,7 +451,7 @@ export default async function AdminTablesPage({
                             <p className="text-xl font-semibold tracking-tight text-slate-900 sm:text-2xl">{table.name || `Masa ${table.table_number}`}</p>
                             <p className="mt-1 text-xs font-semibold uppercase tracking-[0.14em] text-slate-500">Masa {table.table_number}</p>
                             <p className="mt-1 text-sm text-slate-500">{tableStatusLabel(table.status)}</p>
-                            <p className="mt-1 text-xs font-semibold uppercase tracking-[0.12em] text-slate-400">Bolge: {zoneLabel}</p>
+                            <p className="mt-1 text-xs font-semibold uppercase tracking-[0.12em] text-slate-400">Bölge: {zoneLabel}</p>
                             <p className="mt-1 text-xs text-slate-500">
                               Sorumlu garson: <span className="font-semibold text-slate-700">{supervisor?.full_name ?? "Atanmamis"}</span>
                             </p>
@@ -475,14 +475,14 @@ export default async function AdminTablesPage({
                               </div>
                             </>
                           ) : (
-                            <p className="text-sm text-slate-500">Bu masa yeni siparis almak icin hazir.</p>
+                            <p className="text-sm text-slate-500">Bu masa yeni sipariş almak için hazır.</p>
                           )}
                         </div>
 
                         <div className="mt-4 rounded-2xl border border-slate-200 bg-white px-3 py-3 text-sm">
                           <span className={`inline-flex items-center gap-2 font-semibold ${isEmptyTable ? "text-rose-700" : "text-amber-700"}`}>
                             <input type="checkbox" name="tableIds" value={table.id} className="h-4 w-4 rounded border-rose-300" />
-                            {isEmptyTable ? "Silmek icin sec" : "Aktif/Rezerve masa (zorla silme icin sec)"}
+                            {isEmptyTable ? "Silmek için sec" : "Aktif/Rezerve masa (zorla silme için sec)"}
                           </span>
                         </div>
                       </label>
@@ -527,7 +527,7 @@ export default async function AdminTablesPage({
                           <p className="text-xl font-semibold tracking-tight text-slate-900 sm:text-2xl">{table.name || `Masa ${table.table_number}`}</p>
                           <p className="mt-1 text-xs font-semibold uppercase tracking-[0.14em] text-slate-500">Masa {table.table_number}</p>
                           <p className="mt-1 text-sm text-slate-500">{tableStatusLabel(table.status)}</p>
-                          <p className="mt-1 text-xs font-semibold uppercase tracking-[0.12em] text-slate-400">Bolge: {zoneLabel}</p>
+                          <p className="mt-1 text-xs font-semibold uppercase tracking-[0.12em] text-slate-400">Bölge: {zoneLabel}</p>
                           <p className="mt-1 text-xs text-slate-500">
                             Sorumlu garson: <span className="font-semibold text-slate-700">{supervisor?.full_name ?? "Atanmamis"}</span>
                           </p>
@@ -553,7 +553,7 @@ export default async function AdminTablesPage({
                         ) : (
                           <>
                             <p className="text-[11px] font-bold uppercase tracking-[0.16em] text-slate-500">Hazirlik Durumu</p>
-                            <p className="mt-2 text-sm text-slate-500">Bu masa yeni siparis almak icin hazir.</p>
+                            <p className="mt-2 text-sm text-slate-500">Bu masa yeni sipariş almak için hazır.</p>
                           </>
                         )}
                       </div>
@@ -582,7 +582,7 @@ export default async function AdminTablesPage({
                           </form>
                         ) : (
                           <div className="rounded-xl border border-amber-200 bg-amber-50 px-3 py-3 text-xs text-amber-800">
-                            Sorumlu garson atamasi icin son migration henuz uygulanmamis.
+                            Sorumlu garson atamasi için son migration henüz uygulanmamis.
                           </div>
                         )}
                         <Link href={`/admin/tables?table=${table.id}${zoneFilter ? `&zone=${zoneFilter}` : ""}`} className="inline-flex min-h-11 items-center justify-center rounded-xl bg-gradient-to-r from-[#ff6a3d] to-[#f2b44f] px-3 py-3 text-center text-base font-semibold text-white sm:text-sm">

@@ -27,7 +27,7 @@ export default async function SessionReportPrintPage({
         <header className="border-b border-slate-200 pb-4 text-center">
           <p className="text-xs font-bold uppercase tracking-[0.22em] text-slate-500">Kasa Kapanis Raporu</p>
           <h1 className={`mt-2 font-semibold text-slate-900 ${thermal ? "text-xl" : "text-3xl"}`}>
-            {session ? "Acilik Oturum Ozeti" : "Bugun Ozeti"}
+            {session ? "Acilik Oturum Özeti" : "Bugün Özeti"}
           </h1>
           <p className="mt-2 text-xs text-slate-500">{new Date().toLocaleString("tr-TR")}</p>
         </header>

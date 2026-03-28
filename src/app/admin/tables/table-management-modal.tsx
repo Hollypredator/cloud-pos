@@ -240,9 +240,9 @@ export function TableManagementModal({
       <div className="panel-surface h-[100dvh] w-full max-w-6xl overflow-auto overscroll-y-contain rounded-none p-4 pb-[max(1rem,env(safe-area-inset-bottom))] sm:max-h-[92vh] sm:h-auto sm:rounded-[32px] sm:p-6">
         <div className="mb-5 flex flex-wrap items-start justify-between gap-4 border-b border-slate-200 pb-5">
           <div>
-            <p className="text-xs font-bold uppercase tracking-[0.16em] text-slate-500">{translateUiText("Masa Yonetimi", locale)}</p>
+            <p className="text-xs font-bold uppercase tracking-[0.16em] text-slate-500">{translateUiText("Masa Yönetimi", locale)}</p>
             <h2 className="font-display mt-2 text-2xl font-semibold tracking-tight text-slate-900 sm:text-3xl">{table.name || `Masa ${table.table_number}`}</h2>
-            <p className="mt-1 text-sm text-slate-500">{translateUiText("Tum islemler popup icinde hizli yonetim icin sekmeli yapida.", locale)}</p>
+            <p className="mt-1 text-sm text-slate-500">{translateUiText("Tüm işlemler popup icinde hızlı yönetim için sekmeli yapida.", locale)}</p>
           </div>
           <Link href="/admin/tables" className="inline-flex min-h-12 items-center justify-center rounded-2xl border border-slate-200 bg-white px-4 py-3 text-base font-semibold text-slate-700 sm:text-sm">
             {translateUiText("Kapat", locale)}
@@ -258,12 +258,12 @@ export function TableManagementModal({
           <article className="rounded-[24px] border border-slate-200 bg-[linear-gradient(130deg,rgba(255,106,61,0.1),rgba(255,255,255,0.95)_65%)] p-4">
             <p className="text-xs font-bold uppercase tracking-[0.16em] text-slate-500">{translateUiText("Aktif Adisyon", locale)}</p>
             <p className="font-display mt-3 text-2xl font-semibold text-slate-900">{liveLatestOrder ? `#${orderRef(liveLatestOrder)}` : translateUiText("Yok", locale)}</p>
-            <p className="mt-2 text-sm text-slate-500">{liveLatestOrder ? liveLatestOrder.status : translateUiText("Bu masa icin acik siparis bulunmuyor", locale)}</p>
+            <p className="mt-2 text-sm text-slate-500">{liveLatestOrder ? liveLatestOrder.status : translateUiText("Bu masa için açık sipariş bulunmuyor", locale)}</p>
           </article>
           <article className="rounded-[24px] border border-slate-200 bg-[linear-gradient(130deg,rgba(16,185,129,0.1),rgba(255,255,255,0.95)_65%)] p-4">
             <p className="text-xs font-bold uppercase tracking-[0.16em] text-slate-500">{translateUiText("Kalan Bakiye", locale)}</p>
             <p className="font-display font-numeric mt-3 text-2xl font-semibold text-emerald-700">{Number(liveLatestOrder?.remaining_balance ?? 0).toFixed(2)} TL</p>
-            <p className="mt-2 text-sm text-slate-500">{translateUiText("Aktif siparis uzerinden hesaplanir", locale)}</p>
+            <p className="mt-2 text-sm text-slate-500">{translateUiText("Aktif sipariş uzerinden hesaplanir", locale)}</p>
           </article>
         </div>
 
@@ -273,7 +273,7 @@ export function TableManagementModal({
             onClick={() => setActiveTab("order")}
             className={`min-h-12 rounded-xl px-4 py-3 text-base font-semibold sm:text-sm ${activeTab === "order" ? "bg-gradient-to-r from-[#ff6a3d] to-[#f2b44f] text-white shadow-[0_12px_22px_rgba(255,106,61,0.2)]" : "bg-white text-slate-700"}`}
           >
-            {translateUiText("Siparis Girisi", locale)}
+            {translateUiText("Sipariş Girisi", locale)}
           </button>
           <button
             type="button"
@@ -295,10 +295,10 @@ export function TableManagementModal({
           <section className="mt-5 rounded-[28px] border border-slate-200 bg-white p-5">
             <div className="mb-4 border-b border-slate-200 pb-4">
               <h3 className="font-display text-2xl font-semibold tracking-tight text-slate-900">
-                {translateUiText("Bu Masada Siparis Girisi", locale)}
+                {translateUiText("Bu Masada Sipariş Girisi", locale)}
               </h3>
               <p className="mt-1 text-sm text-slate-500">
-                {translateUiText("Popup icinden urun ekle, cikar ve siparisi mutfaga gonder.", locale)}
+                {translateUiText("Popup icinden ürün ekle, cikar ve siparişi mutfaga gonder.", locale)}
               </p>
             </div>
             <AdminOrderEntry
@@ -323,7 +323,7 @@ export function TableManagementModal({
             <div className="flex flex-wrap items-center justify-between gap-3 border-b border-slate-200 pb-4">
               <div>
                 <h3 className="font-display text-2xl font-semibold tracking-tight text-slate-900">{translateUiText("Son Siparisler", locale)}</h3>
-                <p className="mt-1 text-sm text-slate-500">{translateUiText("Bu masa icin son olusan adisyonlar ve tahsilat durumlari", locale)}</p>
+                <p className="mt-1 text-sm text-slate-500">{translateUiText("Bu masa için son olusan adisyonlar ve tahsilat durumlari", locale)}</p>
               </div>
               <div className="flex flex-wrap gap-2">
                 <Link href="/cashier" className="inline-flex min-h-11 items-center justify-center rounded-2xl border border-slate-200 bg-slate-50 px-4 py-3 text-base font-semibold text-slate-700 sm:text-sm">
@@ -359,7 +359,7 @@ export function TableManagementModal({
                 {receiptDetails[previewOrderId] ? (
                   <div ref={receiptPreviewRef} className="receipt-preview-print receipt-inline-sheet max-h-[68vh] overflow-auto rounded-xl border border-slate-200 bg-white p-4">
                     <div className="border-b border-slate-200 pb-3">
-                      <p className="text-xs font-bold uppercase tracking-[0.16em] text-slate-500">Siparis Ozeti</p>
+                      <p className="text-xs font-bold uppercase tracking-[0.16em] text-slate-500">Sipariş Özeti</p>
                       <p className="mt-2 text-sm text-slate-600">
                         {new Date(receiptDetails[previewOrderId].created_at).toLocaleString("tr-TR")}
                       </p>
@@ -423,10 +423,10 @@ export function TableManagementModal({
             <div className="mt-4 space-y-3">
               {historyLoading && historyOrders.length === 0 ? (
                 <div className="rounded-2xl border border-slate-200 bg-slate-50 px-4 py-4 text-sm text-slate-600">
-                  Son siparisler guncelleniyor...
+                  Son siparişler guncelleniyor...
                 </div>
               ) : historyOrders.length === 0 ? (
-                <EmptyPanel title={translateUiText("Gecmis Siparis Yok", locale)} description={translateUiText("Bu masa icin daha once acilmis siparis kaydi bulunmuyor.", locale)} />
+                <EmptyPanel title={translateUiText("Geçmiş Sipariş Yok", locale)} description={translateUiText("Bu masa için daha önce açılmış sipariş kaydı bulunmuyor.", locale)} />
               ) : (
                 historyOrders.map((order) => {
                   const total = Number(order.final_price ?? order.total_price);
@@ -436,7 +436,7 @@ export function TableManagementModal({
                     <article key={order.id} className="rounded-[22px] border border-slate-200 bg-slate-50 p-4">
                       <div className="flex flex-wrap items-start justify-between gap-3">
                         <div>
-                          <p className="text-xs font-bold uppercase tracking-[0.16em] text-slate-500">{translateUiText("Siparis", locale)}</p>
+                          <p className="text-xs font-bold uppercase tracking-[0.16em] text-slate-500">{translateUiText("Sipariş", locale)}</p>
                           <p className="mt-2 text-lg font-semibold text-slate-900">#{orderRef(order)}</p>
                           <p className="mt-1 text-sm text-slate-500">{new Date(order.created_at).toLocaleString("tr-TR")}</p>
                         </div>
@@ -498,7 +498,7 @@ export function TableManagementModal({
               </article>
 
               <article className="rounded-[28px] border border-slate-200 bg-white p-5">
-                <h3 className="font-display text-2xl font-semibold tracking-tight text-slate-900">Bolge Atama</h3>
+                <h3 className="font-display text-2xl font-semibold tracking-tight text-slate-900">Bölge Atama</h3>
                 <p className="mt-2 text-sm text-slate-600">Masanin hangi bolgede gorunecegini secin.</p>
                 <form action={assignTableZoneAction} className="mt-4 grid gap-3">
                   <input type="hidden" name="tableId" value={table.id} />
@@ -511,7 +511,7 @@ export function TableManagementModal({
                     ))}
                   </select>
                   <PendingSubmitButton
-                    idleLabel="Bolgeyi Guncelle"
+                    idleLabel="Bolgeyi Güncelle"
                     pendingLabel="Guncelleniyor..."
                     className="min-h-12 w-full rounded-2xl bg-slate-900 px-4 py-3 text-base font-semibold text-white sm:w-auto sm:text-sm"
                   />
@@ -521,7 +521,7 @@ export function TableManagementModal({
               <article className="rounded-[28px] border border-slate-200 bg-white p-5">
                 <h3 className="font-display text-2xl font-semibold tracking-tight text-slate-900">Rezervasyon</h3>
                 <p className="mt-2 text-sm text-slate-600">
-                  Bu masayi tek tikla rezerveye alabilir veya tekrar bos duruma getirebilirsin.
+                  Bu masayi tek tikla rezerveye alabilir veya tekrar boş duruma getirebilirsin.
                 </p>
                 <form action={updateTableStatusAction} className="mt-4">
                   <input type="hidden" name="tableId" value={table.id} />
@@ -534,14 +534,14 @@ export function TableManagementModal({
                   />
                 </form>
                 {table.status === "occupied" ? (
-                  <p className="mt-3 text-sm text-slate-500">Dolu masada aktif adisyon oldugu icin rezervasyon degisikligi kilitli.</p>
+                  <p className="mt-3 text-sm text-slate-500">Dolu masada aktif adisyon oldugu için rezervasyon degisikligi kilitli.</p>
                 ) : null}
               </article>
 
               {liveLatestOrder ? (
                 <article className="rounded-[28px] border border-slate-200 bg-white p-5">
                   <h3 className="font-display text-2xl font-semibold tracking-tight text-slate-900">{translateUiText("Adisyonu Tas", locale)}</h3>
-                  <p className="mt-2 text-sm text-slate-600">{translateUiText("Aktif adisyonu bos bir masaya tasiyarak eski masayi aninda kapat.", locale)}</p>
+                  <p className="mt-2 text-sm text-slate-600">{translateUiText("Aktif adisyonu boş bir masaya tasiyarak eski masayi aninda kapat.", locale)}</p>
                   <form action={moveTableOrderAction} className="mt-4 grid gap-3">
                     <input type="hidden" name="sourceTableId" value={table.id} />
                     <select
@@ -567,14 +567,14 @@ export function TableManagementModal({
                     />
                   </form>
                   {movableTables.length === 0 ? (
-                    <p className="mt-3 text-sm text-slate-500">{translateUiText("Tasimak icin bos baska masa bulunmuyor.", locale)}</p>
+                    <p className="mt-3 text-sm text-slate-500">{translateUiText("Tasimak için boş baska masa bulunmuyor.", locale)}</p>
                   ) : null}
                 </article>
               ) : null}
 
               <article className="rounded-[28px] border border-rose-200 bg-rose-50/60 p-5">
                 <h3 className="font-display text-2xl font-semibold tracking-tight text-slate-900">{translateUiText("Masayi Kaldir", locale)}</h3>
-                <p className="mt-2 text-sm text-slate-600">{translateUiText("Sadece bos masalar silinebilir. Aktif masada once operasyon tamamlanmalidir.", locale)}</p>
+                <p className="mt-2 text-sm text-slate-600">{translateUiText("Sadece boş masalar silinebilir. Aktif masada önce operasyon tamamlanmalıdır.", locale)}</p>
                 <form action={deleteTableAction} className="mt-4">
                   <input type="hidden" name="tableId" value={table.id} />
                   <PendingSubmitButton
@@ -589,7 +589,7 @@ export function TableManagementModal({
 
             <section className="space-y-5">
               <article className="rounded-[28px] border border-slate-200 bg-white p-5">
-                <h3 className="font-display text-2xl font-semibold tracking-tight text-slate-900">{translateUiText("QR ve Hizli Aksiyonlar", locale)}</h3>
+                <h3 className="font-display text-2xl font-semibold tracking-tight text-slate-900">{translateUiText("QR ve Hızlı Aksiyonlar", locale)}</h3>
                 <div className="mt-4 flex items-center justify-center rounded-[22px] border border-dashed border-slate-200 bg-slate-50 p-5">
                   <Image src={qrImage} alt={`${table.name || `Masa ${table.table_number}`} QR`} width={180} height={180} className="h-32 w-32 rounded-2xl object-cover sm:h-40 sm:w-40" unoptimized />
                 </div>

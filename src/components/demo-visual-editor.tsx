@@ -224,7 +224,7 @@ export function DemoVisualEditor({
     !showPresentationFlow
       ? {
           key: "presentation" as DemoSectionId,
-          label: "Sunum Akisi",
+          label: "Sunum Akışı",
           onAdd: () => {
             setShowPresentationFlow(true);
             if (presentationFlow.length === 0) setPresentationFlow(defaultDemoPresentationFlow);
@@ -290,7 +290,7 @@ export function DemoVisualEditor({
       <p className="text-[11px] font-semibold uppercase tracking-[0.24em] text-slate-500">Style</p>
       <div className="mt-4 grid gap-4">
         <div className="grid gap-4 md:grid-cols-2">
-          <NumberInput label="Ust bosluk" value={sectionStyles[selectedId].paddingTop} onChange={(value) => updateSectionStyle(selectedId, "paddingTop", value)} />
+          <NumberInput label="Üst bosluk" value={sectionStyles[selectedId].paddingTop} onChange={(value) => updateSectionStyle(selectedId, "paddingTop", value)} />
           <NumberInput label="Alt bosluk" value={sectionStyles[selectedId].paddingBottom} onChange={(value) => updateSectionStyle(selectedId, "paddingBottom", value)} />
         </div>
         <div className="grid gap-4 md:grid-cols-2">
@@ -357,7 +357,7 @@ export function DemoVisualEditor({
           <div className="flex items-center justify-between gap-3">
             <div>
               <p className="text-xs font-semibold uppercase tracking-[0.18em] text-slate-500">Bolum</p>
-              <h3 className="mt-1 text-lg font-semibold text-slate-900">Sunum Akisi</h3>
+              <h3 className="mt-1 text-lg font-semibold text-slate-900">Sunum Akışı</h3>
             </div>
             <button type="button" onClick={() => setShowPresentationFlow(false)} className="rounded-lg border border-rose-200 bg-rose-50 px-3 py-2 text-xs font-semibold text-rose-700">
               Bolumu Kaldir
@@ -433,7 +433,7 @@ export function DemoVisualEditor({
                     <option value="waiter">waiter</option>
                   </select>
                 </label>
-                <TextArea label="Ozet" value={account.summary} onChange={(value) => setStaffAccounts((current) => updateArrayItem(current, index, (entry) => ({ ...entry, summary: value })))} />
+                <TextArea label="Özet" value={account.summary} onChange={(value) => setStaffAccounts((current) => updateArrayItem(current, index, (entry) => ({ ...entry, summary: value })))} />
                 <button type="button" onClick={() => setStaffAccounts((current) => current.filter((_, i) => i !== index))} className="rounded-lg border border-rose-200 bg-rose-50 px-3 py-2 text-xs font-semibold text-rose-700">
                   Hesabi Sil
                 </button>
@@ -527,7 +527,7 @@ export function DemoVisualEditor({
                 <TextInput label="Fiyat" value={item.price} onChange={(value) => setPackages((current) => updateArrayItem(current, index, (entry) => ({ ...entry, price: value })))} />
               </div>
               <div className="mt-3">
-                <TextArea label="Ozet" value={item.summary} onChange={(value) => setPackages((current) => updateArrayItem(current, index, (entry) => ({ ...entry, summary: value })))} />
+                <TextArea label="Özet" value={item.summary} onChange={(value) => setPackages((current) => updateArrayItem(current, index, (entry) => ({ ...entry, summary: value })))} />
               </div>
               <div className="mt-3">
                 <button type="button" onClick={() => setPackages((current) => current.filter((_, i) => i !== index))} className="rounded-lg border border-rose-200 bg-rose-50 px-3 py-2 text-xs font-semibold text-rose-700">

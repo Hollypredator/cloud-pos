@@ -106,7 +106,7 @@ export function PwaInstallCard({ enabled }: { enabled: boolean }) {
       <p className="text-xs font-semibold uppercase tracking-[0.14em] text-slate-500">Web App</p>
       <p className="mt-2 text-sm font-semibold text-slate-900">Cloud POS uygulamasini masaustune yukleyin</p>
       <p className="mt-1 text-xs leading-5 text-slate-600">
-        Yukleme sonrasi uygulama ayrik pencere olarak acilir ve offline cache ile daha kararli calisir.
+        Yukleme sonrasi uygulama ayrik pencere olarak açılır ve offline cache ile daha kararli çalışır.
       </p>
 
       {canPrompt ? (
@@ -117,11 +117,11 @@ export function PwaInstallCard({ enabled }: { enabled: boolean }) {
           }}
           className="mt-3 inline-flex min-h-[40px] w-full items-center justify-center rounded-xl bg-slate-950 px-3 py-2 text-sm font-semibold text-white"
         >
-          Uygulamayi Yukle
+          Uygulamayi Yükle
         </button>
       ) : (
         <p className="mt-3 rounded-xl border border-slate-200 bg-slate-50 px-3 py-2 text-xs text-slate-700">
-          Tarayicida menuyu acip <strong>Uygulama olarak yukle</strong> secenegini kullanabilirsiniz.
+          Tarayicida menuyu acip <strong>Uygulama olarak yükle</strong> secenegini kullanabilirsiniz.
         </p>
       )}
 

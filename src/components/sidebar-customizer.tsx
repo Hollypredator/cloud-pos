@@ -85,7 +85,7 @@ function NavOrderList({
               <p className="text-xs text-slate-500">Sira {index + 1}</p>
             </div>
           </div>
-          <span className="text-xs font-semibold uppercase tracking-[0.18em] text-slate-400">Surukle</span>
+          <span className="text-xs font-semibold uppercase tracking-[0.18em] text-slate-400">Sürükle</span>
         </button>
       ))}
     </div>
@@ -134,7 +134,7 @@ export function SidebarCustomizer({
       <div className="grid gap-4 md:grid-cols-[0.8fr_1.2fr]">
         <div className="rounded-[24px] border border-slate-200 bg-slate-50 p-5">
           <p className="text-sm font-semibold text-slate-900">Accent rengi</p>
-          <p className="mt-1 text-sm text-slate-500">Aktif menu, vurgu ve kapsul alanlari bu renge gore akar.</p>
+          <p className="mt-1 text-sm text-slate-500">Aktif menü, vurgu ve kapsül alanlari bu renge göre akar.</p>
           <div className="mt-4 flex items-center gap-4">
             <input
               type="color"
@@ -154,7 +154,7 @@ export function SidebarCustomizer({
             <div className="mt-3 flex items-center gap-3 rounded-2xl px-4 py-3 text-white" style={previewStyle}>
               <span className="inline-flex h-10 w-10 items-center justify-center rounded-xl bg-white/15 text-xs font-bold">OP</span>
               <div>
-                <p className="text-sm font-semibold">Aktif Menu Ogesi</p>
+                <p className="text-sm font-semibold">Aktif Menü Ogesi</p>
                 <p className="text-xs text-white/75">Sececegin renk burada gorunecek</p>
               </div>
             </div>
@@ -163,16 +163,16 @@ export function SidebarCustomizer({
 
         <div className="rounded-[24px] border border-slate-200 bg-slate-50 p-5">
           <p className="text-sm font-semibold text-slate-900">Rol bazli presetler</p>
-          <p className="mt-1 text-sm text-slate-500">Patron ile sube yoneticisi farkli onceliklerle calisabilir.</p>
+          <p className="mt-1 text-sm text-slate-500">Patron ile şube yöneticisi farkli onceliklerle calisabilir.</p>
           <div className="mt-4 grid gap-4 md:grid-cols-2">
             <div className="rounded-[22px] border border-slate-200 bg-white p-4">
               <p className="text-sm font-semibold text-slate-900">Patron presetleri</p>
               <div className="mt-3 flex flex-wrap gap-2">
                 <button type="button" onClick={() => applyPreset("owner", "management_first")} className="rounded-xl border border-slate-200 px-3 py-2 text-sm font-semibold text-slate-700">
-                  Yonetim Once
+                  Yönetim Önce
                 </button>
                 <button type="button" onClick={() => applyPreset("owner", "service_first")} className="rounded-xl border border-slate-200 px-3 py-2 text-sm font-semibold text-slate-700">
-                  Servis Once
+                  Servis Önce
                 </button>
               </div>
             </div>
@@ -180,10 +180,10 @@ export function SidebarCustomizer({
               <p className="text-sm font-semibold text-slate-900">Yonetici presetleri</p>
               <div className="mt-3 flex flex-wrap gap-2">
                 <button type="button" onClick={() => applyPreset("admin", "service_first")} className="rounded-xl border border-slate-200 px-3 py-2 text-sm font-semibold text-slate-700">
-                  Servis Once
+                  Servis Önce
                 </button>
                 <button type="button" onClick={() => applyPreset("admin", "management_first")} className="rounded-xl border border-slate-200 px-3 py-2 text-sm font-semibold text-slate-700">
-                  Yonetim Once
+                  Yönetim Önce
                 </button>
               </div>
             </div>
@@ -195,7 +195,7 @@ export function SidebarCustomizer({
         <div className="rounded-[24px] border border-slate-200 bg-slate-50 p-5">
           <div className="mb-4">
             <p className="text-lg font-semibold text-slate-900">Patron Sidebar Sirasi</p>
-            <p className="mt-1 text-sm text-slate-500">Tum subeleri goren kullanicilar icin menuyu surukleyip sirala.</p>
+            <p className="mt-1 text-sm text-slate-500">Tüm subeleri goren kullanicilar için menuyu surukleyip sirala.</p>
           </div>
           <NavOrderList role="owner" items={ownerOrder} onReorder={handleReorder} />
         </div>
@@ -203,7 +203,7 @@ export function SidebarCustomizer({
         <div className="rounded-[24px] border border-slate-200 bg-slate-50 p-5">
           <div className="mb-4">
             <p className="text-lg font-semibold text-slate-900">Yonetici Sidebar Sirasi</p>
-            <p className="mt-1 text-sm text-slate-500">Sube yoneticileri icin daha operasyon odakli akisi belirle.</p>
+            <p className="mt-1 text-sm text-slate-500">Şube yöneticileri için daha operasyon odaklı akışı belirle.</p>
           </div>
           <NavOrderList role="admin" items={adminOrder} onReorder={handleReorder} />
         </div>

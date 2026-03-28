@@ -81,7 +81,7 @@ export default async function ServiceRequestsPage({
       sidebar={
         <SidebarPanel title="Servis Durumu" description="Acil talepleri gecikmeden kapat.">
           <div className="rounded-[24px] bg-gradient-to-br from-slate-900 via-slate-800 to-slate-700 p-5 text-white">
-            <p className="text-xs font-bold uppercase tracking-[0.18em] text-slate-300">Acik Talepler</p>
+            <p className="text-xs font-bold uppercase tracking-[0.18em] text-slate-300">Açık Talepler</p>
             <p className="mt-4 text-3xl font-semibold tracking-tight sm:text-4xl">{requests.length}</p>
             <div className="mt-5 grid gap-3 sm:grid-cols-2">
               <div className="rounded-2xl bg-white/10 p-3">
@@ -126,7 +126,7 @@ export default async function ServiceRequestsPage({
         <SummaryCard
           label={activeStatus === "open" ? "Toplam Talep" : "Cozulen Talep"}
           value={String(requests.length)}
-          hint={activeStatus === "open" ? "Acik servis kuyrugu" : "Kapanan servis gecmisi"}
+          hint={activeStatus === "open" ? "Açık servis kuyrugu" : "Kapanan servis gecmisi"}
           tone="accent"
         />
         <SummaryCard label="Garson" value={String(waiterCalls)} hint="Mudahale isteyen masa" />
@@ -134,7 +134,7 @@ export default async function ServiceRequestsPage({
         <SummaryCard
           label={activeStatus === "open" ? "Acil" : "Bekleme Suresi"}
           value={String(requests.filter((request) => elapsedLabel(request.created_at) !== "Yeni").length)}
-          hint={activeStatus === "open" ? "1 dk ustu bekleyen talep" : "1 dk uzeri kayitlar"}
+          hint={activeStatus === "open" ? "1 dk üstü bekleyen talep" : "1 dk üzeri kayitlar"}
           tone="danger"
         />
       </section>
@@ -142,7 +142,7 @@ export default async function ServiceRequestsPage({
       <MobileTaskList>
         <div className="mobile-task-tabs">
           <Link href={statusHref("open")} data-active={activeStatus === "open"} className="mobile-task-tab">
-            Acik
+            Açık
           </Link>
           <Link href={statusHref("resolved")} data-active={activeStatus === "resolved"} className="mobile-task-tab">
             Cozuldu
@@ -154,14 +154,14 @@ export default async function ServiceRequestsPage({
         >
           <p className="mt-1 text-sm text-slate-500">
             {activeStatus === "open"
-              ? "Garson ve hesap isteklerini tek dokunusla coz."
-              : "Cozulen talepleri vardiya takibi icin incele."}
+              ? "Garson ve hesap isteklerini tek dokunuşla çöz."
+              : "Cozulen talepleri vardiya takibi için incele."}
           </p>
         </MobileTaskCard>
 
         {requests.length === 0 ? (
-          <MobileTaskCard subtitle="Acik talep yok">
-            <p className="text-sm text-slate-500">Garson cagri veya hesap istegi geldikce bu kuyrukta gorunecek.</p>
+          <MobileTaskCard subtitle="Açık talep yok">
+            <p className="text-sm text-slate-500">Garson cagri veya hesap isteği geldikce bu kuyrukta gorunecek.</p>
           </MobileTaskCard>
         ) : (
           requests.map((request) => (
@@ -209,7 +209,7 @@ export default async function ServiceRequestsPage({
 
       <WorkflowGuide
         title="Servis Talepleri 3 Adim"
-        description="Servis ekranini ilk kez acan biri hangi talepe nasil bakacagini hemen anlasin."
+        description="Servis ekranini ilk kez acan biri hangi talepe nasıl bakacagini hemen anlasin."
         className="app-mobile-hide"
         steps={[
           { title: "Masa numarasina bak", description: "Kartin ustundeki masa numarasi talebin hangi masadan geldigini gosterir." },
@@ -218,9 +218,9 @@ export default async function ServiceRequestsPage({
         ]}
       />
 
-      <ContentCard title="Acik Talepler" className="app-mobile-hide">
+      <ContentCard title="Açık Talepler" className="app-mobile-hide">
         {requests.length === 0 ? (
-          <EmptyPanel title="Acik talep yok" description="Garson cagri veya hesap istegi geldikce bu kuyrukta gorunecek." />
+          <EmptyPanel title="Açık talep yok" description="Garson cagri veya hesap isteği geldikce bu kuyrukta gorunecek." />
         ) : (
           <div className="space-y-4">
             <div className="grid gap-4 xl:grid-cols-2">

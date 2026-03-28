@@ -217,7 +217,7 @@ export function LandingVisualEditor({
 
   async function uploadHeroImage(file: File, index: number, sectionId: string) {
     if (!file.type.startsWith("image/")) {
-      setHeroUploadState({ tone: "error", message: "Lutfen gorsel dosyasi birakin.", sectionId });
+      setHeroUploadState({ tone: "error", message: "Lütfen görsel dosyasi birakin.", sectionId });
       return;
     }
 
@@ -226,7 +226,7 @@ export function LandingVisualEditor({
       return;
     }
 
-    setHeroUploadState({ tone: "loading", message: "Gorsel yukleniyor...", sectionId });
+    setHeroUploadState({ tone: "loading", message: "Görsel yukleniyor...", sectionId });
     const formData = new FormData();
     formData.set("file", file);
     formData.set("title", inferAltText(file.name));
@@ -244,7 +244,7 @@ export function LandingVisualEditor({
         | null;
 
       if (!response.ok || !payload?.ok || !payload.fileUrl) {
-        throw new Error((payload && "error" in payload && payload.error) || "Gorsel yuklenemedi.");
+        throw new Error((payload && "error" in payload && payload.error) || "Görsel yuklenemedi.");
       }
 
       updateSection(index, (current) => ({
@@ -255,9 +255,9 @@ export function LandingVisualEditor({
           (current as Extract<LandingSection, { type: "hero" }>).heroImageAlt?.trim() || payload.altText || inferAltText(file.name),
       } as LandingSection));
 
-      setHeroUploadState({ tone: "success", message: "Gorsel yuklendi ve hero alanina eklendi.", sectionId });
+      setHeroUploadState({ tone: "success", message: "Görsel yuklendi ve hero alanina eklendi.", sectionId });
     } catch (error) {
-      const message = error instanceof Error ? error.message : "Gorsel yuklenemedi.";
+      const message = error instanceof Error ? error.message : "Görsel yuklenemedi.";
       setHeroUploadState({ tone: "error", message, sectionId });
     }
   }
@@ -271,7 +271,7 @@ export function LandingVisualEditor({
         <p className="text-[11px] font-semibold uppercase tracking-[0.24em] text-slate-500">Layout</p>
         <div className="mt-4 grid gap-4">
           <div className="grid gap-4 md:grid-cols-2">
-            <NumberInput label="Ust bosluk" value={section.style.paddingTop} onChange={(value) => updateSectionStyle(index, "paddingTop", value)} />
+            <NumberInput label="Üst bosluk" value={section.style.paddingTop} onChange={(value) => updateSectionStyle(index, "paddingTop", value)} />
             <NumberInput label="Alt bosluk" value={section.style.paddingBottom} onChange={(value) => updateSectionStyle(index, "paddingBottom", value)} />
           </div>
           <div className="grid gap-4 md:grid-cols-2">
@@ -362,7 +362,7 @@ export function LandingVisualEditor({
                 value={section.heroVisualMode}
                 options={[
                   { label: "Taslak gorunum", value: "mockup" },
-                  { label: "Gorsel kullan", value: "image" },
+                  { label: "Görsel kullan", value: "image" },
                 ]}
                 onChange={(value) =>
                   updateSection(index, (current) => ({
@@ -372,17 +372,17 @@ export function LandingVisualEditor({
                 }
               />
               <TextInput
-                label="Gorsel URL"
+                label="Görsel URL"
                 value={section.heroImageUrl}
                 onChange={(value) => updateSection(index, (current) => ({ ...current, heroImageUrl: value } as LandingSection))}
               />
               <TextInput
-                label="Gorsel alt metni"
+                label="Görsel alt metni"
                 value={section.heroImageAlt}
                 onChange={(value) => updateSection(index, (current) => ({ ...current, heroImageAlt: value } as LandingSection))}
               />
               <SelectInput
-                label="Gorsel yerlestirme"
+                label="Görsel yerleştirme"
                 value={section.heroImageFit}
                 options={[
                   { label: "Sigdir (contain)", value: "contain" },
@@ -406,8 +406,8 @@ export function LandingVisualEditor({
                 }}
                 className="rounded-xl border border-dashed border-slate-300 bg-white px-4 py-4 text-sm text-slate-600"
               >
-                <p className="font-semibold text-slate-800">Drag & drop ile gorsel birak</p>
-                <p className="mt-1 text-xs text-slate-500">veya dosya secerek yukle (max 10MB).</p>
+                <p className="font-semibold text-slate-800">Drag & drop ile görsel bırak</p>
+                <p className="mt-1 text-xs text-slate-500">veya dosya secerek yükle (max 10MB).</p>
                 <label className="mt-3 inline-flex cursor-pointer rounded-lg border border-slate-300 bg-slate-50 px-3 py-2 text-xs font-semibold text-slate-700">
                   Dosya Sec
                   <input
@@ -505,7 +505,7 @@ export function LandingVisualEditor({
                 <TextInput label="Fiyat" value={item.price} onChange={(value) => updateSection(index, (current) => ({ ...current, items: updateArrayItem((current as Extract<LandingSection, { type: "pricing_grid" }>).items, itemIndex, (entry) => ({ ...entry, price: value })) } as LandingSection))} />
               </div>
               <div className="mt-3">
-                <TextArea label="Ozet" value={item.summary} onChange={(value) => updateSection(index, (current) => ({ ...current, items: updateArrayItem((current as Extract<LandingSection, { type: "pricing_grid" }>).items, itemIndex, (entry) => ({ ...entry, summary: value })) } as LandingSection))} />
+                <TextArea label="Özet" value={item.summary} onChange={(value) => updateSection(index, (current) => ({ ...current, items: updateArrayItem((current as Extract<LandingSection, { type: "pricing_grid" }>).items, itemIndex, (entry) => ({ ...entry, summary: value })) } as LandingSection))} />
               </div>
               <div className="mt-3">
                 <button type="button" onClick={() => updateSection(index, (current) => ({ ...current, items: (current as Extract<LandingSection, { type: "pricing_grid" }>).items.filter((_, i) => i !== itemIndex) } as LandingSection))} className="rounded-lg border border-rose-200 bg-rose-50 px-3 py-2 text-xs font-semibold text-rose-700">
@@ -633,7 +633,7 @@ export function LandingVisualEditor({
               onClick={() => setIsPropertiesOpen((current) => !current)}
               className="rounded-lg border border-slate-300 bg-white px-3 py-2 text-xs font-semibold text-slate-700"
             >
-              {isPropertiesOpen ? "Properties Gizle" : "Properties Goster"}
+              {isPropertiesOpen ? "Properties Gizle" : "Properties Göster"}
             </button>
           </div>
         </div>
@@ -661,8 +661,8 @@ export function LandingVisualEditor({
             <p className="text-[11px] font-semibold uppercase tracking-[0.24em] text-slate-500">Global</p>
             <div className="mt-4 grid gap-4">
               <TextInput label="Sayfa basligi" value={pageTitle} onChange={setPageTitle} />
-              <TextInput label="Ust login butonu" value={topLoginLabel} onChange={setTopLoginLabel} />
-              <TextInput label="Ust demo butonu" value={topDemoLabel} onChange={setTopDemoLabel} />
+              <TextInput label="Üst login butonu" value={topLoginLabel} onChange={setTopLoginLabel} />
+              <TextInput label="Üst demo butonu" value={topDemoLabel} onChange={setTopDemoLabel} />
               <TextInput label="Telefon / WhatsApp" value={businessPhone} onChange={setBusinessPhone} />
             </div>
           </div>

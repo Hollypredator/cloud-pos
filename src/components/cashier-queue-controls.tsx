@@ -65,9 +65,9 @@ export function CashierPaymentQueuePanel({
   useTrackedCommandResult(trackedCommandId, (status, message) => {
     const feedbackOrderId = resolveFeedbackOrderId(orderId, returnOrderId);
     if (status === "ACK") {
-      router.replace(feedbackHref("success", "Odeme kaydedildi.", feedbackOrderId), { scroll: false });
+      router.replace(feedbackHref("success", "Ödeme kaydedildi.", feedbackOrderId), { scroll: false });
     } else {
-      router.replace(feedbackHref("error", message ?? "Odeme alinamadi.", feedbackOrderId), { scroll: false });
+      router.replace(feedbackHref("error", message ?? "Ödeme alinamadi.", feedbackOrderId), { scroll: false });
     }
     router.refresh();
     setTrackedCommandId(null);
@@ -105,7 +105,7 @@ export function CashierPaymentQueuePanel({
           },
         });
         setTrackedCommandId(queued.commandId);
-        router.replace(feedbackHref("success", "Odeme islemi kuyruga alindi.", resolveFeedbackOrderId(orderId, returnOrderId)), {
+        router.replace(feedbackHref("success", "Ödeme işlemi kuyruga alındı.", resolveFeedbackOrderId(orderId, returnOrderId)), {
           scroll: false,
         });
         void flushPosCommandQueue({
@@ -144,9 +144,9 @@ export function CashierFinancialsQueueForm({
   useTrackedCommandResult(trackedCommandId, (status, message) => {
     const feedbackOrderId = resolveFeedbackOrderId(orderId, returnOrderId);
     if (status === "ACK") {
-      router.replace(feedbackHref("success", "Finans guncellendi.", feedbackOrderId), { scroll: false });
+      router.replace(feedbackHref("success", "Finans güncellendi.", feedbackOrderId), { scroll: false });
     } else {
-      router.replace(feedbackHref("error", message ?? "Finans guncellenemedi.", feedbackOrderId), { scroll: false });
+      router.replace(feedbackHref("error", message ?? "Finans güncellenemedi.", feedbackOrderId), { scroll: false });
     }
     router.refresh();
     setTrackedCommandId(null);
@@ -180,7 +180,7 @@ export function CashierFinancialsQueueForm({
       },
     });
     setTrackedCommandId(queued.commandId);
-    router.replace(feedbackHref("success", "Finans islemi kuyruga alindi.", resolveFeedbackOrderId(orderId, returnOrderId)), {
+    router.replace(feedbackHref("success", "Finans işlemi kuyruga alındı.", resolveFeedbackOrderId(orderId, returnOrderId)), {
       scroll: false,
     });
     void flushPosCommandQueue({
@@ -214,7 +214,7 @@ export function CashierFinancialsQueueForm({
         disabled={pending}
         className="rounded-2xl border border-slate-200 bg-slate-50 px-4 py-3 text-sm font-semibold text-slate-800 disabled:cursor-not-allowed disabled:opacity-70"
       >
-        {pending ? "Isleniyor..." : "Finans Guncelle"}
+        {pending ? "Isleniyor..." : "Finans Güncelle"}
       </button>
     </form>
   );
@@ -246,9 +246,9 @@ export function CashierCancelOrderQueueForm({
   useTrackedCommandResult(trackedCommandId, (status, message) => {
     const feedbackOrderId = resolveFeedbackOrderId(orderId, returnOrderId);
     if (status === "ACK") {
-      router.replace(feedbackHref("success", "Siparis iptal edildi.", feedbackOrderId), { scroll: false });
+      router.replace(feedbackHref("success", "Sipariş iptal edildi.", feedbackOrderId), { scroll: false });
     } else {
-      router.replace(feedbackHref("error", message ?? "Siparis iptal edilemedi.", feedbackOrderId), { scroll: false });
+      router.replace(feedbackHref("error", message ?? "Sipariş iptal edilemedi.", feedbackOrderId), { scroll: false });
     }
     router.refresh();
     setTrackedCommandId(null);
@@ -279,7 +279,7 @@ export function CashierCancelOrderQueueForm({
       },
     });
     setTrackedCommandId(queued.commandId);
-    router.replace(feedbackHref("success", "Iptal islemi kuyruga alindi.", resolveFeedbackOrderId(orderId, returnOrderId)), {
+    router.replace(feedbackHref("success", "Iptal işlemi kuyruga alındı.", resolveFeedbackOrderId(orderId, returnOrderId)), {
       scroll: false,
     });
     void flushPosCommandQueue({
@@ -335,9 +335,9 @@ export function CashierOrderItemCancelQueueButton({
   useTrackedCommandResult(trackedCommandId, (status, message) => {
     const feedbackOrderId = resolveFeedbackOrderId(orderId, returnOrderId);
     if (status === "ACK") {
-      router.replace(feedbackHref("success", "Urun islemi kaydedildi.", feedbackOrderId), { scroll: false });
+      router.replace(feedbackHref("success", "Ürün işlemi kaydedildi.", feedbackOrderId), { scroll: false });
     } else {
-      router.replace(feedbackHref("error", message ?? "Urun iptal edilemedi.", feedbackOrderId), { scroll: false });
+      router.replace(feedbackHref("error", message ?? "Ürün iptal edilemedi.", feedbackOrderId), { scroll: false });
     }
     router.refresh();
     setTrackedCommandId(null);
@@ -357,7 +357,7 @@ export function CashierOrderItemCancelQueueButton({
       },
     });
     setTrackedCommandId(queued.commandId);
-    router.replace(feedbackHref("success", "Urun islemi kuyruga alindi.", resolveFeedbackOrderId(orderId, returnOrderId)), {
+    router.replace(feedbackHref("success", "Ürün işlemi kuyruga alındı.", resolveFeedbackOrderId(orderId, returnOrderId)), {
       scroll: false,
     });
     void flushPosCommandQueue({
@@ -400,7 +400,7 @@ export function CashierRefundQueueForm({
   useTrackedCommandResult(trackedCommandId, (status, message) => {
     const feedbackOrderId = resolveFeedbackOrderId(orderId, returnOrderId);
     if (status === "ACK") {
-      router.replace(feedbackHref("success", "Iade islemi kaydedildi.", feedbackOrderId), { scroll: false });
+      router.replace(feedbackHref("success", "Iade işlemi kaydedildi.", feedbackOrderId), { scroll: false });
     } else {
       router.replace(feedbackHref("error", message ?? "Iade tamamlanamadi.", feedbackOrderId), { scroll: false });
     }
@@ -441,7 +441,7 @@ export function CashierRefundQueueForm({
       },
     });
     setTrackedCommandId(queued.commandId);
-    router.replace(feedbackHref("success", "Iade islemi kuyruga alindi.", resolveFeedbackOrderId(orderId, returnOrderId)), {
+    router.replace(feedbackHref("success", "Iade işlemi kuyruga alındı.", resolveFeedbackOrderId(orderId, returnOrderId)), {
       scroll: false,
     });
     void flushPosCommandQueue({

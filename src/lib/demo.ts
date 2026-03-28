@@ -85,47 +85,47 @@ export const defaultDemoStaffAccounts: DemoStaffAccount[] = [
     email: "demo-admin@cloudpos.local",
     password: "Demo123!",
     role: "owner",
-    summary: "Tum yonetim ekranlari, urunler, masalar ve raporlar icin ana hesap.",
+    summary: "Tüm yönetim ekranlari, ürünler, masalar ve raporlar için ana hesap.",
   },
   {
     fullName: "Mert Kaya",
     email: "demo-kasa@cloudpos.local",
     password: "Demo123!",
     role: "cashier",
-    summary: "Kasa, odeme tamamlama, vardiya acilis ve gun sonu kontrolleri icin.",
+    summary: "Kasa, ödeme tamamlama, vardiya acilis ve gun sonu kontrolleri için.",
   },
   {
     fullName: "Selin Acar",
     email: "demo-mutfak@cloudpos.local",
     password: "Demo123!",
     role: "kitchen",
-    summary: "Mutfak kuyrugu, hazirlama ve siparis ilerletme akisi icin.",
+    summary: "Mutfak kuyrugu, hazirlama ve sipariş ilerletme akışı için.",
   },
   {
     fullName: "Can Yildiz",
     email: "demo-servis@cloudpos.local",
     password: "Demo123!",
     role: "waiter",
-    summary: "Masa talepleri, servis operasyonu ve masa durumu icin.",
+    summary: "Masa talepleri, servis operasyonu ve masa durumu için.",
   },
 ];
 
 export const defaultDemoPresentationFlow: DemoPresentationItem[] = [
   {
-    title: "1. Giris ve Rol Ayrimi",
-    body: "Admin hesabi ile girip tek ekrandan urun, masa ve personel yonetimini goster.",
+    title: "1. Giriş ve Rol Ayrimi",
+    body: "Admin hesabi ile girip tek ekrandan ürün, masa ve personel yonetimini göster.",
   },
   {
-    title: "2. Musteri Siparisi",
-    body: "QR menu veya masa siparisi uzerinden gelen siparisin mutfaga nasil dustugunu anlat.",
+    title: "2. Müşteri Siparisi",
+    body: "QR menü veya masa siparişi uzerinden gelen siparişin mutfaga nasıl dustugunu anlat.",
   },
   {
-    title: "3. Mutfak ve Kasa Akisi",
-    body: "Mutfakta hazirlama, kasada odeme tamamlama ve masa bosaltma akisini takip et.",
+    title: "3. Mutfak ve Kasa Akışı",
+    body: "Mutfakta hazirlama, kasada ödeme tamamlama ve masa bosaltma akisini takip et.",
   },
   {
-    title: "4. Yonetim ve Raporlama",
-    body: "Gun sonu ciro, kritik stok ve rol yonetimi ekranlarini kapatista sun.",
+    title: "4. Yönetim ve Raporlama",
+    body: "Gun sonu ciro, kritik stok ve rol yönetimi ekranlarini kapatista sun.",
   },
 ];
 
@@ -133,17 +133,17 @@ export const defaultDemoPackages: DemoPackage[] = [
   {
     name: "Starter",
     price: "29.900 TL",
-    summary: "Tek sube, QR menu ve temel operasyon paneli ile hizli kurulum.",
+    summary: "Tek şube, QR menü ve temel operasyon paneli ile hızlı kurulum.",
   },
   {
     name: "Growth",
     price: "54.900 TL",
-    summary: "Kasa vardiya, raporlar, stok takibi ve rol bazli ekip yonetimi dahil.",
+    summary: "Kasa vardiya, raporlar, stok takibi ve rol bazli ekip yönetimi dahil.",
   },
   {
     name: "Custom",
     price: "Teklif",
-    summary: "Marka uyarlama, ozel entegrasyonlar ve saha kurulumu ile teslim.",
+    summary: "Marka uyarlama, özel entegrasyonlar ve saha kurulumu ile teslim.",
   },
 ];
 
@@ -155,16 +155,16 @@ export const defaultDemoPageContent: DemoPageContent = {
   heroEyebrow: "Cloud POS",
   heroTitle: "Demo Operasyon Paneli",
   heroBody:
-    "Bu ekran tanitim gorusmeleri icin hazirlandi. Veriler canli sistem hissi vermek icin kurgulanmis ornek senaryo uzerinden akar.",
+    "Bu ekran tanitim gorusmeleri için hazirlandi. Veriler canli sistem hissi vermek için kurgulanmis ornek senaryo uzerinden akar.",
   previewBadge: "Demo Preview",
   opsCtaLabel: "Personel Paneli",
   loginCtaLabel: "Personel Girisi",
   showMetrics: true,
   showPresentationFlow: true,
   flowEyebrow: "Sunum Sirasi",
-  flowTitle: "Musteriye nasil anlatacaksin",
+  flowTitle: "Musteriye nasıl anlatacaksin",
   showStaffAccounts: true,
-  accountsEyebrow: "Hazir Demo Hesaplari",
+  accountsEyebrow: "Hazır Demo Hesaplari",
   accountsTitle: "Rol bazli kullanicilar",
   accountsBody: "Bu hesaplari admin panelinden tek tikla olusturup tanitimda farkli rol ekranlarini gosterebilirsin.",
   showRecentOrders: true,
@@ -178,7 +178,7 @@ export const defaultDemoPageContent: DemoPageContent = {
   showPackages: true,
   showClosingCta: false,
   closingCtaTitle: "Demo sonrasinda canli kuruluma gecin",
-  closingCtaBody: "Marka uyarlama, ekip kurulumu ve sube bazli operasyon kurgusunu canli ortama birlikte tasiyalim.",
+  closingCtaBody: "Marka uyarlama, ekip kurulumu ve şube bazli operasyon kurgusunu canli ortama birlikte tasiyalim.",
   closingCtaPrimaryLabel: "Teklif Planla",
   closingCtaSecondaryLabel: "Canli Demoya Don",
   sectionStyles: defaultDemoSectionStyles,

@@ -46,7 +46,7 @@ export default async function TestSlipPage({
         </div>
 
         <p className="mt-5 text-center text-xs text-slate-500">
-          Bu sayfa yazici olmadan satir araligi, font boyutu ve bosluk kontrolu icin kullanilir.
+          Bu sayfa yazıcı olmadan satır aralığı, font boyutu ve bosluk kontrolu için kullanılır.
         </p>
 
         <PrintActions baseHref="/admin/print-center/test-slip" />

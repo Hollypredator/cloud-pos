@@ -27,11 +27,11 @@ function statusTone(status: string) {
 function statusLabel(status: string, locale: "tr" | "en" | "fr") {
   if (status === "pending") return translateUiText("Bekliyor", locale);
   if (status === "preparing") return translateUiText("Hazirlaniyor", locale);
-  if (status === "ready") return translateUiText("Servise Hazir", locale);
-  if (status === "served") return translateUiText("Servise Hazir", locale);
-  if (status === "partially_paid") return translateUiText("Kismi Odeme", locale);
+  if (status === "ready") return translateUiText("Servise Hazır", locale);
+  if (status === "served") return translateUiText("Servise Hazır", locale);
+  if (status === "partially_paid") return translateUiText("Kısmi Ödeme", locale);
   if (status === "paid") return translateUiText("Kapandi", locale);
-  if (status === "partially_refunded") return translateUiText("Kismi Iade", locale);
+  if (status === "partially_refunded") return translateUiText("Kısmi Iade", locale);
   return status;
 }
 
@@ -95,40 +95,40 @@ async function DeferredSetupPrompt({
 
   const setupSteps = [
     {
-      label: translateUiText("Isletme bilgileri", locale),
+      label: translateUiText("İşletme bilgileri", locale),
       description: translateUiText("Marka, telefon, adres ve demo modu ayarlari", locale),
       done: setup.counts.businesses > 0,
       href: "/admin/onboarding",
       cta: translateUiText("Kurulum merkezine git", locale),
     },
     {
-      label: translateUiText("Urun katalogu", locale),
-      description: translateUiText("Kategori, urun ve modifier kurulumunu tamamla", locale),
+      label: translateUiText("Ürün katalogu", locale),
+      description: translateUiText("Kategori, ürün ve modifier kurulumunu tamamla", locale),
       done: setup.counts.products > 0,
       href: "/admin/products",
       cta: translateUiText("Urunleri ac", locale),
     },
     {
       label: translateUiText("Salon ve masalar", locale),
-      description: translateUiText("Masa isimleri, QR ve aktif salon yapisi", locale),
+      description: translateUiText("Masa isimleri, QR ve aktif salon yapısı", locale),
       done: setup.counts.tables > 0,
       href: "/admin/tables",
       cta: translateUiText("Masalari ac", locale),
     },
     {
       label: translateUiText("Ekip ve roller", locale),
-      description: translateUiText("Kasiyer, garson ve mutfak hesaplarini hazirla", locale),
+      description: translateUiText("Kasiyer, garson ve mutfak hesaplarini hazırla", locale),
       done: setup.counts.staff >= 4,
       href: "/admin/roles",
       cta: translateUiText("Personeli ac", locale),
       ownerOnly: true,
     },
     {
-      label: translateUiText("Ilk siparis testi", locale),
-      description: translateUiText("Manuel siparis, mutfak, kasa ve tahsilati uctan uca dene", locale),
+      label: translateUiText("Ilk sipariş testi", locale),
+      description: translateUiText("Manuel sipariş, mutfak, kasa ve tahsilati uctan uca dene", locale),
       done: metricsOpenOrders > 0 || metricsTodayRevenue > 0,
       href: "/admin/orders",
-      cta: translateUiText("Siparis gir", locale),
+      cta: translateUiText("Sipariş gir", locale),
     },
   ];
   const completedSetupSteps = setupSteps.filter((step) => step.done).length;
@@ -138,9 +138,9 @@ async function DeferredSetupPrompt({
       <div className="flex flex-wrap items-start justify-between gap-6">
         <div className="max-w-3xl">
           <p className="text-xs font-bold uppercase tracking-[0.18em] text-amber-700">{translateUiText("Ilk Kurulum", locale)}</p>
-          <h2 className="mt-2 text-xl font-semibold tracking-tight text-slate-900 sm:text-2xl">{translateUiText("Canli operasyon icin tamamlanmasi gereken adimlar var", locale)}</h2>
+          <h2 className="mt-2 text-xl font-semibold tracking-tight text-slate-900 sm:text-2xl">{translateUiText("Canli operasyon için tamamlanmasi gereken adimlar var", locale)}</h2>
           <p className="mt-3 text-sm leading-7 text-slate-600">
-            {translateUiText("Urun, masa, ekip ve ilk test siparisi tamamlanmadan sistem tam operasyon hazir sayilmaz. Eksik kalan adimlari bu merkezden bitir.", locale)}
+            {translateUiText("Ürün, masa, ekip ve ilk test siparişi tamamlanmadan sistem tam operasyon hazır sayilmaz. Eksik kalan adimlari bu merkezden bitir.", locale)}
           </p>
         </div>
         <div className="w-full rounded-[24px] border border-amber-200 bg-white/80 px-5 py-4 sm:w-auto">
@@ -148,7 +148,7 @@ async function DeferredSetupPrompt({
           <p className="mt-3 text-4xl font-semibold tracking-tight text-slate-900">
             {completedSetupSteps}/{setupSteps.length}
           </p>
-          <p className="mt-2 text-sm text-slate-600">{translateUiText("Temel operasyon adimi tamamlandi", locale)}</p>
+          <p className="mt-2 text-sm text-slate-600">{translateUiText("Temel operasyon adimi tamamlandı", locale)}</p>
         </div>
       </div>
 
@@ -161,7 +161,7 @@ async function DeferredSetupPrompt({
                 <p className="mt-1 text-sm text-slate-500">{step.description}</p>
               </div>
               <span className={`rounded-full px-3 py-1 text-xs font-semibold ${checklistTone(step.done)}`}>
-                {step.done ? translateUiText("Hazir", locale) : translateUiText("Eksik", locale)}
+                {step.done ? translateUiText("Hazır", locale) : translateUiText("Eksik", locale)}
               </span>
             </div>
             <div className="mt-4">
@@ -229,21 +229,21 @@ export default async function OpsPage({
       key: "kitchen_delay",
       label: translateUiText("Mutfak Gecikmesi", locale),
       value: String(ops.delayedKitchenOrders),
-      hint: `${ops.criticalKitchenOrders} ${translateUiText("Kritik", locale).toLowerCase()} ${translateUiText("Urun", locale).toLowerCase() === "product" ? "orders" : "siparis"}`,
+      hint: `${ops.criticalKitchenOrders} ${translateUiText("Kritik", locale).toLowerCase()} ${translateUiText("Ürün", locale).toLowerCase() === "product" ? "orders" : "sipariş"}`,
       tone: ops.criticalKitchenOrders > 0 ? ("danger" as const) : ("accent" as const),
     },
     {
       key: "service_requests",
       label: translateUiText("Masa Talepleri", locale),
       value: String(ops.openServiceRequests),
-      hint: translateUiText("Acik garson ve hesap talepleri", locale),
+      hint: translateUiText("Açık garson ve hesap talepleri", locale),
       tone: ops.openServiceRequests > 0 ? ("accent" as const) : ("neutral" as const),
     },
     {
       key: "cashier_queue",
       label: translateUiText("Kasada Bekleyen", locale),
       value: String(ops.servedOrders),
-      hint: translateUiText("Tahsilat icin hazir siparis", locale),
+      hint: translateUiText("Tahsilat için hazır sipariş", locale),
       tone: ops.servedOrders > 0 ? ("success" as const) : ("neutral" as const),
     },
   ];
@@ -266,7 +266,7 @@ export default async function OpsPage({
           key: "kitchen",
           title: translateUiText("Mutfakta Bekleyen Kritikler", locale),
           value: ops.delayedKitchenOrders,
-          hint: translateUiText("Gecikmeyi azaltmak icin mutfak istasyonuna gec.", locale),
+          hint: translateUiText("Gecikmeyi azaltmak için mutfak istasyonuna gec.", locale),
           href: "/kitchen",
           tone: ops.criticalKitchenOrders > 0 ? "mobile-tone-critical" : "mobile-tone-warning",
           cta: translateUiText("Mutfaga Git", locale),
@@ -277,7 +277,7 @@ export default async function OpsPage({
           key: "cashier",
           title: translateUiText("Kasada Tahsilat Kuyrugu", locale),
           value: ops.servedOrders,
-          hint: translateUiText("Servise hazir adisyonlar kapanis bekliyor.", locale),
+          hint: translateUiText("Servise hazır adisyonlar kapanış bekliyor.", locale),
           href: "/cashier",
           tone: ops.servedOrders > 0 ? "mobile-tone-warning" : "mobile-tone-neutral",
           cta: translateUiText("Tahsilata Gec", locale),
@@ -288,7 +288,7 @@ export default async function OpsPage({
           key: "service",
           title: translateUiText("Masa Talepleri", locale),
           value: ops.openServiceRequests,
-          hint: translateUiText("Acik talepleri kapat ve kuyrugu temizle.", locale),
+          hint: translateUiText("Açık talepleri kapat ve kuyrugu temizle.", locale),
           href: "/service-requests",
           tone: ops.openServiceRequests > 0 ? "mobile-tone-warning" : "mobile-tone-neutral",
           cta: translateUiText("Talep Ekranina Gec", locale),
@@ -296,9 +296,9 @@ export default async function OpsPage({
       : null,
     {
       key: "tables",
-      title: translateUiText("Masa Akisi", locale),
+      title: translateUiText("Masa Akışı", locale),
       value: metrics.occupiedTables,
-      hint: `${metrics.emptyTables} ${translateUiText("bos masa", locale).toLowerCase()}`,
+      hint: `${metrics.emptyTables} ${translateUiText("boş masa", locale).toLowerCase()}`,
       href: "/tables",
       tone: metrics.occupiedTables > metrics.emptyTables ? "mobile-tone-warning" : "mobile-tone-success",
       cta: translateUiText("Masalari Ac", locale),
@@ -308,7 +308,7 @@ export default async function OpsPage({
   return (
     <BackofficePage
       title={translateUiText("Operasyon Merkezi", locale)}
-      description={translateUiText("Canli siparis, masa, mutfak ve kasayi tek ekrandan izle.", locale)}
+      description={translateUiText("Canli sipariş, masa, mutfak ve kasayi tek ekrandan izle.", locale)}
       actions={
         <>
           <span className="inline-flex w-full justify-center rounded-full bg-slate-900 px-3 py-2 text-[11px] font-semibold uppercase tracking-[0.18em] text-white sm:w-auto sm:px-4 sm:text-xs">
@@ -316,7 +316,7 @@ export default async function OpsPage({
           </span>
           {usingDemoData ? (
             <span className="inline-flex w-full justify-center rounded-full bg-amber-100 px-3 py-2 text-[11px] font-semibold uppercase tracking-[0.18em] text-amber-800 sm:w-auto sm:px-4 sm:text-xs">
-              {translateUiText("Demo veri acik", locale)}
+              {translateUiText("Demo veri açık", locale)}
             </span>
           ) : null}
           <OpsLiveBadge />
@@ -325,12 +325,12 @@ export default async function OpsPage({
       sidebar={
         <div className="space-y-5">
           <WorkflowGuide
-            title={translateUiText("Bugun Nasil Kullanilir?", locale)}
-            description={translateUiText("Sistemi ilk kez kullanan biri icin gunluk operasyon sirasi.", locale)}
+            title={translateUiText("Bugün Nasıl Kullanılır?", locale)}
+            description={translateUiText("Sistemi ilk kez kullanan biri için gunluk operasyon sirasi.", locale)}
             steps={[
-              { title: translateUiText("Masalari ve urunleri kontrol et", locale), description: translateUiText("Servise baslamadan once masa, urun ve kritik stok durumunu buradan hizlica kontrol et.", locale) },
-              { title: translateUiText("Siparis akisina bak", locale), description: translateUiText("Bekleyen siparis varsa mutfaga, kasada bekleyen varsa tahsilata yonel.", locale) },
-              { title: translateUiText("Gun sonunda rapora don", locale), description: translateUiText("Vardiya sonunda kasa ve rapor ekranlarindan tahsilat ve net sonucu kontrol et.", locale) },
+              { title: translateUiText("Masalari ve ürünleri kontrol et", locale), description: translateUiText("Servise baslamadan önce masa, ürün ve kritik stok durumunu buradan hizlica kontrol et.", locale) },
+              { title: translateUiText("Sipariş akisina bak", locale), description: translateUiText("Bekleyen sipariş varsa mutfaga, kasada bekleyen varsa tahsilata yonel.", locale) },
+              { title: translateUiText("Gun sonunda rapora don", locale), description: translateUiText("Vardiya sonunda kasa ve rapor ekranlarından tahsilat ve net sonucu kontrol et.", locale) },
             ]}
           />
           <SidebarPanel title={translateUiText("Anlik Durum", locale)} description={translateUiText("Gunluk operasyon nabzi ve risk odaklari.", locale)}>
@@ -379,10 +379,10 @@ export default async function OpsPage({
             </div>
           </SidebarPanel>
 
-          <SidebarPanel title={translateUiText("Hizli Aksiyonlar", locale)} description={translateUiText("En sik kullanilan operasyon gecisleri.", locale)}>
+          <SidebarPanel title={translateUiText("Hızlı Aksiyonlar", locale)} description={translateUiText("En sik kullanilan operasyon gecisleri.", locale)}>
             <div className="grid gap-3">
               <Link href="/admin/tables" className="rounded-2xl border border-white/50 bg-white/60 px-4 py-4 text-center text-sm font-semibold text-slate-800 shadow-sm backdrop-blur-sm transition-all hover:-translate-y-0.5 hover:bg-white/90 hover:shadow-md sm:text-left">
-                {translateUiText("Masa QR Yonetimi", locale)}
+                {translateUiText("Masa QR Yönetimi", locale)}
               </Link>
               {canKitchen ? (
                 <Link href="/kitchen" className="rounded-2xl border border-white/50 bg-white/60 px-4 py-4 text-center text-sm font-semibold text-slate-800 shadow-sm backdrop-blur-sm transition-all hover:-translate-y-0.5 hover:bg-white/90 hover:shadow-md sm:text-left">
@@ -406,7 +406,7 @@ export default async function OpsPage({
               ) : null}
               {canAdmin ? (
                 <Link href="/admin/orders" className="rounded-2xl border border-white/50 bg-white/60 px-4 py-4 text-center text-sm font-semibold text-slate-800 shadow-sm backdrop-blur-sm transition-all hover:-translate-y-0.5 hover:bg-white/90 hover:shadow-md sm:text-left">
-                  {translateUiText("Manuel Siparis Gir", locale)}
+                  {translateUiText("Manuel Sipariş Gir", locale)}
                 </Link>
               ) : null}
             </div>
@@ -418,7 +418,7 @@ export default async function OpsPage({
         <MobileTaskList>
         <MobileTaskCard
           title={translateUiText("Canli Operasyon", locale)}
-          subtitle={translateUiText("Oncelik kuyruğu", locale)}
+          subtitle={translateUiText("Öncelik kuyruğu", locale)}
         >
           <div className="grid grid-cols-4 gap-2">
             <div className="rounded-xl bg-amber-50 px-2 py-2 text-center">
@@ -426,7 +426,7 @@ export default async function OpsPage({
               <p className="mt-1 text-lg font-semibold text-amber-900">{ops.pendingOrders}</p>
             </div>
             <div className="rounded-xl bg-sky-50 px-2 py-2 text-center">
-              <p className="text-[10px] font-semibold uppercase tracking-[0.12em] text-sky-700">{translateUiText("Hazir", locale)}</p>
+              <p className="text-[10px] font-semibold uppercase tracking-[0.12em] text-sky-700">{translateUiText("Hazır", locale)}</p>
               <p className="mt-1 text-lg font-semibold text-sky-900">{ops.servedOrders}</p>
             </div>
             <div className="rounded-xl bg-rose-50 px-2 py-2 text-center">
@@ -455,7 +455,7 @@ export default async function OpsPage({
 
         <div className="grid grid-cols-2 gap-2">
           <Link href="/tables" className="mobile-cta-secondary inline-flex items-center justify-center px-3 py-3 text-sm font-semibold">
-            {translateUiText("Masa Akisi", locale)}
+            {translateUiText("Masa Akışı", locale)}
           </Link>
           <Link href="/cashier" className="mobile-cta-secondary inline-flex items-center justify-center px-3 py-3 text-sm font-semibold">
             {translateUiText("Tahsilat", locale)}
@@ -465,10 +465,10 @@ export default async function OpsPage({
       ) : null}
 
       <section className="app-mobile-hide grid gap-4 md:grid-cols-2 xl:grid-cols-4">
-        <SummaryCard label={translateUiText("Acik Siparis", locale)} value={String(metrics.openOrders)} hint={translateUiText("Pending, hazirlaniyor ve kasada bekleyen toplam siparis", locale)} tone="accent" />
+        <SummaryCard label={translateUiText("Açık Sipariş", locale)} value={String(metrics.openOrders)} hint={translateUiText("Pending, hazirlaniyor ve kasada bekleyen toplam sipariş", locale)} tone="accent" />
         <SummaryCard label={translateUiText("Bekleyen", locale)} value={String(metrics.pending)} hint={translateUiText("Mutfaga yeni dusen isler", locale)} tone="danger" />
         <SummaryCard label={translateUiText("Hazirlaniyor", locale)} value={String(metrics.preparing)} hint={translateUiText("Aktif mutfak uretimi", locale)} tone="accent" />
-        <SummaryCard label={translateUiText("Servise Hazir", locale)} value={String(ops.servedOrders)} hint={translateUiText("Kasada kapanis bekleyen adisyonlar", locale)} tone="success" />
+        <SummaryCard label={translateUiText("Servise Hazır", locale)} value={String(ops.servedOrders)} hint={translateUiText("Kasada kapanış bekleyen adisyonlar", locale)} tone="success" />
       </section>
 
       {canAdmin ? (
@@ -483,9 +483,9 @@ export default async function OpsPage({
       ) : null}
 
       <section className="app-mobile-hide grid gap-5 xl:grid-cols-[1.2fr_0.8fr]">
-        <ContentCard title={translateUiText("Anlik Siparis Akisi", locale)}>
+        <ContentCard title={translateUiText("Anlik Sipariş Akışı", locale)}>
           {recentOrders.length === 0 ? (
-            <EmptyPanel title={translateUiText("Siparis akisi bos", locale)} description={translateUiText("Bu vardiyada izlenecek yeni siparis olustugunda burada gune ait son siparisler gorunur.", locale)} />
+            <EmptyPanel title={translateUiText("Sipariş akışı boş", locale)} description={translateUiText("Bu vardiyada izlenecek yeni sipariş olustugunda burada gune ait son siparişler gorunur.", locale)} />
           ) : (
             <div className="space-y-3">
               {pagedRecentOrders.map((order) => (
@@ -493,8 +493,8 @@ export default async function OpsPage({
                   <div className="flex flex-col items-start justify-between gap-4 sm:flex-row">
                     <div>
                       <p className="text-xs font-bold uppercase tracking-[0.16em] text-slate-500">{orderSourceLabel(order, locale)}</p>
-                      <h3 className="mt-2 text-xl font-semibold tracking-tight text-slate-900">Siparis #{orderRef(order)}</h3>
-                      <p className="mt-2 text-sm text-slate-500">{formatClock(order.created_at, locale)} {translateUiText("olusturuldu", locale)}</p>
+                      <h3 className="mt-2 text-xl font-semibold tracking-tight text-slate-900">Sipariş #{orderRef(order)}</h3>
+                      <p className="mt-2 text-sm text-slate-500">{formatClock(order.created_at, locale)} {translateUiText("oluşturuldu", locale)}</p>
                     </div>
                     <div className="w-full text-left sm:w-auto sm:text-right">
                       <span className={`inline-flex w-full justify-center rounded-full px-3 py-2 text-xs font-semibold uppercase sm:w-auto ${statusTone(order.status)}`}>
@@ -538,7 +538,7 @@ export default async function OpsPage({
               <div className="rounded-[24px] bg-emerald-50 p-4">
                 <p className="text-xs font-bold uppercase tracking-[0.16em] text-emerald-700">{translateUiText("Bos", locale)}</p>
                 <p className="mt-3 text-4xl font-semibold tracking-tight text-emerald-900">{metrics.emptyTables}</p>
-                <p className="mt-2 text-sm text-emerald-700">{translateUiText("Yeni oturum icin hazir masalar", locale)}</p>
+                <p className="mt-2 text-sm text-emerald-700">{translateUiText("Yeni oturum için hazır masalar", locale)}</p>
               </div>
             </div>
             <Link href="/admin/tables" className="mt-4 inline-flex w-full rounded-2xl bg-slate-100 px-4 py-3 text-center text-sm font-semibold text-slate-800 transition hover:bg-slate-200 sm:w-auto">
@@ -548,7 +548,7 @@ export default async function OpsPage({
 
           <ContentCard title={translateUiText("Kritik Stok", locale)}>
             {lowStockProducts.length === 0 ? (
-              <EmptyPanel title={translateUiText("Kritik stok yok", locale)} description={translateUiText("Esik altina dusen urun olmadigi icin bu vardiyada stok riski gorunmuyor.", locale)} />
+              <EmptyPanel title={translateUiText("Kritik stok yok", locale)} description={translateUiText("Eşik altina dusen ürün olmadigi için bu vardiyada stok riski gorunmuyor.", locale)} />
             ) : (
               <div className="space-y-3">
                 {lowStockProducts.slice(0, 6).map((product) => (
@@ -580,12 +580,12 @@ export default async function OpsPage({
             <div className="rounded-[24px] border border-white/60 bg-white/50 p-4 shadow-sm backdrop-blur-md transition-all hover:bg-white/80">
               <p className="text-xs font-bold uppercase tracking-[0.16em] text-slate-500">{translateUiText("Kritik Mutfak", locale)}</p>
               <p className="mt-3 text-4xl font-semibold tracking-tight text-slate-900">{ops.criticalKitchenOrders}</p>
-              <p className="mt-2 text-sm text-slate-500">{translateUiText("Esik ustu gecikmis siparis sayisi", locale)}</p>
+              <p className="mt-2 text-sm text-slate-500">{translateUiText("Eşik üstü gecikmiş sipariş sayısı", locale)}</p>
             </div>
             <div className="rounded-[24px] border border-white/60 bg-white/50 p-4 shadow-sm backdrop-blur-md transition-all hover:bg-white/80">
-              <p className="text-xs font-bold uppercase tracking-[0.16em] text-slate-500">{translateUiText("Bugunku Acik Siparis", locale)}</p>
+              <p className="text-xs font-bold uppercase tracking-[0.16em] text-slate-500">{translateUiText("Bugunku Açık Sipariş", locale)}</p>
               <p className="mt-3 text-4xl font-semibold tracking-tight text-slate-900">{ops.openOrders}</p>
-              <p className="mt-2 text-sm text-slate-500">{translateUiText("Operasyonda halen kapanmamis siparisler", locale)}</p>
+              <p className="mt-2 text-sm text-slate-500">{translateUiText("Operasyonda halen kapanmamis siparişler", locale)}</p>
             </div>
             <div className="rounded-[24px] border border-white/60 bg-white/50 p-4 shadow-sm backdrop-blur-md transition-all hover:bg-white/80">
               <p className="text-xs font-bold uppercase tracking-[0.16em] text-slate-500">{translateUiText("Kasa Bekleyen", locale)}</p>
@@ -595,7 +595,7 @@ export default async function OpsPage({
           </div>
         </ContentCard>
 
-        <ContentCard title={translateUiText("Yonetim Gecisleri", locale)}>
+        <ContentCard title={translateUiText("Yönetim Gecisleri", locale)}>
           <div className="grid gap-3 sm:grid-cols-2">
             {canCashier ? (
               <Link href="/cashier/session" className="rounded-[24px] border border-slate-200 bg-slate-50 px-4 py-5 text-center text-sm font-semibold text-slate-800 transition hover:border-slate-300 hover:bg-white sm:text-left">
@@ -604,7 +604,7 @@ export default async function OpsPage({
             ) : null}
             {canAdmin ? (
               <Link href="/admin/products" className="rounded-[24px] border border-slate-200 bg-slate-50 px-4 py-5 text-center text-sm font-semibold text-slate-800 transition hover:border-slate-300 hover:bg-white sm:text-left">
-                {translateUiText("Urun Yonetimi", locale)}
+                {translateUiText("Ürün Yönetimi", locale)}
               </Link>
             ) : null}
             {canAdmin ? (
@@ -619,12 +619,12 @@ export default async function OpsPage({
             ) : null}
             {canOwner ? (
               <Link href="/admin/settings" className="rounded-[24px] border border-slate-200 bg-slate-50 px-4 py-5 text-center text-sm font-semibold text-slate-800 transition hover:border-slate-300 hover:bg-white sm:text-left">
-                {translateUiText("Isletme Ayarlari", locale)}
+                {translateUiText("İşletme Ayarlari", locale)}
               </Link>
             ) : null}
             {canAdmin ? (
               <Link href="/admin/orders" className="rounded-[24px] border border-slate-200 bg-slate-50 px-4 py-5 text-center text-sm font-semibold text-slate-800 transition hover:border-slate-300 hover:bg-white sm:text-left">
-                {translateUiText("Siparis Girisi", locale)}
+                {translateUiText("Sipariş Girisi", locale)}
               </Link>
             ) : null}
           </div>
