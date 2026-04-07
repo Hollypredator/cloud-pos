@@ -4,6 +4,7 @@ import { redirect } from "next/navigation";
 import {
   attachIngredientToProduct,
   bulkUpdateCategoryPrices,
+  commitEnterpriseMarketImport,
   createCategory,
   createIngredient,
   createProduct,
@@ -15,8 +16,10 @@ import {
   deleteProductModifierGroup,
   deleteProductModifierOption,
   detachIngredientFromProduct,
+  dryRunEnterpriseMarketImport,
   getProductManagementData,
   reorderCategories,
+  uploadMediaFile,
   updateCategoryPrepStation,
   updateProduct,
 } from "@/lib/data";
@@ -27,7 +30,7 @@ import { FileDropInput } from "@/components/file-drop-input";
 import { translateUiText } from "@/lib/i18n";
 import { getCurrentLocale } from "@/lib/i18n-server";
 import { logServerPerf, measureAsync } from "@/lib/perf";
-import { uploadMediaFile } from "@/lib/data";
+import type { ProductDepartment, ProductKind, ProductProfileScope, ProductUnit } from "@/lib/types";
 
 function normalizePrepStation(value: FormDataEntryValue | null) {
   const station = typeof value === "string" ? value : "";
@@ -35,6 +38,55 @@ function normalizePrepStation(value: FormDataEntryValue | null) {
     return station;
   }
   return "kitchen";
+}
+
+function normalizeProfileScope(value: FormDataEntryValue | null): ProductProfileScope {
+  return value === "enterprise_market" ? "enterprise_market" : "restaurant";
+}
+
+function normalizeOptionalText(value: FormDataEntryValue | null) {
+  if (typeof value !== "string") {
+    return undefined;
+  }
+  const normalized = value.trim();
+  return normalized ? normalized : undefined;
+}
+
+function normalizeProductKind(value: FormDataEntryValue | null): ProductKind {
+  return value === "weighted" || value === "service" ? value : "standard";
+}
+
+function normalizeProductUnit(value: FormDataEntryValue | null): ProductUnit {
+  if (value === "kg" || value === "gram" || value === "litre" || value === "ml" || value === "paket") {
+    return value;
+  }
+  return "adet";
+}
+
+function normalizeProductDepartment(value: FormDataEntryValue | null): ProductDepartment {
+  if (
+    value === "butcher" ||
+    value === "delicatessen" ||
+    value === "bakery" ||
+    value === "produce" ||
+    value === "beverage" ||
+    value === "frozen" ||
+    value === "non_food"
+  ) {
+    return value;
+  }
+  return "general";
+}
+
+function formatDryRunSummary(input: {
+  rowCount: number;
+  newCategoryCount: number;
+  newProductCount: number;
+  updateProductCount: number;
+  conflictCount: number;
+  errorCount: number;
+}) {
+  return `Dry-run tamam: satir ${input.rowCount}, yeni kategori ${input.newCategoryCount}, yeni urun ${input.newProductCount}, guncellenecek urun ${input.updateProductCount}, cakisma ${input.conflictCount}, hata ${input.errorCount}.`;
 }
 
 async function resolveProductsReturnPath() {
@@ -98,11 +150,12 @@ async function addCategoryAction(formData: FormData) {
   const name = formData.get("name");
   const sortOrder = Number(formData.get("sortOrder"));
   const prepStation = normalizePrepStation(formData.get("prepStation"));
+  const profileScope = normalizeProfileScope(formData.get("profileScope"));
   if (typeof name !== "string" || !Number.isFinite(sortOrder)) {
     redirect(await resolveProductsFeedbackPath("error", "Kategori bilgisi geçersiz."));
   }
 
-  const result = await createCategory(name, sortOrder, prepStation);
+  const result = await createCategory(name, sortOrder, prepStation, profileScope);
   if (!result.ok) {
     redirect(await resolveProductsFeedbackPath("error", actionErrorMessage(result, "Kategori eklenemedi.")));
   }
@@ -161,6 +214,12 @@ async function addProductAction(formData: FormData) {
   const price = Number(formData.get("price"));
   const stockCount = Number(formData.get("stockCount"));
   const description = formData.get("description");
+  const profileScope = normalizeProfileScope(formData.get("profileScope"));
+  const barcode = normalizeOptionalText(formData.get("barcode"));
+  const pluCode = normalizeOptionalText(formData.get("pluCode"));
+  const productKind = normalizeProductKind(formData.get("productKind"));
+  const unit = normalizeProductUnit(formData.get("unit"));
+  const department = normalizeProductDepartment(formData.get("department"));
 
   if (typeof categoryId !== "string" || typeof name !== "string" || !Number.isFinite(price) || !Number.isFinite(stockCount)) {
     redirect(await resolveProductsFeedbackPath("error", "Ürün bilgileri geçersiz."));
@@ -176,9 +235,15 @@ async function addProductAction(formData: FormData) {
     name,
     price,
     stockCount,
+    profileScope,
     description: typeof description === "string" ? description : undefined,
     imageUrl: imageResult.imageUrl,
     isAvailable: true,
+    barcode,
+    pluCode,
+    productKind,
+    unit,
+    department,
   });
   if (!result.ok) {
     redirect(await resolveProductsFeedbackPath("error", actionErrorMessage(result, "Ürün eklenemedi.")));
@@ -198,6 +263,12 @@ async function updateProductAction(formData: FormData) {
   const description = formData.get("description");
   const currentImageUrl = String(formData.get("currentImageUrl") ?? "");
   const isAvailable = formData.get("isAvailable") === "on";
+  const profileScope = normalizeProfileScope(formData.get("profileScope"));
+  const barcode = normalizeOptionalText(formData.get("barcode"));
+  const pluCode = normalizeOptionalText(formData.get("pluCode"));
+  const productKind = normalizeProductKind(formData.get("productKind"));
+  const unit = normalizeProductUnit(formData.get("unit"));
+  const department = normalizeProductDepartment(formData.get("department"));
 
   if (
     typeof productId !== "string" ||
@@ -220,9 +291,15 @@ async function updateProductAction(formData: FormData) {
     name,
     price,
     stockCount,
+    profileScope,
     description: typeof description === "string" ? description : undefined,
     imageUrl: imageResult.imageUrl,
     isAvailable,
+    barcode,
+    pluCode,
+    productKind,
+    unit,
+    department,
   });
   if (!result.ok) {
     redirect(await resolveProductsFeedbackPath("error", actionErrorMessage(result, "Ürün güncellenemedi.")));
@@ -261,6 +338,54 @@ async function bulkPriceAction(formData: FormData) {
     redirect(await resolveProductsFeedbackPath("error", actionErrorMessage(result, "Toplu fiyat guncelleme başarısız.")));
   }
   redirect(await resolveProductsReturnPath());
+}
+
+async function marketImportDryRunAction(formData: FormData) {
+  "use server";
+  await requireRole(["admin"], "/admin/products");
+
+  const payload = formData.get("importPayload");
+  const replaceScope = formData.get("replaceScope") === "on";
+  if (typeof payload !== "string" || !payload.trim()) {
+    redirect(await resolveProductsFeedbackPath("error", "Import JSON alani bos olamaz."));
+  }
+
+  const result = await dryRunEnterpriseMarketImport({
+    jsonText: payload,
+    replaceScope,
+  });
+  if (!result.ok) {
+    const summary = result.summary
+      ? formatDryRunSummary(result.summary)
+      : result.error ?? "Dry-run tamamlanamadi.";
+    redirect(await resolveProductsFeedbackPath("error", summary));
+  }
+
+  redirect(await resolveProductsFeedbackPath("success", formatDryRunSummary(result.summary)));
+}
+
+async function marketImportCommitAction(formData: FormData) {
+  "use server";
+  await requireRole(["admin"], "/admin/products");
+
+  const payload = formData.get("importPayload");
+  const replaceScope = formData.get("replaceScope") === "on";
+  if (typeof payload !== "string" || !payload.trim()) {
+    redirect(await resolveProductsFeedbackPath("error", "Import JSON alani bos olamaz."));
+  }
+
+  const result = await commitEnterpriseMarketImport({
+    jsonText: payload,
+    replaceScope,
+  });
+  if (!result.ok) {
+    const summary = result.summary
+      ? formatDryRunSummary(result.summary)
+      : result.error ?? "Import commit basarisiz.";
+    redirect(await resolveProductsFeedbackPath("error", summary));
+  }
+
+  redirect(await resolveProductsFeedbackPath("success", `Import tamamlandi. ${formatDryRunSummary(result.summary)}`));
 }
 
 async function addIngredientAction(formData: FormData) {
@@ -400,13 +525,23 @@ export default async function AdminProductsPage({
   const locale = await getCurrentLocale();
   await requireRole(["admin"], "/admin/products");
   const { tab: tabParam, categoryId: categoryIdParam, feedback, tone } = await searchParams;
-  const activeTab = ["catalog", "menu", "categories", "bulk", "features"].includes(tabParam ?? "")
-    ? (tabParam as "catalog" | "menu" | "categories" | "bulk" | "features")
+  const activeTab = ["catalog", "menu", "categories", "bulk", "features", "import"].includes(tabParam ?? "")
+    ? (tabParam as "catalog" | "menu" | "categories" | "bulk" | "features" | "import")
     : "catalog";
   const productManagementResult = await measureAsync("product_management", () => getProductManagementData({ tab: activeTab }));
-  const { categories, products, ingredients, modifierGroups, modifierOptions, productIngredients, usingDemoData } =
+  const {
+    categories,
+    products,
+    ingredients,
+    modifierGroups,
+    modifierOptions,
+    productIngredients,
+    usingDemoData,
+    activeProfileScope,
+  } =
     productManagementResult.value;
   logServerPerf("/admin/products", [productManagementResult]);
+  const isMarketScope = activeProfileScope === "enterprise_market";
 
   const orderedCategories = [...categories].sort((a, b) => a.sort_order - b.sort_order);
   const productCountMap = new Map<string, number>();
@@ -460,6 +595,7 @@ export default async function AdminProductsPage({
       description={translateUiText("Katalog, modifier, recete ve stok temel ayarlari", locale)}
       actions={
         <form action={addProductAction} className="flex flex-wrap items-stretch gap-3">
+          <input type="hidden" name="profileScope" value={activeProfileScope} />
           <select name="categoryId" required defaultValue={selectedCategoryId} className="w-full rounded-2xl border border-slate-200 bg-slate-50 px-4 py-3 text-sm text-slate-700 sm:w-auto">
             {orderedCategories.map((category) => (
               <option key={category.id} value={category.id}>
@@ -470,6 +606,35 @@ export default async function AdminProductsPage({
           <input name="name" required placeholder={translateUiText("Yeni Ürün", locale)} className="w-full min-w-0 rounded-2xl border border-slate-200 bg-slate-50 px-4 py-3 text-sm sm:flex-1" />
           <input name="price" type="number" min="0" step="0.01" required placeholder="Fiyat" className="w-full rounded-2xl border border-slate-200 bg-slate-50 px-4 py-3 text-sm sm:w-28" />
           <input name="stockCount" type="number" min="0" required placeholder="Stok" className="w-full rounded-2xl border border-slate-200 bg-slate-50 px-4 py-3 text-sm sm:w-28" />
+          {isMarketScope ? (
+            <>
+              <input name="barcode" placeholder="Barkod" className="w-full rounded-2xl border border-slate-200 bg-slate-50 px-4 py-3 text-sm sm:w-36" />
+              <input name="pluCode" placeholder="PLU" className="w-full rounded-2xl border border-slate-200 bg-slate-50 px-4 py-3 text-sm sm:w-32" />
+              <select name="productKind" defaultValue="standard" className="w-full rounded-2xl border border-slate-200 bg-slate-50 px-4 py-3 text-sm sm:w-36">
+                <option value="standard">Standart</option>
+                <option value="weighted">Tartili</option>
+                <option value="service">Servis</option>
+              </select>
+              <select name="unit" defaultValue="adet" className="w-full rounded-2xl border border-slate-200 bg-slate-50 px-4 py-3 text-sm sm:w-32">
+                <option value="adet">Adet</option>
+                <option value="kg">Kg</option>
+                <option value="gram">Gram</option>
+                <option value="litre">Litre</option>
+                <option value="ml">Ml</option>
+                <option value="paket">Paket</option>
+              </select>
+              <select name="department" defaultValue="general" className="w-full rounded-2xl border border-slate-200 bg-slate-50 px-4 py-3 text-sm sm:w-40">
+                <option value="general">Genel</option>
+                <option value="butcher">Kasap</option>
+                <option value="delicatessen">Sarkuteri</option>
+                <option value="bakery">Firin</option>
+                <option value="produce">Manav</option>
+                <option value="beverage">Icecek</option>
+                <option value="frozen">Donuk</option>
+                <option value="non_food">Gida Disi</option>
+              </select>
+            </>
+          ) : null}
           <FileDropInput
             name="imageFile"
             label="Ürün gorseli"
@@ -489,6 +654,7 @@ export default async function AdminProductsPage({
             { label: translateUiText("Menü Yönetimi", locale), active: activeTab === "menu", href: "/admin/products?tab=menu" },
             { label: "Ana Kategoriler", active: activeTab === "categories", href: "/admin/products?tab=categories" },
             { label: "Toplu Islemler", active: activeTab === "bulk", href: "/admin/products?tab=bulk" },
+            { label: "Market Import", active: activeTab === "import", href: "/admin/products?tab=import" },
             { label: "Ürün Ozellikleri", active: activeTab === "features", href: "/admin/products?tab=features" },
           ]}
         />
@@ -526,6 +692,7 @@ export default async function AdminProductsPage({
             </div>
 
             <form action={addCategoryAction} className="mt-4 grid gap-3">
+              <input type="hidden" name="profileScope" value={activeProfileScope} />
               <input name="name" required placeholder="Yeni kategori" className="rounded-2xl border border-slate-200 bg-white px-4 py-3 text-sm" />
               <select name="prepStation" defaultValue="kitchen" className="rounded-2xl border border-slate-200 bg-white px-4 py-3 text-sm">
                 <option value="kitchen">Mutfak Istasyonu</option>
@@ -633,6 +800,7 @@ export default async function AdminProductsPage({
 
                           <form action={updateProductAction} className="space-y-3">
                             <input type="hidden" name="productId" value={product.id} />
+                            <input type="hidden" name="profileScope" value={activeProfileScope} />
                             <input type="hidden" name="currentImageUrl" value={product.image_url ?? ""} />
                             <select name="categoryId" defaultValue={product.category_id} className="w-full rounded-2xl border border-slate-200 bg-slate-50 px-4 py-3 text-sm">
                               {orderedCategories.map((category) => (
@@ -646,6 +814,35 @@ export default async function AdminProductsPage({
                               <input name="price" type="number" step="0.01" min="0" defaultValue={product.price} className="rounded-2xl border border-slate-200 bg-slate-50 px-4 py-3 text-sm" />
                               <input name="stockCount" type="number" min="0" defaultValue={product.stock_count} className="rounded-2xl border border-slate-200 bg-slate-50 px-4 py-3 text-sm" />
                             </div>
+                            {isMarketScope ? (
+                              <div className="grid gap-3 md:grid-cols-2">
+                                <input name="barcode" defaultValue={product.barcode ?? ""} placeholder="Barkod" className="rounded-2xl border border-slate-200 bg-slate-50 px-4 py-3 text-sm" />
+                                <input name="pluCode" defaultValue={product.plu_code ?? ""} placeholder="PLU" className="rounded-2xl border border-slate-200 bg-slate-50 px-4 py-3 text-sm" />
+                                <select name="productKind" defaultValue={product.product_kind ?? "standard"} className="rounded-2xl border border-slate-200 bg-slate-50 px-4 py-3 text-sm">
+                                  <option value="standard">Standart</option>
+                                  <option value="weighted">Tartili</option>
+                                  <option value="service">Servis</option>
+                                </select>
+                                <select name="unit" defaultValue={product.unit ?? "adet"} className="rounded-2xl border border-slate-200 bg-slate-50 px-4 py-3 text-sm">
+                                  <option value="adet">Adet</option>
+                                  <option value="kg">Kg</option>
+                                  <option value="gram">Gram</option>
+                                  <option value="litre">Litre</option>
+                                  <option value="ml">Ml</option>
+                                  <option value="paket">Paket</option>
+                                </select>
+                                <select name="department" defaultValue={product.department ?? "general"} className="rounded-2xl border border-slate-200 bg-slate-50 px-4 py-3 text-sm md:col-span-2">
+                                  <option value="general">Genel</option>
+                                  <option value="butcher">Kasap</option>
+                                  <option value="delicatessen">Sarkuteri</option>
+                                  <option value="bakery">Firin</option>
+                                  <option value="produce">Manav</option>
+                                  <option value="beverage">Icecek</option>
+                                  <option value="frozen">Donuk</option>
+                                  <option value="non_food">Gida Disi</option>
+                                </select>
+                              </div>
+                            ) : null}
                             <FileDropInput
                               name="imageFile"
                               label="Ürün gorseli"
@@ -888,10 +1085,16 @@ export default async function AdminProductsPage({
                     </div>
                     <form action={updateProductAction} className="mt-4 grid gap-2">
                       <input type="hidden" name="productId" value={product.id} />
+                      <input type="hidden" name="profileScope" value={activeProfileScope} />
                       <input type="hidden" name="categoryId" value={product.category_id} />
                       <input type="hidden" name="name" value={product.name} />
                       <input type="hidden" name="price" value={String(product.price)} />
                       <input type="hidden" name="stockCount" value={String(product.stock_count)} />
+                      <input type="hidden" name="barcode" value={product.barcode ?? ""} />
+                      <input type="hidden" name="pluCode" value={product.plu_code ?? ""} />
+                      <input type="hidden" name="productKind" value={product.product_kind ?? "standard"} />
+                      <input type="hidden" name="unit" value={product.unit ?? "adet"} />
+                      <input type="hidden" name="department" value={product.department ?? "general"} />
                       <input type="hidden" name="description" value={product.description ?? ""} />
                       <input type="hidden" name="currentImageUrl" value={product.image_url ?? ""} />
                       <input type="hidden" name="isAvailable" value={product.is_available ? "on" : "off"} />
@@ -969,6 +1172,51 @@ export default async function AdminProductsPage({
                     ))}
                   </tbody>
                 </table>
+              </div>
+            </ContentCard>
+          </div>
+        ) : null}
+
+        {activeTab === "import" ? (
+          <div className="mt-6 grid gap-5 xl:grid-cols-2">
+            <ContentCard title="Market Import">
+              {isMarketScope ? (
+                <form action={marketImportDryRunAction} className="grid gap-3">
+                  <textarea
+                    name="importPayload"
+                    required
+                    rows={14}
+                    placeholder='[{"category_name":"Kasap","name":"Dana Kiyma","price":420,"stock_count":25}]'
+                    className="rounded-2xl border border-slate-200 bg-slate-50 px-4 py-3 text-sm"
+                  />
+                  <label className="flex items-center gap-2 text-sm font-medium text-slate-700">
+                    <input name="replaceScope" type="checkbox" />
+                    Sadece market scope kayitlarini temizleyip yeniden yukle
+                  </label>
+                  <div className="flex flex-wrap gap-2">
+                    <button type="submit" className="rounded-2xl border border-slate-200 bg-white px-4 py-3 text-sm font-semibold text-slate-800">
+                      Dry-run Calistir
+                    </button>
+                    <button formAction={marketImportCommitAction} type="submit" className="rounded-2xl bg-gradient-to-r from-[#ff5a34] to-[#f0b14f] px-4 py-3 text-sm font-semibold text-white">
+                      Commit Import
+                    </button>
+                  </div>
+                </form>
+              ) : (
+                <EmptyPanel
+                  title="Market profile gerekli"
+                  description="Market import yalnizca enterprise_market scope aktifken kullanilabilir."
+                />
+              )}
+            </ContentCard>
+
+            <ContentCard title="Import Kurallari">
+              <div className="space-y-3 text-sm text-slate-600">
+                <p>JSON array formatinda satirlar beklenir.</p>
+                <p>Zorunlu alanlar: <code>category_name</code> ve <code>name</code>.</p>
+                <p>Opsiyonel alanlar: <code>price</code>, <code>stock_count</code>, <code>barcode</code>, <code>plu_code</code>, <code>product_kind</code>, <code>unit</code>, <code>department</code>, <code>image_url</code>, <code>description</code>, <code>is_available</code>.</p>
+                <p>Dry-run sonucu cakisma/hata varsa commit engellenir.</p>
+                <p>Commit islemi transaction ile calisir; hata durumunda rollback olur.</p>
               </div>
             </ContentCard>
           </div>

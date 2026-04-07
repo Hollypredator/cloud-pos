@@ -26,6 +26,9 @@ function toNumber(input: FormDataEntryValue | null, fallback = 0) {
   return Number.isFinite(value) ? value : fallback;
 }
 
+
+import toast from "react-hot-toast";
+
 function useTrackedCommandResult(commandId: string | null, onResolve: (status: "ACK" | "CONFLICT" | "REJECT", message?: string) => void) {
   const result = usePosCommandQueueStore((state) => state.commandQueueState.lastResult);
 
@@ -63,13 +66,11 @@ export function CashierPaymentQueuePanel({
   );
 
   useTrackedCommandResult(trackedCommandId, (status, message) => {
-    const feedbackOrderId = resolveFeedbackOrderId(orderId, returnOrderId);
     if (status === "ACK") {
-      router.replace(feedbackHref("success", "Ödeme kaydedildi.", feedbackOrderId), { scroll: false });
+      toast.success("Ödeme kaydedildi.");
     } else {
-      router.replace(feedbackHref("error", message ?? "Ödeme alinamadi.", feedbackOrderId), { scroll: false });
+      toast.error(message ?? "Ödeme alınamadı.");
     }
-    router.refresh();
     setTrackedCommandId(null);
   });
 
@@ -105,9 +106,7 @@ export function CashierPaymentQueuePanel({
           },
         });
         setTrackedCommandId(queued.commandId);
-        router.replace(feedbackHref("success", "Ödeme işlemi kuyruga alındı.", resolveFeedbackOrderId(orderId, returnOrderId)), {
-          scroll: false,
-        });
+        router.push("/cashier", { scroll: false });
         void flushPosCommandQueue({
           onResolved: () => router.refresh(),
         });
@@ -142,13 +141,11 @@ export function CashierFinancialsQueueForm({
   );
 
   useTrackedCommandResult(trackedCommandId, (status, message) => {
-    const feedbackOrderId = resolveFeedbackOrderId(orderId, returnOrderId);
     if (status === "ACK") {
-      router.replace(feedbackHref("success", "Finans güncellendi.", feedbackOrderId), { scroll: false });
+      toast.success("Finans güncellendi.");
     } else {
-      router.replace(feedbackHref("error", message ?? "Finans güncellenemedi.", feedbackOrderId), { scroll: false });
+      toast.error(message ?? "Finans güncellenemedi.");
     }
-    router.refresh();
     setTrackedCommandId(null);
   });
 
@@ -180,9 +177,7 @@ export function CashierFinancialsQueueForm({
       },
     });
     setTrackedCommandId(queued.commandId);
-    router.replace(feedbackHref("success", "Finans işlemi kuyruga alındı.", resolveFeedbackOrderId(orderId, returnOrderId)), {
-      scroll: false,
-    });
+    router.push("/cashier", { scroll: false });
     void flushPosCommandQueue({
       onResolved: () => router.refresh(),
     });
@@ -244,13 +239,11 @@ export function CashierCancelOrderQueueForm({
   );
 
   useTrackedCommandResult(trackedCommandId, (status, message) => {
-    const feedbackOrderId = resolveFeedbackOrderId(orderId, returnOrderId);
     if (status === "ACK") {
-      router.replace(feedbackHref("success", "Sipariş iptal edildi.", feedbackOrderId), { scroll: false });
+      toast.success("Sipariş iptal edildi.");
     } else {
-      router.replace(feedbackHref("error", message ?? "Sipariş iptal edilemedi.", feedbackOrderId), { scroll: false });
+      toast.error(message ?? "Sipariş iptal edilemedi.");
     }
-    router.refresh();
     setTrackedCommandId(null);
   });
 
@@ -279,9 +272,7 @@ export function CashierCancelOrderQueueForm({
       },
     });
     setTrackedCommandId(queued.commandId);
-    router.replace(feedbackHref("success", "Iptal işlemi kuyruga alındı.", resolveFeedbackOrderId(orderId, returnOrderId)), {
-      scroll: false,
-    });
+    router.push("/cashier", { scroll: false });
     void flushPosCommandQueue({
       onResolved: () => router.refresh(),
     });
@@ -333,13 +324,11 @@ export function CashierOrderItemCancelQueueButton({
   );
 
   useTrackedCommandResult(trackedCommandId, (status, message) => {
-    const feedbackOrderId = resolveFeedbackOrderId(orderId, returnOrderId);
     if (status === "ACK") {
-      router.replace(feedbackHref("success", "Ürün işlemi kaydedildi.", feedbackOrderId), { scroll: false });
+      toast.success("Ürün iptal/düşme tamamlandı.");
     } else {
-      router.replace(feedbackHref("error", message ?? "Ürün iptal edilemedi.", feedbackOrderId), { scroll: false });
+      toast.error(message ?? "Ürün iptal edilemedi.");
     }
-    router.refresh();
     setTrackedCommandId(null);
   });
 
@@ -357,9 +346,6 @@ export function CashierOrderItemCancelQueueButton({
       },
     });
     setTrackedCommandId(queued.commandId);
-    router.replace(feedbackHref("success", "Ürün işlemi kuyruga alındı.", resolveFeedbackOrderId(orderId, returnOrderId)), {
-      scroll: false,
-    });
     void flushPosCommandQueue({
       onResolved: () => router.refresh(),
     });
@@ -398,13 +384,11 @@ export function CashierRefundQueueForm({
   );
 
   useTrackedCommandResult(trackedCommandId, (status, message) => {
-    const feedbackOrderId = resolveFeedbackOrderId(orderId, returnOrderId);
     if (status === "ACK") {
-      router.replace(feedbackHref("success", "Iade işlemi kaydedildi.", feedbackOrderId), { scroll: false });
+      toast.success("İade işlemi kaydedildi.");
     } else {
-      router.replace(feedbackHref("error", message ?? "Iade tamamlanamadi.", feedbackOrderId), { scroll: false });
+      toast.error(message ?? "İade işlemi başarısız.");
     }
-    router.refresh();
     setTrackedCommandId(null);
   });
 
@@ -441,9 +425,7 @@ export function CashierRefundQueueForm({
       },
     });
     setTrackedCommandId(queued.commandId);
-    router.replace(feedbackHref("success", "Iade işlemi kuyruga alındı.", resolveFeedbackOrderId(orderId, returnOrderId)), {
-      scroll: false,
-    });
+    router.push("/cashier", { scroll: false });
     void flushPosCommandQueue({
       onResolved: () => router.refresh(),
     });

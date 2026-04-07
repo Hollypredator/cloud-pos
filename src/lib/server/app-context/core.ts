@@ -3,9 +3,10 @@ import { cache } from "react";
 import { ALL_BRANCHES_VALUE, DEFAULT_BUSINESS_SLUG, normalizeBusinessSlug } from "@/lib/business";
 import { getActiveBranchId } from "@/lib/branch-server";
 import { getActiveBusinessSlug } from "@/lib/business-server";
+import { getActiveStationProfile } from "@/lib/station-server";
 import { getSupabaseAuthServerClient } from "@/lib/supabase/auth-server";
 import { getSupabaseServerClient } from "@/lib/supabase/server";
-import type { AppRole, Branch, Business, StaffAccessScope, StaffBranchAccess } from "@/lib/types";
+import type { AppRole, Branch, BranchProfile, Business, StaffAccessScope, StaffBranchAccess, StationProfile } from "@/lib/types";
 
 const demoBusiness: Business = {
   id: "demo-business-1",
@@ -23,6 +24,7 @@ const demoBranches: Branch[] = [
     business_id: "demo-business-1",
     name: "Merkez Şube",
     slug: "merkez",
+    branch_profile: "restaurant",
     is_active: true,
     created_at: new Date(0).toISOString(),
     updated_at: new Date(0).toISOString(),
@@ -32,6 +34,7 @@ const demoBranches: Branch[] = [
     business_id: "demo-business-1",
     name: "Bahce Şube",
     slug: "bahce",
+    branch_profile: "restaurant",
     is_active: true,
     created_at: new Date(0).toISOString(),
     updated_at: new Date(0).toISOString(),
@@ -39,7 +42,12 @@ const demoBranches: Branch[] = [
 ];
 
 type ActiveBusinessSummary = Pick<Business, "id" | "name" | "slug" | "plan">;
-type AppShellBranchSummary = { id: string; name: string };
+type AppShellBranchSummary = { id: string; name: string; branch_profile: BranchProfile };
+
+function inferBranchProfileFromIdentity(input: { name?: string | null; slug?: string | null }): BranchProfile {
+  void input;
+  return "restaurant";
+}
 
 const resolveBusinessBySlug = cache(async (businessSlug?: string) => {
   const slug = normalizeBusinessSlug(businessSlug);
@@ -306,7 +314,7 @@ async function getCachedScopedBranches(input: {
   ) => {
     let query = supabase
       .from("branches")
-      .select("id, name")
+      .select("id, name, branch_profile")
       .eq("is_active", true)
       .eq("business_id", input.businessId)
       .order("name", { ascending: true });
@@ -318,17 +326,49 @@ async function getCachedScopedBranches(input: {
       query = query.in("id", normalizedBranchAccessIds);
     }
 
-    const { data, error } = await query;
+    let { data, error } = await query;
+    if (error?.message?.toLowerCase().includes("branch_profile")) {
+      let fallbackQuery = supabase
+        .from("branches")
+        .select("id, name, slug")
+        .eq("is_active", true)
+        .eq("business_id", input.businessId)
+        .order("name", { ascending: true });
+      if (input.accessScope !== "business") {
+        if (normalizedBranchAccessIds.length === 0) {
+          return { branches: [] as AppShellBranchSummary[] };
+        }
+        fallbackQuery = fallbackQuery.in("id", normalizedBranchAccessIds);
+      }
+      const fallbackResult = await fallbackQuery;
+      data = (fallbackResult.data ?? []).map((row) => ({
+        id: (row as { id: string }).id,
+        name: (row as { name: string }).name,
+        branch_profile: inferBranchProfileFromIdentity({
+          name: (row as { name?: string | null }).name,
+          slug: (row as { slug?: string | null }).slug,
+        }),
+      }));
+      error = fallbackResult.error;
+    }
     if (error) {
       return {
         branches: error.message.toLowerCase().includes("branches")
           ? ([] as AppShellBranchSummary[])
-          : demoBranches.map((branch) => ({ id: branch.id, name: branch.name })),
+          : demoBranches.map((branch) => ({
+              id: branch.id,
+              name: branch.name,
+              branch_profile: branch.branch_profile ?? "restaurant",
+            })),
       };
     }
 
     return {
-      branches: (data ?? []) as AppShellBranchSummary[],
+      branches: ((data ?? []) as Array<{ id: string; name: string }>).map((row) => ({
+        id: row.id,
+        name: row.name,
+        branch_profile: "restaurant" as BranchProfile,
+      })),
     };
   };
 
@@ -355,11 +395,26 @@ async function getCachedScopedBranches(input: {
 export const getRequestAppContext = cache(async () => {
   const activeSlug = (await getActiveBusinessSlug()) || DEFAULT_BUSINESS_SLUG;
   const activeBranchCookie = await getActiveBranchId();
+  const activeStationProfile = (await getActiveStationProfile()) as StationProfile;
   const authClient = await getSupabaseAuthServerClient();
 
   if (!authClient) {
     const demoBusinesses: ActiveBusinessSummary[] = [{ id: demoBusiness.id, name: demoBusiness.name, slug: demoBusiness.slug, plan: demoBusiness.plan }];
-    const demoBranchRows: AppShellBranchSummary[] = demoBranches.map((branch) => ({ id: branch.id, name: branch.name }));
+    const demoBranchRows: AppShellBranchSummary[] = demoBranches.map((branch) => ({
+      id: branch.id,
+      name: branch.name,
+      branch_profile: branch.branch_profile ?? "restaurant",
+    }));
+    const demoBranchProfiles = [...new Set(demoBranchRows.map((branch) => branch.branch_profile ?? "restaurant"))] as BranchProfile[];
+    const demoHasMixedBranchProfiles = demoBranchProfiles.length > 1;
+    const demoWantsAllBranches = activeBranchCookie === ALL_BRANCHES_VALUE;
+    const demoForcedBranchSelectionFromAll = demoWantsAllBranches && demoHasMixedBranchProfiles;
+    const demoSelectedBranchId =
+      demoWantsAllBranches && !demoForcedBranchSelectionFromAll
+        ? ALL_BRANCHES_VALUE
+        : demoBranchRows[0]?.id || "";
+    const demoActiveBranchProfile =
+      demoBranchRows.find((branch) => branch.id === demoSelectedBranchId)?.branch_profile ?? "restaurant";
     return {
       user: null,
       role: null as AppRole | null,
@@ -375,10 +430,15 @@ export const getRequestAppContext = cache(async () => {
       primaryBranchId: null as string | null,
       branchAccessIds: [] as string[],
       canAccessAllBranches: true,
+      hasMixedBranchProfiles: demoHasMixedBranchProfiles,
+      forcedBranchSelectionFromAll: demoForcedBranchSelectionFromAll,
       branches: demoBranchRows,
-      activeBranchId: activeBranchCookie || demoBranchRows[0]?.id || "",
-      branchId: activeBranchCookie || null,
-      activeBranchSelection: activeBranchCookie || null,
+      activeBranchId: demoSelectedBranchId,
+      activeBranchProfile: demoActiveBranchProfile,
+      activeStationProfile,
+      branchId: demoSelectedBranchId === ALL_BRANCHES_VALUE ? null : demoSelectedBranchId || null,
+      activeBranchSelection:
+        demoSelectedBranchId === ALL_BRANCHES_VALUE ? ALL_BRANCHES_VALUE : demoSelectedBranchId || null,
     };
   }
 
@@ -425,8 +485,12 @@ export const getRequestAppContext = cache(async () => {
       primaryBranchId: null as string | null,
       branchAccessIds: [] as string[],
       canAccessAllBranches: true,
+      hasMixedBranchProfiles: false,
+      forcedBranchSelectionFromAll: false,
       branches: [] as AppShellBranchSummary[],
       activeBranchId: "",
+      activeBranchProfile: "restaurant" as BranchProfile,
+      activeStationProfile,
       branchId: activeBranchCookie || null,
       activeBranchSelection: activeBranchCookie || null,
     };
@@ -464,8 +528,12 @@ export const getRequestAppContext = cache(async () => {
       primaryBranchId,
       branchAccessIds,
       canAccessAllBranches: false,
+      hasMixedBranchProfiles: false,
+      forcedBranchSelectionFromAll: false,
       branches: [] as AppShellBranchSummary[],
       activeBranchId: "",
+      activeBranchProfile: "restaurant" as BranchProfile,
+      activeStationProfile,
       branchId: primaryBranchId ?? activeBranchCookie ?? null,
       activeBranchSelection: primaryBranchId ?? activeBranchCookie ?? null,
     };
@@ -480,9 +548,12 @@ export const getRequestAppContext = cache(async () => {
     : { branches: [] as AppShellBranchSummary[] };
   const branches = cachedBranches.branches;
 
+  const hasMixedBranchProfiles = false;
   const wantsAllBranches = activeBranchCookie === ALL_BRANCHES_VALUE && accessScope === "business";
+  const forcedBranchSelectionFromAll = false;
+  const canUseAllBranches = wantsAllBranches;
   const activeBranchId =
-    wantsAllBranches
+    canUseAllBranches
       ? ALL_BRANCHES_VALUE
       : branches.some((branch) => branch.id === activeBranchCookie)
         ? (activeBranchCookie as string)
@@ -490,9 +561,10 @@ export const getRequestAppContext = cache(async () => {
   const branchId =
     accessScope === "branch"
       ? primaryBranchId ?? activeBranchCookie ?? null
-      : wantsAllBranches
+      : canUseAllBranches
         ? null
         : activeBranchId || null;
+  const activeBranchProfile = "restaurant" as BranchProfile;
 
   return {
     user,
@@ -509,10 +581,14 @@ export const getRequestAppContext = cache(async () => {
     primaryBranchId,
     branchAccessIds,
     canAccessAllBranches: accessScope === "business",
+    hasMixedBranchProfiles,
+    forcedBranchSelectionFromAll,
     branches,
     activeBranchId,
+    activeBranchProfile,
+    activeStationProfile,
     branchId,
-    activeBranchSelection: wantsAllBranches ? ALL_BRANCHES_VALUE : branchId,
+    activeBranchSelection: canUseAllBranches ? ALL_BRANCHES_VALUE : branchId,
   };
 });
 
@@ -522,6 +598,7 @@ export const getDefaultBusinessScope = cache(async () => {
     activeSlug: context.activeSlug,
     businessId: context.businessId,
     branchId: context.branchId,
+    activeBranchProfile: context.activeBranchProfile,
     activeBranchSelection: context.activeBranchSelection,
     useLegacySchema: context.useLegacySchema,
     accessScope: context.accessScope,
@@ -545,6 +622,10 @@ export const getAppShellSnapshot = cache(async () => {
     activeBusinessSlug: context.activeSlug,
     branches: context.branches,
     activeBranchId: context.activeBranchId,
+    activeBranchProfile: context.activeBranchProfile,
+    activeStationProfile: context.activeStationProfile,
+    hasMixedBranchProfiles: context.hasMixedBranchProfiles,
+    forcedBranchSelectionFromAll: context.forcedBranchSelectionFromAll,
   };
 });
 
@@ -557,3 +638,6 @@ export async function getBusinessContextBySlug(businessSlug?: string) {
     useLegacySchema: Boolean(useLegacySchema),
   };
 }
+
+
+

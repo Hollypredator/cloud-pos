@@ -97,6 +97,20 @@ function canAccessQuickAction(role: AppRole | null, usingDemoData: boolean, role
   return usingDemoData || (!!role && (roles.includes(role) || (role === "owner" && roles.includes("admin"))));
 }
 
+function isFeatureEnabled(
+  currentPlan: AppShellPayload["currentPlan"],
+  effectiveCapabilities: AppShellPayload["effectiveCapabilities"] | undefined,
+  feature?: FeatureKey,
+) {
+  if (!feature) {
+    return true;
+  }
+  if (typeof effectiveCapabilities?.[feature] === "boolean") {
+    return Boolean(effectiveCapabilities[feature]);
+  }
+  return hasFeature(currentPlan, feature);
+}
+
 export function AppShell({
   children,
   initialData,
@@ -134,7 +148,7 @@ export function AppShell({
     return mobileQuickActions.filter(
       (action) =>
         canAccessQuickAction(shellData.role, shellData.usingDemoData, action.roles) &&
-        (!action.feature || hasFeature(shellData.currentPlan, action.feature)),
+        isFeatureEnabled(shellData.currentPlan, shellData.effectiveCapabilities, action.feature),
     );
   }, [shellData]);
   const quickActionGroups = useMemo(() => {
@@ -196,11 +210,17 @@ export function AppShell({
           prev.hasUser === data.hasUser &&
           prev.activeBusinessSlug === data.activeBusinessSlug &&
           prev.activeBranchId === data.activeBranchId &&
+          prev.activeBranchProfile === data.activeBranchProfile &&
+          prev.activeStationProfile === data.activeStationProfile &&
+          prev.hasMixedBranchProfiles === data.hasMixedBranchProfiles &&
+          prev.forcedBranchSelectionFromAll === data.forcedBranchSelectionFromAll &&
           prev.sidebarTheme === data.sidebarTheme &&
           prev.sidebarAccentColor === data.sidebarAccentColor &&
           prev.brandName === data.brandName &&
           prev.logoUrl === data.logoUrl &&
           prev.currentPlan === data.currentPlan &&
+          JSON.stringify(prev.effectiveCapabilities) === JSON.stringify(data.effectiveCapabilities) &&
+          JSON.stringify(prev.featureOverrides) === JSON.stringify(data.featureOverrides) &&
           prev.mobileAppExperienceEnabled === data.mobileAppExperienceEnabled &&
           prev.mobileReadOnlyPwaEnabled === data.mobileReadOnlyPwaEnabled
         ) {
@@ -327,8 +347,12 @@ export function AppShell({
               activeBusinessSlug={shellData.activeBusinessSlug}
               businesses={shellData.businesses}
               activeBranchId={shellData.activeBranchId}
+              activeBranchProfile={shellData.activeBranchProfile}
+              hasMixedBranchProfiles={shellData.hasMixedBranchProfiles}
+              forcedBranchSelectionFromAll={shellData.forcedBranchSelectionFromAll}
               branches={shellData.branches}
               currentPlan={shellData.currentPlan}
+              effectiveCapabilities={shellData.effectiveCapabilities}
               branchAccessScope={shellData.branchAccessScope}
               canSwitchBranches={shellData.canSwitchBranches}
               brandName={shellData.brandName}
@@ -351,6 +375,11 @@ export function AppShell({
               : "pb-28 md:pb-0"
           }`}
         >
+          {!mobileAppMode && shellData?.forcedBranchSelectionFromAll ? (
+            <div className="no-print border-b border-amber-200 bg-amber-50 px-4 py-3 text-sm font-medium text-amber-900">
+              {translateUiText("Karisik profilde Tum Subeler secimi kapali oldugu icin aktif sube secimi zorlandi.", locale)}
+            </div>
+          ) : null}
           {!mobileAppMode && isOffline && pwaRuntimeEnabled ? (
             <div className="no-print sticky top-0 z-30 border-b border-amber-200 bg-amber-50 px-4 py-3 text-sm font-medium text-amber-900">
               {translateUiText("Baglanti kesildi. Offline modda yalnızca okunabilir kullanım açık.", locale)}
@@ -483,3 +512,4 @@ export function AppShell({
     </>
   );
 }
+

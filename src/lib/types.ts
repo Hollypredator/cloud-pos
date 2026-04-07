@@ -18,6 +18,21 @@ export type CashSessionStatus = "open" | "closed";
 export type TableRequestType = "call_waiter" | "request_bill";
 export type TableRequestStatus = "open" | "resolved";
 export type PrepStation = "kitchen" | "bar" | "dessert";
+export type BranchProfile = "restaurant" | "enterprise_market";
+export type TenantModel = "restaurant_only" | "market_only" | "hybrid";
+export type ProductProfileScope = "restaurant" | "enterprise_market";
+export type ProductKind = "standard" | "weighted" | "service";
+export type ProductUnit = "adet" | "kg" | "gram" | "litre" | "ml" | "paket";
+export type ProductDepartment =
+  | "general"
+  | "butcher"
+  | "delicatessen"
+  | "bakery"
+  | "produce"
+  | "beverage"
+  | "frozen"
+  | "non_food";
+export type StationProfile = "cashier" | "butcher" | "delicatessen";
 export type OrderStationStatus = "pending" | "preparing" | "served";
 export type SalesLeadStatus = "new" | "contacted" | "qualified" | "won" | "lost";
 export type StudioRole = "owner" | "editor";
@@ -60,6 +75,7 @@ export type Category = {
   name: string;
   sort_order: number;
   prep_station?: PrepStation | null;
+  profile_scope?: ProductProfileScope;
 };
 
 export type Branch = {
@@ -67,6 +83,7 @@ export type Branch = {
   business_id: string;
   name: string;
   slug: string;
+  branch_profile?: BranchProfile;
   is_active: boolean;
   created_at: string;
   updated_at: string;
@@ -76,12 +93,18 @@ export type Product = {
   id: string;
   business_id?: string;
   category_id: string;
+  profile_scope?: ProductProfileScope;
   name: string;
   price: number;
   stock_count: number;
   image_url: string | null;
   description: string | null;
   is_available: boolean;
+  barcode?: string | null;
+  plu_code?: string | null;
+  product_kind?: ProductKind;
+  unit?: ProductUnit;
+  department?: ProductDepartment;
 };
 
 export type DiningTable = {
@@ -519,6 +542,9 @@ export type SupportTenantSummary = {
   plan: BusinessPlan;
   is_active: boolean;
   branch_count: number;
+  tenant_model: TenantModel;
+  restaurant_branch_count: number;
+  enterprise_market_branch_count: number;
   support_ticket_count: number;
 };
 

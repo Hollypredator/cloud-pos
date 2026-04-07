@@ -20,6 +20,8 @@ import {
 } from "@/components/backoffice-ui";
 import { LiveOpsBridge } from "@/components/live-ops-bridge";
 import { LiveRouteRefresh } from "@/components/live-route-refresh";
+import { OptimisticVisibility } from "@/components/optimistic-visibility";
+import { OptimisticMoney } from "@/components/optimistic-money";
 import { QuerySnapshotSeed } from "@/components/query-snapshot-seed";
 import { ReceiptPreviewLauncher } from "@/components/receipt-preview-launcher";
 import { getAppBaseUrl } from "@/lib/app-url";
@@ -30,6 +32,7 @@ import { executeWebOpsCommand } from "@/lib/ops/server-action";
 import { POS_CLIENT_QUEUE_CASHIER_ENABLED } from "@/lib/pos/feature-flags";
 import { posQueryKeys } from "@/lib/pos/query-keys";
 import { logServerPerf, measureAsync } from "@/lib/perf";
+import { getRequestAppContext } from "@/lib/server/app-context";
 import { getWebPerfProfile } from "@/lib/web-perf-profile";
 import { isLikelyMobileUserAgent } from "@/lib/device";
 import type { Order, OrderItem, PaymentMethod } from "@/lib/types";
@@ -300,8 +303,10 @@ export default async function CashierPage({
   const locale = await getCurrentLocale();
   const localeCode = locale === "en" ? "en-US" : locale === "fr" ? "fr-FR" : "tr-TR";
   const { order: selectedOrderId, feedback, tone } = await searchParams;
+  const appContextPromise = getRequestAppContext();
   const perfProfile = getWebPerfProfile("/cashier");
-  const cashierSnapshotResult = await measureAsync("cashier_snapshot", () => getCashierPageSnapshot(selectedOrderId));
+  const cashierSnapshotPromise = measureAsync("cashier_snapshot", () => getCashierPageSnapshot(selectedOrderId));
+  const [, cashierSnapshotResult] = await Promise.all([appContextPromise, cashierSnapshotPromise]);
   logServerPerf(`/cashier profile=${perfProfile.mode}:${perfProfile.bucket}`, [cashierSnapshotResult]);
   const { servedOrders, paidOrders, selectedOrder, usingDemoData } = cashierSnapshotResult.value;
 
@@ -372,27 +377,31 @@ export default async function CashierPage({
               const remaining = Number(order.remaining_balance ?? order.final_price ?? order.total_price);
               const active = selectedOrder?.id === order.id;
               return (
-                <article key={`mobile-queue-${order.id}`} className="mobile-task-card">
-                  <div className="flex items-start justify-between gap-3">
-                    <div>
-                      <p className="text-[11px] font-semibold uppercase tracking-[0.14em] text-slate-500">{orderSourceLabel(order)}</p>
-                      <p className="mt-1 text-lg font-semibold text-slate-900">Sipariş #{orderRef(order)}</p>
+                <OptimisticVisibility key={`mobile-queue-${order.id}`} orderId={order.id}>
+                  <article className="mobile-task-card">
+                    <div className="flex items-start justify-between gap-3">
+                      <div>
+                        <p className="text-[11px] font-semibold uppercase tracking-[0.14em] text-slate-500">{orderSourceLabel(order)}</p>
+                        <p className="mt-1 text-lg font-semibold text-slate-900">Sipariş #{orderRef(order)}</p>
+                      </div>
+                      <span className={`rounded-full px-3 py-1 text-xs font-semibold ${statusTone(order.status)}`}>{order.status}</span>
                     </div>
-                    <span className={`rounded-full px-3 py-1 text-xs font-semibold ${statusTone(order.status)}`}>{order.status}</span>
-                  </div>
-                  <div className="mt-3 flex items-center justify-between gap-3">
-                    <div>
-                      <p className="text-xs text-slate-500">Kalan</p>
-                      <p className="text-xl font-semibold text-emerald-700">{remaining.toFixed(2)} TL</p>
+                    <div className="mt-3 flex items-center justify-between gap-3">
+                      <div>
+                        <p className="text-xs text-slate-500">Kalan</p>
+                        <p className="text-xl font-semibold text-emerald-700">
+                          <OptimisticMoney orderId={order.id} baseAmount={remaining} field="remaining" />
+                        </p>
+                      </div>
+                      <Link
+                        href={`/cashier?order=${order.id}`}
+                        className={`mobile-cta-primary inline-flex items-center justify-center px-4 py-3 text-sm ${active ? "opacity-90" : ""}`}
+                      >
+                        {active ? "Açık Detay" : "Tahsilata Gec"}
+                      </Link>
                     </div>
-                    <Link
-                      href={`/cashier?order=${order.id}`}
-                      className={`mobile-cta-primary inline-flex items-center justify-center px-4 py-3 text-sm ${active ? "opacity-90" : ""}`}
-                    >
-                      {active ? "Açık Detay" : "Tahsilata Gec"}
-                    </Link>
-                  </div>
-                </article>
+                  </article>
+                </OptimisticVisibility>
               );
             })}
           </div>
@@ -423,8 +432,8 @@ export default async function CashierPage({
                 const remaining = Number(order.remaining_balance ?? order.final_price ?? order.total_price);
                 const active = selectedOrder?.id === order.id;
                 return (
+                  <OptimisticVisibility key={order.id} orderId={order.id}>
                   <Link
-                    key={order.id}
                     href={`/cashier?order=${order.id}`}
                     className={`panel-hover rounded-[24px] border p-4 ${
                       active
@@ -444,11 +453,14 @@ export default async function CashierPage({
                     <div className="mt-4 flex flex-col items-start gap-3 sm:flex-row sm:items-end sm:justify-between">
                       <div>
                         <p className="text-xs uppercase tracking-[0.16em] text-slate-500">Kalan</p>
-                        <p className="font-display font-numeric mt-1 text-2xl font-semibold text-emerald-700">{remaining.toFixed(2)} TL</p>
+                        <p className="font-display font-numeric mt-1 text-2xl font-semibold text-emerald-700">
+                          <OptimisticMoney orderId={order.id} baseAmount={remaining} field="remaining" />
+                        </p>
                       </div>
                         <span className="inline-flex w-full justify-center rounded-2xl bg-white px-3 py-2 text-xs font-semibold text-slate-700 sm:w-auto">Popup Ac</span>
                     </div>
                   </Link>
+                  </OptimisticVisibility>
                 );
               })}
             </div>
@@ -469,7 +481,8 @@ export default async function CashierPage({
                 const remaining = Number(order.remaining_balance ?? final);
 
                 return (
-                  <article key={order.id} className="rounded-[24px] border border-slate-200 bg-[#fbfbfc] p-4">
+                  <OptimisticVisibility key={order.id} orderId={order.id}>
+                  <article className="rounded-[24px] border border-slate-200 bg-[#fbfbfc] p-4">
                     <div className="flex flex-wrap items-start justify-between gap-3">
                       <div>
                         <p className="text-xs font-bold uppercase tracking-[0.16em] text-slate-500">{orderSourceLabel(order)}</p>
@@ -479,7 +492,9 @@ export default async function CashierPage({
                       </div>
                       <div className="flex w-full flex-col items-start gap-2 sm:w-auto sm:items-end">
                         <span className={`inline-flex w-full justify-center rounded-full px-3 py-1 text-xs font-semibold uppercase sm:w-auto ${statusTone(order.status)}`}>{order.status}</span>
-                        <p className="text-2xl font-semibold tracking-tight text-emerald-700">{remaining.toFixed(2)} TL</p>
+                        <p className="text-2xl font-semibold tracking-tight text-emerald-700">
+                          <OptimisticMoney orderId={order.id} baseAmount={remaining} field="remaining" />
+                        </p>
                         <p className="text-xs text-slate-500">Kalan bakiye</p>
                       </div>
                     </div>
@@ -501,6 +516,7 @@ export default async function CashierPage({
                       </div>
                     </div>
                   </article>
+                  </OptimisticVisibility>
                 );
               })}
             </div>
@@ -590,6 +606,7 @@ export default async function CashierPage({
       ) : null}
 
       {selectedOrder ? (
+        <OptimisticVisibility orderId={selectedOrder.id}>
         <div className="fixed inset-0 z-50 flex items-end justify-center bg-slate-950/42 p-0 backdrop-blur-[2px] sm:items-center sm:p-4">
           <div className="panel-surface cashier-detail-sheet h-[100dvh] w-full max-w-[1320px] overflow-auto rounded-none p-4 sm:max-h-[92vh] sm:h-auto sm:rounded-[32px] sm:p-6">
             <div className="mb-5 flex flex-wrap items-start justify-between gap-4 border-b border-slate-200 pb-5">
@@ -848,6 +865,7 @@ export default async function CashierPage({
             })()}
           </div>
         </div>
+        </OptimisticVisibility>
       ) : null}
     </BackofficePage>
   );

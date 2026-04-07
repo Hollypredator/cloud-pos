@@ -62,6 +62,7 @@ import type {
   BlogPostStatus,
   Business,
   Branch,
+  BranchProfile,
   CashRegisterSession,
   Category,
   Courier,
@@ -81,8 +82,12 @@ import type {
   OpsSnapshotAggregate,
   PrepStation,
   Product,
+  ProductDepartment,
   ProductModifierGroup,
   ProductModifierOption,
+  ProductProfileScope,
+  ProductKind,
+  ProductUnit,
   ProductIngredient,
   SalesLead,
   SalesLeadNote,
@@ -119,6 +124,7 @@ import type {
   TableRequest,
   TableRequestType,
   TableStatus,
+  TenantModel,
   TenantLifecycleStage,
   FulfillmentStatus,
   OrderItemModifierSelection,
@@ -1343,7 +1349,7 @@ export async function listBranches() {
   const queryWithClient = async (client: TenantSupabaseClient) => {
     let query = client
       .from("branches")
-      .select("id, business_id, name, slug, is_active, created_at, updated_at")
+      .select("id, business_id, name, slug, branch_profile, is_active, created_at, updated_at")
       .eq("is_active", true)
       .order("name", { ascending: true });
     if (!scope.useLegacySchema && scope.businessId) {
@@ -1353,7 +1359,26 @@ export async function listBranches() {
       query = query.in("id", scope.branchAccessIds);
     }
 
-    const { data, error } = await query;
+    let { data, error } = await query;
+    if (error?.message?.toLowerCase().includes("branch_profile")) {
+      let fallbackQuery = client
+        .from("branches")
+        .select("id, business_id, name, slug, is_active, created_at, updated_at")
+        .eq("is_active", true)
+        .order("name", { ascending: true });
+      if (!scope.useLegacySchema && scope.businessId) {
+        fallbackQuery = fallbackQuery.eq("business_id", scope.businessId);
+      }
+      if (!scope.canAccessAllBranches) {
+        fallbackQuery = fallbackQuery.in("id", scope.branchAccessIds);
+      }
+      const fallbackResult = await fallbackQuery;
+      data = (fallbackResult.data ?? []).map((row) => ({
+        ...(row as Branch),
+        branch_profile: "restaurant" as const,
+      }));
+      error = fallbackResult.error;
+    }
     return {
       hasError: Boolean(error),
       errorMessage: error?.message ?? null,
@@ -1378,7 +1403,10 @@ export async function listBranches() {
     return { branches: [] as Branch[], activeBranchId: activeBranchId || "", usingDemoData: false };
   }
 
-  const branches = (data ?? []) as Branch[];
+  const branches = ((data ?? []) as Branch[]).map((branch) => ({
+    ...branch,
+    branch_profile: "restaurant" as BranchProfile,
+  }));
   const resolvedActiveBranchId =
     activeBranchId === ALL_BRANCHES_VALUE && scope.canAccessAllBranches
       ? ALL_BRANCHES_VALUE
@@ -1392,33 +1420,50 @@ export async function listBranches() {
   };
 }
 
-export async function createBranch(input: { name: string; slug: string }) {
+export async function createBranch(input: { name: string; slug: string; branchProfile?: BranchProfile }) {
   const supabase = await getTenantDataClient();
   if (!supabase) {
-    return { ok: false, error: "Demo modda şube ekleme pasif." };
+    return { ok: false, error: "Demo modda sube ekleme pasif." };
   }
 
   const scope = await getDefaultBusinessScope();
   if (!scope.businessId) {
-    return { ok: false, error: "Aktif işletme bulunamadi." };
+    return { ok: false, error: "Aktif isletme bulunamadi." };
   }
 
   const name = input.name.trim();
   const slug = normalizeBusinessSlug(input.slug);
+  const branchProfile = "restaurant";
   if (!name || !slug) {
-    return { ok: false, error: "Şube adi ve slug zorunludur." };
+    return { ok: false, error: "Sube adi ve slug zorunludur." };
   }
 
-  const { data, error } = await supabase
+  let { data, error } = await supabase
     .from("branches")
     .insert({
       business_id: scope.businessId,
       name,
       slug,
+      branch_profile: branchProfile,
       is_active: true,
     })
     .select("id")
     .single();
+
+  if (error?.message?.toLowerCase().includes("branch_profile")) {
+    const fallback = await supabase
+      .from("branches")
+      .insert({
+        business_id: scope.businessId,
+        name,
+        slug,
+        is_active: true,
+      })
+      .select("id")
+      .single();
+    data = fallback.data;
+    error = fallback.error;
+  }
 
   if (error) {
     return { ok: false, error: error.message };
@@ -1428,23 +1473,24 @@ export async function createBranch(input: { name: string; slug: string }) {
     entityType: "branch",
     entityId: String(data?.id ?? ""),
     action: "create",
-    details: { name, slug },
+    details: { name, slug, branchProfile },
   });
 
   return { ok: true, id: String(data?.id ?? "") };
 }
 
-export async function updateBranch(input: { branchId: string; name: string; slug: string }) {
+export async function updateBranch(input: { branchId: string; name: string; slug: string; branchProfile?: BranchProfile }) {
   const supabase = await getTenantDataClient();
   if (!supabase) {
-    return { ok: false, error: "Demo modda şube guncelleme pasif." };
+    return { ok: false, error: "Demo modda sube guncelleme pasif." };
   }
 
   const scope = await getDefaultBusinessScope();
   const name = input.name.trim();
   const slug = normalizeBusinessSlug(input.slug);
+  const branchProfile = "restaurant";
   if (!name || !slug) {
-    return { ok: false, error: "Şube adi ve slug zorunludur." };
+    return { ok: false, error: "Sube adi ve slug zorunludur." };
   }
 
   let query = supabase
@@ -1452,13 +1498,29 @@ export async function updateBranch(input: { branchId: string; name: string; slug
     .update({
       name,
       slug,
+      branch_profile: branchProfile,
     })
     .eq("id", input.branchId);
   if (!scope.useLegacySchema && scope.businessId) {
     query = query.eq("business_id", scope.businessId);
   }
 
-  const { error } = await query;
+  let { error } = await query;
+  if (error?.message?.toLowerCase().includes("branch_profile")) {
+    let fallbackQuery = supabase
+      .from("branches")
+      .update({
+        name,
+        slug,
+      })
+      .eq("id", input.branchId);
+    if (!scope.useLegacySchema && scope.businessId) {
+      fallbackQuery = fallbackQuery.eq("business_id", scope.businessId);
+    }
+    const fallback = await fallbackQuery;
+    error = fallback.error;
+  }
+
   if (error) {
     return { ok: false, error: error.message };
   }
@@ -1467,12 +1529,11 @@ export async function updateBranch(input: { branchId: string; name: string; slug
     entityType: "branch",
     entityId: input.branchId,
     action: "update",
-    details: { name, slug },
+    details: { name, slug, branchProfile },
   });
 
   return { ok: true };
 }
-
 export async function setBranchActiveStatus(input: { branchId: string; isActive: boolean }) {
   const supabase = await getTenantDataClient();
   if (!supabase) {
@@ -1715,19 +1776,40 @@ function generateTemporaryPassword() {
   return `Tmp${Math.random().toString(36).slice(2, 10)}!9`;
 }
 
+
+function buildDeterministicSlug(baseSlug: string, attempt: number) {
+  if (attempt <= 1) {
+    return baseSlug;
+  }
+  return `${baseSlug}-${attempt}`;
+}
+
+function isBranchSlugConflictError(message?: string | null) {
+  const normalized = (message ?? "").toLowerCase();
+  if (!normalized) {
+    return false;
+  }
+  return (
+    (normalized.includes("duplicate key") && normalized.includes("slug")) ||
+    normalized.includes("branches_business_id_slug_key")
+  );
+}
+
 export async function createSupportTenantProvision(input: {
   businessName: string;
   businessSlug: string;
   plan?: BusinessPlan;
-  branchName: string;
+  tenantModel?: TenantModel;
+  branchName?: string;
   branchSlug?: string;
+  branchProfile?: BranchProfile;
   ownerEmail: string;
   ownerFullName?: string;
   ownerPassword?: string;
 }) {
   const supabase = getSupabaseServerClient();
   if (!supabase) {
-    return { ok: false, error: "Demo modda tenant oluşturma pasif." };
+    return { ok: false, error: "Demo modda tenant olusturma pasif." };
   }
 
   const actor = await getCurrentSupportActor();
@@ -1735,31 +1817,39 @@ export async function createSupportTenantProvision(input: {
   const canManageTenantProvision =
     actor.role === "support_admin" || hasPlatformPermission(platformAccess, "support.access.manage");
   if (!canManageTenantProvision) {
-    return { ok: false, error: "Bu işlem için support admin yetkisi gerekli." };
+    return { ok: false, error: "Bu islem icin support admin yetkisi gerekli." };
   }
 
   const businessName = input.businessName.trim();
   const businessSlug = normalizeTenantSlug(input.businessSlug);
-  const branchName = input.branchName.trim();
-  const branchSlug = normalizeBranchSlug(input.branchSlug?.trim() || branchName);
+  const branchName = input.branchName?.trim() || "Merkez Sube";
+  const baseBranchSlug = normalizeBranchSlug(input.branchSlug?.trim() || branchName);
+  const tenantModel: TenantModel = "restaurant_only";
+  const branchSeeds = [
+    {
+      name: branchName,
+      slugBase: baseBranchSlug,
+      branchProfile: "restaurant" as BranchProfile,
+    },
+  ];
   const ownerEmail = input.ownerEmail.trim().toLowerCase();
   const ownerFullName = input.ownerFullName?.trim() || ownerEmail.split("@")[0] || "Owner";
   const ownerPassword = input.ownerPassword?.trim() || "";
 
-  if (!businessName || !businessSlug || !branchName || !ownerEmail) {
-    return { ok: false, error: "İşletme, şube ve owner e-posta alanlari zorunludur." };
+  if (!businessName || !businessSlug || !ownerEmail || branchSeeds.length === 0) {
+    return { ok: false, error: "Isletme ve owner e-posta alanlari zorunludur." };
   }
 
   let createdBusinessId: string | null = null;
-  let createdBranchId: string | null = null;
+  const createdBranches: Array<{ id: string; name: string; slug: string; branchProfile: BranchProfile }> = [];
   let createdUserId: string | null = null;
 
   const rollback = async () => {
     if (createdUserId) {
       await supabase.auth.admin.deleteUser(createdUserId);
     }
-    if (createdBranchId) {
-      await supabase.from("branches").delete().eq("id", createdBranchId);
+    for (const branch of [...createdBranches].reverse()) {
+      await supabase.from("branches").delete().eq("id", branch.id);
     }
     if (createdBusinessId) {
       await supabase.from("businesses").delete().eq("id", createdBusinessId);
@@ -1778,26 +1868,72 @@ export async function createSupportTenantProvision(input: {
     .single();
 
   if (businessInsert.error || !businessInsert.data?.id) {
-    return { ok: false, error: businessInsert.error?.message ?? "İşletme oluşturulamadı." };
+    return { ok: false, error: businessInsert.error?.message ?? "Isletme olusturulamadi." };
   }
   createdBusinessId = businessInsert.data.id as string;
 
-  const branchInsert = await supabase
-    .from("branches")
-    .insert({
-      business_id: createdBusinessId,
-      name: branchName,
-      slug: branchSlug,
-      is_active: true,
-    })
-    .select("id")
-    .single();
+  const usedSlugs = new Set<string>();
+  for (const seed of branchSeeds) {
+    let branchCreated = false;
+    let lastBranchError: string | null = null;
 
-  if (branchInsert.error || !branchInsert.data?.id) {
-    await rollback();
-    return { ok: false, error: branchInsert.error?.message ?? "Ilk şube oluşturulamadı." };
+    for (let attempt = 1; attempt <= 25; attempt += 1) {
+      const slugCandidate = buildDeterministicSlug(seed.slugBase, attempt);
+      if (usedSlugs.has(slugCandidate)) {
+        continue;
+      }
+
+      let branchInsert = await supabase
+        .from("branches")
+        .insert({
+          business_id: createdBusinessId,
+          name: seed.name,
+          slug: slugCandidate,
+          branch_profile: seed.branchProfile,
+          is_active: true,
+        })
+        .select("id")
+        .single();
+
+      if (branchInsert.error?.message?.toLowerCase().includes("branch_profile")) {
+        branchInsert = await supabase
+          .from("branches")
+          .insert({
+            business_id: createdBusinessId,
+            name: seed.name,
+            slug: slugCandidate,
+            is_active: true,
+          })
+          .select("id")
+          .single();
+      }
+
+      if (!branchInsert.error && branchInsert.data?.id) {
+        usedSlugs.add(slugCandidate);
+        createdBranches.push({
+          id: branchInsert.data.id as string,
+          name: seed.name,
+          slug: slugCandidate,
+          branchProfile: seed.branchProfile,
+        });
+        branchCreated = true;
+        break;
+      }
+
+      if (isBranchSlugConflictError(branchInsert.error?.message)) {
+        usedSlugs.add(slugCandidate);
+        continue;
+      }
+
+      lastBranchError = branchInsert.error?.message ?? "Sube olusturulamadi.";
+      break;
+    }
+
+    if (!branchCreated) {
+      await rollback();
+      return { ok: false, error: lastBranchError ?? "Sube olusturulamadi." };
+    }
   }
-  createdBranchId = branchInsert.data.id as string;
 
   const usersResult = await supabase.auth.admin.listUsers();
   if (usersResult.error) {
@@ -1819,7 +1955,7 @@ export async function createSupportTenantProvision(input: {
     });
     if (createUser.error || !createUser.data.user?.id) {
       await rollback();
-      return { ok: false, error: createUser.error?.message ?? "Owner kullanicisi oluşturulamadı." };
+      return { ok: false, error: createUser.error?.message ?? "Owner kullanicisi olusturulamadi." };
     }
     ownerUserId = createUser.data.user.id;
     createdUserId = ownerUserId;
@@ -1883,17 +2019,21 @@ export async function createSupportTenantProvision(input: {
       businessName,
       businessSlug,
       plan: input.plan ?? "growth",
-      branchName,
-      branchSlug,
+      tenantModel,
+      createdBranches,
       ownerEmail,
       ownerUserId,
     },
   });
 
+  const primaryCreatedBranch = createdBranches[0] ?? null;
   return {
     ok: true,
     businessId: createdBusinessId,
-    branchId: createdBranchId,
+    branchId: primaryCreatedBranch?.id ?? null,
+    branchProfile: primaryCreatedBranch?.branchProfile ?? "restaurant",
+    tenantModel,
+    createdBranches,
     ownerUserId,
     temporaryPassword,
   };
@@ -2582,6 +2722,76 @@ export async function resolveTableRequest(requestId: string) {
   return { ok: true };
 }
 
+async function resolveOrderBranchProfile(input: {
+  supabase: NonNullable<ReturnType<typeof getSupabaseServerClient>>;
+  branchId: string | null;
+  businessId: string | null;
+}) {
+  if (!input.branchId) {
+    return "restaurant" as BranchProfile;
+  }
+
+  const branchResult = await input.supabase
+    .from("branches")
+    .select("id, branch_profile")
+    .eq("id", input.branchId)
+    .maybeSingle();
+
+  if (branchResult.error?.message?.toLowerCase().includes("branch_profile")) {
+    return "restaurant" as BranchProfile;
+  }
+  if (branchResult.error) {
+    return null;
+  }
+
+  const branchProfile = (branchResult.data as { branch_profile?: BranchProfile | null } | null)?.branch_profile ?? "restaurant";
+  return branchProfile;
+}
+
+async function validateOrderItemProfileScope(input: {
+  supabase: NonNullable<ReturnType<typeof getSupabaseServerClient>>;
+  businessId: string | null;
+  branchProfile: BranchProfile;
+  items: OrderItem[];
+}) {
+  const productIds = [...new Set(input.items.map((item) => item.product_id).filter(Boolean))] as string[];
+  if (productIds.length === 0) {
+    return { ok: true as const };
+  }
+
+  let query = input.supabase
+    .from("products")
+    .select("id, profile_scope, business_id")
+    .in("id", productIds);
+  if (input.businessId) {
+    query = query.eq("business_id", input.businessId);
+  }
+
+  const { data, error } = await query;
+  if (error?.message?.toLowerCase().includes("profile_scope")) {
+    return { ok: true as const };
+  }
+  if (error) {
+    return { ok: false as const, error: error.message };
+  }
+
+  const profileScope = input.branchProfile === "enterprise_market" ? "enterprise_market" : "restaurant";
+  const mismatched = ((data ?? []) as Array<{ id: string; profile_scope?: ProductProfileScope | null }>).filter(
+    (row) => (row.profile_scope ?? "restaurant") !== profileScope,
+  );
+  if (mismatched.length > 0) {
+    return {
+      ok: false as const,
+      error:
+        profileScope === "enterprise_market"
+          ? "Restoran urunleri market siparisine eklenemez."
+          : "Market urunleri restoran siparisine eklenemez.",
+    };
+  }
+
+  return { ok: true as const };
+}
+
 export async function createOrder(input: {
   tableId?: string | null;
   businessId?: string;
@@ -2614,10 +2824,31 @@ export async function createOrder(input: {
   const trimmedCourierName = input.courierName?.trim() || null;
   const trimmedCourierPhone = input.courierPhone?.trim() || null;
   const courierId = input.courierId ?? null;
+  const effectiveBusinessId = input.businessId ?? scope.businessId ?? null;
+  const effectiveBranchId = input.branchId ?? scope.branchId ?? null;
+
+  const branchProfile = await resolveOrderBranchProfile({
+    supabase,
+    branchId: effectiveBranchId,
+    businessId: effectiveBusinessId,
+  });
+  if (!branchProfile) {
+    return { ok: false, error: "Aktif sube profili cozulemedi." };
+  }
+
+  const profileValidation = await validateOrderItemProfileScope({
+    supabase,
+    businessId: effectiveBusinessId,
+    branchProfile,
+    items: input.items,
+  });
+  if (!profileValidation.ok) {
+    return { ok: false, error: profileValidation.error };
+  }
 
   const withBusinessPayload = {
-    business_id: input.businessId ?? scope.businessId ?? null,
-    branch_id: input.branchId ?? scope.branchId ?? null,
+    business_id: effectiveBusinessId,
+    branch_id: effectiveBranchId,
     table_id: input.tableId ?? null,
     items: input.items,
     total_price: input.totalPrice,
@@ -2669,8 +2900,8 @@ export async function createOrder(input: {
   }));
 
   const rpcResult = await supabase.rpc("create_or_append_order", {
-    p_business_id: input.businessId ?? scope.businessId ?? null,
-    p_branch_id: input.branchId ?? scope.branchId ?? null,
+    p_business_id: effectiveBusinessId,
+    p_branch_id: effectiveBranchId,
     p_table_id: input.tableId ?? null,
     p_channel: channel,
     p_customer_name: trimmedCustomerName,
@@ -2718,8 +2949,8 @@ export async function createOrder(input: {
     }
     console.warn("[orders.create] create_or_append_order RPC failed, falling back to direct writes", {
       error: rpcResult.error.message,
-      businessId: input.businessId ?? scope.businessId ?? null,
-      branchId: input.branchId ?? scope.branchId ?? null,
+      businessId: effectiveBusinessId,
+      branchId: effectiveBranchId,
       tableId: input.tableId ?? null,
       channel,
     });
@@ -2755,11 +2986,11 @@ export async function createOrder(input: {
       .order("created_at", { ascending: false })
       .limit(1);
 
-    if (!scope.useLegacySchema && (input.businessId ?? scope.businessId)) {
-      mergeQuery = mergeQuery.eq("business_id", input.businessId ?? scope.businessId);
+    if (!scope.useLegacySchema && effectiveBusinessId) {
+      mergeQuery = mergeQuery.eq("business_id", effectiveBusinessId);
     }
-    if (input.branchId ?? scope.branchId) {
-      mergeQuery = mergeQuery.eq("branch_id", input.branchId ?? scope.branchId);
+    if (effectiveBranchId) {
+      mergeQuery = mergeQuery.eq("branch_id", effectiveBranchId);
     }
 
     const mergeResult = await mergeQuery;
@@ -5874,6 +6105,497 @@ function revalidateOperationsCaches() {
   revalidateTag("order-receipt", "max");
 }
 
+const MARKET_PRODUCT_KIND_VALUES = new Set<ProductKind>(["standard", "weighted", "service"]);
+const MARKET_PRODUCT_UNIT_VALUES = new Set<ProductUnit>(["adet", "kg", "gram", "litre", "ml", "paket"]);
+const MARKET_PRODUCT_DEPARTMENT_VALUES = new Set<ProductDepartment>([
+  "general",
+  "butcher",
+  "delicatessen",
+  "bakery",
+  "produce",
+  "beverage",
+  "frozen",
+  "non_food",
+]);
+
+export type EnterpriseMarketImportRow = {
+  category_name: string;
+  name: string;
+  price: number;
+  stock_count: number;
+  description: string | null;
+  image_url: string | null;
+  barcode: string | null;
+  plu_code: string | null;
+  product_kind: ProductKind;
+  unit: ProductUnit;
+  department: ProductDepartment;
+  is_available: boolean;
+};
+
+export type EnterpriseMarketImportIssue = {
+  row: number;
+  field: string;
+  message: string;
+};
+
+export type EnterpriseMarketImportDryRunSummary = {
+  rowCount: number;
+  newCategoryCount: number;
+  newProductCount: number;
+  updateProductCount: number;
+  conflictCount: number;
+  errorCount: number;
+  errors: string[];
+  conflicts: EnterpriseMarketImportIssue[];
+  replaceScope: boolean;
+};
+
+function normalizeMarketImportText(value: unknown) {
+  if (typeof value !== "string") {
+    return "";
+  }
+  return value.trim();
+}
+
+function normalizeMarketImportBoolean(value: unknown, fallback = true) {
+  if (typeof value === "boolean") {
+    return value;
+  }
+  if (typeof value === "number") {
+    return value > 0;
+  }
+  if (typeof value === "string") {
+    const normalized = value.trim().toLowerCase();
+    if (normalized === "true" || normalized === "1" || normalized === "evet" || normalized === "yes") {
+      return true;
+    }
+    if (normalized === "false" || normalized === "0" || normalized === "hayir" || normalized === "no") {
+      return false;
+    }
+  }
+  return fallback;
+}
+
+function normalizeMarketImportNumber(value: unknown, fallback = 0) {
+  if (typeof value === "number") {
+    return Number.isFinite(value) ? value : fallback;
+  }
+  if (typeof value === "string") {
+    const normalized = value.trim().replace(",", ".");
+    if (!normalized) {
+      return fallback;
+    }
+    const parsed = Number(normalized);
+    return Number.isFinite(parsed) ? parsed : fallback;
+  }
+  return fallback;
+}
+
+function normalizeMarketProductKind(value: unknown) {
+  const normalized = normalizeMarketImportText(value).toLowerCase();
+  if (MARKET_PRODUCT_KIND_VALUES.has(normalized as ProductKind)) {
+    return normalized as ProductKind;
+  }
+  return "standard" as ProductKind;
+}
+
+function normalizeMarketProductUnit(value: unknown) {
+  const normalized = normalizeMarketImportText(value).toLowerCase();
+  if (MARKET_PRODUCT_UNIT_VALUES.has(normalized as ProductUnit)) {
+    return normalized as ProductUnit;
+  }
+  return "adet" as ProductUnit;
+}
+
+function normalizeMarketProductDepartment(value: unknown) {
+  const normalized = normalizeMarketImportText(value).toLowerCase();
+  if (MARKET_PRODUCT_DEPARTMENT_VALUES.has(normalized as ProductDepartment)) {
+    return normalized as ProductDepartment;
+  }
+  return "general" as ProductDepartment;
+}
+
+function normalizeEnterpriseMarketImportPayload(jsonText: string) {
+  let raw: unknown = null;
+  try {
+    raw = JSON.parse(jsonText);
+  } catch {
+    return {
+      rows: [] as EnterpriseMarketImportRow[],
+      errors: ["JSON parse edilemedi. Dosya icerigi gecersiz."],
+      conflicts: [] as EnterpriseMarketImportIssue[],
+    };
+  }
+
+  if (!Array.isArray(raw)) {
+    return {
+      rows: [] as EnterpriseMarketImportRow[],
+      errors: ["Import verisi JSON array olmalidir."],
+      conflicts: [] as EnterpriseMarketImportIssue[],
+    };
+  }
+
+  const rows: EnterpriseMarketImportRow[] = [];
+  const errors: string[] = [];
+  const conflicts: EnterpriseMarketImportIssue[] = [];
+  const seenProductKeys = new Map<string, number>();
+  const seenBarcodes = new Map<string, number>();
+  const seenPluCodes = new Map<string, number>();
+
+  for (let index = 0; index < raw.length; index += 1) {
+    const rowNumber = index + 1;
+    const item = raw[index];
+    if (!item || typeof item !== "object") {
+      errors.push(`Satir ${rowNumber}: kayit nesnesi gecersiz.`);
+      continue;
+    }
+
+    const record = item as Record<string, unknown>;
+    const categoryName =
+      normalizeMarketImportText(record.category_name) || normalizeMarketImportText(record.category);
+    const productName = normalizeMarketImportText(record.name) || normalizeMarketImportText(record.product_name);
+
+    if (!categoryName) {
+      errors.push(`Satir ${rowNumber}: category_name/category zorunlu.`);
+    }
+    if (!productName) {
+      errors.push(`Satir ${rowNumber}: name/product_name zorunlu.`);
+    }
+    if (!categoryName || !productName) {
+      continue;
+    }
+
+    const price = normalizeMarketImportNumber(record.price, Number.NaN);
+    const stockRaw = normalizeMarketImportNumber(record.stock_count, 0);
+    if (!Number.isFinite(price) || price < 0) {
+      errors.push(`Satir ${rowNumber}: price sayisal ve sifirdan buyuk/esit olmali.`);
+      continue;
+    }
+    if (!Number.isFinite(stockRaw) || stockRaw < 0) {
+      errors.push(`Satir ${rowNumber}: stock_count sayisal ve sifirdan buyuk/esit olmali.`);
+      continue;
+    }
+
+    const barcode = normalizeMarketImportText(record.barcode) || null;
+    const pluCode = normalizeMarketImportText(record.plu_code) || null;
+    const productKey = `${categoryName.toLocaleLowerCase("tr-TR")}::${productName.toLocaleLowerCase("tr-TR")}`;
+    if (seenProductKeys.has(productKey)) {
+      conflicts.push({
+        row: rowNumber,
+        field: "name",
+        message: `Ayni kategori+urun tekrarli (onceki satir: ${seenProductKeys.get(productKey)}).`,
+      });
+    } else {
+      seenProductKeys.set(productKey, rowNumber);
+    }
+    if (barcode) {
+      if (seenBarcodes.has(barcode)) {
+        conflicts.push({
+          row: rowNumber,
+          field: "barcode",
+          message: `Ayni barkod tekrarli (onceki satir: ${seenBarcodes.get(barcode)}).`,
+        });
+      } else {
+        seenBarcodes.set(barcode, rowNumber);
+      }
+    }
+    if (pluCode) {
+      if (seenPluCodes.has(pluCode)) {
+        conflicts.push({
+          row: rowNumber,
+          field: "plu_code",
+          message: `Ayni PLU kodu tekrarli (onceki satir: ${seenPluCodes.get(pluCode)}).`,
+        });
+      } else {
+        seenPluCodes.set(pluCode, rowNumber);
+      }
+    }
+
+    rows.push({
+      category_name: categoryName,
+      name: productName,
+      price: Math.max(0, price),
+      stock_count: Math.max(0, Math.round(stockRaw)),
+      description: normalizeMarketImportText(record.description) || null,
+      image_url: normalizeMarketImportText(record.image_url) || null,
+      barcode,
+      plu_code: pluCode,
+      product_kind: normalizeMarketProductKind(record.product_kind),
+      unit: normalizeMarketProductUnit(record.unit),
+      department: normalizeMarketProductDepartment(record.department),
+      is_available: normalizeMarketImportBoolean(record.is_available, true),
+    });
+  }
+
+  return { rows, errors, conflicts };
+}
+
+async function readEnterpriseMarketCatalogKeys(input: {
+  supabase: TenantSupabaseClient;
+  businessId: string;
+}) {
+  const categoryWithScopeResult = await input.supabase
+    .from("categories")
+    .select("id, name, profile_scope")
+    .eq("business_id", input.businessId)
+    .eq("profile_scope", "enterprise_market");
+  let categoryRows: Array<{
+    id: string;
+    name: string;
+    profile_scope?: ProductProfileScope | null;
+  }> = [];
+  if (categoryWithScopeResult.error?.message?.toLowerCase().includes("profile_scope")) {
+    const fallbackCategoryResult = await input.supabase
+      .from("categories")
+      .select("id, name")
+      .eq("business_id", input.businessId);
+    if (fallbackCategoryResult.error) {
+      return { ok: false as const, error: fallbackCategoryResult.error.message };
+    }
+    categoryRows = ((fallbackCategoryResult.data ?? []) as Array<{ id: string; name: string }>).map((row) => ({
+      ...row,
+      profile_scope: "restaurant",
+    }));
+  } else if (categoryWithScopeResult.error) {
+    return { ok: false as const, error: categoryWithScopeResult.error.message };
+  } else {
+    categoryRows = (categoryWithScopeResult.data ?? []) as Array<{
+      id: string;
+      name: string;
+      profile_scope?: ProductProfileScope | null;
+    }>;
+  }
+
+  const productWithScopeResult = await input.supabase
+    .from("products")
+    .select("id, category_id, name, barcode, plu_code, profile_scope")
+    .eq("business_id", input.businessId)
+    .eq("profile_scope", "enterprise_market");
+  let productRows: Array<{
+    id: string;
+    category_id: string;
+    name: string;
+    barcode?: string | null;
+    plu_code?: string | null;
+    profile_scope?: ProductProfileScope | null;
+  }> = [];
+  if (productWithScopeResult.error?.message?.toLowerCase().includes("profile_scope")) {
+    const fallbackProductResult = await input.supabase
+      .from("products")
+      .select("id, category_id, name, barcode, plu_code")
+      .eq("business_id", input.businessId);
+    if (fallbackProductResult.error) {
+      return { ok: false as const, error: fallbackProductResult.error.message };
+    }
+    productRows = ((fallbackProductResult.data ?? []) as Array<{
+      id: string;
+      category_id: string;
+      name: string;
+      barcode?: string | null;
+      plu_code?: string | null;
+    }>).map((row) => ({
+      ...row,
+      profile_scope: "restaurant",
+    }));
+  } else if (productWithScopeResult.error) {
+    return { ok: false as const, error: productWithScopeResult.error.message };
+  } else {
+    productRows = (productWithScopeResult.data ?? []) as Array<{
+      id: string;
+      category_id: string;
+      name: string;
+      barcode?: string | null;
+      plu_code?: string | null;
+      profile_scope?: ProductProfileScope | null;
+    }>;
+  }
+  const marketCategories = categoryRows.filter((row) => (row.profile_scope ?? "restaurant") === "enterprise_market");
+  const marketCategoryIds = new Set(marketCategories.map((row) => row.id));
+  const marketProducts = productRows.filter((row) => (row.profile_scope ?? "restaurant") === "enterprise_market" && marketCategoryIds.has(row.category_id));
+
+  const categoryNameToId = new Map<string, string>();
+  const categoryIdToName = new Map<string, string>();
+  for (const category of marketCategories) {
+    const key = category.name.trim().toLocaleLowerCase("tr-TR");
+    if (!key) {
+      continue;
+    }
+    categoryNameToId.set(key, category.id);
+    categoryIdToName.set(category.id, category.name.trim());
+  }
+
+  const productKeys = new Set<string>();
+  const barcodeToProductKey = new Map<string, string>();
+  const pluToProductKey = new Map<string, string>();
+  for (const product of marketProducts) {
+    const categoryName = categoryIdToName.get(product.category_id);
+    if (!categoryName) {
+      continue;
+    }
+    const productKey = `${categoryName.toLocaleLowerCase("tr-TR")}::${product.name.trim().toLocaleLowerCase("tr-TR")}`;
+    productKeys.add(productKey);
+    const barcode = normalizeMarketImportText(product.barcode);
+    const pluCode = normalizeMarketImportText(product.plu_code);
+    if (barcode) {
+      barcodeToProductKey.set(barcode, productKey);
+    }
+    if (pluCode) {
+      pluToProductKey.set(pluCode, productKey);
+    }
+  }
+
+  return {
+    ok: true as const,
+    categoryNameToId,
+    productKeys,
+    barcodeToProductKey,
+    pluToProductKey,
+  };
+}
+
+export async function dryRunEnterpriseMarketImport(input: { jsonText: string; replaceScope?: boolean }) {
+  const scope = await getDefaultBusinessScope();
+  if (!scope.businessId) {
+    return { ok: false as const, error: "Aktif isletme bulunamadi." };
+  }
+
+  const parsed = normalizeEnterpriseMarketImportPayload(input.jsonText);
+  if (parsed.rows.length === 0 && parsed.errors.length === 0) {
+    return { ok: false as const, error: "Import listesi bos." };
+  }
+
+  const supabase = getSupabaseServerClient() ?? (await getTenantDataClient());
+  if (!supabase) {
+    return { ok: false as const, error: "Demo modda market import pasif." };
+  }
+
+  const existing = await readEnterpriseMarketCatalogKeys({ supabase, businessId: scope.businessId });
+  if (!existing.ok) {
+    return { ok: false as const, error: existing.error };
+  }
+
+  const newCategoryNames = new Set<string>();
+  let newProductCount = 0;
+  let updateProductCount = 0;
+  const conflicts = [...parsed.conflicts];
+  for (let index = 0; index < parsed.rows.length; index += 1) {
+    const row = parsed.rows[index];
+    const rowNumber = index + 1;
+    const categoryKey = row.category_name.toLocaleLowerCase("tr-TR");
+    const productKey = `${categoryKey}::${row.name.toLocaleLowerCase("tr-TR")}`;
+    const hasCategory = existing.categoryNameToId.has(categoryKey) || newCategoryNames.has(categoryKey);
+    if (!hasCategory) {
+      newCategoryNames.add(categoryKey);
+    }
+
+    if (existing.productKeys.has(productKey)) {
+      updateProductCount += 1;
+    } else {
+      newProductCount += 1;
+    }
+
+    if (row.barcode) {
+      const mappedKey = existing.barcodeToProductKey.get(row.barcode);
+      if (mappedKey && mappedKey !== productKey) {
+        conflicts.push({
+          row: rowNumber,
+          field: "barcode",
+          message: "Barkod farkli bir urun tarafinda kullaniliyor.",
+        });
+      }
+    }
+    if (row.plu_code) {
+      const mappedKey = existing.pluToProductKey.get(row.plu_code);
+      if (mappedKey && mappedKey !== productKey) {
+        conflicts.push({
+          row: rowNumber,
+          field: "plu_code",
+          message: "PLU kodu farkli bir urun tarafinda kullaniliyor.",
+        });
+      }
+    }
+  }
+
+  const summary: EnterpriseMarketImportDryRunSummary = {
+    rowCount: parsed.rows.length,
+    newCategoryCount: newCategoryNames.size,
+    newProductCount,
+    updateProductCount,
+    conflictCount: conflicts.length,
+    errorCount: parsed.errors.length,
+    errors: parsed.errors,
+    conflicts,
+    replaceScope: Boolean(input.replaceScope),
+  };
+
+  return {
+    ok: parsed.errors.length === 0 && conflicts.length === 0,
+    summary,
+    rows: parsed.rows,
+  };
+}
+
+export async function commitEnterpriseMarketImport(input: { jsonText: string; replaceScope?: boolean }) {
+  const scope = await getDefaultBusinessScope();
+  if (!scope.businessId) {
+    return { ok: false as const, error: "Aktif isletme bulunamadi." };
+  }
+
+  const dryRun = await dryRunEnterpriseMarketImport({
+    jsonText: input.jsonText,
+    replaceScope: input.replaceScope,
+  });
+  if (!dryRun.ok) {
+    return {
+      ok: false as const,
+      error: dryRun.error ?? "Dry-run hatalari giderilmeden import commit edilemez.",
+      summary: "summary" in dryRun ? dryRun.summary : undefined,
+    };
+  }
+
+  const supabase = getSupabaseServerClient() ?? (await getTenantDataClient());
+  if (!supabase) {
+    return { ok: false as const, error: "Demo modda market import pasif." };
+  }
+
+  const authClient = await getSupabaseAuthServerClient();
+  const actorResult = authClient ? await authClient.auth.getUser() : null;
+  const actorId = actorResult?.data.user?.id ?? null;
+  const replaceScope = Boolean(input.replaceScope);
+  const { data, error } = await supabase.rpc("import_enterprise_market_catalog", {
+    p_business_id: scope.businessId,
+    p_rows: dryRun.rows,
+    p_replace_scope: replaceScope,
+    p_actor_id: actorId,
+  });
+  if (error) {
+    if (error.message.toLowerCase().includes("import_enterprise_market_catalog")) {
+      return { ok: false as const, error: "Market import fonksiyonu bulunamadi. Ilgili migration calistirilmali." };
+    }
+    return { ok: false as const, error: error.message };
+  }
+
+  const payload = (data ?? {}) as Record<string, unknown>;
+  const summary: EnterpriseMarketImportDryRunSummary = {
+    rowCount: Number(payload.row_count ?? dryRun.summary.rowCount ?? 0),
+    newCategoryCount: Number(payload.category_inserted_count ?? dryRun.summary.newCategoryCount ?? 0),
+    newProductCount: Number(payload.inserted_count ?? dryRun.summary.newProductCount ?? 0),
+    updateProductCount: Number(payload.updated_count ?? dryRun.summary.updateProductCount ?? 0),
+    conflictCount: 0,
+    errorCount: 0,
+    errors: [],
+    conflicts: [],
+    replaceScope,
+  };
+
+  revalidateProductManagementCaches();
+  return {
+    ok: true as const,
+    summary,
+  };
+}
+
 export async function getProductManagementData(
   options?: {
     tab?: import("@/lib/server/products-data").ProductManagementTab;
@@ -6100,9 +6822,15 @@ export async function createProduct(input: {
   name: string;
   price: number;
   stockCount: number;
+  profileScope: ProductProfileScope;
   description?: string;
   imageUrl?: string;
   isAvailable?: boolean;
+  barcode?: string;
+  pluCode?: string;
+  productKind?: ProductKind;
+  unit?: ProductUnit;
+  department?: ProductDepartment;
 }) {
   return createProductImpl(input, {
     getDefaultBusinessScope,
@@ -6123,9 +6851,15 @@ export async function updateProduct(input: {
   name: string;
   price: number;
   stockCount: number;
+  profileScope: ProductProfileScope;
   description?: string;
   imageUrl?: string;
   isAvailable: boolean;
+  barcode?: string;
+  pluCode?: string;
+  productKind?: ProductKind;
+  unit?: ProductUnit;
+  department?: ProductDepartment;
 }) {
   return updateProductImpl(input, {
     getDefaultBusinessScope,
@@ -7025,8 +7759,13 @@ export async function createDemoStaffSet() {
   return { ok: true, count: results.length };
 }
 
-export async function createCategory(name: string, sortOrder: number, prepStation: PrepStation = "kitchen") {
-  return createCategoryImpl(name, sortOrder, prepStation, {
+export async function createCategory(
+  name: string,
+  sortOrder: number,
+  prepStation: PrepStation = "kitchen",
+  profileScope: ProductProfileScope = "restaurant",
+) {
+  return createCategoryImpl(name, sortOrder, prepStation, profileScope, {
     getDefaultBusinessScope,
     logAuditEvent,
     revalidateProductManagementCaches,
@@ -7060,11 +7799,20 @@ export async function updateCategorySortOrder(categoryId: string, sortOrder: num
   }
 
   const scope = await getDefaultBusinessScope();
+  const activeProfileScope = (scope.activeBranchProfile ?? "restaurant") as ProductProfileScope;
   let query = supabase.from("categories").update({ sort_order: sortOrder }).eq("id", categoryId);
   if (!scope.useLegacySchema && scope.businessId) {
-    query = query.eq("business_id", scope.businessId);
+    query = query.eq("business_id", scope.businessId).eq("profile_scope", activeProfileScope);
   }
-  const { error } = await query;
+  let { error } = await query;
+  if (error?.message?.toLowerCase().includes("profile_scope")) {
+    let fallbackQuery = supabase.from("categories").update({ sort_order: sortOrder }).eq("id", categoryId);
+    if (!scope.useLegacySchema && scope.businessId) {
+      fallbackQuery = fallbackQuery.eq("business_id", scope.businessId);
+    }
+    const fallback = await fallbackQuery;
+    error = fallback.error;
+  }
   if (error) {
     return { ok: false, error: error.message };
   }
@@ -7072,7 +7820,7 @@ export async function updateCategorySortOrder(categoryId: string, sortOrder: num
     entityType: "category",
     entityId: categoryId,
     action: "sort_order_update",
-    details: { sortOrder },
+    details: { sortOrder, profileScope: activeProfileScope },
   });
   revalidateProductManagementCaches();
   return { ok: true };
@@ -7085,6 +7833,7 @@ export async function reorderCategories(categoryIds: string[]) {
   }
 
   const scope = await getDefaultBusinessScope();
+  const activeProfileScope = (scope.activeBranchProfile ?? "restaurant") as ProductProfileScope;
   for (let index = 0; index < categoryIds.length; index += 1) {
     let query = supabase
       .from("categories")
@@ -7092,10 +7841,21 @@ export async function reorderCategories(categoryIds: string[]) {
       .eq("id", categoryIds[index]);
 
     if (!scope.useLegacySchema && scope.businessId) {
-      query = query.eq("business_id", scope.businessId);
+      query = query.eq("business_id", scope.businessId).eq("profile_scope", activeProfileScope);
     }
 
-    const { error } = await query;
+    let { error } = await query;
+    if (error?.message?.toLowerCase().includes("profile_scope")) {
+      let fallbackQuery = supabase
+        .from("categories")
+        .update({ sort_order: index + 1 })
+        .eq("id", categoryIds[index]);
+      if (!scope.useLegacySchema && scope.businessId) {
+        fallbackQuery = fallbackQuery.eq("business_id", scope.businessId);
+      }
+      const fallback = await fallbackQuery;
+      error = fallback.error;
+    }
     if (error) {
       return { ok: false, error: error.message };
     }
@@ -7105,7 +7865,7 @@ export async function reorderCategories(categoryIds: string[]) {
     entityType: "category",
     entityId: "bulk",
     action: "reorder",
-    details: { categoryIds },
+    details: { categoryIds, profileScope: activeProfileScope },
   });
 
   revalidateProductManagementCaches();
@@ -7138,11 +7898,21 @@ export async function bulkUpdateCategoryPrices(categoryId: string, percent: numb
   }
 
   const scope = await getDefaultBusinessScope();
+  const activeProfileScope = (scope.activeBranchProfile ?? "restaurant") as ProductProfileScope;
   let listQuery = supabase.from("products").select("id, price").eq("category_id", categoryId);
   if (!scope.useLegacySchema && scope.businessId) {
-    listQuery = listQuery.eq("business_id", scope.businessId);
+    listQuery = listQuery.eq("business_id", scope.businessId).eq("profile_scope", activeProfileScope);
   }
-  const { data: products, error: listError } = await listQuery;
+  let { data: products, error: listError } = await listQuery;
+  if (listError?.message?.toLowerCase().includes("profile_scope")) {
+    let fallbackListQuery = supabase.from("products").select("id, price").eq("category_id", categoryId);
+    if (!scope.useLegacySchema && scope.businessId) {
+      fallbackListQuery = fallbackListQuery.eq("business_id", scope.businessId);
+    }
+    const fallback = await fallbackListQuery;
+    products = fallback.data;
+    listError = fallback.error;
+  }
   if (listError) {
     return { ok: false, error: listError.message };
   }
@@ -10954,10 +11724,14 @@ export async function listSupportTenantSummaries() {
 
   const tenants = await Promise.all(
     ((businesses ?? []) as Array<{ id: string; name: string; slug: string; plan: BusinessPlan; is_active: boolean }>).map(async (business) => {
-      const [branchResult, ticketResult] = await Promise.all([
-        supabase.from("branches").select("id", { count: "exact", head: true }).eq("business_id", business.id).eq("is_active", true),
+      const [branchRowsResult, ticketResult] = await Promise.all([
+        supabase.from("branches").select("id").eq("business_id", business.id).eq("is_active", true),
         supabase.from("support_tickets").select("id", { count: "exact", head: true }).eq("business_id", business.id).neq("status", "closed"),
       ]);
+      const branchCount = (branchRowsResult.data ?? []).length;
+      const restaurantBranchCount = branchCount;
+      const enterpriseMarketBranchCount = 0;
+      const tenantModel: TenantModel = "restaurant_only";
 
       return {
         business_id: business.id,
@@ -10965,7 +11739,10 @@ export async function listSupportTenantSummaries() {
         business_slug: business.slug,
         plan: business.plan,
         is_active: business.is_active,
-        branch_count: branchResult.count ?? 0,
+        branch_count: branchCount,
+        tenant_model: tenantModel,
+        restaurant_branch_count: restaurantBranchCount,
+        enterprise_market_branch_count: enterpriseMarketBranchCount,
         support_ticket_count: ticketResult.count ?? 0,
       } satisfies SupportTenantSummary;
     }),
@@ -11083,8 +11860,14 @@ export async function getSupportTenantDetail(businessId: string) {
     return { tenant: null, usingDemoData: false };
   }
 
-  const [branchResult, ticketResult, recentTicketsResult, orderResult, paymentResult, planRequestsResult, auditResult, incidentsResult, profileResult, featureFlagsResult] = await Promise.all([
+  const [branchResult, branchListResult, ticketResult, recentTicketsResult, orderResult, paymentResult, planRequestsResult, auditResult, incidentsResult, profileResult, featureFlagsResult] = await Promise.all([
     supabase.from("branches").select("id", { count: "exact", head: true }).eq("business_id", businessId).eq("is_active", true),
+    supabase
+      .from("branches")
+      .select("id, business_id, name, slug, branch_profile, is_active, created_at, updated_at")
+      .eq("business_id", businessId)
+      .eq("is_active", true)
+      .order("name", { ascending: true }),
     supabase.from("support_tickets").select("id", { count: "exact", head: true }).eq("business_id", businessId).in("status", ["open", "in_progress"]),
     supabase
       .from("support_tickets")
@@ -11117,11 +11900,60 @@ export async function getSupportTenantDetail(businessId: string) {
       user.full_name || user.email,
     ]),
   );
+  const normalizeBranchProfile = (value?: BranchProfile | null): BranchProfile => {
+    void value;
+    return "restaurant";
+  };
+  let hasResolvedBranchRows = false;
+  let activeBranches = [] as Array<{ id: string; name: string; slug: string; branch_profile: BranchProfile }>;
+  if (branchListResult.error?.message?.toLowerCase().includes("branch_profile")) {
+    const fallbackBranchRows = await supabase
+      .from("branches")
+      .select("id, name, slug")
+      .eq("business_id", businessId)
+      .eq("is_active", true)
+      .order("name", { ascending: true });
+    if (!fallbackBranchRows.error) {
+      hasResolvedBranchRows = true;
+      activeBranches = ((fallbackBranchRows.data ?? []) as Array<{ id: string; name: string; slug: string }>).map((row) => ({
+        id: row.id,
+        name: row.name,
+        slug: row.slug,
+        branch_profile: "restaurant",
+      }));
+    }
+  } else if (!branchListResult.error) {
+    hasResolvedBranchRows = true;
+    activeBranches = (
+      (branchListResult.data ?? []) as Array<{ id: string; name: string; slug: string; branch_profile?: BranchProfile | null }>
+    ).map((row) => ({
+      id: row.id,
+      name: row.name,
+      slug: row.slug,
+      branch_profile: normalizeBranchProfile(row.branch_profile),
+    }));
+  }
+  const branchProfileSummary = hasResolvedBranchRows
+    ? activeBranches.reduce(
+        (acc, row) => {
+          if (row.branch_profile === "enterprise_market") {
+            acc.enterprise_market += 1;
+          } else {
+            acc.restaurant += 1;
+          }
+          return acc;
+        },
+        { restaurant: 0, enterprise_market: 0 },
+      )
+    : { restaurant: branchResult.count ?? 0, enterprise_market: 0 };
+  const activeBranchCount = hasResolvedBranchRows ? activeBranches.length : (branchResult.count ?? 0);
 
   return {
     tenant: {
       ...(business as Business),
-      branch_count: branchResult.count ?? 0,
+      branch_count: activeBranchCount,
+      branch_profile_summary: branchProfileSummary,
+      branches: activeBranches,
       open_ticket_count: ticketResult.count ?? 0,
       last_order_at: (orderResult.data?.created_at as string | undefined) ?? null,
       last_payment_at: (paymentResult.data?.created_at as string | undefined) ?? null,
@@ -11156,7 +11988,9 @@ export async function getSupportTenantDetail(businessId: string) {
       diagnostics: {
         last_order_at: (orderResult.data?.created_at as string | undefined) ?? null,
         last_payment_at: (paymentResult.data?.created_at as string | undefined) ?? null,
-        branch_count: branchResult.count ?? 0,
+        branch_count: activeBranchCount,
+        restaurant_branch_count: branchProfileSummary.restaurant,
+        enterprise_market_branch_count: branchProfileSummary.enterprise_market,
         open_ticket_count: ticketResult.count ?? 0,
         feature_flag_count: (featureFlagsResult.data ?? []).length,
         open_incident_count: ((incidentsResult.data ?? []) as SupportIncident[]).filter((incident) => incident.status === "open" || incident.status === "monitoring").length,
@@ -11870,3 +12704,5 @@ export async function getSupportDashboardSnapshot() {
     usingDemoData: false,
   };
 }
+
+

@@ -1,6 +1,7 @@
 import { NextResponse } from "next/server";
 import { getCurrentUserWithRole } from "@/lib/auth";
 import { ACTIVE_BRANCH_COOKIE, ALL_BRANCHES_VALUE, normalizeBranchId } from "@/lib/business";
+import { getRequestAppContext } from "@/lib/server/app-context";
 
 type Body = {
   branchId?: string;
@@ -11,7 +12,7 @@ export async function POST(request: Request) {
   try {
     body = (await request.json()) as Body;
   } catch {
-    return NextResponse.json({ ok: false, message: "Geçersiz istek govdesi." }, { status: 400 });
+    return NextResponse.json({ ok: false, message: "Gecersiz istek govdesi." }, { status: 400 });
   }
 
   const branchId = normalizeBranchId(body.branchId);
@@ -19,13 +20,24 @@ export async function POST(request: Request) {
   if (!auth.user) {
     return NextResponse.json({ ok: false, message: "Yetkisiz" }, { status: 401 });
   }
+
   if (auth.accessScope === "branch") {
     if (!auth.primaryBranchId || (branchId && branchId !== auth.primaryBranchId)) {
-      return NextResponse.json({ ok: false, message: "Bu kullanıcı yalnızca atanmış şubeyi görebilir." }, { status: 403 });
+      return NextResponse.json(
+        { ok: false, message: "Bu kullanici yalnizca atanmis subeyi gorebilir." },
+        { status: 403 },
+      );
     }
   } else if (branchId === ALL_BRANCHES_VALUE) {
-    // allowed only for business-scope users
+    const context = await getRequestAppContext();
+    if (context.hasMixedBranchProfiles) {
+      return NextResponse.json(
+        { ok: false, message: "Karisik profilli tenantta Tum Subeler secimi kullanilamaz." },
+        { status: 409 },
+      );
+    }
   }
+
   const requestProtocolRaw = request.headers.get("x-forwarded-proto") ?? new URL(request.url).protocol.replace(":", "");
   const secureCookie = requestProtocolRaw.split(",")[0]?.trim().toLowerCase() === "https";
   const response = NextResponse.json({ ok: true, branchId });

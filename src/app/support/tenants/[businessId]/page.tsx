@@ -55,6 +55,16 @@ export default async function SupportTenantDetailPage({
   if (!tenant) {
     notFound();
   }
+  const branchProfileSummary = tenant.branch_profile_summary ?? {
+    restaurant: tenant.branch_count ?? 0,
+    enterprise_market: 0,
+  };
+  const tenantBranches = (tenant.branches ?? []) as Array<{
+    id: string;
+    name: string;
+    slug: string;
+    branch_profile?: "restaurant" | "enterprise_market";
+  }>;
 
   return (
     <main className="mx-auto w-full max-w-7xl space-y-6 px-4 py-8 md:px-8">
@@ -142,6 +152,24 @@ export default async function SupportTenantDetailPage({
               <p>Feature override: {tenant.diagnostics.feature_flag_count}</p>
               <p>Open ticket: {tenant.diagnostics.open_ticket_count}</p>
             </div>
+          </article>
+          <article className="rounded-2xl bg-white p-6 shadow-sm">
+            <p className="text-sm font-semibold text-slate-900">Branch Profile Dagilimi</p>
+            <div className="mt-4 space-y-2 text-sm text-slate-600">
+              <p>Restaurant sube: {branchProfileSummary.restaurant}</p>
+            </div>
+            {tenantBranches.length ? (
+              <div className="mt-4 space-y-2">
+                {tenantBranches.slice(0, 8).map((branch) => (
+                  <div key={branch.id} className="flex items-center justify-between rounded-xl border border-slate-200 bg-slate-50 px-3 py-2 text-xs text-slate-700">
+                    <span>{branch.name}</span>
+                    <span className="rounded-full bg-slate-200 px-2 py-1 font-semibold text-slate-700">
+                      Restaurant
+                    </span>
+                  </div>
+                ))}
+              </div>
+            ) : null}
           </article>
           <article className="rounded-2xl bg-white p-6 shadow-sm">
             <p className="text-sm font-semibold text-slate-900">{translateUiText("Sinirlar", locale)}</p>

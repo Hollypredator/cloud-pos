@@ -2,6 +2,7 @@ export const DEFAULT_BUSINESS_SLUG =
   process.env.NEXT_PUBLIC_DEFAULT_BUSINESS_SLUG || process.env.DEFAULT_BUSINESS_SLUG || "default";
 export const ACTIVE_BUSINESS_COOKIE = "active_business_slug";
 export const ACTIVE_BRANCH_COOKIE = "active_branch_id";
+export const ACTIVE_STATION_PROFILE_COOKIE = "active_station_profile";
 export const ALL_BRANCHES_VALUE = "__all__";
 
 export function normalizeBusinessSlug(input?: string) {
@@ -11,4 +12,12 @@ export function normalizeBusinessSlug(input?: string) {
 export function normalizeBranchId(input?: string) {
   const value = (input || "").trim();
   return value === ALL_BRANCHES_VALUE ? ALL_BRANCHES_VALUE : value;
+}
+
+export function normalizeStationProfile(input?: string) {
+  const value = (input || "").trim();
+  if (value === "butcher" || value === "delicatessen") {
+    return value;
+  }
+  return "cashier";
 }

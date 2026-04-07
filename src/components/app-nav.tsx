@@ -6,9 +6,9 @@ import { usePathname, useRouter } from "next/navigation";
 import { useEffect, useMemo, useRef, useState } from "react";
 import { LogoutButton } from "@/components/logout-button";
 import { ALL_BRANCHES_VALUE } from "@/lib/business";
-import { getPlanLabel, getRequiredPlan, hasFeature } from "@/lib/features";
+import { getPlanLabel, getRequiredPlan, hasFeature, type FeatureKey } from "@/lib/features";
 import { normalizeLocale, translateUiText } from "@/lib/i18n";
-import type { AppRole, BusinessPlan, StaffAccessScope } from "@/lib/types";
+import type { AppRole, BranchProfile, BusinessPlan, StaffAccessScope } from "@/lib/types";
 import type { ApplicationSettings } from "@/lib/app-settings";
 import { defaultAdminSidebarOrder, defaultOwnerSidebarOrder, operationLinks } from "@/lib/sidebar-config";
 
@@ -57,6 +57,11 @@ function roleLabel(role: AppRole | null, usingDemoData: boolean) {
   if (!role) return "GUEST";
   if (role === "owner") return "OWNER";
   return role.toUpperCase();
+}
+
+function branchOptionLabel(branch: { name: string; branch_profile?: BranchProfile }) {
+  const profileLabel = "Restaurant";
+  return `${branch.name} (${profileLabel})`;
 }
 
 function clamp(value: number) {
@@ -113,6 +118,20 @@ function resolveActiveHref(pathname: string | null, hrefs: string[]) {
   return bestMatch;
 }
 
+function isFeatureEnabled(
+  currentPlan: BusinessPlan,
+  effectiveCapabilities: Partial<Record<FeatureKey, boolean>> | undefined,
+  feature?: FeatureKey,
+) {
+  if (!feature) {
+    return true;
+  }
+  if (typeof effectiveCapabilities?.[feature] === "boolean") {
+    return Boolean(effectiveCapabilities[feature]);
+  }
+  return hasFeature(currentPlan, feature);
+}
+
 export function AppNav({
   role,
   hasUser,
@@ -120,8 +139,12 @@ export function AppNav({
   activeBusinessSlug,
   businesses,
   activeBranchId,
+  activeBranchProfile,
+  hasMixedBranchProfiles,
+  forcedBranchSelectionFromAll,
   branches,
   currentPlan,
+  effectiveCapabilities,
   branchAccessScope,
   canSwitchBranches,
   brandName,
@@ -138,8 +161,12 @@ export function AppNav({
   activeBusinessSlug: string;
   businesses: Array<{ slug: string; name: string }>;
   activeBranchId: string;
-  branches: Array<{ id: string; name: string }>;
+  activeBranchProfile: BranchProfile;
+  hasMixedBranchProfiles: boolean;
+  forcedBranchSelectionFromAll: boolean;
+  branches: Array<{ id: string; name: string; branch_profile?: BranchProfile }>;
   currentPlan: BusinessPlan;
+  effectiveCapabilities?: Partial<Record<FeatureKey, boolean>>;
   branchAccessScope: StaffAccessScope;
   canSwitchBranches: boolean;
   brandName: string;
@@ -160,6 +187,11 @@ export function AppNav({
   const [mobileOpen, setMobileOpen] = useState(false);
   const [sidebarHydrated, setSidebarHydrated] = useState(false);
   const locale = getLocale();
+  const canSelectAllBranches = branchAccessScope === "business" && !hasMixedBranchProfiles;
+  const resolvedActiveBranchId =
+    activeBranchId === ALL_BRANCHES_VALUE && !canSelectAllBranches
+      ? branches[0]?.id ?? ""
+      : activeBranchId;
 
   useEffect(() => {
     try {
@@ -224,7 +256,7 @@ export function AppNav({
   }
 
   async function switchBranch(branchId: string) {
-    if (branchId === activeBranchId) return;
+    if (branchId === resolvedActiveBranchId) return;
     setIsSwitching(true);
     try {
       const response = await fetch("/api/branch/active", {
@@ -243,8 +275,7 @@ export function AppNav({
   }
 
   const allowAll = usingDemoData;
-  const canAccess = (roles: AppRole[]) =>
-    allowAll || (!!role && (roles.includes(role) || (role === "owner" && roles.includes("admin"))));
+  const isMarketSidebar = false && activeBranchProfile === "enterprise_market";
   const theme = sidebarThemes[sidebarTheme] ?? sidebarThemes.ember;
   const resolvedOrder = role === "owner" ? ownerSidebarOrder : adminSidebarOrder;
   const orderPreset: string[] = useMemo(
@@ -256,26 +287,40 @@ export function AppNav({
           : [...defaultAdminSidebarOrder],
     [resolvedOrder, role],
   );
+  const sidebarLinks = operationLinks;
   const accentBase = /^#[0-9a-fA-F]{6}$/.test(sidebarAccentColor) ? sidebarAccentColor : "#ff7848";
   const accentBright = mixHex(accentBase, 0.28);
   const accentDark = mixHex(accentBase, -0.18);
+  const sidebarBorderClass = isMarketSidebar ? "border-[rgba(122,175,255,0.22)]" : theme.asideClassName;
+  const sidebarBackgroundImage = isMarketSidebar
+    ? "radial-gradient(circle at 0% 0%, rgba(77,142,247,0.3), transparent 28%), radial-gradient(circle at 100% 12%, rgba(39,86,161,0.28), transparent 24%), linear-gradient(180deg, #0c1728 0%, #0a1322 42%, #0a101c 100%)"
+    : theme.backgroundImage;
   const visibleLinks = useMemo(
-    () =>
-      operationLinks
-        .filter((link) => canAccess(link.roles) && (!link.requiresBusinessScope || branchAccessScope === "business"))
-        .sort((a, b) => {
-          const aIndex = orderPreset.indexOf(a.href);
-          const bIndex = orderPreset.indexOf(b.href);
-          return (aIndex === -1 ? Number.MAX_SAFE_INTEGER : aIndex) - (bIndex === -1 ? Number.MAX_SAFE_INTEGER : bIndex);
-        }),
-    [branchAccessScope, orderPreset, role, usingDemoData],
+    () => {
+      const allowed = sidebarLinks.filter(
+        (link) =>
+          (allowAll || (!!role && (link.roles.includes(role) || (role === "owner" && link.roles.includes("admin"))))) &&
+          (!link.requiresBusinessScope || branchAccessScope === "business"),
+      );
+      if (isMarketSidebar) {
+        return allowed;
+      }
+      return allowed.sort((a, b) => {
+        const aIndex = orderPreset.indexOf(a.href);
+        const bIndex = orderPreset.indexOf(b.href);
+        return (aIndex === -1 ? Number.MAX_SAFE_INTEGER : aIndex) - (bIndex === -1 ? Number.MAX_SAFE_INTEGER : bIndex);
+      });
+    },
+    [allowAll, branchAccessScope, isMarketSidebar, orderPreset, role, sidebarLinks],
   );
+  const desktopCollapsed = collapsed && !isMarketSidebar;
+  const sidebarWidthClass = isMarketSidebar ? "w-[110px]" : desktopCollapsed ? "w-[88px]" : "w-[252px]";
   const activeHref = resolveActiveHref(pathname, visibleLinks.map((link) => link.href));
   const mobilePrimaryLinks = visibleLinks.slice(0, 4);
 
   useEffect(() => {
     const candidates = visibleLinks
-      .filter((link) => !link.feature || hasFeature(currentPlan, link.feature))
+      .filter((link) => isFeatureEnabled(currentPlan, effectiveCapabilities, link.feature))
       .map((link) => link.href)
       .slice(0, 6);
 
@@ -322,7 +367,7 @@ export function AppNav({
         ).cancelIdleCallback(idleId);
       }
     };
-  }, [currentPlan, router, visibleLinks]);
+  }, [currentPlan, effectiveCapabilities, router, visibleLinks]);
 
   useEffect(() => {
     if (!pathname) {
@@ -419,14 +464,14 @@ export function AppNav({
                 <p className="text-[11px] uppercase tracking-[0.2em] text-slate-500">{translateUiText("Aktif şube", locale)}</p>
                 <select
                   className="mt-2 w-full rounded-xl border border-slate-200 bg-white px-3 py-3 text-sm text-slate-900 outline-none"
-                  value={activeBranchId}
+                  value={resolvedActiveBranchId}
                   disabled={isSwitching || branches.length === 0 || !canSwitchBranches}
                   onChange={(event) => void switchBranch(event.target.value)}
                 >
-                  {branchAccessScope === "business" ? <option value={ALL_BRANCHES_VALUE}>{translateUiText("Tüm Subeler", locale)}</option> : null}
+                  {canSelectAllBranches ? <option value={ALL_BRANCHES_VALUE}>{translateUiText("Tum Subeler", locale)}</option> : null}
                   {branches.map((item) => (
                     <option key={item.id} value={item.id}>
-                      {item.name}
+                      {branchOptionLabel(item)}
                     </option>
                   ))}
                 </select>
@@ -434,7 +479,7 @@ export function AppNav({
 
               <div className="grid gap-2">
                 {visibleLinks.map((link) => {
-                  const locked = !!link.feature && !hasFeature(currentPlan, link.feature);
+                  const locked = !isFeatureEnabled(currentPlan, effectiveCapabilities, link.feature);
                   if (locked) {
                     return (
                       <div key={link.href} className="rounded-2xl border border-dashed border-slate-200 bg-slate-50 px-4 py-3 text-sm text-slate-400">
@@ -488,22 +533,20 @@ export function AppNav({
 
       <aside
         className={`hidden min-h-screen shrink-0 flex-col border-r text-white md:flex ${
-          theme.asideClassName
-        } ${
-          collapsed ? "w-[88px]" : "w-[252px]"
-        } ${sidebarHydrated ? "transition-[width] duration-200 ease-out" : ""}`}
-        style={{ backgroundImage: theme.backgroundImage }}
+          sidebarBorderClass
+        } ${sidebarWidthClass} ${sidebarHydrated ? "transition-[width] duration-200 ease-out" : ""}`}
+        style={{ backgroundImage: sidebarBackgroundImage }}
       >
         <div className="border-b border-white/10 px-4 py-6">
-          <div className="flex items-center justify-between gap-2">
-            <div className="min-w-0">
+          <div className={`flex items-center ${isMarketSidebar ? "justify-center" : "justify-between"} gap-2`}>
+            <div className={`min-w-0 ${isMarketSidebar ? "w-full text-center" : ""}`}>
               {logoUrl ? (
-                <div className="flex items-center gap-3">
+                <div className={`flex items-center gap-3 ${isMarketSidebar ? "justify-center" : ""}`}>
                   <Image src={logoUrl} alt={brandName} width={40} height={40} className="h-10 w-10 rounded-xl object-contain" unoptimized />
-                  {!collapsed ? <p className="font-display truncate text-xl font-black tracking-tight text-white">{brandName}</p> : null}
+                  {!desktopCollapsed && !isMarketSidebar ? <p className="font-display truncate text-xl font-black tracking-tight text-white">{brandName}</p> : null}
                 </div>
               ) : (
-                <div className="flex items-center gap-3">
+                <div className={`flex items-center gap-3 ${isMarketSidebar ? "justify-center" : ""}`}>
                   <span
                     className={`inline-flex h-12 w-12 items-center justify-center rounded-2xl text-base font-black text-white ${theme.brandBadgeClassName}`}
                     style={{
@@ -511,25 +554,31 @@ export function AppNav({
                       boxShadow: `0 14px 24px ${hexToRgba(accentBase, 0.3)}`,
                     }}
                   >
-                    {brandName.slice(0, 2).toUpperCase()}
+                    {isMarketSidebar ? "M" : brandName.slice(0, 2).toUpperCase()}
                   </span>
-                  {!collapsed ? <p className="font-display truncate text-[1.75rem] font-black leading-none tracking-tight text-white">{brandName}</p> : null}
+                  {!desktopCollapsed && !isMarketSidebar ? <p className="font-display truncate text-[1.75rem] font-black leading-none tracking-tight text-white">{brandName}</p> : null}
                 </div>
               )}
-              {!collapsed ? <p className="mt-2 text-xs uppercase tracking-[0.22em] text-[rgba(255,255,255,0.56)]">{translateUiText("operations cockpit", locale)}</p> : null}
+              {isMarketSidebar ? (
+                <p className="mt-2 text-[10px] font-semibold uppercase tracking-[0.26em] text-white/55">{translateUiText("Market", locale)}</p>
+              ) : !desktopCollapsed ? (
+                <p className="mt-2 text-xs uppercase tracking-[0.22em] text-[rgba(255,255,255,0.56)]">{translateUiText("operations cockpit", locale)}</p>
+              ) : null}
             </div>
-            <button
-              type="button"
-              onClick={toggleCollapsed}
-              className="inline-flex h-9 w-9 items-center justify-center rounded-full border border-white/15 bg-white/10 text-sm text-white shadow-[inset_0_1px_0_rgba(255,255,255,0.08)]"
-            >
-              {collapsed ? ">" : "<"}
-            </button>
+            {!isMarketSidebar ? (
+              <button
+                type="button"
+                onClick={toggleCollapsed}
+                className="inline-flex h-9 w-9 items-center justify-center rounded-full border border-white/15 bg-white/10 text-sm text-white shadow-[inset_0_1px_0_rgba(255,255,255,0.08)]"
+              >
+                {desktopCollapsed ? ">" : "<"}
+              </button>
+            ) : null}
           </div>
         </div>
 
         <div ref={sidebarScrollRef} className="flex-1 overflow-y-auto px-2 py-4">
-          {!collapsed ? (
+          {!desktopCollapsed && !isMarketSidebar ? (
             <>
               <div className="mb-4 rounded-[22px] border border-white/10 bg-[rgba(255,255,255,0.06)] p-3 backdrop-blur">
                 <p className="text-[11px] uppercase tracking-[0.2em] text-white/50">{translateUiText("Aktif işletme", locale)}</p>
@@ -551,55 +600,102 @@ export function AppNav({
                 <p className="text-[11px] uppercase tracking-[0.2em] text-white/50">{translateUiText("Aktif şube", locale)}</p>
                 <select
                   className="mt-2 w-full rounded-xl border border-white/10 bg-black/10 px-3 py-2 text-sm text-white outline-none"
-                  value={activeBranchId}
+                  value={resolvedActiveBranchId}
                   disabled={isSwitching || branches.length === 0 || !canSwitchBranches}
                   onChange={(event) => void switchBranch(event.target.value)}
                 >
-                  {branchAccessScope === "business" ? (
+                  {canSelectAllBranches ? (
                     <option value={ALL_BRANCHES_VALUE} className="text-slate-900">
                       {translateUiText("Tüm Subeler", locale)}
                     </option>
                   ) : null}
                   {branches.map((item) => (
                     <option key={item.id} value={item.id} className="text-slate-900">
-                      {item.name}
+                      {branchOptionLabel(item)}
                     </option>
                   ))}
                 </select>
                 <p className="mt-2 text-xs text-white/45">
-                  {branchAccessScope === "business"
-                    ? translateUiText("Tüm subeleri gorebilirsin.", locale)
-                    : translateUiText("Bu kullanıcı yalnızca atanmış şubeyi görür.", locale)}
+                  {hasMixedBranchProfiles ? translateUiText("Karisik profilli tenantta Tum Subeler secimi devre disidir.", locale) : branchAccessScope === "business" ? translateUiText("Tum subeleri gorebilirsin.", locale) : translateUiText("Bu kullanici yalnizca atanmis subeyi gorur.", locale)}
                 </p>
+                {forcedBranchSelectionFromAll ? (
+                  <p className="mt-2 text-xs text-amber-200">
+                    {translateUiText("ALL secimi mevcut cookie'de oldugu icin sube seviyesine zorlandi.", locale)}
+                  </p>
+                ) : null}
               </div>
             </>
           ) : null}
 
+          {isMarketSidebar && !desktopCollapsed ? (
+            <div className="mb-3 rounded-[20px] border border-white/10 bg-[rgba(255,255,255,0.06)] p-2.5 backdrop-blur">
+              <p className="text-center text-[9px] uppercase tracking-[0.2em] text-white/52">Aktif Sube</p>
+              <select
+                className="mt-2 w-full rounded-lg border border-white/10 bg-black/20 px-2 py-1.5 text-[10px] font-semibold text-white outline-none"
+                value={resolvedActiveBranchId}
+                disabled={isSwitching || branches.length === 0 || !canSwitchBranches}
+                onChange={(event) => void switchBranch(event.target.value)}
+              >
+                {canSelectAllBranches ? (
+                  <option value={ALL_BRANCHES_VALUE} className="text-slate-900">
+                    Tum Subeler
+                  </option>
+                ) : null}
+                {branches.map((item) => (
+                  <option key={item.id} value={item.id} className="text-slate-900">
+                    {branchOptionLabel(item)}
+                  </option>
+                ))}
+              </select>
+              <p className="mt-2 text-center text-[9px] text-white/46">
+                {isSwitching ? "Sube degistiriliyor..." : roleLabel(role, usingDemoData)}
+              </p>
+            </div>
+          ) : null}
+
           <div className="space-y-1.5">
             {visibleLinks.map((link) => {
-              const locked = !!link.feature && !hasFeature(currentPlan, link.feature);
+              const locked = !isFeatureEnabled(currentPlan, effectiveCapabilities, link.feature);
               const isLinkActive = !locked && activeHref === link.href;
-              const className = `group flex items-center gap-3 rounded-2xl px-3 py-3 text-sm font-medium transition ${
-                locked
-                  ? "cursor-not-allowed border border-white/10 bg-white/5 text-white/40"
-                  : isLinkActive
-                    ? `${theme.activeItemClassName} text-white`
-                    : "text-white/75 hover:bg-white/6 hover:text-white"
-              }`;
-              const iconClassName = `inline-flex h-10 w-10 shrink-0 items-center justify-center rounded-xl font-bold transition ${
-                locked
-                  ? "bg-white/5 text-white/45"
-                  : isLinkActive
-                    ? `${theme.activeIconClassName} text-white`
-                    : "bg-white/8 text-white/80 group-hover:bg-white/12"
-              }`;
+              const className = isMarketSidebar
+                ? `group flex flex-col items-center gap-1 rounded-2xl px-2 py-2 text-[10px] font-semibold uppercase tracking-[0.12em] transition ${
+                    locked
+                      ? "cursor-not-allowed border border-white/10 bg-white/5 text-white/35"
+                      : isLinkActive
+                        ? "bg-white/14 text-white shadow-[0_10px_18px_rgba(15,23,42,0.3)]"
+                        : "text-white/72 hover:bg-white/10 hover:text-white"
+                  }`
+                : `group flex items-center gap-3 rounded-2xl px-3 py-3 text-sm font-medium transition ${
+                    locked
+                      ? "cursor-not-allowed border border-white/10 bg-white/5 text-white/40"
+                      : isLinkActive
+                        ? `${theme.activeItemClassName} text-white`
+                        : "text-white/75 hover:bg-white/6 hover:text-white"
+                  }`;
+              const iconClassName = isMarketSidebar
+                ? `inline-flex h-10 w-10 shrink-0 items-center justify-center rounded-xl font-bold transition ${
+                    locked
+                      ? "bg-white/6 text-white/45"
+                      : isLinkActive
+                        ? "bg-white text-slate-900 shadow-[0_10px_20px_rgba(15,23,42,0.26)]"
+                        : "bg-white/12 text-white/85 group-hover:bg-white/18"
+                  }`
+                : `inline-flex h-10 w-10 shrink-0 items-center justify-center rounded-xl font-bold transition ${
+                    locked
+                      ? "bg-white/5 text-white/45"
+                      : isLinkActive
+                        ? `${theme.activeIconClassName} text-white`
+                        : "bg-white/8 text-white/80 group-hover:bg-white/12"
+                  }`;
 
               if (locked) {
                 const requiredPlan = link.feature ? getRequiredPlan(link.feature) : "growth";
                 return (
                   <div key={link.href} title={`${translateUiText(link.label, locale)} - ${getPlanLabel(requiredPlan)} ${translateUiText("ile açılır", locale)}`} className={className}>
                     <span className={iconClassName}>{link.icon}</span>
-                  {!collapsed ? (
+                    {isMarketSidebar ? (
+                      <span className="text-center leading-tight text-white/55">{translateUiText(link.label, locale)}</span>
+                    ) : !desktopCollapsed ? (
                       <div className="min-w-0 flex-1">
                         <div className="truncate">{translateUiText(link.label, locale)}</div>
                         <div className="mt-1 text-[11px] uppercase tracking-[0.16em] text-white/35">{getPlanLabel(requiredPlan)} {translateUiText("ile açılır", locale)}</div>
@@ -626,10 +722,10 @@ export function AppNav({
                       window.sessionStorage.setItem("app-nav-scroll-y", String(node.scrollTop));
                     } catch {}
                   }}
-                  title={collapsed ? translateUiText(link.label, locale) : undefined}
+                  title={desktopCollapsed || isMarketSidebar ? translateUiText(link.label, locale) : undefined}
                   className={className}
                   style={
-                    isLinkActive
+                    isLinkActive && !isMarketSidebar
                       ? {
                           backgroundImage: `linear-gradient(90deg, ${hexToRgba(accentBase, 0.24)} 0%, rgba(255,255,255,0.08) 100%)`,
                           boxShadow: `inset 4px 0 0 ${accentBase}, 0 14px 24px rgba(15,23,42,0.18)`,
@@ -640,7 +736,7 @@ export function AppNav({
                   <span
                     className={iconClassName}
                     style={
-                      isLinkActive
+                      isLinkActive && !isMarketSidebar
                         ? {
                             backgroundImage: `linear-gradient(135deg, ${accentBase} 0%, ${accentBright} 100%)`,
                             boxShadow: `0 12px 24px ${hexToRgba(accentBase, 0.28)}`,
@@ -650,15 +746,19 @@ export function AppNav({
                   >
                     {link.icon}
                   </span>
-                  {!collapsed ? <span className="truncate">{translateUiText(link.label, locale)}</span> : null}
+                  {isMarketSidebar ? (
+                    <span className="line-clamp-2 text-center leading-tight">{translateUiText(link.label, locale)}</span>
+                  ) : !desktopCollapsed ? (
+                    <span className="truncate">{translateUiText(link.label, locale)}</span>
+                  ) : null}
                 </Link>
               );
             })}
           </div>
         </div>
 
-        <div className="border-t border-white/10 px-3 py-4">
-          {!collapsed ? (
+        <div className={`border-t border-white/10 ${isMarketSidebar ? "px-2 py-3" : "px-3 py-4"}`}>
+          {!desktopCollapsed && !isMarketSidebar ? (
             <div className="mb-3 flex items-center justify-between rounded-[22px] border border-white/10 bg-[rgba(255,255,255,0.05)] px-3 py-3">
               <div>
                 <p className="font-display text-sm font-semibold text-white">{activeBusinessSlug}</p>
@@ -676,15 +776,21 @@ export function AppNav({
             </div>
           ) : null}
           {!hasUser ? (
-            <Link href="/login" className="block rounded-2xl bg-[linear-gradient(135deg,#ff6a3d_0%,#f2b44f_100%)] px-4 py-3 text-center text-sm font-semibold text-white shadow-[0_14px_24px_rgba(255,106,61,0.24)]">
+            <Link href="/login" className={`block rounded-2xl bg-[linear-gradient(135deg,#ff6a3d_0%,#f2b44f_100%)] text-center font-semibold text-white shadow-[0_14px_24px_rgba(255,106,61,0.24)] ${isMarketSidebar ? "px-2 py-2 text-[10px] uppercase tracking-[0.15em]" : "px-4 py-3 text-sm"}`}>
               {translateUiText("Giriş", locale)}
             </Link>
           ) : (
-            <LogoutButton />
+            <div className={isMarketSidebar ? "flex justify-center" : undefined}>
+              <LogoutButton />
+            </div>
           )}
         </div>
       </aside>
     </>
   );
 }
+
+
+
+
 

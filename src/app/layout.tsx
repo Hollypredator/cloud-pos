@@ -8,6 +8,7 @@ import { PosCommandQueueRuntime } from "@/components/pos-command-queue-runtime";
 import { QueryProvider } from "@/components/query-provider";
 import { getGeneralSettings, getSeoSettings } from "@/lib/data";
 import { getCurrentLocale } from "@/lib/i18n-server";
+import { Toaster } from "react-hot-toast";
 import { getAppShellPayload } from "@/lib/server/app-shell";
 
 const APP_SHELL_FETCH_BUDGET_MS = 220;
@@ -81,6 +82,7 @@ export default async function RootLayout({
           <PosCommandQueueRuntime />
           <AppShell initialData={initialShellData}>{children}</AppShell>
         </QueryProvider>
+        <Toaster position="top-center" />
         <SpeedInsights />
         <Analytics />
       </body>

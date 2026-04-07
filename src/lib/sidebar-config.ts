@@ -28,6 +28,17 @@ export const operationLinks: SidebarNavItem[] = [
   { href: "/admin/roles", label: "Personel", icon: "PR", roles: ["owner"], feature: "staff_management" },
 ];
 
+export const marketOperationLinks: SidebarNavItem[] = [
+  { href: "/cashier", label: "Satis", icon: "S", roles: ["admin", "cashier"] },
+  { href: "/cashier/session", label: "Hesap", icon: "H", roles: ["admin", "cashier"], feature: "shift_management" },
+  { href: "/admin/orders", label: "Operasyon", icon: "O", roles: ["owner", "admin", "waiter", "cashier"] },
+  { href: "/admin/products", label: "Urun", icon: "U", roles: ["admin"], feature: "market_catalog" },
+  { href: "/admin/stock", label: "Stok", icon: "T", roles: ["admin"], feature: "inventory_management" },
+  { href: "/admin/reports", label: "Rapor", icon: "R", roles: ["admin"], feature: "advanced_reports" },
+  { href: "/admin/finance", label: "Finans", icon: "F", roles: ["admin"], feature: "finance_dashboard" },
+  { href: "/admin/settings", label: "Ayar", icon: "A", roles: ["owner"] },
+];
+
 export const sidebarPresetOrders = {
   owner: {
     management_first: [

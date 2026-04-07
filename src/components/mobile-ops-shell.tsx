@@ -44,6 +44,20 @@ function canAccessAction(role: AppRole | null, usingDemoData: boolean, allowedRo
   return usingDemoData || (!!role && (allowedRoles.includes(role) || (role === "owner" && allowedRoles.includes("admin"))));
 }
 
+function isFeatureEnabled(
+  currentPlan: AppShellPayload["currentPlan"],
+  effectiveCapabilities: AppShellPayload["effectiveCapabilities"] | undefined,
+  feature?: FeatureKey,
+) {
+  if (!feature) {
+    return true;
+  }
+  if (typeof effectiveCapabilities?.[feature] === "boolean") {
+    return Boolean(effectiveCapabilities[feature]);
+  }
+  return hasFeature(currentPlan, feature);
+}
+
 function actionGroupLabel(group: MobileAction["group"]) {
   if (group === "order") return "Sipariş ve Kasa";
   if (group === "ops") return "Servis ve Dagitim";
@@ -121,7 +135,7 @@ export function MobileOpsShell({
     const actions = mobileActions.filter(
       (action) =>
         canAccessAction(role, usingDemoData, action.roles) &&
-        (!action.feature || hasFeature(currentPlan, action.feature)),
+        isFeatureEnabled(currentPlan, shellData?.effectiveCapabilities, action.feature),
     );
 
     return ["order", "ops", "management"].map((groupKey) => {
@@ -132,7 +146,7 @@ export function MobileOpsShell({
         actions: actions.filter((item) => item.group === group),
       };
     });
-  }, [currentPlan, role, usingDemoData]);
+  }, [currentPlan, role, shellData?.effectiveCapabilities, usingDemoData]);
 
   useEffect(() => {
     setActionsOpen(false);

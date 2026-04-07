@@ -1,5 +1,7 @@
 import type { ApplicationSettings } from "@/lib/app-settings";
+import type { EffectiveCapabilities, FeatureKey } from "@/lib/features";
 import type { AppRole, BusinessPlan, StaffAccessScope } from "@/lib/types";
+import type { BranchProfile, StationProfile } from "@/lib/types";
 
 export type AppShellPayload = {
   role: AppRole | null;
@@ -11,10 +13,16 @@ export type AppShellPayload = {
   activeBusinessSlug: string;
   businesses: Array<{ slug: string; name: string }>;
   activeBranchId: string;
-  branches: Array<{ id: string; name: string }>;
+  activeBranchProfile: BranchProfile;
+  activeStationProfile: StationProfile;
+  hasMixedBranchProfiles: boolean;
+  forcedBranchSelectionFromAll: boolean;
+  branches: Array<{ id: string; name: string; branch_profile: BranchProfile }>;
   currentPlan: BusinessPlan;
   branchAccessScope: StaffAccessScope;
   canSwitchBranches: boolean;
+  effectiveCapabilities: EffectiveCapabilities;
+  featureOverrides: Partial<Record<FeatureKey, boolean>>;
   brandName: string;
   logoUrl?: string;
   sidebarTheme: ApplicationSettings["sidebarTheme"];

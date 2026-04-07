@@ -9,6 +9,8 @@ import {
   type GeneralSettings,
 } from "@/lib/app-settings";
 import type { AppShellPayload } from "@/lib/app-shell";
+import { buildEffectiveCapabilities } from "@/lib/features";
+import { getActiveBusinessPlanContext } from "@/lib/plan-access";
 import { DEFAULT_BUSINESS_SLUG, normalizeBusinessSlug } from "@/lib/business";
 import { getSupabaseServerClient } from "@/lib/supabase/server";
 import type { SiteContent, StaffAccessScope } from "@/lib/types";
@@ -110,10 +112,20 @@ export function getFallbackAppShellPayload(): AppShellPayload {
     activeBusinessSlug: DEFAULT_BUSINESS_SLUG,
     businesses: [],
     activeBranchId: "",
+    activeBranchProfile: "restaurant",
+    activeStationProfile: "cashier",
+    hasMixedBranchProfiles: false,
+    forcedBranchSelectionFromAll: false,
     branches: [],
     currentPlan: "growth",
     branchAccessScope: "business",
     canSwitchBranches: true,
+    effectiveCapabilities: buildEffectiveCapabilities({
+      plan: "growth",
+      branchProfile: "restaurant",
+      overrides: {},
+    }),
+    featureOverrides: {},
     brandName: defaultGeneralSettings.siteName,
     logoUrl: undefined,
     sidebarTheme: defaultApplicationSettings.sidebarTheme,
@@ -127,6 +139,7 @@ export function getFallbackAppShellPayload(): AppShellPayload {
 
 export const getAppShellPayload = cache(async (): Promise<AppShellPayload> => {
   const shellSnapshot = await getAppShellContext();
+  const planContext = await getActiveBusinessPlanContext();
   const { generalSettings, applicationSettings } = await getAppShellUiSettings(shellSnapshot.activeBusinessSlug);
   const mobileAppExperienceEnabled = readBooleanSetting(
     applicationSettings,
@@ -153,10 +166,16 @@ export const getAppShellPayload = cache(async (): Promise<AppShellPayload> => {
     activeBusinessSlug: shellSnapshot.activeBusinessSlug,
     businesses: shellSnapshot.businesses.map((item) => ({ slug: item.slug, name: item.name })),
     activeBranchId: shellSnapshot.activeBranchId ?? "",
+    activeBranchProfile: shellSnapshot.activeBranchProfile ?? "restaurant",
+    activeStationProfile: shellSnapshot.activeStationProfile ?? "cashier",
+    hasMixedBranchProfiles: shellSnapshot.hasMixedBranchProfiles ?? false,
+    forcedBranchSelectionFromAll: shellSnapshot.forcedBranchSelectionFromAll ?? false,
     branches: shellSnapshot.branches,
-    currentPlan: activeBusiness?.plan ?? "growth",
+    currentPlan: activeBusiness?.plan ?? planContext.plan ?? "growth",
     branchAccessScope: (shellSnapshot.accessScope ?? "business") as StaffAccessScope,
     canSwitchBranches: shellSnapshot.usingDemoData || shellSnapshot.accessScope !== "branch",
+    effectiveCapabilities: planContext.effectiveCapabilities,
+    featureOverrides: planContext.overrides,
     brandName: generalSettings.siteName,
     logoUrl: generalSettings.logoUrl || undefined,
     sidebarTheme: applicationSettings.sidebarTheme,
