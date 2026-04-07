@@ -1,4 +1,4 @@
-import type { OpsCommandResultStatus, OpsCommandType, TableStatus } from "@/lib/types";
+import type { OpsCommandResultStatus, OpsCommandType, OrderStatus, TableStatus } from "@/lib/types";
 
 export type PosQueueScope = "tables" | "cashier";
 export type PosQueueStatus = "queued" | "sending" | "retry";
@@ -8,14 +8,29 @@ export type TablesOptimisticEntry = {
   commandId: string;
 };
 
+export type TablesCommittedEntry = {
+  status: TableStatus;
+  updatedAt: number;
+};
+
 export type CashierOptimisticEntry = {
   commandId: string;
-  status?: string;
+  status?: OrderStatus;
   amountPaidDelta?: number;
   remainingDelta?: number;
   discountAmount?: number;
   serviceFee?: number;
   finalPrice?: number;
+};
+
+export type CashierCommittedEntry = {
+  status?: OrderStatus;
+  amountPaid?: number;
+  remaining?: number;
+  discountAmount?: number;
+  serviceFee?: number;
+  finalPrice?: number;
+  updatedAt: number;
 };
 
 export type PosQueueOptimisticPatch = {

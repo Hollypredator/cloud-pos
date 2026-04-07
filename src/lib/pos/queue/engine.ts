@@ -147,6 +147,7 @@ async function flushInternal(options?: FlushQueueOptions) {
       store.getState().resolve(next.commandId, {
         status: result.status,
         message: result.message,
+        data: result.data,
       });
       await invalidateQueriesForScope(next.scope, options?.queryClient);
       resolvedAny = true;

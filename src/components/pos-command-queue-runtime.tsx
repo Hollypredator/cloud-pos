@@ -1,7 +1,6 @@
 "use client";
 
 import { useQueryClient } from "@tanstack/react-query";
-import { useRouter } from "next/navigation";
 import { useEffect } from "react";
 import { flushPosCommandQueue } from "@/lib/pos/queue/engine";
 import { usePosCommandQueueStore } from "@/lib/pos/queue/store";
@@ -9,7 +8,6 @@ import { usePosCommandQueueStore } from "@/lib/pos/queue/store";
 const FLUSH_INTERVAL_MS = 2_500;
 
 export function PosCommandQueueRuntime() {
-  const router = useRouter();
   const queryClient = useQueryClient();
   const pendingCount = usePosCommandQueueStore((state) => state.commandQueueState.items.length);
 
@@ -18,20 +16,13 @@ export function PosCommandQueueRuntime() {
       return;
     }
 
-    void flushPosCommandQueue({
-      queryClient,
-      onResolved: () => router.refresh(),
-    });
-  }, [pendingCount, queryClient, router]);
+    void flushPosCommandQueue({ queryClient });
+  }, [pendingCount, queryClient]);
 
   useEffect(() => {
     let intervalId: ReturnType<typeof setInterval> | null = null;
 
-    const flush = () =>
-      flushPosCommandQueue({
-        queryClient,
-        onResolved: () => router.refresh(),
-      });
+    const flush = () => flushPosCommandQueue({ queryClient });
 
     intervalId = setInterval(() => {
       void flush();
@@ -48,7 +39,7 @@ export function PosCommandQueueRuntime() {
         clearInterval(intervalId);
       }
     };
-  }, [queryClient, router]);
+  }, [queryClient]);
 
   return null;
 }

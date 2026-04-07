@@ -6,7 +6,7 @@ import { LiveOpsBridge } from "@/components/live-ops-bridge";
 import { MobileStickySegment, MobileTaskCard, MobileTaskList } from "@/components/mobile-ops-ui";
 import { PendingSubmitButton } from "@/components/pending-submit-button";
 import { QuerySnapshotSeed } from "@/components/query-snapshot-seed";
-import { OptimisticTableStatusBadge, TableStatusQueueButton } from "@/components/tables-client-queue-controls";
+import { OptimisticTableStatusBadge, TableReservationToggleQueueButton } from "@/components/tables-client-queue-controls";
 import { getCurrentUserWithRole, hasRoleAccess, requireRole } from "@/lib/auth";
 import { getTableMap, getTableZones, listLatestOrdersByTableIds, listTableRequests, listTableSupervisors } from "@/lib/domains/tables";
 import { POS_CLIENT_QUEUE_TABLES_ENABLED } from "@/lib/pos/feature-flags";
@@ -338,18 +338,17 @@ export default async function TablesPage({
                     </Link>
                   ) : null}
 
-                  {canManageReservations && table.status === "empty" ? (
+                  {canManageReservations && table.status !== "occupied" ? (
                     POS_CLIENT_QUEUE_TABLES_ENABLED ? (
-                      <TableStatusQueueButton
+                      <TableReservationToggleQueueButton
                         tableId={table.id}
-                        currentStatus={table.status}
-                        nextStatus="reserved"
-                        returnStatusFilter={activeFilter}
-                        idleLabel="Rezerveye Al"
+                        initialStatus={table.status}
+                        reserveLabel="Rezerveye Al"
+                        releaseLabel="Rezervasyonu Kaldir"
                         pendingLabel="Isleniyor..."
                         className="mobile-cta-secondary min-h-[44px] w-full border border-slate-200 bg-white px-4 py-3 text-sm font-semibold text-slate-800"
                       />
-                    ) : (
+                    ) : table.status === "empty" ? (
                       <form action={setTableStatusAction}>
                         <input type="hidden" name="tableId" value={table.id} />
                         <input type="hidden" name="status" value="reserved" />
@@ -360,21 +359,7 @@ export default async function TablesPage({
                           className="mobile-cta-secondary min-h-[44px] w-full border border-slate-200 bg-white px-4 py-3 text-sm font-semibold text-slate-800"
                         />
                       </form>
-                    )
-                  ) : null}
-
-                  {canManageReservations && table.status === "reserved" ? (
-                    POS_CLIENT_QUEUE_TABLES_ENABLED ? (
-                      <TableStatusQueueButton
-                        tableId={table.id}
-                        currentStatus={table.status}
-                        nextStatus="empty"
-                        returnStatusFilter={activeFilter}
-                        idleLabel="Rezervasyonu Kaldir"
-                        pendingLabel="Isleniyor..."
-                        className="mobile-cta-secondary min-h-[44px] w-full border border-slate-200 bg-white px-4 py-3 text-sm font-semibold text-slate-800"
-                      />
-                    ) : (
+                    ) : table.status === "reserved" ? (
                       <form action={setTableStatusAction}>
                         <input type="hidden" name="tableId" value={table.id} />
                         <input type="hidden" name="status" value="empty" />
@@ -385,7 +370,7 @@ export default async function TablesPage({
                           className="mobile-cta-secondary min-h-[44px] w-full border border-slate-200 bg-white px-4 py-3 text-sm font-semibold text-slate-800"
                         />
                       </form>
-                    )
+                    ) : null
                   ) : null}
                 </div>
               </MobileTaskCard>
@@ -526,18 +511,17 @@ export default async function TablesPage({
                       </Link>
                     ) : null}
 
-                    {canManageReservations && table.status === "empty" ? (
+                    {canManageReservations && table.status !== "occupied" ? (
                       POS_CLIENT_QUEUE_TABLES_ENABLED ? (
-                        <TableStatusQueueButton
+                        <TableReservationToggleQueueButton
                           tableId={table.id}
-                          currentStatus={table.status}
-                          nextStatus="reserved"
-                          returnStatusFilter={activeFilter}
-                          idleLabel="Rezerveye Al"
+                          initialStatus={table.status}
+                          reserveLabel="Rezerveye Al"
+                          releaseLabel="Rezervasyonu Kaldir"
                           pendingLabel="Isleniyor..."
                           className="mobile-cta-secondary min-h-11 w-full rounded-2xl border border-slate-200 bg-white px-4 py-3 text-sm font-semibold text-slate-800"
                         />
-                      ) : (
+                      ) : table.status === "empty" ? (
                         <form action={setTableStatusAction}>
                           <input type="hidden" name="tableId" value={table.id} />
                           <input type="hidden" name="status" value="reserved" />
@@ -548,21 +532,7 @@ export default async function TablesPage({
                             className="mobile-cta-secondary min-h-11 w-full rounded-2xl border border-slate-200 bg-white px-4 py-3 text-sm font-semibold text-slate-800"
                           />
                         </form>
-                      )
-                    ) : null}
-
-                    {canManageReservations && table.status === "reserved" ? (
-                      POS_CLIENT_QUEUE_TABLES_ENABLED ? (
-                        <TableStatusQueueButton
-                          tableId={table.id}
-                          currentStatus={table.status}
-                          nextStatus="empty"
-                          returnStatusFilter={activeFilter}
-                          idleLabel="Rezervasyonu Kaldir"
-                          pendingLabel="Isleniyor..."
-                          className="mobile-cta-secondary min-h-11 w-full rounded-2xl border border-slate-200 bg-white px-4 py-3 text-sm font-semibold text-slate-800"
-                        />
-                      ) : (
+                      ) : table.status === "reserved" ? (
                         <form action={setTableStatusAction}>
                           <input type="hidden" name="tableId" value={table.id} />
                           <input type="hidden" name="status" value="empty" />
@@ -573,7 +543,7 @@ export default async function TablesPage({
                             className="mobile-cta-secondary min-h-11 w-full rounded-2xl border border-slate-200 bg-white px-4 py-3 text-sm font-semibold text-slate-800"
                           />
                         </form>
-                      )
+                      ) : null
                     ) : null}
                   </div>
                 </article>

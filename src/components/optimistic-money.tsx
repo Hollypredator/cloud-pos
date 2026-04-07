@@ -2,6 +2,8 @@
 
 import { usePosCommandQueueStore } from "@/lib/pos/queue/store";
 
+const COMMITTED_MONEY_TTL_MS = 45_000;
+
 export function OptimisticMoney({
   orderId,
   baseAmount,
@@ -12,13 +14,28 @@ export function OptimisticMoney({
   field?: "remaining" | "paid" | "final";
 }) {
   const patch = usePosCommandQueueStore((state) => state.cashierOptimisticState[orderId]);
-  
+  const committedEntry = usePosCommandQueueStore((state) => state.cashierCommittedState[orderId]);
+  const committed =
+    committedEntry && Date.now() - committedEntry.updatedAt <= COMMITTED_MONEY_TTL_MS
+      ? committedEntry
+      : null;
+
   let val = baseAmount;
-  if (patch) {
-     if (field === "remaining" && patch.remainingDelta) val += patch.remainingDelta;
-     if (field === "paid" && patch.amountPaidDelta) val += patch.amountPaidDelta;
-     if (field === "final" && patch.finalPrice !== undefined) val = patch.finalPrice;
+  if (field === "remaining" && typeof committed?.remaining === "number") {
+    val = committed.remaining;
   }
-  
+  if (field === "paid" && typeof committed?.amountPaid === "number") {
+    val = committed.amountPaid;
+  }
+  if (field === "final" && typeof committed?.finalPrice === "number") {
+    val = committed.finalPrice;
+  }
+
+  if (patch) {
+    if (field === "remaining" && patch.remainingDelta) val += patch.remainingDelta;
+    if (field === "paid" && patch.amountPaidDelta) val += patch.amountPaidDelta;
+    if (field === "final" && patch.finalPrice !== undefined) val = patch.finalPrice;
+  }
+
   return <>{Math.max(0, val).toFixed(2)} TL</>;
 }

@@ -2,24 +2,29 @@
 
 import { create } from "zustand";
 import { createJSONStorage, persist, type StateStorage } from "zustand/middleware";
-import type { OpsCommandResultStatus, OpsCommandType } from "@/lib/types";
+import type { OpsCommandResultStatus, OpsCommandType, OrderStatus, TableStatus } from "@/lib/types";
 import type {
+  CashierCommittedEntry,
   CashierOptimisticEntry,
   PosQueueItem,
   PosQueueOptimisticPatch,
   PosQueueResolution,
   PosQueueScope,
+  TablesCommittedEntry,
   TablesOptimisticEntry,
 } from "@/lib/pos/queue/types";
 
 type QueueResultInput = {
   status: OpsCommandResultStatus;
   message?: string;
+  data?: Record<string, unknown>;
 };
 
 type PosCommandQueueStore = {
   tablesOptimisticState: Record<string, TablesOptimisticEntry>;
+  tablesCommittedState: Record<string, TablesCommittedEntry>;
   cashierOptimisticState: Record<string, CashierOptimisticEntry>;
+  cashierCommittedState: Record<string, CashierCommittedEntry>;
   commandQueueState: {
     items: PosQueueItem[];
     lastFlushAt: number | null;
@@ -81,6 +86,134 @@ function mergeCashierOptimisticEntry(
   return next;
 }
 
+function mergeCashierCommittedEntry(
+  current: CashierCommittedEntry | undefined,
+  patch: Partial<Omit<CashierCommittedEntry, "updatedAt">>,
+): CashierCommittedEntry {
+  const next: CashierCommittedEntry = {
+    ...(current ?? {}),
+    updatedAt: Date.now(),
+  };
+
+  if (typeof patch.status === "string") {
+    next.status = patch.status;
+  }
+  if (typeof patch.amountPaid === "number") {
+    next.amountPaid = patch.amountPaid;
+  }
+  if (typeof patch.remaining === "number") {
+    next.remaining = patch.remaining;
+  }
+  if (typeof patch.discountAmount === "number") {
+    next.discountAmount = patch.discountAmount;
+  }
+  if (typeof patch.serviceFee === "number") {
+    next.serviceFee = patch.serviceFee;
+  }
+  if (typeof patch.finalPrice === "number") {
+    next.finalPrice = patch.finalPrice;
+  }
+
+  return next;
+}
+
+function asString(value: unknown) {
+  return typeof value === "string" && value.trim().length > 0 ? value.trim() : null;
+}
+
+function asNumber(value: unknown) {
+  const normalized = Number(value);
+  return Number.isFinite(normalized) ? normalized : null;
+}
+
+function asOrderStatus(value: unknown): OrderStatus | null {
+  if (
+    value === "pending" ||
+    value === "preparing" ||
+    value === "ready" ||
+    value === "served" ||
+    value === "partially_paid" ||
+    value === "paid" ||
+    value === "partially_refunded" ||
+    value === "cancelled" ||
+    value === "refunded"
+  ) {
+    return value;
+  }
+  return null;
+}
+
+function asTableStatus(value: unknown): TableStatus | null {
+  if (value === "empty" || value === "occupied" || value === "reserved") {
+    return value;
+  }
+  return null;
+}
+
+function buildCommittedSnapshotsFromAck(command: PosQueueItem, resultData?: Record<string, unknown>) {
+  const nextTables: Record<string, TablesCommittedEntry> = {};
+  const nextCashier: Record<string, Partial<Omit<CashierCommittedEntry, "updatedAt">>> = {};
+  const resolvedAt = Date.now();
+  const orderId = asString(command.payload.order_id);
+
+  if (command.type === "TABLE_STATUS_SET") {
+    const tableId = asString(command.payload.table_id) ?? command.optimistic?.table?.tableId ?? null;
+    const status =
+      asTableStatus(resultData?.status) ??
+      asTableStatus(command.payload.status) ??
+      command.optimistic?.table?.nextStatus ??
+      null;
+    if (tableId && status) {
+      nextTables[tableId] = {
+        status,
+        updatedAt: resolvedAt,
+      };
+    }
+  }
+
+  if (orderId) {
+    if (command.type === "ORDER_FINANCIALS_SET") {
+      const finalPrice = asNumber(resultData?.finalPrice ?? resultData?.final_price);
+      const discountAmount = asNumber(command.payload.discount_amount);
+      const serviceFee = asNumber(command.payload.service_fee);
+      nextCashier[orderId] = {
+        ...(discountAmount === null ? {} : { discountAmount }),
+        ...(serviceFee === null ? {} : { serviceFee }),
+        ...(finalPrice === null ? {} : { finalPrice }),
+      };
+    }
+
+    if (command.type === "PAYMENT_SALE_CASH") {
+      const status = asOrderStatus(resultData?.status);
+      const amountPaid = asNumber(resultData?.amountPaid ?? resultData?.amount_paid);
+      const remaining = asNumber(resultData?.remaining ?? resultData?.remaining_balance);
+      nextCashier[orderId] = {
+        ...(status ? { status } : {}),
+        ...(amountPaid === null ? {} : { amountPaid }),
+        ...(remaining === null ? {} : { remaining }),
+      };
+    }
+
+    if (command.type === "ORDER_REFUND_CASH") {
+      const status = asOrderStatus(resultData?.status);
+      if (status) {
+        nextCashier[orderId] = {
+          status,
+        };
+      }
+    }
+
+    if (command.type === "ORDER_CANCEL") {
+      nextCashier[orderId] = {
+        status: "cancelled",
+        remaining: 0,
+      };
+    }
+  }
+
+  return { nextTables, nextCashier };
+}
+
 function removeQueueItem(items: PosQueueItem[], commandId: string) {
   return items.filter((item) => item.commandId !== commandId);
 }
@@ -99,7 +232,9 @@ export const usePosCommandQueueStore = create<PosCommandQueueStore>()(
   persist(
     (set, get) => ({
       tablesOptimisticState: {},
+      tablesCommittedState: {},
       cashierOptimisticState: {},
+      cashierCommittedState: {},
       commandQueueState: {
         items: [],
         lastFlushAt: null,
@@ -224,7 +359,9 @@ export const usePosCommandQueueStore = create<PosCommandQueueStore>()(
         }
 
         const nextTables = { ...state.tablesOptimisticState };
+        const nextCommittedTables = { ...state.tablesCommittedState };
         const nextCashier = { ...state.cashierOptimisticState };
+        const nextCommittedCashier = { ...state.cashierCommittedState };
 
         if (command.optimistic?.table) {
           const tableId = command.optimistic.table.tableId;
@@ -254,9 +391,21 @@ export const usePosCommandQueueStore = create<PosCommandQueueStore>()(
           }
         }
 
+        if (result.status === "ACK") {
+          const committed = buildCommittedSnapshotsFromAck(command, result.data);
+          for (const [tableId, entry] of Object.entries(committed.nextTables)) {
+            nextCommittedTables[tableId] = entry;
+          }
+          for (const [orderId, patch] of Object.entries(committed.nextCashier)) {
+            nextCommittedCashier[orderId] = mergeCashierCommittedEntry(nextCommittedCashier[orderId], patch);
+          }
+        }
+
         set({
           tablesOptimisticState: nextTables,
+          tablesCommittedState: nextCommittedTables,
           cashierOptimisticState: nextCashier,
+          cashierCommittedState: nextCommittedCashier,
           commandQueueState: {
             ...state.commandQueueState,
             items: removeQueueItem(state.commandQueueState.items, commandId),
