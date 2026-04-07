@@ -32,7 +32,6 @@ import { executeWebOpsCommand } from "@/lib/ops/server-action";
 import { POS_CLIENT_QUEUE_CASHIER_ENABLED } from "@/lib/pos/feature-flags";
 import { posQueryKeys } from "@/lib/pos/query-keys";
 import { logServerPerf, measureAsync } from "@/lib/perf";
-import { getRequestAppContext } from "@/lib/server/app-context";
 import { getWebPerfProfile } from "@/lib/web-perf-profile";
 import { isLikelyMobileUserAgent } from "@/lib/device";
 import type { Order, OrderItem, PaymentMethod } from "@/lib/types";
@@ -303,10 +302,8 @@ export default async function CashierPage({
   const locale = await getCurrentLocale();
   const localeCode = locale === "en" ? "en-US" : locale === "fr" ? "fr-FR" : "tr-TR";
   const { order: selectedOrderId, feedback, tone } = await searchParams;
-  const appContextPromise = getRequestAppContext();
   const perfProfile = getWebPerfProfile("/cashier");
-  const cashierSnapshotPromise = measureAsync("cashier_snapshot", () => getCashierPageSnapshot(selectedOrderId));
-  const [, cashierSnapshotResult] = await Promise.all([appContextPromise, cashierSnapshotPromise]);
+  const cashierSnapshotResult = await measureAsync("cashier_snapshot", () => getCashierPageSnapshot(selectedOrderId));
   logServerPerf(`/cashier profile=${perfProfile.mode}:${perfProfile.bucket}`, [cashierSnapshotResult]);
   const { servedOrders, paidOrders, selectedOrder, usingDemoData } = cashierSnapshotResult.value;
 

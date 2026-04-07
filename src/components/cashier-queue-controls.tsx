@@ -2,32 +2,32 @@
 
 import { useRouter } from "next/navigation";
 import { useEffect, useState, type FormEvent } from "react";
+import toast from "react-hot-toast";
 import { CashierPaymentPanel } from "@/components/cashier-payment-panel";
 import { enqueuePosCommand, flushPosCommandQueue } from "@/lib/pos/queue/engine";
 import { usePosCommandQueueStore } from "@/lib/pos/queue/store";
 import type { OrderItem, PaymentMethod } from "@/lib/types";
 
-function feedbackHref(tone: "success" | "error", message: string, orderId?: string) {
-  const params = new URLSearchParams();
-  params.set("tone", tone);
-  params.set("feedback", message);
-  if (orderId) {
-    params.set("order", orderId);
-  }
-  return `/cashier?${params.toString()}`;
-}
+let queuedRefreshTimer: ReturnType<typeof setTimeout> | null = null;
+let lastQueuedRefreshAt = 0;
 
-function resolveFeedbackOrderId(orderId: string, returnOrderId?: string) {
-  return returnOrderId?.trim() || orderId;
+function queueSoftRefresh(router: { refresh: () => void }, debounceMs = 140, minIntervalMs = 900) {
+  const elapsed = Date.now() - lastQueuedRefreshAt;
+  const waitMs = Math.max(debounceMs, minIntervalMs - elapsed);
+  if (queuedRefreshTimer) {
+    clearTimeout(queuedRefreshTimer);
+  }
+  queuedRefreshTimer = setTimeout(() => {
+    queuedRefreshTimer = null;
+    lastQueuedRefreshAt = Date.now();
+    router.refresh();
+  }, waitMs);
 }
 
 function toNumber(input: FormDataEntryValue | null, fallback = 0) {
   const value = Number(input);
   return Number.isFinite(value) ? value : fallback;
 }
-
-
-import toast from "react-hot-toast";
 
 function useTrackedCommandResult(commandId: string | null, onResolve: (status: "ACK" | "CONFLICT" | "REJECT", message?: string) => void) {
   const result = usePosCommandQueueStore((state) => state.commandQueueState.lastResult);
@@ -67,10 +67,11 @@ export function CashierPaymentQueuePanel({
 
   useTrackedCommandResult(trackedCommandId, (status, message) => {
     if (status === "ACK") {
-      toast.success("Ödeme kaydedildi.");
+      toast.success("Odeme kaydedildi.");
     } else {
-      toast.error(message ?? "Ödeme alınamadı.");
+      toast.error(message ?? "Odeme alinamadi.");
     }
+    queueSoftRefresh(router);
     setTrackedCommandId(null);
   });
 
@@ -106,9 +107,9 @@ export function CashierPaymentQueuePanel({
           },
         });
         setTrackedCommandId(queued.commandId);
-        router.push("/cashier", { scroll: false });
+        toast.success("Odeme kuyruga alindi.");
         void flushPosCommandQueue({
-          onResolved: () => router.refresh(),
+          onResolved: () => queueSoftRefresh(router),
         });
       }}
     />
@@ -142,10 +143,11 @@ export function CashierFinancialsQueueForm({
 
   useTrackedCommandResult(trackedCommandId, (status, message) => {
     if (status === "ACK") {
-      toast.success("Finans güncellendi.");
+      toast.success("Finans guncellendi.");
     } else {
-      toast.error(message ?? "Finans güncellenemedi.");
+      toast.error(message ?? "Finans guncellenemedi.");
     }
+    queueSoftRefresh(router);
     setTrackedCommandId(null);
   });
 
@@ -177,9 +179,9 @@ export function CashierFinancialsQueueForm({
       },
     });
     setTrackedCommandId(queued.commandId);
-    router.push("/cashier", { scroll: false });
+    toast.success("Finans komutu kuyruga alindi.");
     void flushPosCommandQueue({
-      onResolved: () => router.refresh(),
+      onResolved: () => queueSoftRefresh(router),
     });
   }
 
@@ -240,10 +242,11 @@ export function CashierCancelOrderQueueForm({
 
   useTrackedCommandResult(trackedCommandId, (status, message) => {
     if (status === "ACK") {
-      toast.success("Sipariş iptal edildi.");
+      toast.success("Siparis iptal edildi.");
     } else {
-      toast.error(message ?? "Sipariş iptal edilemedi.");
+      toast.error(message ?? "Siparis iptal edilemedi.");
     }
+    queueSoftRefresh(router);
     setTrackedCommandId(null);
   });
 
@@ -272,9 +275,9 @@ export function CashierCancelOrderQueueForm({
       },
     });
     setTrackedCommandId(queued.commandId);
-    router.push("/cashier", { scroll: false });
+    toast.success("Iptal komutu kuyruga alindi.");
     void flushPosCommandQueue({
-      onResolved: () => router.refresh(),
+      onResolved: () => queueSoftRefresh(router),
     });
   }
 
@@ -325,10 +328,11 @@ export function CashierOrderItemCancelQueueButton({
 
   useTrackedCommandResult(trackedCommandId, (status, message) => {
     if (status === "ACK") {
-      toast.success("Ürün iptal/düşme tamamlandı.");
+      toast.success("Urun islemi kaydedildi.");
     } else {
-      toast.error(message ?? "Ürün iptal edilemedi.");
+      toast.error(message ?? "Urun iptal edilemedi.");
     }
+    queueSoftRefresh(router);
     setTrackedCommandId(null);
   });
 
@@ -346,8 +350,9 @@ export function CashierOrderItemCancelQueueButton({
       },
     });
     setTrackedCommandId(queued.commandId);
+    toast.success("Urun komutu kuyruga alindi.");
     void flushPosCommandQueue({
-      onResolved: () => router.refresh(),
+      onResolved: () => queueSoftRefresh(router),
     });
   }
 
@@ -385,10 +390,11 @@ export function CashierRefundQueueForm({
 
   useTrackedCommandResult(trackedCommandId, (status, message) => {
     if (status === "ACK") {
-      toast.success("İade işlemi kaydedildi.");
+      toast.success("Iade islemi kaydedildi.");
     } else {
-      toast.error(message ?? "İade işlemi başarısız.");
+      toast.error(message ?? "Iade tamamlanamadi.");
     }
+    queueSoftRefresh(router);
     setTrackedCommandId(null);
   });
 
@@ -425,9 +431,9 @@ export function CashierRefundQueueForm({
       },
     });
     setTrackedCommandId(queued.commandId);
-    router.push("/cashier", { scroll: false });
+    toast.success("Iade komutu kuyruga alindi.");
     void flushPosCommandQueue({
-      onResolved: () => router.refresh(),
+      onResolved: () => queueSoftRefresh(router),
     });
   }
 

@@ -11,7 +11,6 @@ import { getOpsPageSnapshot, getSetupChecklistSummary } from "@/lib/data";
 import { getCurrentLocale } from "@/lib/i18n-server";
 import { translateUiText } from "@/lib/i18n";
 import { logServerPerf, measureAsync } from "@/lib/perf";
-import { getRequestAppContext } from "@/lib/server/app-context";
 import { getWebPerfProfile } from "@/lib/web-perf-profile";
 
 function statusTone(status: string) {
@@ -192,7 +191,6 @@ export default async function OpsPage({
   const opsSnapshotPromise = measureAsync("ops_snapshot", () =>
     getOpsPageSnapshot({ includeSetup: includeSetupInInitialPaint }),
   );
-  const appContextPromise = getRequestAppContext();
   const authResult = await measureAsync("current_user", () => getCurrentUserWithRole());
   const auth = authResult.value;
 
@@ -207,8 +205,6 @@ export default async function OpsPage({
   if (!auth.usingDemoData && auth.accessScope === "branch" && auth.branchAccessIds.length === 0) {
     redirect("/unauthorized");
   }
-
-  await appContextPromise;
 
   const role = auth.role;
   const allowAll = auth.usingDemoData;
