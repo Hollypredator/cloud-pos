@@ -20,33 +20,47 @@ export function BackofficePage({
   sidebar,
   children,
   actions,
+  minimal = false,
 }: {
   title: string;
   description?: string;
   sidebar?: React.ReactNode;
   children: React.ReactNode;
   actions?: React.ReactNode;
+  minimal?: boolean;
 }) {
   const locale = getLocale();
   return (
-    <div className="backoffice-page-shell relative min-h-screen overflow-x-clip bg-gradient-to-br from-slate-50 relative via-[#eef2f5] to-[#e2e6eb] px-3 py-4 md:px-6">
+    <div className={cn(
+      "backoffice-page-shell relative min-h-screen overflow-x-clip bg-gradient-to-br from-slate-50 via-[#eef2f5] to-[#e2e6eb]",
+      minimal ? "px-0 py-0" : "px-3 py-4 md:px-6"
+    )}>
       {/* Soft animated background gradient meshes */}
-      <div className="pointer-events-none absolute -left-40 top-0 h-[600px] w-[600px] rounded-full bg-orange-400/10 blur-[120px]" />
-      <div className="pointer-events-none absolute -right-20 top-40 h-[600px] w-[600px] rounded-full bg-blue-400/10 blur-[120px]" />
+      {!minimal && (
+        <>
+          <div className="pointer-events-none absolute -left-40 top-0 h-[600px] w-[600px] rounded-full bg-orange-400/10 blur-[120px]" />
+          <div className="pointer-events-none absolute -right-20 top-40 h-[600px] w-[600px] rounded-full bg-blue-400/10 blur-[120px]" />
+        </>
+      )}
 
-      <main className="backoffice-page-main relative z-10 mx-auto flex w-full max-w-[1600px] flex-col gap-5 xl:flex-row">
-        {sidebar ? <aside className="backoffice-page-sidebar min-w-0 w-full xl:w-[320px]">{sidebar}</aside> : null}
-        <section className="backoffice-page-content min-w-0 flex-1 space-y-5">
-          <div className="backoffice-page-hero rounded-[24px] border border-white/60 bg-white/60 px-4 py-4 shadow-[0_8px_30px_rgb(0,0,0,0.04)] backdrop-blur-xl transition-all duration-300 sm:px-6 sm:py-5">
-            <div className="flex flex-wrap items-center justify-between gap-4">
-              <div>
-                <p className="text-sm font-medium text-slate-500">{description ? translateUiText(description, locale) : description}</p>
-                <h1 className="font-display mt-1 text-2xl font-semibold tracking-tight text-slate-900 sm:text-3xl">{translateUiText(title, locale)}</h1>
+      <main className={cn(
+        "backoffice-page-main relative z-10 mx-auto flex w-full flex-col gap-5",
+        minimal ? "max-w-full" : "max-w-[1600px] xl:flex-row"
+      )}>
+        {sidebar && !minimal ? <aside className="backoffice-page-sidebar min-w-0 w-full xl:w-[320px]">{sidebar}</aside> : null}
+        <section className={cn("backoffice-page-content min-w-0 flex-1", minimal ? "" : "space-y-5")}>
+          {!minimal && (
+            <div className="backoffice-page-hero rounded-[24px] border border-white/60 bg-white/60 px-4 py-4 shadow-[0_8px_30px_rgb(0,0,0,0.04)] backdrop-blur-xl transition-all duration-300 sm:px-6 sm:py-5">
+              <div className="flex flex-wrap items-center justify-between gap-4">
+                <div>
+                  <p className="text-sm font-medium text-slate-500">{description ? translateUiText(description, locale) : description}</p>
+                  <h1 className="font-display mt-1 text-2xl font-semibold tracking-tight text-slate-900 sm:text-3xl">{translateUiText(title, locale)}</h1>
+                </div>
+                {actions ? <div className="backoffice-page-actions flex w-full flex-wrap items-center gap-2 sm:w-auto sm:gap-3">{actions}</div> : null}
               </div>
-              {actions ? <div className="backoffice-page-actions flex w-full flex-wrap items-center gap-2 sm:w-auto sm:gap-3">{actions}</div> : null}
             </div>
-          </div>
-          {children}
+          )}
+          {minimal ? <div className="space-y-5 p-3 md:p-6">{children}</div> : children}
         </section>
       </main>
     </div>
@@ -125,7 +139,7 @@ export function SummaryCard({
           <p className="font-display font-numeric mt-4 text-[1.8rem] font-semibold tracking-tight text-slate-900 sm:mt-5 sm:text-[2rem]">{value}</p>
           {hint ? <p className="mt-2 text-sm text-slate-500">{translateUiText(hint, locale)}</p> : null}
         </div>
-        <span className={cn("inline-flex h-12 w-12 items-center justify-center rounded-2xl text-sm font-bold", toneStyles[tone])}>
+        <span className={cn("inline-flex h-12 w-12 shrink-0 items-center justify-center rounded-2xl text-sm font-bold", toneStyles[tone])}>
           {translateUiText(label, locale).slice(0, 2).toUpperCase()}
         </span>
       </div>
@@ -140,10 +154,10 @@ export function SegmentedTabs({
 }) {
   const locale = getLocale();
   return (
-    <div className="flex snap-x gap-3 overflow-x-auto rounded-[28px] border border-slate-200 bg-white p-3 shadow-[0_10px_20px_rgba(15,23,42,0.04)] md:grid md:grid-cols-4 md:overflow-visible">
+    <div className="flex flex-wrap gap-3 rounded-[28px] border border-slate-200 bg-white p-3 shadow-[0_10px_20px_rgba(15,23,42,0.04)]">
       {tabs.map((tab) => {
         const className = cn(
-          "min-w-[220px] snap-start rounded-2xl px-4 py-4 text-center text-base font-semibold transition md:min-w-0",
+          "rounded-2xl px-6 py-4 text-center text-sm sm:text-base font-semibold transition flex-1 sm:flex-none",
           tab.active
             ? "bg-gradient-to-r from-[#ff5a34] to-[#f0b14f] text-white shadow-[0_10px_20px_rgba(255,111,60,0.24)]"
             : "bg-slate-100 text-slate-600 hover:bg-slate-200",
