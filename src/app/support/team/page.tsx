@@ -46,6 +46,7 @@ export default async function SupportTeamPage() {
               <p>Rol: {member.role}</p>
               <p>Açık ticket: {member.open_ticket_count}</p>
               <p>Açık incident: {member.open_incident_count}</p>
+              <p>Son görülme: {member.last_seen_at ? new Date(member.last_seen_at).toLocaleString("tr-TR") : "-"}</p>
             </div>
             <div className="mt-4 h-2 overflow-hidden rounded-full bg-slate-100">
               <div

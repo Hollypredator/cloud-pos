@@ -56,10 +56,10 @@ function fireAndForgetProductAudit(
   void deps.logAuditEvent(input).catch(() => {});
 }
 
-export type ProductManagementTab = "catalog" | "menu" | "categories" | "bulk" | "features" | "import";
+export type ProductManagementTab = "catalog" | "menu" | "categories" | "bulk" | "features" | "import" | "recipe";
 
 function getProductManagementIncludes(tab: ProductManagementTab) {
-  if (tab === "catalog" || tab === "features") {
+  if (tab === "catalog" || tab === "features" || tab === "recipe") {
     return {
       includeIngredients: true,
       includeModifiers: true,
@@ -107,12 +107,12 @@ async function getCachedProductManagementRow(input: {
         categoriesQuery,
         (input.useLegacySchema
           ? supabase.from("products").select(
-              "id, category_id, name, price, stock_count, image_url, description, is_available, profile_scope, barcode, plu_code, product_kind, unit, department",
+              "id, category_id, name, price, stock_count, image_url, description, is_available, profile_scope, barcode, plu_code, product_kind, unit, department, cost",
             )
           : supabase
               .from("products")
               .select(
-                "id, business_id, category_id, name, price, stock_count, image_url, description, is_available, profile_scope, barcode, plu_code, product_kind, unit, department",
+                "id, business_id, category_id, name, price, stock_count, image_url, description, is_available, profile_scope, barcode, plu_code, product_kind, unit, department, cost",
               )
               .eq("business_id", input.businessId!)
               .eq("profile_scope", input.profileScope))
@@ -120,10 +120,10 @@ async function getCachedProductManagementRow(input: {
         includes.includeIngredients
           ? (
               input.useLegacySchema
-                ? supabase.from("ingredients").select("id, name, unit").order("name", { ascending: true })
+                ? supabase.from("ingredients").select("id, name, unit, cost").order("name", { ascending: true })
                 : supabase
                     .from("ingredients")
-                    .select("id, name, unit")
+                    .select("id, name, unit, cost")
                     .eq("business_id", input.businessId!)
                     .order("name", { ascending: true })
             )
@@ -131,10 +131,10 @@ async function getCachedProductManagementRow(input: {
         includes.includeIngredients
           ? (
               input.useLegacySchema
-                ? supabase.from("product_ingredients").select("product_id, ingredient_id, quantity, ingredients(id, name, unit)")
+                ? supabase.from("product_ingredients").select("product_id, ingredient_id, quantity, ingredients(id, name, unit, cost)")
                 : supabase
                     .from("product_ingredients")
-                    .select("product_id, ingredient_id, quantity, ingredients(id, name, unit), products!inner(business_id)")
+                    .select("product_id, ingredient_id, quantity, ingredients(id, name, unit, cost), products!inner(business_id)")
                     .eq("products.business_id", input.businessId!)
             )
           : Promise.resolve({ data: [], error: null }),
@@ -290,6 +290,7 @@ export async function createProductImpl(
     productKind?: ProductKind;
     unit?: ProductUnit;
     department?: ProductDepartment;
+    cost?: number;
   },
   deps: ProductDeps,
 ) {
@@ -314,6 +315,7 @@ export async function createProductImpl(
     product_kind: input.productKind ?? "standard",
     unit: input.unit ?? "adet",
     department: input.department ?? "general",
+    cost: input.cost ?? 0,
   };
   const fallbackPayload = {
     category_id: input.categoryId,
@@ -364,6 +366,7 @@ export async function createProductImpl(
       productKind: input.productKind ?? "standard",
       unit: input.unit ?? "adet",
       department: input.department ?? "general",
+      cost: input.cost ?? 0,
     },
   });
 
@@ -387,6 +390,7 @@ export async function updateProductImpl(
     productKind?: ProductKind;
     unit?: ProductUnit;
     department?: ProductDepartment;
+    cost?: number;
   },
   deps: ProductDeps,
 ) {
@@ -412,6 +416,7 @@ export async function updateProductImpl(
       product_kind: input.productKind ?? "standard",
       unit: input.unit ?? "adet",
       department: input.department ?? "general",
+      cost: input.cost ?? 0,
     })
     .eq("id", input.productId);
   if (!scope.useLegacySchema && scope.businessId) {
@@ -463,6 +468,7 @@ export async function updateProductImpl(
       productKind: input.productKind ?? "standard",
       unit: input.unit ?? "adet",
       department: input.department ?? "general",
+      cost: input.cost ?? 0,
     },
   });
 

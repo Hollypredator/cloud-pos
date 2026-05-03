@@ -105,6 +105,7 @@ export type Product = {
   product_kind?: ProductKind;
   unit?: ProductUnit;
   department?: ProductDepartment;
+  cost?: number;
 };
 
 export type DiningTable = {
@@ -177,6 +178,7 @@ export type Order = {
   created_at: string;
   table_number?: number;
   table_name?: string | null;
+  table_zone_name?: string | null;
 };
 
 export type Courier = {
@@ -213,6 +215,7 @@ export type Profile = {
   id: string;
   full_name: string | null;
   role: AppRole;
+  last_seen_at?: string | null;
 };
 
 export type StaffBranchAccess = {
@@ -230,6 +233,7 @@ export type Ingredient = {
   id: string;
   name: string;
   unit: string;
+  cost: number;
 };
 
 export type ProductIngredient = {
@@ -398,6 +402,7 @@ export type StudioAccessUser = {
   role: StudioRole;
   is_active: boolean;
   created_at: string;
+  last_seen_at?: string | null;
 };
 
 export type PlatformAccessUser = {
@@ -408,6 +413,7 @@ export type PlatformAccessUser = {
   permissions: PlatformPermission[];
   is_active: boolean;
   created_at: string;
+  last_seen_at?: string | null;
 };
 
 export type SupportAccessUser = {
@@ -417,6 +423,7 @@ export type SupportAccessUser = {
   role: SupportRole;
   is_active: boolean;
   created_at: string;
+  last_seen_at?: string | null;
 };
 
 export type SupportTicket = {
@@ -523,6 +530,7 @@ export type SupportTeamMemberSummary = {
   open_ticket_count: number;
   open_incident_count: number;
   created_at: string;
+  last_seen_at?: string | null;
 };
 
 export type SupportKnowledgeArticle = {
@@ -555,6 +563,7 @@ export type SupportHealthSummary = {
   health_status: "healthy" | "warning" | "critical";
   last_order_at: string | null;
   last_payment_at: string | null;
+  staff_activity?: Array<{ id: string; full_name: string | null; last_seen_at: string | null }>;
   open_ticket_count: number;
 };
 
@@ -667,4 +676,55 @@ export type BranchLockState = {
   renewed_at: string;
   expires_at: string;
   actor_id: string | null;
+};
+export type Supplier = {
+  id: string;
+  business_id: string;
+  name: string;
+  contact_person: string | null;
+  email: string | null;
+  phone: string | null;
+  address: string | null;
+  tax_number: string | null;
+  tax_office: string | null;
+  category: string | null;
+  created_at: string;
+};
+
+export type Purchase = {
+  id: string;
+  business_id: string;
+  supplier_id: string | null;
+  invoice_number: string | null;
+  purchase_date: string;
+  total_amount: number;
+  tax_amount: number;
+  payment_status: "draft" | "completed" | "paid" | "unpaid";
+  payment_method: "cash" | "card" | "bank_transfer" | "credit" | null;
+  note: string | null;
+  created_at: string;
+};
+
+export type PurchaseItem = {
+  id: string;
+  purchase_id: string;
+  ingredient_id: string | null;
+  product_id: string | null;
+  quantity: number;
+  unit_price: number;
+  tax_rate: number;
+  total: number;
+  created_at: string;
+};
+
+export type GeneralExpense = {
+  id: string;
+  business_id: string;
+  title: string;
+  category: string;
+  amount: number;
+  expense_date: string;
+  payment_method: "cash" | "card" | "bank_transfer" | null;
+  description: string | null;
+  created_at: string;
 };

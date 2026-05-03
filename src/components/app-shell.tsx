@@ -35,11 +35,11 @@ type MobileQuickAction = {
 };
 
 const mobileQuickActions: MobileQuickAction[] = [
-  { href: "/tables", label: "Masa Takip", icon: "MT", roles: ["admin", "waiter", "kitchen", "cashier"], group: "order_flow" },
+  { href: "/tables", label: "Masa Takip", icon: "MT", roles: ["admin", "kitchen", "cashier"], group: "order_flow" },
   { href: "/admin/orders", label: "Sipariş Baslat", icon: "SP", roles: ["owner", "admin", "waiter", "cashier"], group: "order_flow" },
-  { href: "/cashier", label: "Adisyonlar", icon: "AD", roles: ["admin", "cashier"], group: "order_flow" },
-  { href: "/service-requests", label: "Masa Talepleri", icon: "SR", roles: ["admin", "waiter", "cashier"], group: "service_flow" },
-  { href: "/delivery", label: "Teslimat", icon: "DL", roles: ["admin", "waiter", "cashier"], group: "service_flow", feature: "delivery_dispatch" },
+  { href: "/cashier", label: "Adisyonlar", icon: "AD", roles: ["admin", "cashier", "waiter"], group: "order_flow" },
+  { href: "/service-requests", label: "Masa Talepleri", icon: "SR", roles: ["admin", "cashier"], group: "service_flow" },
+  { href: "/delivery", label: "Teslimat", icon: "DL", roles: ["admin", "cashier"], group: "service_flow", feature: "delivery_dispatch" },
   { href: "/kitchen", label: "Mutfak", icon: "MK", roles: ["admin", "kitchen"], group: "service_flow", feature: "kitchen_display" },
   { href: "/cashier/session", label: "Gun Islemleri", icon: "GI", roles: ["admin", "cashier"], group: "management" },
   { href: "/tables", label: "Masa Yönetimi", icon: "MY", roles: ["owner", "admin"], group: "management" },
@@ -138,6 +138,7 @@ export function AppShell({
   );
   const mobileExperienceEnabled = shellData?.mobileAppExperienceEnabled ?? true;
   const mobileAppMode = Boolean(mobileExperienceEnabled && isCoarsePointer && isMobileOpsRoute);
+  const touchFirstMode = showShell;
   const pwaEnabled = Boolean(shellData?.mobileReadOnlyPwaEnabled);
   const pwaRuntimeEnabled = Boolean(pwaEnabled && mobileAppMode);
   const mobileTitle = resolveMobileTitle(pathname, locale);
@@ -336,7 +337,7 @@ export function AppShell({
       <div
         className={`min-h-screen overflow-x-clip ${mobileAppMode ? "bg-slate-100" : "bg-[linear-gradient(180deg,#f4f6f9_0%,#eceff4_100%)]"} md:flex ${mobileAppMode ? "mobile-app-mode" : ""} ${
           mobileAppMode && isOffline ? "offline-mode" : ""
-        } ${isOffline && pwaRuntimeEnabled ? "offline-read-only" : ""}`}
+        } ${isOffline && pwaRuntimeEnabled ? "offline-read-only" : ""} ${touchFirstMode ? "touch-first-mode" : ""}`}
       >
         {!mobileAppMode ? (
           shellData ? (

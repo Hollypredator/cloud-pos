@@ -1,6 +1,7 @@
 "use client";
 
 import { useMemo, useState } from "react";
+import { formatOrderSourceLabel } from "@/lib/order-label";
 import type { Order, OrderItem } from "@/lib/types";
 
 type LayoutMode = "a4" | "thermal" | "thermal58";
@@ -12,10 +13,8 @@ type ReceiptPreviewLauncherProps = {
   compactButtons?: boolean;
 };
 
-function sourceLabel(order: Pick<Order, "channel" | "table_number" | "customer_name">) {
-  if (order.channel === "delivery") return order.customer_name ? `Paket servis - ${order.customer_name}` : "Paket servis";
-  if (order.channel === "pickup") return order.customer_name ? `Gel-al - ${order.customer_name}` : "Gel-al";
-  return `Masa ${order.table_number ?? "-"}`;
+function sourceLabel(order: Pick<Order, "channel" | "table_number" | "table_name" | "table_zone_name" | "customer_name">) {
+  return formatOrderSourceLabel(order);
 }
 
 function orderRef(order: Pick<Order, "id" | "check_number">) {

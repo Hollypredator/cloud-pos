@@ -11,7 +11,7 @@ import { executeWebOpsCommand } from "@/lib/ops/server-action";
 
 async function resolveAction(formData: FormData) {
   "use server";
-  await requireRole(["admin", "waiter", "cashier"], "/service-requests");
+  await requireRole(["admin", "cashier"], "/service-requests");
 
   const requestId = formData.get("requestId");
   if (typeof requestId !== "string") {
@@ -63,7 +63,7 @@ export default async function ServiceRequestsPage({
 }: {
   searchParams: Promise<{ page?: string; status?: string }>;
 }) {
-  await requireRole(["admin", "waiter", "cashier"], "/service-requests");
+  await requireRole(["admin", "cashier"], "/service-requests");
   const locale = await getCurrentLocale();
   const localeCode = locale === "en" ? "en-US" : locale === "fr" ? "fr-FR" : "tr-TR";
   const { page: pageParam, status: statusParam } = await searchParams;
@@ -282,3 +282,4 @@ export default async function ServiceRequestsPage({
     </BackofficePage>
   );
 }
+

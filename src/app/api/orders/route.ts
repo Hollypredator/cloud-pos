@@ -49,23 +49,39 @@ export async function POST(request: Request) {
   try {
     const auth = await getCurrentUserWithRole();
     const allowDemoBypass = canUseDemoModeBypass(auth.usingDemoData);
-    const canCreateOrders =
+    let canCreateOrders =
       allowDemoBypass || (!!auth.user && hasRoleAccess(auth.role, ["admin", "waiter", "cashier"]));
-    if (!canCreateOrders) {
-      logApiEvent("warn", "orders.create.forbidden", { correlationId });
-      return json({ ok: false, message: "Sipariş oluşturma yetkiniz yok." }, { status: 403 });
-    }
-    const businessScope = allowDemoBypass ? null : await getBusinessScopeContext();
+    let isQrOrder = false;
 
-    let body: Body;
+    let body: Body & { qrAccessToken?: string };
     try {
-      body = (await request.json()) as Body;
+      body = (await request.json()) as Body & { qrAccessToken?: string };
     } catch {
       logApiEvent("warn", "orders.create.invalid_body", { correlationId });
       return json({ ok: false, message: "Geçersiz istek govdesi." }, { status: 400 });
     }
 
-    const channel = body.channel ?? "dine_in";
+    if (!canCreateOrders && body.qrAccessToken && body.qrCodeIdentifier) {
+      const { verifyQrAccessToken } = await import("@/lib/qr-access");
+      const isValid = verifyQrAccessToken({
+        token: body.qrAccessToken,
+        qrCodeIdentifier: body.qrCodeIdentifier,
+        businessSlug: body.businessSlug,
+      });
+      if (isValid.ok) {
+        canCreateOrders = true;
+        isQrOrder = true;
+      }
+    }
+
+    if (!canCreateOrders) {
+      logApiEvent("warn", "orders.create.forbidden", { correlationId });
+      return json({ ok: false, message: "Sipariş oluşturma yetkiniz yok." }, { status: 403 });
+    }
+
+    const businessScope = allowDemoBypass ? null : await getBusinessScopeContext();
+
+    const channel = isQrOrder ? "dine_in" : (body.channel ?? "dine_in");
     if (!body.items?.length || typeof body.totalPrice !== "number") {
       logApiEvent("warn", "orders.create.missing_fields", { correlationId, channel });
       return json({ ok: false, message: "Eksik sipariş alanları var." }, { status: 400 });
@@ -160,7 +176,7 @@ export async function POST(request: Request) {
       }
     }
 
-    const deviceId = request.headers.get("x-device-id")?.trim() || "web-online";
+    const deviceId = isQrOrder ? "QR_MENU" : (request.headers.get("x-device-id")?.trim() || "web-online");
     const command = makeOpsCommandEnvelope({
       type: "ORDER_CREATE",
       deviceId,
@@ -174,7 +190,7 @@ export async function POST(request: Request) {
         items: body.items,
         total_price: body.totalPrice,
         channel,
-        customer_name: body.customerName ?? null,
+        customer_name: isQrOrder ? "QR Sipariş" : (body.customerName ?? null),
         customer_phone: body.customerPhone ?? null,
         delivery_address: body.deliveryAddress ?? null,
         delivery_note: body.deliveryNote ?? null,

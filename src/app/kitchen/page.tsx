@@ -4,6 +4,7 @@ import { BackofficePage, ContentCard, EmptyPanel, FeatureLockedState, SummaryCar
 import { LiveOpsBridge } from "@/components/live-ops-bridge";
 import { LiveRouteRefresh } from "@/components/live-route-refresh";
 import { PendingSubmitButton } from "@/components/pending-submit-button";
+import { SwipeableOrderCard } from "@/components/swipeable-order-card";
 import { requireRole } from "@/lib/auth";
 import { getKitchenPageSnapshot } from "@/lib/data";
 import { getCurrentLocale } from "@/lib/i18n-server";
@@ -219,19 +220,20 @@ function buildStationGroups(
 export default async function KitchenPage({
   searchParams,
 }: {
-  searchParams: Promise<{ station?: string }>;
+  searchParams: Promise<{ station?: string; mode?: string }>;
 }) {
   await requireRole(["admin", "kitchen"], "/kitchen");
   const locale = await getCurrentLocale();
   const localeCode = locale === "en" ? "en-US" : locale === "fr" ? "fr-FR" : "tr-TR";
-  const { station: stationParam } = await searchParams;
+  const { station: stationParam, mode } = await searchParams;
+  const isTabletMode = mode === "tablet";
   const activeStation = parseKitchenStation(stationParam);
   const featureAccessResult = await measureAsync("feature_access", () => getFeatureAccess("kitchen_display"));
   const featureAccess = featureAccessResult.value;
   if (!featureAccess.enabled) {
     logServerPerf("/kitchen", [featureAccessResult]);
     return (
-      <BackofficePage title="Mutfak" description="Istasyon bazli hazirlama akışı">
+      <BackofficePage title="Mutfak" description="Istasyon bazli hazirlama akışı" minimal={isTabletMode}>
         <FeatureLockedState
           title={featureAccess.title}
           description={featureAccess.description}
@@ -276,6 +278,7 @@ export default async function KitchenPage({
     <BackofficePage
       title="Mutfak Board"
       description="Istasyon bazli hazirlama kuyrugu, gecikmeler ve servis cikislari"
+      minimal={isTabletMode}
       actions={
         <>
           <LiveOpsBridge tables={["orders"]} enableSound fallbackIntervalMs={900} />
@@ -299,16 +302,7 @@ export default async function KitchenPage({
         <SummaryCard label="Kritik" value={String(criticalCount || delayedCount)} hint="Gecikme ve mudahale ihtiyacı" tone="danger" />
       </section>
 
-      <WorkflowGuide
-        title="Mutfakta 3 Adim"
-        description="Istasyonu ilk kez acan personel ne yapacagini hemen gorsun."
-        className="app-mobile-hide"
-        steps={[
-          { title: "Bekleyen siparişi al", description: "Yeni gelen sipariste önce Hazirlanmaya Al butonuna bas; boylece ekip hangi isin aktif oldugunu görür." },
-          { title: "Hazır oldugunda servise cikar", description: "Hazirlaniyor durumundaki siparişi Servise Hazır yap; kasa ve salon tarafina haber gider." },
-          { title: "Yanlis basim varsa geri al", description: "Servise Hazır asamasi tampon alandir. Hata varsa Geri Al ile mutfaga geri don." },
-        ]}
-      />
+
 
       <section className="app-mobile-only space-y-3">
         <div className="mobile-task-tabs">
@@ -341,10 +335,16 @@ export default async function KitchenPage({
               const delay = getDelayLevel(stationStatus, order.created_at);
               const stationGroups = stationGroupsByOrder.get(order.id)!;
               const items = stationGroups.get(activeBoard.key) ?? [];
+              const nextStatus = stationStatus === "pending" ? "preparing" : stationStatus === "preparing" ? "served" : "preparing";
               return (
-                <article
+                <SwipeableOrderCard
                   key={`mobile-${activeBoard.key}-${order.id}`}
-                  className={`mobile-task-card ${
+                  action={moveOrder}
+                  orderId={order.id}
+                  station={activeBoard.key}
+                  nextStatus={nextStatus}
+                  className="mb-3"
+                  cardClassName={`mobile-task-card p-4 ${
                     delay.critical ? "border-rose-300" : delay.delayed ? "border-amber-300" : "border-slate-200"
                   }`}
                 >
@@ -392,6 +392,7 @@ export default async function KitchenPage({
                       <PendingSubmitButton
                         idleLabel={stationStatus === "pending" ? "Hazirlanmaya Al" : stationStatus === "preparing" ? "Servise Hazır" : "Geri Al"}
                         pendingLabel="Guncelleniyor..."
+                        showToastOnClick={true}
                         className={`mobile-cta-primary w-full px-4 py-3 text-sm font-semibold text-white ${
                           stationStatus === "pending"
                             ? "bg-gradient-to-r from-[#ff5a34] to-[#f0b14f] shadow-[0_10px_20px_rgba(255,111,60,0.24)]"
@@ -402,7 +403,7 @@ export default async function KitchenPage({
                       />
                     </form>
                   </div>
-                </article>
+                </SwipeableOrderCard>
               );
             })}
           </div>
@@ -439,10 +440,17 @@ export default async function KitchenPage({
                       const stationGroups = stationGroupsByOrder.get(order.id)!;
                       const items = stationGroups.get(board.key) ?? [];
 
+                      const nextStatus = stationStatus === "pending" ? "preparing" : stationStatus === "preparing" ? "served" : "preparing";
+
                       return (
-                        <article
+                        <SwipeableOrderCard
                           key={`${board.key}-${order.id}`}
-                          className={`rounded-[22px] border bg-white p-4 shadow-[0_10px_20px_rgba(15,23,42,0.04)] ${
+                          action={moveOrder}
+                          orderId={order.id}
+                          station={board.key}
+                          nextStatus={nextStatus}
+                          className="mb-4"
+                          cardClassName={`p-4 ${
                             delay.critical
                               ? "border-rose-300 shadow-[0_12px_24px_rgba(244,63,94,0.16)]"
                               : delay.delayed
@@ -521,6 +529,7 @@ export default async function KitchenPage({
                                 <PendingSubmitButton
                                   idleLabel={stationStatus === "pending" ? "Hazirlanmaya Al" : stationStatus === "preparing" ? "Servise Hazır" : "Geri Al"}
                                   pendingLabel="Guncelleniyor..."
+                                  showToastOnClick={true}
                                   className={`w-full rounded-2xl px-4 py-3 text-sm font-semibold text-white sm:w-auto ${
                                     stationStatus === "pending"
                                       ? "bg-gradient-to-r from-[#ff5a34] to-[#f0b14f] shadow-[0_10px_20px_rgba(255,111,60,0.24)]"
@@ -543,7 +552,7 @@ export default async function KitchenPage({
                               </Link>
                             </div>
                           ) : null}
-                        </article>
+                        </SwipeableOrderCard>
                       );
                     })
                   )}

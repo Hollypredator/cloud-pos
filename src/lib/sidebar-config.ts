@@ -11,25 +11,26 @@ export type SidebarNavItem = {
 };
 
 export const operationLinks: SidebarNavItem[] = [
-  { href: "/ops", label: "Yönetim Paneli", icon: "YP", roles: ["admin", "waiter", "kitchen", "cashier"] },
-  { href: "/tables", label: "Masa Takip", icon: "MT", roles: ["admin", "waiter", "kitchen", "cashier"] },
+  { href: "/ops", label: "Yönetim Paneli", icon: "YP", roles: ["admin", "kitchen", "cashier"] },
+  { href: "/tables", label: "Masa Takip", icon: "MT", roles: ["admin", "kitchen", "cashier"] },
   { href: "/admin/orders", label: "Siparisler", icon: "SP", roles: ["owner", "admin", "waiter", "cashier"] },
   { href: "/kitchen", label: "Mutfak", icon: "MK", roles: ["admin", "kitchen"], feature: "kitchen_display" },
   { href: "/admin/reports", label: "Raporlar", icon: "RP", roles: ["admin"], feature: "advanced_reports" },
   { href: "/cashier/session", label: "Gun Islemleri", icon: "GI", roles: ["admin", "cashier"], feature: "shift_management" },
-  { href: "/cashier", label: "Adisyonlar", icon: "AD", roles: ["admin", "cashier"] },
+  { href: "/cashier", label: "Adisyonlar", icon: "AD", roles: ["admin", "cashier", "waiter"] },
   { href: "/admin/audit", label: "İşlem Loglari", icon: "LG", roles: ["admin"], feature: "audit_logs" },
   { href: "/admin/finance", label: "Gelir/Gider", icon: "GG", roles: ["admin"], feature: "finance_dashboard" },
+  { href: "/admin/accounting", label: "Muhasebe", icon: "MH", roles: ["admin"], feature: "finance_dashboard" },
   { href: "/admin/settings", label: "İşletme Ayarlari", icon: "AY", roles: ["owner"] },
   { href: "/admin/businesses", label: "Subeler", icon: "SB", roles: ["owner"], feature: "multi_branch", requiresBusinessScope: true },
   { href: "/admin/products", label: "Urunler", icon: "UR", roles: ["admin"] },
   { href: "/admin/tables", label: "Bölge ve Masa", icon: "MS", roles: ["admin"] },
-  { href: "/delivery", label: "Teslimat", icon: "DL", roles: ["admin", "waiter", "cashier"], feature: "delivery_dispatch" },
+  { href: "/delivery", label: "Teslimat", icon: "DL", roles: ["admin", "cashier"], feature: "delivery_dispatch" },
   { href: "/admin/roles", label: "Personel", icon: "PR", roles: ["owner"], feature: "staff_management" },
 ];
 
 export const marketOperationLinks: SidebarNavItem[] = [
-  { href: "/cashier", label: "Satis", icon: "S", roles: ["admin", "cashier"] },
+  { href: "/cashier", label: "Satis", icon: "S", roles: ["admin", "cashier", "waiter"] },
   { href: "/cashier/session", label: "Hesap", icon: "H", roles: ["admin", "cashier"], feature: "shift_management" },
   { href: "/admin/orders", label: "Operasyon", icon: "O", roles: ["owner", "admin", "waiter", "cashier"] },
   { href: "/admin/products", label: "Urun", icon: "U", roles: ["admin"], feature: "market_catalog" },
@@ -47,6 +48,7 @@ export const sidebarPresetOrders = {
       "/admin/orders",
       "/admin/reports",
       "/admin/finance",
+      "/admin/accounting",
       "/admin/audit",
       "/admin/settings",
       "/admin/businesses",
@@ -70,9 +72,11 @@ export const sidebarPresetOrders = {
       "/admin/products",
       "/admin/reports",
       "/admin/finance",
+      "/admin/accounting",
       "/admin/audit",
       "/admin/settings",
       "/admin/businesses",
+      "/admin/roles",
     ],
   },
   admin: {
@@ -88,6 +92,7 @@ export const sidebarPresetOrders = {
       "/delivery",
       "/admin/reports",
       "/admin/finance",
+      "/admin/accounting",
       "/admin/audit",
     ],
     service_first: [
@@ -102,6 +107,7 @@ export const sidebarPresetOrders = {
       "/admin/products",
       "/admin/reports",
       "/admin/finance",
+      "/admin/accounting",
       "/admin/audit",
     ],
   },
@@ -109,3 +115,5 @@ export const sidebarPresetOrders = {
 
 export const defaultOwnerSidebarOrder = sidebarPresetOrders.owner.management_first;
 export const defaultAdminSidebarOrder = sidebarPresetOrders.admin.service_first;
+
+

@@ -19,12 +19,12 @@ type MobileAction = {
 };
 
 const mobileActions: MobileAction[] = [
-  { href: "/m/tables", label: "Masa Akışı", icon: "MS", roles: ["admin", "waiter", "cashier"], group: "order" },
-  { href: "/m/tables?flow=new-order", label: "Sipariş Ac", icon: "SP", roles: ["owner", "admin", "waiter", "cashier"], group: "order" },
-  { href: "/m/cashier", label: "Adisyon", icon: "AD", roles: ["admin", "cashier"], group: "order" },
+  { href: "/m/tables", label: "Masa Akışı", icon: "MS", roles: ["admin", "cashier"], group: "order" },
+  { href: "/m/tables?flow=new-order", label: "Sipariş Ac", icon: "SP", roles: ["owner", "admin", "cashier"], group: "order" },
+  { href: "/m/cashier", label: "Adisyon", icon: "AD", roles: ["admin", "cashier", "waiter"], group: "order" },
   { href: "/m/kitchen", label: "Mutfak", icon: "MK", roles: ["admin", "kitchen"], group: "ops", feature: "kitchen_display" },
-  { href: "/m/delivery", label: "Teslimat", icon: "DL", roles: ["admin", "waiter", "cashier"], group: "ops", feature: "delivery_dispatch" },
-  { href: "/m/service-requests", label: "Talepler", icon: "TR", roles: ["admin", "waiter", "cashier"], group: "ops" },
+  { href: "/m/delivery", label: "Teslimat", icon: "DL", roles: ["admin", "cashier"], group: "ops", feature: "delivery_dispatch" },
+  { href: "/m/service-requests", label: "Talepler", icon: "TR", roles: ["admin", "cashier"], group: "ops" },
   { href: "/cashier/session", label: "Gun Islemleri", icon: "GI", roles: ["admin", "cashier"], group: "management" },
   { href: "/admin/tables", label: "Masa Yönetimi", icon: "MY", roles: ["owner", "admin"], group: "management" },
 ];
@@ -149,14 +149,10 @@ export function MobileOpsShell({
   }, [currentPlan, role, shellData?.effectiveCapabilities, usingDemoData]);
 
   useEffect(() => {
-    setActionsOpen(false);
-  }, [pathname]);
-
-  useEffect(() => {
     if (!shellData) {
       void loadShellData();
     }
-  }, [loadShellData, shellData]);
+  }, [shellData]);
 
   useEffect(() => {
     const apply = () => setIsOffline(!navigator.onLine);

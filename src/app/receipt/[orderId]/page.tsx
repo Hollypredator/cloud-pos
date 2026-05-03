@@ -2,19 +2,16 @@ import Link from "next/link";
 import { notFound } from "next/navigation";
 import { PrintActions } from "@/components/print-actions";
 import { getOrderReceipt } from "@/lib/data";
+import { formatOrderSourceLabel } from "@/lib/order-label";
 
 function orderSourceLabel(order: {
   channel?: string;
   table_number?: number;
+  table_name?: string | null;
+  table_zone_name?: string | null;
   customer_name?: string | null;
 }) {
-  if (order.channel === "delivery") {
-    return order.customer_name ? `Paket servis - ${order.customer_name}` : "Paket servis";
-  }
-  if (order.channel === "pickup") {
-    return order.customer_name ? `Gel-al - ${order.customer_name}` : "Gel-al";
-  }
-  return `Masa ${order.table_number ?? "-"}`;
+  return formatOrderSourceLabel(order);
 }
 
 function orderRef(order: { id: string; check_number?: string | null }) {

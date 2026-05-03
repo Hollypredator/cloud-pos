@@ -154,6 +154,22 @@ export default async function SupportTenantDetailPage({
             </div>
           </article>
           <article className="rounded-2xl bg-white p-6 shadow-sm">
+            <p className="text-sm font-semibold text-slate-900">{translateUiText("Kullanıcı Aktifliği", locale)}</p>
+            <div className="mt-4 space-y-3">
+              {(tenant.staff_activity ?? []).map((staff: { id: string; full_name: string | null; last_seen_at: string | null }) => (
+                <div key={staff.id} className="flex items-center justify-between gap-3 text-sm">
+                  <span className="font-medium text-slate-900">{staff.full_name || "İsimsiz"}</span>
+                  <span className="text-xs text-slate-500">
+                    {staff.last_seen_at ? new Date(staff.last_seen_at).toLocaleString("tr-TR") : "Giriş yapmadi"}
+                  </span>
+                </div>
+              ))}
+              {!(tenant.staff_activity ?? []).length && (
+                <p className="text-xs text-slate-400">Kullanıcı bulunamadi.</p>
+              )}
+            </div>
+          </article>
+          <article className="rounded-2xl bg-white p-6 shadow-sm">
             <p className="text-sm font-semibold text-slate-900">Branch Profile Dagilimi</p>
             <div className="mt-4 space-y-2 text-sm text-slate-600">
               <p>Restaurant sube: {branchProfileSummary.restaurant}</p>

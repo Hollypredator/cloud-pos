@@ -1,6 +1,7 @@
 import { getCurrentUserWithRole } from "@/lib/auth";
 import { makeOpsCommandEnvelope, executeOpsCommand } from "@/lib/ops/command-executor";
 import { getBusinessScopeContext } from "@/lib/server/app-context";
+import { logUserActivity } from "@/lib/server/user-activity";
 import type { OpsCommandResult, OpsCommandType } from "@/lib/types";
 
 type ExecuteWebOpsCommandInput = {
@@ -15,6 +16,11 @@ type ExecuteWebOpsCommandInput = {
 
 export async function executeWebOpsCommand(input: ExecuteWebOpsCommandInput): Promise<OpsCommandResult> {
   const [auth, scope] = await Promise.all([getCurrentUserWithRole(), getBusinessScopeContext()]);
+
+  if (auth.user?.id) {
+    // Background activity log
+    logUserActivity(auth.user.id, "profiles");
+  }
 
   const command = makeOpsCommandEnvelope({
     type: input.type,

@@ -275,6 +275,14 @@ function toMoney(value: number) {
   return Math.round(value * 100) / 100;
 }
 
+function toScaled(value: number, scale = 4) {
+  if (!Number.isFinite(value)) {
+    return 0;
+  }
+  const factor = 10 ** scale;
+  return Math.round(value * factor) / factor;
+}
+
 const PREP_STATIONS: PrepStation[] = ["kitchen", "bar", "dessert"];
 
 function isValidOrderStationStatus(value: unknown): value is OrderStationStatus {
@@ -1014,11 +1022,11 @@ const demoOrders: Order[] = [
 ];
 
 const demoIngredients: Ingredient[] = [
-  { id: "demo-ing-1", name: "Espresso", unit: "shot" },
-  { id: "demo-ing-2", name: "Sut", unit: "ml" },
-  { id: "demo-ing-3", name: "Cheesecake Base", unit: "gram" },
-  { id: "demo-ing-4", name: "Cold Brew Concentrate", unit: "ml" },
-  { id: "demo-ing-5", name: "Butter Dough", unit: "gram" },
+  { id: "demo-ing-1", name: "Espresso", unit: "shot", cost: 6.5 },
+  { id: "demo-ing-2", name: "Sut", unit: "ml", cost: 0.08 },
+  { id: "demo-ing-3", name: "Cheesecake Base", unit: "gram", cost: 0.22 },
+  { id: "demo-ing-4", name: "Cold Brew Concentrate", unit: "ml", cost: 0.12 },
+  { id: "demo-ing-5", name: "Butter Dough", unit: "gram", cost: 0.18 },
 ];
 
 const demoProductIngredients: ProductIngredient[] = [
@@ -2630,7 +2638,7 @@ export async function listTableRequests(
       }
 
       const selectColumns = includeTableNumber
-        ? "id, table_id, request_type, status, note, created_at, resolved_at, tables(table_number,name)"
+        ? "id, table_id, request_type, status, note, created_at, resolved_at, tables(table_number,name,table_zones(name))"
         : "id, table_id, request_type, status, note, created_at, resolved_at";
       let query = innerSupabase
         .from("table_requests")
@@ -2790,6 +2798,69 @@ async function validateOrderItemProfileScope(input: {
   }
 
   return { ok: true as const };
+}
+
+async function getOrderItemUnitCostSnapshotMap(input: {
+  supabase: NonNullable<ReturnType<typeof getSupabaseServerClient>>;
+  productIds: string[];
+  businessId: string | null;
+  useLegacySchema: boolean;
+}) {
+  const map = new Map<string, number>();
+  if (input.productIds.length === 0) {
+    return map;
+  }
+
+  let productQuery = input.supabase
+    .from("products")
+    .select("id, cost")
+    .in("id", input.productIds);
+  if (!input.useLegacySchema && input.businessId) {
+    productQuery = productQuery.eq("business_id", input.businessId);
+  }
+
+  const { data: productRows, error: productError } = await productQuery;
+  if (productError) {
+    console.warn("[orders.create] unit cost snapshot product lookup failed", { error: productError.message });
+    return map;
+  }
+
+  for (const row of (productRows ?? []) as Array<{ id: string; cost: number | null }>) {
+    map.set(row.id, Math.max(0, Number(row.cost ?? 0)));
+  }
+
+  const scopedRecipeQuery =
+    !input.useLegacySchema && input.businessId
+      ? input.supabase
+          .from("product_ingredients")
+          .select("product_id, quantity, ingredients(cost), products!inner(business_id)")
+          .eq("products.business_id", input.businessId)
+      : input.supabase
+          .from("product_ingredients")
+          .select("product_id, quantity, ingredients(cost)");
+
+  const { data: recipeRows, error: recipeError } = await scopedRecipeQuery.in("product_id", input.productIds);
+  if (recipeError) {
+    console.warn("[orders.create] unit cost snapshot recipe lookup failed", { error: recipeError.message });
+    return map;
+  }
+
+  for (const row of (recipeRows ?? []) as Array<{
+    product_id: string;
+    quantity: number;
+    ingredients:
+      | { cost: number | null }
+      | { cost: number | null }[]
+      | null;
+  }>) {
+    const ingredientNode = Array.isArray(row.ingredients) ? row.ingredients[0] ?? null : row.ingredients;
+    const ingredientCost = Math.max(0, Number(ingredientNode?.cost ?? 0));
+    const current = map.get(row.product_id) ?? 0;
+    const recipeContribution = Math.max(0, Number(row.quantity ?? 0)) * ingredientCost;
+    map.set(row.product_id, toScaled(Math.max(0, current + recipeContribution), 4));
+  }
+
+  return map;
 }
 
 export async function createOrder(input: {
@@ -3081,16 +3152,46 @@ export async function createOrder(input: {
     return { ok: false, error: "Sipariş oluşturulamadı." };
   }
 
-  const payload = input.items.map((item) => ({
-    order_id: persistedOrderId,
-    product_id: item.product_id,
-    product_name: item.name,
-    quantity: item.quantity,
-    unit_price: item.unit_price,
-    line_total: item.line_total,
-  }));
+  const unitCostSnapshotByProductId = await getOrderItemUnitCostSnapshotMap({
+    supabase,
+    productIds: [...new Set(input.items.map((item) => item.product_id).filter(Boolean))],
+    businessId: effectiveBusinessId,
+    useLegacySchema: scope.useLegacySchema,
+  });
 
-  const { error: itemError } = await supabase.from("order_items").insert(payload);
+  const payload = input.items.map((item) => {
+    const unitCostSnapshot = toScaled(Math.max(0, unitCostSnapshotByProductId.get(item.product_id) ?? 0), 4);
+    const quantity = Math.max(0, Number(item.quantity));
+    return {
+      order_id: persistedOrderId,
+      product_id: item.product_id,
+      product_name: item.name,
+      quantity: item.quantity,
+      unit_price: item.unit_price,
+      line_total: item.line_total,
+      unit_cost_snapshot: unitCostSnapshot,
+      line_cost_snapshot: toScaled(unitCostSnapshot * quantity, 4),
+    };
+  });
+
+  let itemInsert = await supabase.from("order_items").insert(payload);
+  let itemError = itemInsert.error;
+  if (
+    itemError &&
+    (itemError.message.toLowerCase().includes("unit_cost_snapshot") ||
+      itemError.message.toLowerCase().includes("line_cost_snapshot"))
+  ) {
+    const legacyPayload = input.items.map((item) => ({
+      order_id: persistedOrderId,
+      product_id: item.product_id,
+      product_name: item.name,
+      quantity: item.quantity,
+      unit_price: item.unit_price,
+      line_total: item.line_total,
+    }));
+    itemInsert = await supabase.from("order_items").insert(legacyPayload);
+    itemError = itemInsert.error;
+  }
   if (itemError) {
     if (createdNewOrder) {
       await supabase.from("orders").delete().eq("id", persistedOrderId);
@@ -3191,8 +3292,16 @@ type OrderRow = {
   fulfillment_status?: FulfillmentStatus;
   status: OrderStatus;
   created_at: string;
-  tables: { table_number: number; name?: string | null } | { table_number: number; name?: string | null }[] | null;
+  tables: OrderTableRelation;
 };
+
+type OrderTableZoneRelation = { name?: string | null } | { name?: string | null }[] | null;
+type OrderTableInfo = {
+  table_number: number;
+  name?: string | null;
+  table_zones?: OrderTableZoneRelation;
+};
+type OrderTableRelation = OrderTableInfo | OrderTableInfo[] | null;
 
 type OrderItemRow = {
   order_id: string;
@@ -3365,6 +3474,16 @@ type FinancePaymentRow = {
   created_at: string;
 };
 
+type ProductProfitabilityRow = {
+  productName: string;
+  qty: number;
+  revenue: number;
+  cost: number;
+  profit: number;
+  margin: number;
+  refundImpact: number;
+};
+
 async function listScopedFinancePayments(input: {
   supabase: TenantSupabaseClient;
   startIso: string;
@@ -3472,32 +3591,6 @@ function aggregateFinancePayments(rows: FinancePaymentRow[]) {
   };
 }
 
-function applyPaymentSummaryToOrders(
-  orders: Order[],
-  paymentSummary: Map<string, { paid: number; refunds: number; net: number; count: number }>,
-) {
-  return orders.map((order) => {
-    const summary = paymentSummary.get(order.id);
-    const amountPaid = toMoney(summary?.net ?? 0);
-    const finalPrice = toMoney(Number(order.final_price ?? order.total_price));
-    const remaining = toMoney(Math.max(0, finalPrice - amountPaid));
-    const effectiveStatus =
-      order.status === "cancelled" || order.status === "refunded"
-        ? order.status
-        : amountPaid >= finalPrice
-          ? ("paid" as OrderStatus)
-          : order.status;
-
-    return {
-      ...order,
-      amount_paid: amountPaid,
-      remaining_balance: remaining,
-      payment_count: summary?.count ?? 0,
-      status: effectiveStatus,
-    };
-  });
-}
-
 function buildGroupedOrderItems(
   itemRows: OrderItemRow[],
   modifierRows: OrderItemModifierRow[],
@@ -3548,6 +3641,7 @@ function mapDetailedOrders(
     table_id: row.table_id,
     table_number: getTableNumber(row.tables),
     table_name: getTableName(row.tables),
+    table_zone_name: getTableZoneName(row.tables),
     channel: row.channel ?? "dine_in",
     customer_name: row.customer_name ?? null,
     customer_phone: row.customer_phone ?? null,
@@ -3595,8 +3689,8 @@ async function getCachedOrderSummaryRows(input: {
       }
 
       const orderSummarySelect = input.includeStationStatuses
-        ? "id, check_number, branch_id, table_id, station_statuses, total_price, discount_amount, service_fee, final_price, channel, customer_name, customer_phone, delivery_address, delivery_note, courier_id, courier_name, courier_phone, fulfillment_status, status, created_at, tables(table_number,name)"
-        : "id, check_number, branch_id, table_id, total_price, discount_amount, service_fee, final_price, channel, customer_name, customer_phone, delivery_address, delivery_note, courier_id, courier_name, courier_phone, fulfillment_status, status, created_at, tables(table_number,name)";
+        ? "id, check_number, branch_id, table_id, station_statuses, total_price, discount_amount, service_fee, final_price, channel, customer_name, customer_phone, delivery_address, delivery_note, courier_id, courier_name, courier_phone, fulfillment_status, status, created_at, tables(table_number,name,table_zones(name))"
+        : "id, check_number, branch_id, table_id, total_price, discount_amount, service_fee, final_price, channel, customer_name, customer_phone, delivery_address, delivery_note, courier_id, courier_name, courier_phone, fulfillment_status, status, created_at, tables(table_number,name,table_zones(name))";
 
       // eslint-disable-next-line @typescript-eslint/no-explicit-any
       let ordersQuery: any = supabase.from("orders");
@@ -3644,6 +3738,7 @@ async function getCachedOrderSummaryRows(input: {
           table_id: row.table_id,
           table_number: getTableNumber(row.tables),
           table_name: getTableName(row.tables),
+          table_zone_name: getTableZoneName(row.tables),
           channel: row.channel ?? "dine_in",
           customer_name: row.customer_name ?? null,
           customer_phone: row.customer_phone ?? null,
@@ -3693,7 +3788,7 @@ async function getCachedOrderReceiptRow(input: {
 
       let orderQuery = supabase
         .from("orders")
-        .select("id, check_number, table_id, station_statuses, total_price, discount_amount, service_fee, final_price, channel, customer_name, customer_phone, delivery_address, delivery_note, courier_id, courier_name, courier_phone, fulfillment_status, status, created_at, tables(table_number,name)")
+        .select("id, check_number, table_id, station_statuses, total_price, discount_amount, service_fee, final_price, channel, customer_name, customer_phone, delivery_address, delivery_note, courier_id, courier_name, courier_phone, fulfillment_status, status, created_at, tables(table_number,name,table_zones(name))")
         .eq("id", input.orderId);
       if (!input.useLegacySchema && input.businessId) {
         orderQuery = orderQuery.eq("business_id", input.businessId);
@@ -3745,7 +3840,7 @@ async function getCachedOrderReceiptRow(input: {
         });
       }
 
-      const tableInfo = data.tables as { table_number: number; name?: string | null } | { table_number: number; name?: string | null }[] | null;
+      const tableInfo = data.tables as OrderTableRelation;
       const tableNumber = Array.isArray(tableInfo) ? tableInfo[0]?.table_number : tableInfo?.table_number;
       const tableName = Array.isArray(tableInfo) ? tableInfo[0]?.name ?? null : tableInfo?.name ?? null;
 
@@ -3757,6 +3852,7 @@ async function getCachedOrderReceiptRow(input: {
           table_id: (data.table_id as string | null) ?? null,
           table_number: tableNumber,
           table_name: tableName,
+          table_zone_name: getTableZoneName(tableInfo),
           channel: (data.channel as OrderChannel | null) ?? "dine_in",
           customer_name: (data.customer_name as string | null) ?? null,
           customer_phone: (data.customer_phone as string | null) ?? null,
@@ -3818,7 +3914,7 @@ async function getCachedKitchenOrdersSnapshot(input: {
 
       let ordersQuery = supabase
         .from("orders")
-        .select("id, check_number, branch_id, table_id, station_statuses, total_price, discount_amount, service_fee, final_price, channel, customer_name, delivery_address, fulfillment_status, status, created_at, tables(table_number,name)")
+        .select("id, check_number, branch_id, table_id, station_statuses, total_price, discount_amount, service_fee, final_price, channel, customer_name, delivery_address, fulfillment_status, status, created_at, tables(table_number,name,table_zones(name))")
         .in("status", ["pending", "preparing", "ready", "served", "partially_paid"])
         .order("created_at", { ascending: true });
 
@@ -3868,6 +3964,7 @@ async function getCachedKitchenOrdersSnapshot(input: {
           table_id: row.table_id,
           table_number: getTableNumber(row.tables),
           table_name: getTableName(row.tables),
+          table_zone_name: getTableZoneName(row.tables),
           channel: row.channel ?? "dine_in",
           customer_name: row.customer_name ?? null,
           customer_phone: null,
@@ -3951,8 +4048,8 @@ export async function listOrders(
   }
 
   const orderSummarySelect = includeStationStatuses
-    ? "id, check_number, branch_id, table_id, station_statuses, total_price, discount_amount, service_fee, final_price, channel, customer_name, customer_phone, delivery_address, delivery_note, courier_id, courier_name, courier_phone, fulfillment_status, status, created_at, tables(table_number,name)"
-    : "id, check_number, branch_id, table_id, total_price, discount_amount, service_fee, final_price, channel, customer_name, customer_phone, delivery_address, delivery_note, courier_id, courier_name, courier_phone, fulfillment_status, status, created_at, tables(table_number,name)";
+    ? "id, check_number, branch_id, table_id, station_statuses, total_price, discount_amount, service_fee, final_price, channel, customer_name, customer_phone, delivery_address, delivery_note, courier_id, courier_name, courier_phone, fulfillment_status, status, created_at, tables(table_number,name,table_zones(name))"
+    : "id, check_number, branch_id, table_id, total_price, discount_amount, service_fee, final_price, channel, customer_name, customer_phone, delivery_address, delivery_note, courier_id, courier_name, courier_phone, fulfillment_status, status, created_at, tables(table_number,name,table_zones(name))";
 
   // eslint-disable-next-line @typescript-eslint/no-explicit-any
   let ordersQuery: any = supabase.from("orders");
@@ -4000,6 +4097,7 @@ export async function listOrders(
         table_id: row.table_id,
         table_number: getTableNumber(row.tables),
         table_name: getTableName(row.tables),
+        table_zone_name: getTableZoneName(row.tables),
         channel: row.channel ?? "dine_in",
         customer_name: row.customer_name ?? null,
         customer_phone: row.customer_phone ?? null,
@@ -4038,7 +4136,7 @@ export async function listOrders(
   if (itemError) {
     let fallbackQuery = supabase
         .from("orders")
-        .select("id, check_number, table_id, station_statuses, items, total_price, discount_amount, service_fee, final_price, channel, customer_name, customer_phone, delivery_address, delivery_note, courier_id, courier_name, courier_phone, fulfillment_status, status, created_at, tables(table_number,name)")
+        .select("id, check_number, table_id, station_statuses, items, total_price, discount_amount, service_fee, final_price, channel, customer_name, customer_phone, delivery_address, delivery_note, courier_id, courier_name, courier_phone, fulfillment_status, status, created_at, tables(table_number,name,table_zones(name))")
         .in("status", statuses)
         .order("created_at", { ascending: true });
     if (channels && channels.length > 0) {
@@ -4069,6 +4167,7 @@ export async function listOrders(
         table_id: row.table_id,
         table_number: getTableNumber(row.tables),
         table_name: getTableName(row.tables),
+        table_zone_name: getTableZoneName(row.tables),
         channel: row.channel ?? "dine_in",
         customer_name: row.customer_name ?? null,
         customer_phone: row.customer_phone ?? null,
@@ -4384,7 +4483,7 @@ export async function getOrderReceipt(orderId: string) {
 
   let orderQuery = supabase
     .from("orders")
-    .select("id, check_number, table_id, station_statuses, total_price, discount_amount, service_fee, final_price, channel, customer_name, customer_phone, delivery_address, delivery_note, courier_id, courier_name, courier_phone, fulfillment_status, status, created_at, tables(table_number,name)")
+    .select("id, check_number, table_id, station_statuses, total_price, discount_amount, service_fee, final_price, channel, customer_name, customer_phone, delivery_address, delivery_note, courier_id, courier_name, courier_phone, fulfillment_status, status, created_at, tables(table_number,name,table_zones(name))")
     .eq("id", orderId);
   if (!scope.useLegacySchema && scope.businessId) {
     orderQuery = orderQuery.eq("business_id", scope.businessId);
@@ -4411,7 +4510,7 @@ export async function getOrderReceipt(orderId: string) {
       .eq("order_id", orderId),
   ]);
 
-  const tableInfo = data.tables as { table_number: number; name?: string | null } | { table_number: number; name?: string | null }[] | null;
+  const tableInfo = data.tables as OrderTableRelation;
   const tableNumber = Array.isArray(tableInfo) ? tableInfo[0]?.table_number : tableInfo?.table_number;
   const tableName = Array.isArray(tableInfo) ? tableInfo[0]?.name ?? null : tableInfo?.name ?? null;
   const groupedModifiers = new Map<string, OrderItemModifierSelection[]>();
@@ -4442,6 +4541,7 @@ export async function getOrderReceipt(orderId: string) {
       table_id: (data.table_id as string | null) ?? null,
       table_number: tableNumber,
       table_name: tableName,
+      table_zone_name: getTableZoneName(tableInfo),
       channel: (data.channel as OrderChannel | null) ?? "dine_in",
       customer_name: (data.customer_name as string | null) ?? null,
       customer_phone: (data.customer_phone as string | null) ?? null,
@@ -4481,7 +4581,7 @@ export async function getOrderReceipt(orderId: string) {
 }
 
 function getTableNumber(
-  tables: { table_number: number; name?: string | null } | { table_number: number; name?: string | null }[] | null | undefined,
+  tables: OrderTableRelation | undefined,
 ): number | undefined {
   if (!tables) {
     return undefined;
@@ -4493,7 +4593,7 @@ function getTableNumber(
 }
 
 function getTableName(
-  tables: { table_number: number; name?: string | null } | { table_number: number; name?: string | null }[] | null | undefined,
+  tables: OrderTableRelation | undefined,
 ): string | null {
   if (!tables) {
     return null;
@@ -4502,6 +4602,22 @@ function getTableName(
     return tables[0]?.name ?? null;
   }
   return tables.name ?? null;
+}
+
+function getTableZoneName(
+  tables: OrderTableRelation | undefined,
+): string | null {
+  if (!tables) {
+    return null;
+  }
+  const tableInfo = Array.isArray(tables) ? tables[0] : tables;
+  if (!tableInfo?.table_zones) {
+    return null;
+  }
+  const zoneInfo = Array.isArray(tableInfo.table_zones)
+    ? tableInfo.table_zones[0]
+    : tableInfo.table_zones;
+  return zoneInfo?.name ?? null;
 }
 
 export async function updateOrderStatus(orderId: string, nextStatus: OrderStatus) {
@@ -5174,6 +5290,19 @@ export async function cancelOrderItem(orderId: string, productId: string) {
 
   const itemToEdit = items[targetIndex];
   const unitPrice = Number(itemToEdit.unit_price) || 0;
+  let unitCostSnapshot = 0;
+  const unitCostLookup = await supabase
+    .from("order_items")
+    .select("unit_cost_snapshot")
+    .eq("order_id", orderId)
+    .eq("product_id", productId)
+    .limit(1)
+    .maybeSingle();
+  if (!unitCostLookup.error) {
+    unitCostSnapshot = Math.max(0, Number(
+      (unitCostLookup.data as { unit_cost_snapshot?: number | null } | null)?.unit_cost_snapshot ?? 0,
+    ));
+  }
   
   if (itemToEdit.quantity <= 1) {
     items.splice(targetIndex, 1);
@@ -5181,10 +5310,18 @@ export async function cancelOrderItem(orderId: string, productId: string) {
   } else {
     itemToEdit.quantity -= 1;
     itemToEdit.line_total = Number(itemToEdit.line_total) - unitPrice;
-    await retryMutation(async () => supabase.from("order_items").update({
+    const nextLineCostSnapshot = toScaled(Math.max(0, unitCostSnapshot) * Math.max(0, Number(itemToEdit.quantity)), 4);
+    const orderItemUpdate = await retryMutation(async () => supabase.from("order_items").update({
       quantity: itemToEdit.quantity,
-      line_total: itemToEdit.line_total
+      line_total: itemToEdit.line_total,
+      line_cost_snapshot: nextLineCostSnapshot,
     }).eq("order_id", orderId).eq("product_id", productId));
+    if (orderItemUpdate.error?.message?.toLowerCase().includes("line_cost_snapshot")) {
+      await retryMutation(async () => supabase.from("order_items").update({
+        quantity: itemToEdit.quantity,
+        line_total: itemToEdit.line_total,
+      }).eq("order_id", orderId).eq("product_id", productId));
+    }
   }
   
   const newTotalPrice = Math.max(0, Number(orderRow.total_price) - unitPrice);
@@ -6831,6 +6968,7 @@ export async function createProduct(input: {
   productKind?: ProductKind;
   unit?: ProductUnit;
   department?: ProductDepartment;
+  cost?: number;
 }) {
   return createProductImpl(input, {
     getDefaultBusinessScope,
@@ -6860,6 +6998,7 @@ export async function updateProduct(input: {
   productKind?: ProductKind;
   unit?: ProductUnit;
   department?: ProductDepartment;
+  cost?: number;
 }) {
   return updateProductImpl(input, {
     getDefaultBusinessScope,
@@ -6888,7 +7027,7 @@ export async function deleteProduct(productId: string) {
   });
 }
 
-export async function createIngredient(name: string, unit: string) {
+export async function createIngredient(name: string, unit: string, cost: number) {
   const supabase = getSupabaseServerClient() ?? (await getTenantDataClient());
   if (!supabase) {
     return { ok: false, error: "Demo modda malzeme ekleme pasif." };
@@ -6899,8 +7038,8 @@ export async function createIngredient(name: string, unit: string) {
   }
 
   const payload = !scope.useLegacySchema && scope.businessId
-    ? { name, unit, business_id: scope.businessId }
-    : { name, unit };
+    ? { name, unit, cost, business_id: scope.businessId }
+    : { name, unit, cost };
   const { data, error } = await supabase.from("ingredients").insert(payload).select("id").single();
 
   if (error) {
@@ -6909,6 +7048,30 @@ export async function createIngredient(name: string, unit: string) {
 
   revalidateProductManagementCaches();
   return { ok: true, id: data.id as string };
+}
+
+export async function updateIngredient(ingredientId: string, name: string, unit: string, cost: number) {
+  const supabase = getSupabaseServerClient() ?? (await getTenantDataClient());
+  if (!supabase) {
+    return { ok: false, error: "Demo modda malzeme guncelleme pasif." };
+  }
+  const scope = await getDefaultBusinessScope();
+
+  let query = supabase
+    .from("ingredients")
+    .update({ name, unit, cost })
+    .eq("id", ingredientId);
+  if (!scope.useLegacySchema && scope.businessId) {
+    query = query.eq("business_id", scope.businessId);
+  }
+  const { error } = await query;
+
+  if (error) {
+    return { ok: false, error: error.message };
+  }
+
+  revalidateProductManagementCaches();
+  return { ok: true };
 }
 
 export async function deleteIngredient(ingredientId: string) {
@@ -8218,7 +8381,7 @@ async function getCachedFinancialInsightsRow(input: {
           },
           methodBreakdown: [] as Array<{ method: string; sales: number; refunds: number; net: number }>,
           hourlySales: [] as Array<{ hour: string; sales: number }>,
-          topProducts: [] as Array<{ productName: string; qty: number; revenue: number }>,
+          topProducts: [] as ProductProfitabilityRow[],
           recentPayments: [] as Array<{
             id: string;
             order_id: string;
@@ -8247,33 +8410,123 @@ async function getCachedFinancialInsightsRow(input: {
           })
         : { rows: [] as FinancePaymentRow[], error: null as { message: string } | null };
 
-      let topProducts: Array<{ productName: string; qty: number; revenue: number }> = [];
-      if (input.includeTopProducts && paidOrderIds.length > 0) {
-        const { data: itemRows } = await supabase
-          .from("order_items")
-          .select("order_id, product_name, quantity, line_total")
-          .in("order_id", paidOrderIds);
-
-        const productMap = new Map<string, { qty: number; revenue: number }>();
-        for (const row of (itemRows ?? []) as Array<{
-          order_id: string;
-          product_name: string;
-          quantity: number;
-          line_total: number;
-        }>) {
-          const bucket = productMap.get(row.product_name) ?? { qty: 0, revenue: 0 };
-          bucket.qty += Number(row.quantity);
-          bucket.revenue += Number(row.line_total);
-          productMap.set(row.product_name, bucket);
+      let topProducts: ProductProfitabilityRow[] = [];
+      if (input.includeTopProducts) {
+        let profitabilityOrderQuery = supabase
+          .from("orders")
+          .select("id, final_price, total_price")
+          .in("status", ["paid", "partially_refunded", "refunded"])
+          .gte("created_at", input.startIso);
+        if (input.endIso) {
+          profitabilityOrderQuery = profitabilityOrderQuery.lt("created_at", input.endIso);
         }
-        topProducts = Array.from(productMap.entries())
-          .map(([productName, values]) => ({
-            productName,
-            qty: values.qty,
-            revenue: values.revenue,
-          }))
-          .sort((a, b) => b.revenue - a.revenue)
-          .slice(0, 10);
+        if (!input.useLegacySchema && input.businessId) {
+          profitabilityOrderQuery = profitabilityOrderQuery.eq("business_id", input.businessId);
+        }
+        if (input.branchId) {
+          profitabilityOrderQuery = profitabilityOrderQuery.eq("branch_id", input.branchId);
+        }
+
+        const { data: profitabilityOrders, error: profitabilityOrderError } = await profitabilityOrderQuery;
+        if (!profitabilityOrderError && (profitabilityOrders?.length ?? 0) > 0) {
+          const orderIds = (profitabilityOrders ?? []).map((row) => row.id as string);
+          const [itemResult, refundResult] = await Promise.all([
+            supabase
+              .from("order_items")
+              .select("order_id, product_name, quantity, line_total, line_cost_snapshot")
+              .in("order_id", orderIds),
+            supabase
+              .from("payments")
+              .select("order_id, amount")
+              .eq("payment_type", "refund")
+              .in("order_id", orderIds),
+          ]);
+
+          let itemRows = (itemResult.data ?? []) as Array<{
+            order_id: string;
+            product_name: string;
+            quantity: number;
+            line_total: number;
+            line_cost_snapshot: number | null;
+          }>;
+          let itemError = itemResult.error;
+          if (itemError?.message?.toLowerCase().includes("line_cost_snapshot")) {
+            const legacyItemResult = await supabase
+              .from("order_items")
+              .select("order_id, product_name, quantity, line_total")
+              .in("order_id", orderIds);
+            itemRows = ((legacyItemResult.data ?? []) as Array<{
+              order_id: string;
+              product_name: string;
+              quantity: number;
+              line_total: number;
+            }>).map((row) => ({ ...row, line_cost_snapshot: 0 }));
+            itemError = legacyItemResult.error;
+          }
+
+          const refundRows = (refundResult.data ?? []) as Array<{ order_id: string; amount: number }>;
+          const refundError = refundResult.error;
+
+          if (!itemError && !refundError) {
+            const finalByOrderId = new Map<string, number>();
+            for (const order of (profitabilityOrders ?? []) as Array<{
+              id: string;
+              final_price: number | null;
+              total_price: number;
+            }>) {
+              finalByOrderId.set(order.id, Number(order.final_price ?? order.total_price ?? 0));
+            }
+
+            const refundByOrderId = new Map<string, number>();
+            for (const row of refundRows) {
+              refundByOrderId.set(row.order_id, (refundByOrderId.get(row.order_id) ?? 0) + Number(row.amount ?? 0));
+            }
+
+            const lineTotalByOrderId = new Map<string, number>();
+            for (const row of itemRows) {
+              lineTotalByOrderId.set(row.order_id, (lineTotalByOrderId.get(row.order_id) ?? 0) + Number(row.line_total ?? 0));
+            }
+
+            const productMap = new Map<string, { qty: number; revenue: number; cost: number; refundImpact: number }>();
+            for (const row of itemRows) {
+              const productName = row.product_name || "Bilinmeyen urun";
+              const orderFinal = Math.max(0, Number(finalByOrderId.get(row.order_id) ?? 0));
+              const orderRefundRaw = Math.max(0, Number(refundByOrderId.get(row.order_id) ?? 0));
+              const orderRefund = Math.min(orderFinal, orderRefundRaw);
+              const orderNetRevenue = Math.max(0, orderFinal - orderRefund);
+              const orderLineTotal = Math.max(0, Number(lineTotalByOrderId.get(row.order_id) ?? 0));
+              const ratio = orderLineTotal > 0 ? Number(row.line_total ?? 0) / orderLineTotal : 0;
+              const allocatedRevenue = orderNetRevenue * ratio;
+              const allocatedRefundImpact = orderRefund * ratio;
+
+              const bucket = productMap.get(productName) ?? { qty: 0, revenue: 0, cost: 0, refundImpact: 0 };
+              bucket.qty += Number(row.quantity ?? 0);
+              bucket.revenue += allocatedRevenue;
+              bucket.cost += Number(row.line_cost_snapshot ?? 0);
+              bucket.refundImpact += allocatedRefundImpact;
+              productMap.set(productName, bucket);
+            }
+
+            topProducts = Array.from(productMap.entries())
+              .map(([productName, values]) => {
+                const revenue = toMoney(values.revenue);
+                const cost = toMoney(values.cost);
+                const profit = toMoney(revenue - cost);
+                const margin = revenue > 0 ? toScaled((profit / revenue) * 100, 2) : 0;
+                return {
+                  productName,
+                  qty: toScaled(values.qty, 3),
+                  revenue,
+                  cost,
+                  profit,
+                  margin,
+                  refundImpact: toMoney(values.refundImpact),
+                };
+              })
+              .sort((a, b) => b.revenue - a.revenue)
+              .slice(0, 10);
+          }
+        }
       }
 
       let orderQuery = supabase
@@ -8395,7 +8648,7 @@ export async function getFinancialInsights(
       },
       methodBreakdown: [] as Array<{ method: string; sales: number; refunds: number; net: number }>,
       hourlySales: [] as Array<{ hour: string; sales: number }>,
-      topProducts: [] as Array<{ productName: string; qty: number; revenue: number }>,
+      topProducts: [] as ProductProfitabilityRow[],
       recentPayments: [] as Array<{
         id: string;
         order_id: string;
@@ -8443,7 +8696,7 @@ export async function getFinancialInsights(
         },
         methodBreakdown: [] as Array<{ method: string; sales: number; refunds: number; net: number }>,
         hourlySales: [] as Array<{ hour: string; sales: number }>,
-        topProducts: [] as Array<{ productName: string; qty: number; revenue: number }>,
+        topProducts: [] as ProductProfitabilityRow[],
         recentPayments: [] as Array<{
           id: string;
           order_id: string;
@@ -8481,7 +8734,7 @@ export async function getFinancialInsights(
       },
       methodBreakdown: [] as Array<{ method: string; sales: number; refunds: number; net: number }>,
       hourlySales: [] as Array<{ hour: string; sales: number }>,
-      topProducts: [] as Array<{ productName: string; qty: number; revenue: number }>,
+      topProducts: [] as ProductProfitabilityRow[],
       recentPayments: [] as Array<{
         id: string;
         order_id: string;
@@ -9128,6 +9381,7 @@ export async function getOpsPageSnapshot(options?: { includeSetup?: boolean }) {
       table_id: row.table_id,
       table_number: getTableNumber(row.tables),
       table_name: getTableName(row.tables),
+      table_zone_name: getTableZoneName(row.tables),
       channel: row.channel ?? "dine_in",
       customer_name: row.customer_name ?? null,
       total_price: Number(row.total_price),
@@ -9205,6 +9459,7 @@ export async function getDashboardData() {
     table_id: row.table_id,
     table_number: getTableNumber(row.tables),
     table_name: getTableName(row.tables),
+    table_zone_name: getTableZoneName(row.tables),
     channel: row.channel ?? "dine_in",
     customer_name: row.customer_name ?? null,
     customer_phone: row.customer_phone ?? null,
@@ -9561,20 +9816,20 @@ async function getCachedOpsPageRow(input: {
         ? (input.branchId
             ? supabase
                 .from("orders")
-                .select("id, check_number, table_id, total_price, final_price, channel, customer_name, status, created_at, tables(table_number,name)")
+                .select("id, check_number, table_id, total_price, final_price, channel, customer_name, status, created_at, tables(table_number,name,table_zones(name))")
                 .eq("business_id", input.businessId)
                 .eq("branch_id", input.branchId)
                 .order("created_at", { ascending: false })
                 .limit(recentOrderLimit)
             : supabase
                 .from("orders")
-                .select("id, check_number, table_id, total_price, final_price, channel, customer_name, status, created_at, tables(table_number,name)")
+                .select("id, check_number, table_id, total_price, final_price, channel, customer_name, status, created_at, tables(table_number,name,table_zones(name))")
                 .eq("business_id", input.businessId)
                 .order("created_at", { ascending: false })
                 .limit(recentOrderLimit))
         : supabase
             .from("orders")
-            .select("id, check_number, table_id, total_price, final_price, channel, customer_name, status, created_at, tables(table_number,name)")
+            .select("id, check_number, table_id, total_price, final_price, channel, customer_name, status, created_at, tables(table_number,name,table_zones(name))")
             .order("created_at", { ascending: false })
             .limit(recentOrderLimit),
       !input.useLegacySchema && input.businessId
@@ -10950,7 +11205,7 @@ export async function listPlatformAccessUsers() {
 
   const { data, error } = await supabase
     .from("platform_access_users")
-    .select("id, email, full_name, role, permissions, is_active, created_at")
+    .select("id, email, full_name, role, permissions, is_active, created_at, last_seen_at")
     .order("created_at", { ascending: false });
 
   if (error) {
@@ -11061,7 +11316,7 @@ export async function listStudioAccessUsers() {
 
   const { data, error } = await supabase
     .from("studio_access_users")
-    .select("id, email, full_name, role, is_active, created_at")
+    .select("id, email, full_name, role, is_active, created_at, last_seen_at")
     .order("created_at", { ascending: false });
 
   if (error) {
@@ -11175,7 +11430,7 @@ export async function listSupportAccessUsers() {
 
   const { data, error } = await supabase
     .from("support_access_users")
-    .select("id, email, full_name, role, is_active, created_at")
+    .select("id, email, full_name, role, is_active, created_at, last_seen_at")
     .order("created_at", { ascending: false });
 
   if (error) {
@@ -11338,6 +11593,12 @@ async function writeSupportAuditLog(input: {
     entity_id: input.entityId ?? null,
     details: input.details ?? {},
   });
+}
+
+export async function updateUserActivity(userId: string, table: "platform_access_users" | "studio_access_users" | "support_access_users" | "profiles") {
+  const supabase = getSupabaseServerClient();
+  if (!supabase) return;
+  await supabase.from(table).update({ last_seen_at: new Date().toISOString() }).eq("id", userId);
 }
 
 async function enrichSupportTickets(tickets: SupportTicket[]) {
@@ -11860,7 +12121,7 @@ export async function getSupportTenantDetail(businessId: string) {
     return { tenant: null, usingDemoData: false };
   }
 
-  const [branchResult, branchListResult, ticketResult, recentTicketsResult, orderResult, paymentResult, planRequestsResult, auditResult, incidentsResult, profileResult, featureFlagsResult] = await Promise.all([
+  const [branchResult, branchListResult, ticketResult, recentTicketsResult, orderResult, paymentResult, planRequestsResult, auditResult, incidentsResult, profileResult, featureFlagsResult, staffResult] = await Promise.all([
     supabase.from("branches").select("id", { count: "exact", head: true }).eq("business_id", businessId).eq("is_active", true),
     supabase
       .from("branches")
@@ -11882,7 +12143,13 @@ export async function getSupportTenantDetail(businessId: string) {
     supabase.from("support_incidents").select("id, business_id, title, summary, severity, status, owner_support_user_id, started_at, resolved_at, created_at, updated_at").eq("business_id", businessId).order("started_at", { ascending: false }).limit(10),
     supabase.from("support_tenant_profiles").select("business_id, lifecycle_stage, owner_name, owner_email, account_manager_name, renewal_date, billing_status, risk_level, account_notes, created_at, updated_at").eq("business_id", businessId).maybeSingle(),
     supabase.from("support_feature_flag_overrides").select("id, business_id, feature_key, enabled, note, created_at, updated_at").eq("business_id", businessId).order("updated_at", { ascending: false }),
+    supabase.from("staff_branch_access").select("profile_id").eq("business_id", businessId),
   ]);
+
+  const profileIds = [...new Set(((staffResult.data ?? []) as Array<{ profile_id: string }>).map((p) => p.profile_id))];
+  const staffActivityData = profileIds.length 
+    ? await supabase.from("profiles").select("id, full_name, last_seen_at").in("id", profileIds)
+    : { data: [], error: null };
 
   const [planRequests, recentTickets] = await Promise.all([
     enrichSupportPlanRequests((planRequestsResult.data ?? []) as SupportPlanRequest[]),
@@ -11957,6 +12224,7 @@ export async function getSupportTenantDetail(businessId: string) {
       open_ticket_count: ticketResult.count ?? 0,
       last_order_at: (orderResult.data?.created_at as string | undefined) ?? null,
       last_payment_at: (paymentResult.data?.created_at as string | undefined) ?? null,
+      staff_activity: (staffActivityData.data ?? []) as Array<{ id: string; full_name: string | null; last_seen_at: string | null }>,
       profile: profileResult.data ?? {
         business_id: businessId,
         lifecycle_stage: "active",
@@ -12587,6 +12855,7 @@ export async function listSupportTeamSummaries() {
       open_ticket_count: openTicketCounts.get(user.id) ?? 0,
       open_incident_count: openIncidentCounts.get(user.id) ?? 0,
       created_at: user.created_at,
+      last_seen_at: user.last_seen_at,
     })) as SupportTeamMemberSummary[],
     usingDemoData: platformResult.usingDemoData,
   };
@@ -12704,5 +12973,6 @@ export async function getSupportDashboardSnapshot() {
     usingDemoData: false,
   };
 }
+
 
 

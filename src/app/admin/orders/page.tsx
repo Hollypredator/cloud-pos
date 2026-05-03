@@ -11,11 +11,12 @@ import { getBusinessScopeContext } from "@/lib/server/app-context";
 export default async function AdminOrdersPage({
   searchParams,
 }: {
-  searchParams: Promise<{ table?: string }>;
+  searchParams: Promise<{ table?: string; mode?: string }>;
 }) {
   await requireRole(["admin", "cashier", "waiter"], "/admin/orders");
   const locale = await getCurrentLocale();
-  const { table: preselectedTableId } = await searchParams;
+  const { table: preselectedTableId, mode } = await searchParams;
+  const isTabletMode = mode === "tablet";
   const businessScope = await getBusinessScopeContext();
   const businessSlug = businessScope.activeSlug;
   const [{ categories, products, modifierGroups, modifierOptions, usingDemoData: usingMenuDemo }, { tables, usingDemoData: usingTablesDemo }] = await Promise.all([
@@ -28,6 +29,7 @@ export default async function AdminOrdersPage({
     <BackofficePage
       title={translateUiText("Sipariş Girisi", locale)}
       description={translateUiText("Masa, gel-al ve paket servis siparislerini tek ekrandan ac.", locale)}
+      minimal={isTabletMode}
       sidebar={
         <SidebarPanel title={translateUiText("Hazirlik", locale)} description={translateUiText("Sipariş girmeden önce masa ve menü durumunu kontrol et.", locale)}>
           <div className="rounded-[24px] bg-gradient-to-br from-slate-900 via-slate-800 to-slate-700 p-5 text-white">
@@ -60,34 +62,29 @@ export default async function AdminOrdersPage({
         </Link>
       }
     >
-      <section className="app-mobile-hide grid gap-4 xl:grid-cols-3">
-        <SummaryCard label={translateUiText("Kategori", locale)} value={String(categories.length)} hint={translateUiText("Menü kategorileri", locale)} tone="accent" />
-        <SummaryCard label={translateUiText("Aktif Ürün", locale)} value={String(availableProducts)} hint={translateUiText("Siparise açık ürünler", locale)} />
-        <SummaryCard label={translateUiText("Masa", locale)} value={String(tables.length)} hint={translateUiText("Sipariş acilabilecek masa sayısı", locale)} tone="success" />
-      </section>
+      {!isTabletMode && (
+        <>
+          <section className="app-mobile-hide grid gap-4 xl:grid-cols-3">
+            <SummaryCard label={translateUiText("Kategori", locale)} value={String(categories.length)} hint={translateUiText("Menü kategorileri", locale)} tone="accent" />
+            <SummaryCard label={translateUiText("Aktif Ürün", locale)} value={String(availableProducts)} hint={translateUiText("Siparise açık ürünler", locale)} />
+            <SummaryCard label={translateUiText("Masa", locale)} value={String(tables.length)} hint={translateUiText("Sipariş acilabilecek masa sayısı", locale)} tone="success" />
+          </section>
 
-      <WorkflowGuide
-        className="app-mobile-hide"
-        title={translateUiText("Sipariş Girisi 3 Adim", locale)}
-        description={translateUiText("Sistemi ilk kez goren biri de siparişi doğru kanal uzerinden kolayca acabilsin.", locale)}
-        steps={[
-          { title: translateUiText("Sipariş kanalini sec", locale), description: translateUiText("Masa, gel-al veya paket servis secenegiyle siparişin hangi akisa ait oldugunu belirle.", locale) },
-          { title: translateUiText("Urunleri sepete ekle", locale), description: translateUiText("Kategori icinden ürün sec, gerekirse secenekleri tamamla ve sagdaki sepete ekle.", locale) },
-          { title: translateUiText("Siparisi ac", locale), description: translateUiText("Toplam ve sepet kalemlerini kontrol edip Siparisi Ac butonuyla mutfak veya servise gonder.", locale) },
-        ]}
-      />
 
-      <section className="app-mobile-only">
-        <p className="rounded-2xl border border-slate-200 bg-white px-4 py-3 text-sm text-slate-600">
-          {translateUiText("Mobil sipariş modunda ekran doğrudan ürün secimi ve sepete odaklanir.", locale)}
-        </p>
-      </section>
 
-      {usingMenuDemo || usingTablesDemo ? (
-          <p className="rounded-[24px] border border-amber-200 bg-amber-50 px-5 py-4 text-sm text-amber-900">
-            {translateUiText("Demo verisi ile sipariş girisi onizleniyor.", locale)}
-          </p>
-        ) : null}
+          <section className="app-mobile-only">
+            <p className="rounded-2xl border border-slate-200 bg-white px-4 py-3 text-sm text-slate-600">
+              {translateUiText("Mobil sipariş modunda ekran doğrudan ürün secimi ve sepete odaklanir.", locale)}
+            </p>
+          </section>
+
+          {usingMenuDemo || usingTablesDemo ? (
+              <p className="rounded-[24px] border border-amber-200 bg-amber-50 px-5 py-4 text-sm text-amber-900">
+                {translateUiText("Demo verisi ile sipariş girisi onizleniyor.", locale)}
+              </p>
+            ) : null}
+        </>
+      )}
 
         <AdminOrderEntry
           businessSlug={businessSlug}
@@ -97,6 +94,9 @@ export default async function AdminOrdersPage({
           modifierOptions={modifierOptions}
           tables={tables}
           initialTableId={preselectedTableId}
+          entryMode="table_first"
+          layoutMode={isTabletMode ? "tablet_3pane" : "auto"}
+          initialView={preselectedTableId ? "composer" : "table_picker"}
         />
     </BackofficePage>
   );

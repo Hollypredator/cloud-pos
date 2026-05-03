@@ -2,6 +2,7 @@ import { notFound } from "next/navigation";
 import { getMenu, getTableByQr } from "@/lib/domains/orders";
 import { normalizeBusinessSlug } from "@/lib/business";
 import { QrOrderingClient } from "@/components/qr-ordering-client";
+import { createQrAccessToken } from "@/lib/qr-access";
 
 export default async function BusinessQrPage({
   params,
@@ -16,6 +17,10 @@ export default async function BusinessQrPage({
   }
 
   const { categories, products, modifierGroups, modifierOptions, usingDemoData } = await getMenu(businessSlug);
+  const qrAccessToken = createQrAccessToken({
+    qrCodeIdentifier: identifier,
+    businessSlug,
+  });
 
   return (
     <div className="min-h-screen bg-[radial-gradient(circle_at_top,#1f2c56_0%,#0b1224_52%,#090f1f_100%)]">
@@ -29,6 +34,9 @@ export default async function BusinessQrPage({
         products={products}
         modifierGroups={modifierGroups}
         modifierOptions={modifierOptions}
+        businessSlug={businessSlug}
+        qrCodeIdentifier={identifier}
+        qrAccessToken={qrAccessToken ?? undefined}
       />
     </div>
   );

@@ -1,6 +1,7 @@
 "use client";
 
-import { useMemo, useState } from "react";
+import { useMemo, useState, useRef, useEffect } from "react";
+import Link from "next/link";
 import type {
   Category,
   DiningTable,
@@ -9,6 +10,7 @@ import type {
   Product,
   ProductModifierGroup,
   ProductModifierOption,
+  TableStatus,
 } from "@/lib/types";
 
 type CartEntry = {
@@ -19,11 +21,26 @@ type CartEntry = {
 };
 
 type CartMap = Record<string, CartEntry>;
+type EntryMode = "classic" | "table_first";
+type LayoutMode = "auto" | "tablet_3pane" | "mobile_stack";
+type InitialView = "table_picker" | "composer";
 
 function channelLabel(channel: OrderChannel) {
   if (channel === "dine_in") return "Masa";
   if (channel === "pickup") return "Gel-al";
   return "Paket servis";
+}
+
+function tableStatusLabel(status: TableStatus) {
+  if (status === "empty") return "Bos";
+  if (status === "occupied") return "Dolu";
+  return "Rezerve";
+}
+
+function tableStatusTone(status: TableStatus) {
+  if (status === "empty") return "bg-emerald-100 text-emerald-700";
+  if (status === "occupied") return "bg-amber-100 text-amber-800";
+  return "bg-sky-100 text-sky-800";
 }
 
 function buildCartKey(productId: string, modifiers: OrderItemModifierSelection[]) {
@@ -45,6 +62,9 @@ export function AdminOrderEntry({
   lockedTableId,
   onOrderCreated,
   mobilePresentation = "default",
+  entryMode = "classic",
+  layoutMode = "auto",
+  initialView = "table_picker",
 }: {
   businessSlug: string;
   categories: Category[];
@@ -56,6 +76,9 @@ export function AdminOrderEntry({
   lockedTableId?: string;
   onOrderCreated?: (orderId: string) => void;
   mobilePresentation?: "default" | "stack";
+  entryMode?: EntryMode;
+  layoutMode?: LayoutMode;
+  initialView?: InitialView;
 }) {
   const isTableLocked = Boolean(lockedTableId);
   const [channel, setChannel] = useState<OrderChannel>(isTableLocked ? "dine_in" : "dine_in");
@@ -79,6 +102,30 @@ export function AdminOrderEntry({
   const [productQuantities, setProductQuantities] = useState<Record<string, number>>({});
   const [categoryTabsOpen, setCategoryTabsOpen] = useState(true);
   const [mobileCartOpen, setMobileCartOpen] = useState(false);
+  const [tablePickerFilter, setTablePickerFilter] = useState<"all" | TableStatus>("all");
+  const [tablePickerQuery, setTablePickerQuery] = useState("");
+  const [productSearchQuery, setProductSearchQuery] = useState("");
+  const searchInputRef = useRef<HTMLInputElement>(null);
+
+  useEffect(() => {
+    const handleKeyDown = (e: KeyboardEvent) => {
+      if ((e.ctrlKey || e.metaKey) && e.key === "k") {
+        e.preventDefault();
+        searchInputRef.current?.focus();
+      }
+    };
+    window.addEventListener("keydown", handleKeyDown);
+    return () => window.removeEventListener("keydown", handleKeyDown);
+  }, []);
+  const [tablePickerView, setTablePickerView] = useState<InitialView>(() => {
+    if (entryMode !== "table_first") {
+      return "composer";
+    }
+    if (initialView === "composer" && tables.some((table) => table.id === selectedTableId)) {
+      return "composer";
+    }
+    return "table_picker";
+  });
   const isStackMobile = mobilePresentation === "stack";
 
   const tableById = useMemo(() => new Map(tables.map((table) => [table.id, table])), [tables]);
@@ -138,7 +185,43 @@ export function AdminOrderEntry({
     ? selectedCategoryId
     : (orderedCategories[0]?.id ?? "");
   const activeCategory = orderedCategories.find((category) => category.id === activeCategoryId) ?? null;
-  const visibleProducts = groupedProducts.get(activeCategoryId) ?? [];
+  const visibleProducts = useMemo(() => groupedProducts.get(activeCategoryId) ?? [], [activeCategoryId, groupedProducts]);
+  const filteredVisibleProducts = useMemo(() => {
+    const query = productSearchQuery.trim().toLocaleLowerCase("tr");
+    if (!query) {
+      return visibleProducts;
+    }
+    return visibleProducts.filter((product) => {
+      const name = product.name.toLocaleLowerCase("tr");
+      const description = (product.description ?? "").toLocaleLowerCase("tr");
+      return name.includes(query) || description.includes(query);
+    });
+  }, [productSearchQuery, visibleProducts]);
+  const selectedTable = tableById.get(selectedTableId) ?? null;
+  const tableStats = useMemo(() => {
+    const emptyCount = tables.filter((table) => table.status === "empty").length;
+    const occupiedCount = tables.filter((table) => table.status === "occupied").length;
+    const reservedCount = tables.filter((table) => table.status === "reserved").length;
+    return {
+      all: tables.length,
+      empty: emptyCount,
+      occupied: occupiedCount,
+      reserved: reservedCount,
+    };
+  }, [tables]);
+  const filteredTables = useMemo(() => {
+    const query = tablePickerQuery.trim().toLocaleLowerCase("tr");
+    const base = [...tables]
+      .sort((left, right) => left.table_number - right.table_number)
+      .filter((table) => tablePickerFilter === "all" || table.status === tablePickerFilter);
+    if (!query) {
+      return base;
+    }
+    return base.filter((table) => {
+      const name = table.name?.toLocaleLowerCase("tr") ?? "";
+      return name.includes(query) || `masa ${table.table_number}`.includes(query);
+    });
+  }, [tablePickerFilter, tablePickerQuery, tables]);
 
   function getConfiguredQuantity(productId: string) {
     const raw = Number(productQuantities[productId] ?? 1);
@@ -303,6 +386,10 @@ export function AdminOrderEntry({
     });
   }
 
+  function clearCart() {
+    setCart({});
+  }
+
   async function submitOrder() {
     const items = Object.values(cart).map((entry) => {
       const modifierTotal = entry.modifiers.reduce((sum, modifier) => sum + Number(modifier.price_delta), 0);
@@ -391,6 +478,697 @@ export function AdminOrderEntry({
   const activeProduct = activeProductId ? productById.get(activeProductId) ?? null : null;
   const cartEntries = Object.values(cart);
   const cartCount = cartEntries.reduce((sum, entry) => sum + entry.quantity, 0);
+  const useStackLayout = layoutMode === "mobile_stack";
+
+  if (entryMode === "table_first") {
+    const isTerminal = layoutMode === "tablet_3pane";
+
+    return (
+      <section className={isTerminal ? "fixed inset-0 z-50 bg-[#f1f5f9] p-4" : "space-y-4"}>
+        {tablePickerView === "table_picker" ? (
+          <article className="rounded-2xl border border-slate-200 bg-white p-4 shadow-sm h-full overflow-y-auto">
+            <div className="flex flex-col gap-3 md:flex-row md:items-center md:justify-between">
+              <div>
+                <p className="text-xs font-semibold uppercase tracking-[0.16em] text-slate-500">Masa Secimi</p>
+                <h2 className="mt-1 text-xl font-semibold text-slate-900">Siparişe Başlamak İçin Masa Seç</h2>
+              </div>
+              <div className="flex items-center gap-3">
+                {isTerminal && (
+                   <Link href="/ops" className="rounded-xl border border-slate-300 bg-white px-4 py-2 text-sm font-semibold text-slate-700">
+                      Geri
+                   </Link>
+                )}
+                <div className="grid grid-cols-2 gap-2 sm:grid-cols-4">
+                  {(["all", "empty", "occupied", "reserved"] as const).map((status) => (
+                    <button
+                      key={status}
+                      type="button"
+                      onClick={() => setTablePickerFilter(status)}
+                      className={`min-h-[48px] rounded-xl border px-3 py-2 text-sm font-semibold ${
+                        tablePickerFilter === status
+                          ? "border-slate-900 bg-slate-900 text-white"
+                          : "border-slate-300 bg-white text-slate-700"
+                      }`}
+                    >
+                      {(status === "all" ? "Tumu" : tableStatusLabel(status))} ({tableStats[status]})
+                    </button>
+                  ))}
+                </div>
+              </div>
+            </div>
+
+            <div className="mt-3">
+              <input
+                value={tablePickerQuery}
+                onChange={(event) => setTablePickerQuery(event.target.value)}
+                placeholder="Masa ara (ad veya numara)"
+                className="min-h-[48px] w-full rounded-xl border border-slate-300 px-4 py-3 text-sm"
+              />
+            </div>
+
+            {filteredTables.length === 0 ? (
+              <p className="mt-4 rounded-xl border border-dashed border-slate-200 bg-slate-50 px-4 py-4 text-sm text-slate-500">
+                Bu filtrede masa bulunamadi.
+              </p>
+            ) : (
+              <div className="mt-4 grid gap-3 sm:grid-cols-2 lg:grid-cols-4 xl:grid-cols-5">
+                {filteredTables.map((table) => (
+                  <button
+                    key={`picker-${table.id}`}
+                    type="button"
+                    onClick={() => {
+                      setSelectedTableId(table.id);
+                      setChannel("dine_in");
+                      setTablePickerView("composer");
+                    }}
+                    className={`min-h-[110px] rounded-2xl border p-4 text-left transition active:scale-[0.99] ${
+                      table.id === selectedTableId
+                        ? "border-[#ff5a34] bg-orange-50/50 shadow-[0_4px_12px_rgba(255,90,52,0.1)] ring-1 ring-[#ff5a34]/20"
+                        : "border-slate-200 bg-white shadow-sm hover:border-slate-300"
+                    }`}
+                  >
+                    <div className="flex flex-col h-full justify-between gap-2">
+                      <div>
+                        <p className="text-[10px] font-bold uppercase tracking-[0.14em] text-slate-400">Masa {table.table_number}</p>
+                        <p className="mt-1 text-base font-bold text-slate-900 line-clamp-1">{table.name || `Masa ${table.table_number}`}</p>
+                      </div>
+                      <span className={`self-start rounded-full px-2.5 py-1 text-[10px] font-bold uppercase tracking-wider ${tableStatusTone(table.status)}`}>
+                        {tableStatusLabel(table.status)}
+                      </span>
+                    </div>
+                  </button>
+                ))}
+              </div>
+            )}
+          </article>
+        ) : isTerminal ? (
+          /* Specialized Terminal 3-Pane UI */
+          <div className="flex flex-col h-full gap-4 overflow-hidden">
+             {/* Header */}
+             <header className="flex items-center justify-between rounded-2xl bg-white p-4 shadow-sm">
+                <div className="flex items-center gap-4">
+                   <button 
+                      type="button" 
+                      onClick={() => setTablePickerView("table_picker")}
+                      className="inline-flex h-12 w-12 items-center justify-center rounded-xl border border-slate-200 bg-slate-50 text-slate-600 transition hover:bg-slate-100"
+                   >
+                      <svg xmlns="http://www.w3.org/2000/svg" width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round"><path d="m15 18-6-6 6-6"/></svg>
+                   </button>
+                   <div>
+                      <h1 className="text-xl font-bold text-slate-900">
+                         {channel === "dine_in" ? (selectedTable?.name || `Masa ${selectedTable?.table_number}`) : channelLabel(channel)}
+                      </h1>
+                      <p className="text-xs font-semibold text-slate-500 uppercase tracking-widest">{businessSlug}</p>
+                   </div>
+                </div>
+                <div className="flex items-center gap-3">
+                   <button 
+                      type="button"
+                      onClick={() => window.print()}
+                      className="inline-flex h-12 items-center gap-2 rounded-xl border border-slate-200 bg-white px-5 text-sm font-bold text-slate-700 shadow-sm"
+                   >
+                      <svg xmlns="http://www.w3.org/2000/svg" width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round"><path d="M6 9V2h12v7"/><path d="M6 18H4a2 2 0 0 1-2-2v-5a2 2 0 0 1 2-2h16a2 2 0 0 1 2 2v5a2 2 0 0 1-2 2h-2"/><rect width="12" height="8" x="6" y="14"/></svg>
+                      Fiş Yazdır
+                   </button>
+                   <Link 
+                      href="/cashier"
+                      className="inline-flex h-12 items-center gap-2 rounded-xl bg-slate-900 px-5 text-sm font-bold text-white shadow-lg shadow-slate-900/20"
+                   >
+                      <svg xmlns="http://www.w3.org/2000/svg" width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round"><rect width="20" height="12" x="2" y="6" rx="2"/><circle cx="12" cy="12" r="2"/><path d="M6 12h.01M18 12h.01"/></svg>
+                      Kasiyer Paneli
+                   </Link>
+                </div>
+             </header>
+
+             {/* Main Content Area */}
+             <div className="flex-1 grid grid-cols-[220px_1fr_380px] gap-4 overflow-hidden">
+                {/* Categories Column */}
+                <aside className="overflow-y-auto rounded-2xl bg-white/60 backdrop-blur-md p-3 shadow-sm border border-white">
+                   <div className="space-y-2">
+                      {orderedCategories.map((category, idx) => {
+                         const isActive = category.id === activeCategoryId;
+                         const colors = [
+                            "from-orange-500 to-amber-500",
+                            "from-blue-500 to-indigo-500",
+                            "from-emerald-500 to-teal-500",
+                            "from-rose-500 to-pink-500",
+                            "from-purple-500 to-violet-500"
+                         ];
+                         const colorClass = colors[idx % colors.length];
+                         
+                         return (
+                            <button
+                               key={`term-cat-${category.id}`}
+                               type="button"
+                               onClick={() => setSelectedCategoryId(category.id)}
+                               className={`w-full min-h-[64px] rounded-xl p-3 text-left transition-all relative overflow-hidden group ${
+                                  isActive 
+                                  ? `bg-gradient-to-br ${colorClass} text-white shadow-lg ring-2 ring-offset-2 ring-slate-200` 
+                                  : "bg-white text-slate-700 hover:bg-slate-50 border border-slate-100"
+                               }`}
+                            >
+                               <span className="relative z-10 font-bold text-sm">{category.name}</span>
+                               <span className={`absolute -right-2 -bottom-2 opacity-10 group-hover:scale-110 transition-transform ${isActive ? "text-white" : "text-slate-900"}`}>
+                                  <svg xmlns="http://www.w3.org/2000/svg" width="48" height="48" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round"><path d="M6 13.5V4a2 2 0 0 1 2-2h7l5 5v13a2 2 0 0 1-2 2H8"/></svg>
+                               </span>
+                            </button>
+                         );
+                      })}
+                   </div>
+                </aside>
+
+                {/* Products Column */}
+                <section className="flex flex-col gap-4 overflow-hidden">
+                   <div className="rounded-2xl bg-white p-3 shadow-sm border border-slate-100">
+                      <div className="relative">
+                         <svg className="absolute left-4 top-1/2 -translate-y-1/2 text-slate-400" xmlns="http://www.w3.org/2000/svg" width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round"><circle cx="11" cy="11" r="8"/><path d="m21 21-4.3-4.3"/></svg>
+                         <input
+                            ref={searchInputRef}
+                            autoFocus
+                            value={productSearchQuery}
+                            onChange={(event) => setProductSearchQuery(event.target.value)}
+                            placeholder="Ürün Ara... (Ctrl+K)"
+                            className="h-12 w-full rounded-xl bg-slate-50 pl-11 pr-4 text-sm font-medium border-none focus:ring-2 focus:ring-slate-900"
+                         />
+                      </div>
+                   </div>
+                   
+                   <div className="flex-1 overflow-y-auto rounded-2xl bg-white p-4 shadow-sm border border-slate-100">
+                      {filteredVisibleProducts.length === 0 ? (
+                         <div className="flex flex-col items-center justify-center h-full text-slate-400">
+                            <svg xmlns="http://www.w3.org/2000/svg" width="48" height="48" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="1" strokeLinecap="round" strokeLinejoin="round" className="mb-4"><path d="M14.5 2H6a2 2 0 0 0-2 2v16a2 2 0 0 0 2 2h12a2 2 0 0 0 2-2V7.5L14.5 2z"/><polyline points="14 2 14 8 20 8"/></svg>
+                            <p className="text-sm font-medium">Bu kategoride ürün bulunamadı.</p>
+                         </div>
+                      ) : (
+                         <div className="grid grid-cols-2 lg:grid-cols-3 gap-3">
+                            {filteredVisibleProducts.map((product) => (
+                               <button
+                                  key={`term-prod-${product.id}`}
+                                  type="button"
+                                  onClick={() => openModifierPicker(product)}
+                                  className="group flex flex-col items-start rounded-2xl border border-slate-100 bg-white p-4 text-left transition-all hover:border-emerald-200 hover:shadow-md active:scale-95"
+                               >
+                                  <div className="w-full">
+                                     <h3 className="font-bold text-slate-900 group-hover:text-emerald-700 transition-colors line-clamp-2 min-h-[40px]">{product.name}</h3>
+                                     <p className="mt-2 text-lg font-black text-slate-900">{Number(product.price).toFixed(2)} <span className="text-xs font-medium text-slate-500">TL</span></p>
+                                  </div>
+                                  <div className="mt-4 flex w-full items-center justify-between">
+                                     <span className="rounded-lg bg-slate-50 px-2 py-1 text-[10px] font-bold text-slate-500 uppercase tracking-tight">
+                                        {(groupsByProduct.get(product.id) ?? []).length > 0 ? "Opsiyonlu" : "Normal"}
+                                     </span>
+                                     <div className="h-8 w-8 rounded-full bg-slate-900 text-white flex items-center justify-center opacity-0 group-hover:opacity-100 transition-opacity">
+                                        <svg xmlns="http://www.w3.org/2000/svg" width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="3" strokeLinecap="round" strokeLinejoin="round"><path d="M5 12h14"/><path d="M12 5v14"/></svg>
+                                     </div>
+                                  </div>
+                               </button>
+                            ))}
+                         </div>
+                      )}
+                   </div>
+                </section>
+
+                {/* Cart Column (The Receipt) */}
+                <aside className="flex flex-col rounded-2xl bg-white shadow-xl border border-slate-100 overflow-hidden">
+                   <div className="bg-slate-900 p-4 text-white">
+                      <div className="flex items-center justify-between">
+                         <span className="text-xs font-bold uppercase tracking-widest opacity-60">Sipariş Detayı</span>
+                         <button type="button" onClick={clearCart} className="text-[10px] font-bold uppercase tracking-widest text-rose-400">Temizle</button>
+                      </div>
+                      <div className="mt-2 flex items-baseline gap-1">
+                         <span className="text-3xl font-black">{total.toFixed(2)}</span>
+                         <span className="text-sm font-bold opacity-60">TL</span>
+                      </div>
+                   </div>
+
+                   <div className="flex-1 overflow-y-auto p-4 bg-[url('https://www.transparenttextures.com/patterns/paper.png')]">
+                      {cartEntries.length === 0 ? (
+                         <div className="flex flex-col items-center justify-center h-full text-slate-400 opacity-50 italic">
+                            <p>Henüz ürün eklenmedi</p>
+                         </div>
+                      ) : (
+                         <div className="space-y-4">
+                            {cartEntries.map((entry) => {
+                               const modifierTotal = entry.modifiers.reduce((sum, modifier) => sum + Number(modifier.price_delta), 0);
+                               const itemTotal = (Number(entry.product.price) + modifierTotal) * entry.quantity;
+                               return (
+                                  <div key={`term-cart-${entry.key}`} className="relative group border-b border-slate-200 border-dashed pb-4">
+                                     <div className="flex justify-between items-start gap-2">
+                                        <div className="flex-1">
+                                           <h4 className="font-bold text-slate-900 text-sm leading-tight">{entry.product.name}</h4>
+                                           <div className="mt-1 flex items-center gap-2 text-xs text-slate-500">
+                                              <span className="font-bold text-slate-900">x{entry.quantity}</span>
+                                              <span>@ {(Number(entry.product.price) + modifierTotal).toFixed(2)} TL</span>
+                                           </div>
+                                        </div>
+                                        <span className="font-bold text-slate-900 text-sm">{itemTotal.toFixed(2)}</span>
+                                     </div>
+                                     {entry.modifiers.length > 0 && (
+                                        <div className="mt-1 pl-2 border-l-2 border-slate-200 space-y-0.5">
+                                           {entry.modifiers.map(m => (
+                                              <p key={m.option_id} className="text-[10px] text-slate-500">+ {m.option_name}</p>
+                                           ))}
+                                        </div>
+                                     )}
+                                     <div className="mt-3 flex items-center gap-2 opacity-0 group-hover:opacity-100 transition-opacity">
+                                        <button onClick={() => removeProduct(entry.key)} className="h-8 w-8 rounded-lg bg-slate-100 flex items-center justify-center text-slate-600">-</button>
+                                        <button onClick={() => increaseProduct(entry.key)} className="h-8 w-8 rounded-lg bg-slate-100 flex items-center justify-center text-slate-600">+</button>
+                                     </div>
+                                  </div>
+                               );
+                            })}
+                         </div>
+                      )}
+                   </div>
+
+                   <div className="p-4 bg-slate-50 border-t border-slate-200 space-y-3">
+                      <div className="flex justify-between items-center text-slate-900 font-bold">
+                         <span>TOPLAM</span>
+                         <span className="text-xl">{total.toFixed(2)} TL</span>
+                      </div>
+                      <button
+                         type="button"
+                         disabled={submitting || cartEntries.length === 0}
+                         onClick={submitOrder}
+                         className="w-full h-14 rounded-2xl bg-emerald-600 text-white font-bold text-lg shadow-lg shadow-emerald-600/20 active:scale-95 disabled:opacity-50 disabled:active:scale-100 transition-all"
+                      >
+                         {submitting ? "İŞLENİYOR..." : "SİPARİŞİ TAMAMLA"}
+                      </button>
+                   </div>
+                </aside>
+             </div>
+
+             {/* Modals for modifiers */}
+             {activeProduct && (groupsByProduct.get(activeProduct.id) ?? []).length > 0 && (
+                <div className="fixed inset-0 z-[100] flex items-center justify-center bg-slate-900/80 backdrop-blur-sm p-4">
+                   <article className="w-full max-w-2xl rounded-3xl bg-white overflow-hidden shadow-2xl animate-in zoom-in-95 duration-200">
+                      <header className="bg-slate-50 px-6 py-4 border-b border-slate-200 flex items-center justify-between">
+                         <div>
+                            <p className="text-xs font-bold text-slate-500 uppercase tracking-widest">Seçenekleri Tamamla</p>
+                            <h2 className="text-xl font-bold text-slate-900">{activeProduct.name}</h2>
+                         </div>
+                         <button onClick={() => { setActiveProductId(null); setSelectedOptions({}); }} className="text-slate-400 hover:text-slate-600 transition-colors">
+                            <svg xmlns="http://www.w3.org/2000/svg" width="28" height="28" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round"><path d="M18 6 6 18"/><path d="m6 6 12 12"/></svg>
+                         </button>
+                      </header>
+                      
+                      <div className="max-h-[60vh] overflow-y-auto p-6 space-y-6">
+                         {(groupsByProduct.get(activeProduct.id) ?? []).map((group) => (
+                            <div key={`term-mod-grp-${group.id}`}>
+                               <div className="flex items-center justify-between mb-3">
+                                  <h3 className="font-bold text-slate-900">{group.name}</h3>
+                                  <span className={`text-[10px] font-bold px-2 py-0.5 rounded-full uppercase tracking-tight ${group.is_required ? "bg-rose-100 text-rose-600" : "bg-slate-100 text-slate-500"}`}>
+                                     {group.is_required ? "Zorunlu" : "Opsiyonel"}
+                                  </span>
+                               </div>
+                               <div className="grid grid-cols-2 gap-2">
+                                  {(optionsByGroup.get(group.id) ?? []).map((option) => {
+                                     const checked = (selectedOptions[group.id] ?? []).includes(option.id);
+                                     return (
+                                        <button
+                                           key={`term-opt-${option.id}`}
+                                           type="button"
+                                           onClick={() => toggleOption(group, option.id)}
+                                           className={`flex flex-col rounded-xl border p-3 text-left transition-all ${
+                                              checked ? "border-slate-900 bg-slate-900 text-white shadow-md" : "border-slate-200 bg-white text-slate-700 hover:border-slate-300"
+                                           }`}
+                                        >
+                                           <span className="font-bold text-sm">{option.name}</span>
+                                           <span className={`text-[10px] mt-1 ${checked ? "text-slate-300" : "text-slate-500"}`}>
+                                              {Number(option.price_delta) > 0 ? `+${Number(option.price_delta).toFixed(2)} TL` : "Ücretsiz"}
+                                           </span>
+                                        </button>
+                                     );
+                                  })}
+                               </div>
+                            </div>
+                         ))}
+                      </div>
+
+                      <footer className="bg-slate-50 p-6 border-t border-slate-200 flex items-center justify-between gap-4">
+                         <div className="flex items-center gap-3">
+                            <button onClick={() => setConfiguredQuantity(activeProduct.id, getConfiguredQuantity(activeProduct.id) - 1)} className="h-12 w-12 rounded-xl bg-white border border-slate-200 font-bold text-lg shadow-sm">-</button>
+                            <span className="w-8 text-center font-bold text-lg">{getConfiguredQuantity(activeProduct.id)}</span>
+                            <button onClick={() => setConfiguredQuantity(activeProduct.id, getConfiguredQuantity(activeProduct.id) + 1)} className="h-12 w-12 rounded-xl bg-white border border-slate-200 font-bold text-lg shadow-sm">+</button>
+                         </div>
+                         <button
+                            onClick={confirmModifiers}
+                            className="flex-1 h-12 rounded-xl bg-slate-900 text-white font-bold shadow-lg active:scale-95 transition-transform"
+                         >
+                            SEPETE EKLE
+                         </button>
+                      </footer>
+                   </article>
+                </div>
+             )}
+
+             {/* Message Toast inside terminal */}
+             {message && (
+                <div className={`fixed bottom-6 left-1/2 -translate-x-1/2 z-[200] px-6 py-3 rounded-2xl shadow-2xl animate-in slide-in-from-bottom-4 duration-300 ${
+                   messageTone === "success" ? "bg-emerald-600 text-white" : messageTone === "error" ? "bg-rose-600 text-white" : "bg-slate-800 text-white"
+                }`}>
+                   <p className="font-bold text-sm">{message}</p>
+                </div>
+             )}
+          </div>
+        ) : (
+          <div className="space-y-4">
+            <div className="flex flex-col gap-2 rounded-2xl border border-slate-200 bg-white p-4 shadow-sm sm:flex-row sm:items-center sm:justify-between">
+              <div>
+                <p className="text-xs font-semibold uppercase tracking-[0.14em] text-slate-500">Sipariş Akışı</p>
+                <p className="mt-1 text-lg font-semibold text-slate-900">
+                  {channel === "dine_in"
+                    ? (selectedTable?.name || (selectedTable ? `Masa ${selectedTable.table_number}` : "Masa secilmedi"))
+                    : channelLabel(channel)}
+                </p>
+              </div>
+              {!isTableLocked ? (
+                <button
+                  type="button"
+                  onClick={() => setTablePickerView("table_picker")}
+                  className="min-h-[48px] rounded-xl border border-slate-300 bg-white px-4 py-2 text-sm font-semibold text-slate-700"
+                >
+                  Masalari Goster
+                </button>
+              ) : null}
+            </div>
+
+            {message ? (
+              <div
+                className={`rounded-2xl border px-4 py-3 text-sm font-medium ${
+                  messageTone === "success"
+                    ? "border-emerald-200 bg-emerald-50 text-emerald-800"
+                    : messageTone === "error"
+                      ? "border-rose-200 bg-rose-50 text-rose-800"
+                      : "border-slate-200 bg-slate-50 text-slate-700"
+                }`}
+              >
+                {message}
+              </div>
+            ) : null}
+
+            <div className={`grid gap-4 ${useStackLayout ? "" : "md:grid-cols-[0.95fr_0.6fr_1.25fr]"}`}>
+              <aside className={`${useStackLayout ? "" : "md:sticky md:top-4 md:h-fit"} space-y-3 rounded-2xl border border-slate-200 bg-white p-4 shadow-sm`}>
+                <p className="text-xs font-semibold uppercase tracking-[0.14em] text-slate-500">Kanal</p>
+                <div className="grid grid-cols-1 gap-2 sm:grid-cols-3 md:grid-cols-1">
+                  {(["dine_in", "pickup", "delivery"] as OrderChannel[]).map((value) => (
+                    <button
+                      key={`table-first-channel-${value}`}
+                      type="button"
+                      onClick={() => {
+                        if (!isTableLocked) {
+                          setChannel(value);
+                        }
+                      }}
+                      disabled={isTableLocked && value !== "dine_in"}
+                      className={`min-h-[48px] rounded-xl border px-3 py-2 text-sm font-semibold ${
+                        channel === value
+                          ? "border-slate-900 bg-slate-900 text-white"
+                          : "border-slate-300 bg-white text-slate-700"
+                      } ${isTableLocked && value !== "dine_in" ? "cursor-not-allowed opacity-50" : ""}`}
+                    >
+                      {channelLabel(value)}
+                    </button>
+                  ))}
+                </div>
+
+                {channel === "dine_in" ? (
+                  <div className="rounded-xl border border-slate-200 bg-slate-50 px-3 py-3">
+                    <p className="text-xs uppercase tracking-[0.14em] text-slate-500">Secili Masa</p>
+                    {selectedTable ? (
+                      <div className="mt-2 flex items-center justify-between gap-2">
+                        <p className="font-semibold text-slate-900">{selectedTable.name || `Masa ${selectedTable.table_number}`}</p>
+                        <span className={`rounded-full px-2.5 py-1 text-xs font-semibold ${tableStatusTone(selectedTable.status)}`}>
+                          {tableStatusLabel(selectedTable.status)}
+                        </span>
+                      </div>
+                    ) : (
+                      <p className="mt-2 text-sm text-slate-500">Masa secilmedi.</p>
+                    )}
+                  </div>
+                ) : (
+                  <div className="space-y-2">
+                    <input
+                      value={customerName}
+                      onChange={(event) => setCustomerName(event.target.value)}
+                      placeholder="Musteri adi"
+                      className="min-h-[48px] w-full rounded-xl border border-slate-300 px-3 py-2 text-sm"
+                    />
+                    <input
+                      value={customerPhone}
+                      onChange={(event) => setCustomerPhone(event.target.value)}
+                      placeholder="Telefon"
+                      className="min-h-[48px] w-full rounded-xl border border-slate-300 px-3 py-2 text-sm"
+                    />
+                    {channel === "delivery" ? (
+                      <textarea
+                        value={deliveryAddress}
+                        onChange={(event) => setDeliveryAddress(event.target.value)}
+                        placeholder="Adres"
+                        className="min-h-28 w-full rounded-xl border border-slate-300 px-3 py-2 text-sm"
+                      />
+                    ) : null}
+                    <textarea
+                      value={deliveryNote}
+                      onChange={(event) => setDeliveryNote(event.target.value)}
+                      placeholder={channel === "delivery" ? "Kurye notu" : "Siparis notu"}
+                      className="min-h-24 w-full rounded-xl border border-slate-300 px-3 py-2 text-sm"
+                    />
+                  </div>
+                )}
+
+                <div className="grid grid-cols-2 gap-2 rounded-xl bg-slate-50 p-3">
+                  <div>
+                    <p className="text-xs uppercase tracking-[0.14em] text-slate-500">Kalem</p>
+                    <p className="mt-1 text-xl font-semibold text-slate-900">{cartCount}</p>
+                  </div>
+                  <div>
+                    <p className="text-xs uppercase tracking-[0.14em] text-slate-500">Toplam</p>
+                    <p className="mt-1 text-xl font-semibold text-slate-900">{total.toFixed(2)} TL</p>
+                  </div>
+                </div>
+                {cartEntries.length > 0 ? (
+                  <button
+                    type="button"
+                    onClick={clearCart}
+                    className="min-h-[44px] w-full rounded-xl border border-slate-300 bg-white px-4 py-2 text-sm font-semibold text-slate-700"
+                  >
+                    Sepeti Temizle
+                  </button>
+                ) : null}
+
+                <div className="max-h-[38vh] space-y-2 overflow-y-auto pr-1">
+                  {cartEntries.length === 0 ? (
+                    <p className="rounded-xl border border-slate-200 bg-slate-50 px-3 py-3 text-sm text-slate-500">Sepet bos.</p>
+                  ) : (
+                    cartEntries.map((entry) => {
+                      const modifierTotal = entry.modifiers.reduce((sum, modifier) => sum + Number(modifier.price_delta), 0);
+                      return (
+                        <div key={`table-first-cart-${entry.key}`} className="rounded-xl border border-slate-200 bg-slate-50 px-3 py-3">
+                          <p className="text-sm font-semibold text-slate-900">{entry.product.name}</p>
+                          <p className="mt-1 text-xs text-slate-600">
+                            {entry.quantity} x {(Number(entry.product.price) + modifierTotal).toFixed(2)} TL
+                          </p>
+                          <div className="mt-2 flex items-center gap-2">
+                            <button
+                              type="button"
+                              onClick={() => removeProduct(entry.key)}
+                              className="inline-flex min-h-[40px] min-w-[40px] items-center justify-center rounded-lg border border-slate-300 bg-white px-2 text-sm font-semibold text-slate-700"
+                            >
+                              -
+                            </button>
+                            <input
+                              type="number"
+                              min={1}
+                              max={99}
+                              inputMode="numeric"
+                              value={entry.quantity}
+                              onChange={(event) => setCartEntryQuantity(entry.key, Number(event.target.value))}
+                              className="min-h-[40px] w-16 rounded-lg border border-slate-300 px-2 text-center text-sm"
+                            />
+                            <button
+                              type="button"
+                              onClick={() => increaseProduct(entry.key)}
+                              className="inline-flex min-h-[40px] min-w-[40px] items-center justify-center rounded-lg border border-slate-300 bg-white px-2 text-sm font-semibold text-slate-700"
+                            >
+                              +
+                            </button>
+                          </div>
+                        </div>
+                      );
+                    })
+                  )}
+                </div>
+
+                <button
+                  type="button"
+                  disabled={submitting}
+                  onClick={submitOrder}
+                  className="min-h-[48px] w-full rounded-xl bg-emerald-600 px-4 py-3 text-sm font-semibold text-white disabled:opacity-60"
+                >
+                  {submitting ? "Sipariş açılıyor..." : "Siparişi Aç"}
+                </button>
+              </aside>
+
+              <section className="rounded-2xl border border-slate-200 bg-white p-4 shadow-sm">
+                <div className="flex items-center justify-between gap-2">
+                  <p className="text-xs font-semibold uppercase tracking-[0.14em] text-slate-500">Kategoriler</p>
+                  <span className="rounded-full bg-slate-100 px-3 py-1 text-xs font-semibold text-slate-700">
+                    {activeCategory?.name ?? "Kategori yok"}
+                  </span>
+                </div>
+                <div className="mt-3 grid gap-2">
+                  {orderedCategories.map((category) => {
+                    const isActive = category.id === activeCategoryId;
+                    const count = groupedProducts.get(category.id)?.length ?? 0;
+                    return (
+                      <button
+                        key={`table-first-category-${category.id}`}
+                        type="button"
+                        onClick={() => setSelectedCategoryId(category.id)}
+                        className={`min-h-[48px] rounded-xl border px-3 py-2 text-left text-sm font-semibold ${
+                          isActive
+                            ? "border-slate-900 bg-slate-900 text-white"
+                            : "border-slate-300 bg-white text-slate-700"
+                        }`}
+                      >
+                        {category.name} ({count})
+                      </button>
+                    );
+                  })}
+                </div>
+              </section>
+
+              <section className="space-y-3 rounded-2xl border border-slate-200 bg-white p-4 shadow-sm">
+                <div className="flex items-center justify-between gap-2">
+                  <h3 className="text-base font-semibold text-slate-900">{activeCategory?.name ?? "Urunler"}</h3>
+                  <span className="rounded-lg bg-slate-100 px-3 py-1 text-xs font-semibold text-slate-700">
+                    {filteredVisibleProducts.length} urun
+                  </span>
+                </div>
+                <input
+                  ref={searchInputRef}
+                  autoFocus
+                  value={productSearchQuery}
+                  onChange={(event) => setProductSearchQuery(event.target.value)}
+                  placeholder="Ürün Ara... (Ctrl+K)"
+                  className="min-h-[48px] w-full rounded-xl border border-slate-300 px-3 py-2 text-sm"
+                />
+
+                {activeProduct ? (
+                  <article className="rounded-xl border border-slate-200 bg-slate-50 p-3">
+                    <div className="flex items-center justify-between gap-2">
+                      <div>
+                        <p className="text-xs uppercase tracking-[0.14em] text-slate-500">Secenekler</p>
+                        <p className="text-sm font-semibold text-slate-900">{activeProduct.name}</p>
+                      </div>
+                      <button
+                        type="button"
+                        onClick={() => {
+                          setActiveProductId(null);
+                          setSelectedOptions({});
+                        }}
+                        className="min-h-[40px] rounded-lg border border-slate-300 bg-white px-3 text-xs font-semibold text-slate-700"
+                      >
+                        Kapat
+                      </button>
+                    </div>
+                    <div className="mt-3 space-y-2">
+                      {(groupsByProduct.get(activeProduct.id) ?? []).map((group) => (
+                        <div key={`table-first-group-${group.id}`} className="rounded-lg border border-slate-200 bg-white p-3">
+                          <p className="text-sm font-semibold text-slate-900">{group.name}</p>
+                          <p className="mt-1 text-xs text-slate-500">
+                            {group.is_required ? "Zorunlu" : "Opsiyonel"} - en fazla {group.max_select}
+                          </p>
+                          <div className="mt-2 grid gap-2 sm:grid-cols-2">
+                            {(optionsByGroup.get(group.id) ?? []).map((option) => {
+                              const checked = (selectedOptions[group.id] ?? []).includes(option.id);
+                              return (
+                                <button
+                                  key={`table-first-option-${option.id}`}
+                                  type="button"
+                                  onClick={() => toggleOption(group, option.id)}
+                                  className={`min-h-[40px] rounded-lg border px-3 py-2 text-left text-sm ${
+                                    checked
+                                      ? "border-slate-900 bg-slate-900 text-white"
+                                      : "border-slate-300 bg-white text-slate-700"
+                                  }`}
+                                >
+                                  {option.name}
+                                </button>
+                              );
+                            })}
+                          </div>
+                        </div>
+                      ))}
+                    </div>
+                    <button
+                      type="button"
+                      onClick={confirmModifiers}
+                      className="mt-3 min-h-[48px] w-full rounded-xl bg-slate-900 px-4 py-3 text-sm font-semibold text-white"
+                    >
+                      Sepete Ekle
+                    </button>
+                  </article>
+                ) : null}
+
+                {filteredVisibleProducts.length === 0 ? (
+                  <p className="rounded-xl border border-dashed border-slate-200 bg-slate-50 px-3 py-4 text-sm text-slate-500">
+                    Bu kategoride aktif ürün yok.
+                  </p>
+                ) : (
+                  <div className="grid gap-3 sm:grid-cols-2">
+                    {filteredVisibleProducts.map((product) => (
+                      <article key={`table-first-product-${product.id}`} className="rounded-xl border border-slate-200 bg-slate-50 p-3">
+                        <div className="flex items-start justify-between gap-2">
+                          <div>
+                            <p className="text-sm font-semibold text-slate-900">{product.name}</p>
+                            <p className="mt-1 text-xs text-slate-600">{product.description ?? "Menu urunu"}</p>
+                          </div>
+                          <span className="text-sm font-semibold text-emerald-700">{Number(product.price).toFixed(2)} TL</span>
+                        </div>
+                        <div className="mt-3 flex items-center gap-2">
+                          <button
+                            type="button"
+                            onClick={() => setConfiguredQuantity(product.id, getConfiguredQuantity(product.id) - 1)}
+                            className="inline-flex min-h-[40px] min-w-[40px] items-center justify-center rounded-lg border border-slate-300 bg-white px-2 text-sm font-semibold text-slate-700"
+                          >
+                            -
+                          </button>
+                          <input
+                            type="number"
+                            min={1}
+                            max={99}
+                            inputMode="numeric"
+                            value={getConfiguredQuantity(product.id)}
+                            onChange={(event) => setConfiguredQuantity(product.id, Number(event.target.value))}
+                            className="min-h-[40px] w-16 rounded-lg border border-slate-300 px-2 text-center text-sm"
+                          />
+                          <button
+                            type="button"
+                            onClick={() => setConfiguredQuantity(product.id, getConfiguredQuantity(product.id) + 1)}
+                            className="inline-flex min-h-[40px] min-w-[40px] items-center justify-center rounded-lg border border-slate-300 bg-white px-2 text-sm font-semibold text-slate-700"
+                          >
+                            +
+                          </button>
+                          <button
+                            type="button"
+                            onClick={() => openModifierPicker(product)}
+                            className="ml-auto min-h-[48px] rounded-lg bg-slate-900 px-4 py-2 text-sm font-semibold text-white"
+                          >
+                            {(groupsByProduct.get(product.id) ?? []).length > 0 ? "Secenekli Ekle" : "Ekle"}
+                          </button>
+                        </div>
+                      </article>
+                    ))}
+                  </div>
+                )}
+              </section>
+            </div>
+          </div>
+        )}
+      </section>
+    );
+  }
 
   return (
     <>

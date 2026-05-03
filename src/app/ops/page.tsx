@@ -10,6 +10,7 @@ import { getCurrentUserWithRole } from "@/lib/auth";
 import { getOpsPageSnapshot, getSetupChecklistSummary } from "@/lib/data";
 import { getCurrentLocale } from "@/lib/i18n-server";
 import { translateUiText } from "@/lib/i18n";
+import { formatOrderSourceLabel } from "@/lib/order-label";
 import { logServerPerf, measureAsync } from "@/lib/perf";
 import { getWebPerfProfile } from "@/lib/web-perf-profile";
 
@@ -38,15 +39,16 @@ function statusLabel(status: string, locale: "tr" | "en" | "fr") {
 function orderSourceLabel(order: {
   channel?: string;
   table_number?: number;
+  table_name?: string | null;
+  table_zone_name?: string | null;
   customer_name?: string | null;
 }, locale: "tr" | "en" | "fr") {
-  if (order.channel === "delivery") {
-    return order.customer_name ? `${translateUiText("Paket servis", locale)} / ${order.customer_name}` : translateUiText("Paket servis", locale);
-  }
-  if (order.channel === "pickup") {
-    return order.customer_name ? `${translateUiText("Gel-al", locale)} / ${order.customer_name}` : translateUiText("Gel-al", locale);
-  }
-  return `${translateUiText("Masa", locale)} ${order.table_number ?? "-"}`;
+  return formatOrderSourceLabel(order, {
+    deliveryLabel: translateUiText("Paket servis", locale),
+    pickupLabel: translateUiText("Gel-al", locale),
+    customerSeparator: " / ",
+    tableFallbackLabel: translateUiText("Masa", locale),
+  });
 }
 
 function orderRef(order: { id: string; check_number?: string | null }) {
@@ -208,6 +210,9 @@ export default async function OpsPage({
 
   const role = auth.role;
   const allowAll = auth.usingDemoData;
+  if (!allowAll && role === "waiter") {
+    redirect("/admin/orders");
+  }
   const isManagement = role === "owner" || role === "admin";
   const canAdmin = allowAll || isManagement;
   const perfProfile = getWebPerfProfile("/ops");

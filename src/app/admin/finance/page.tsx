@@ -103,6 +103,15 @@ function methodAccent(index: number) {
   return accents[index % accents.length];
 }
 
+function formatQty(value: number) {
+  const qty = Number(value);
+  if (!Number.isFinite(qty)) return "0";
+  if (Math.abs(qty - Math.round(qty)) < 0.001) {
+    return String(Math.round(qty));
+  }
+  return qty.toFixed(3);
+}
+
 function buildPolylinePoints(values: number[], width: number, height: number) {
   if (values.length === 0) return "";
   const max = Math.max(1, ...values);
@@ -677,32 +686,44 @@ export default async function AdminFinancePage({
           </div>
         </ContentCard>
 
-        <ContentCard title={translateUiText("En Çok Satan Urunler", locale)}>
+        <ContentCard title="Urun Karliligi (Recete Bazli)">
           {topProducts.length === 0 ? (
-            <EmptyPanel title={translateUiText("Kayıt Bulunamadi", locale)} description={translateUiText("Secili filtrelerde ürün satis verisi yok.", locale)} />
+            <EmptyPanel title={translateUiText("Kayıt Bulunamadi", locale)} description="Secili filtrelerde urun karliligi verisi yok." />
           ) : (
-            <div className="space-y-3">
-              {topProducts.map((row, index) => {
-                const maxRevenue = Math.max(1, ...topProducts.map((item) => item.revenue));
-                return (
-                  <div key={row.productName} className="panel-hover rounded-[22px] border border-slate-200 bg-slate-50 p-4">
-                    <div className="flex items-center justify-between gap-3">
-                      <div>
-                        <p className="font-display text-lg font-semibold text-slate-900">{row.productName}</p>
-                        <p className="mt-1 text-sm text-slate-500">{row.qty} {translateUiText("adet satis", locale)}</p>
-                      </div>
-                      <p className="font-display font-numeric text-lg font-semibold text-emerald-700">{row.revenue.toFixed(2)} TL</p>
-                    </div>
-                    <div className="mt-4 h-2 overflow-hidden rounded-full bg-white">
-                      <div className={`h-2 rounded-full bg-gradient-to-r ${methodAccent(index)}`} style={{ width: `${Math.max(8, (row.revenue / maxRevenue) * 100)}%` }} />
-                    </div>
-                  </div>
-                );
-              })}
+            <div className="responsive-table-shell rounded-[22px] border border-slate-200">
+              <table className="responsive-table w-full text-left text-sm">
+                <thead className="bg-slate-50 text-slate-500">
+                  <tr>
+                    <th className="px-4 py-4 font-semibold">Urun</th>
+                    <th className="px-4 py-4 font-semibold">Adet</th>
+                    <th className="px-4 py-4 font-semibold">Net Gelir</th>
+                    <th className="px-4 py-4 font-semibold">Maliyet</th>
+                    <th className="px-4 py-4 font-semibold">Kar</th>
+                    <th className="px-4 py-4 font-semibold">Marj</th>
+                    <th className="px-4 py-4 font-semibold">Iade Etkisi</th>
+                  </tr>
+                </thead>
+                <tbody>
+                  {topProducts.map((row) => (
+                    <tr key={row.productName} className="border-t border-slate-100">
+                      <td className="px-4 py-4 font-semibold text-slate-900">{row.productName}</td>
+                      <td className="font-numeric px-4 py-4 text-slate-700">{formatQty(row.qty)}</td>
+                      <td className="font-numeric px-4 py-4 text-slate-700">{row.revenue.toFixed(2)} TL</td>
+                      <td className="font-numeric px-4 py-4 text-slate-700">{row.cost.toFixed(2)} TL</td>
+                      <td className={`font-numeric px-4 py-4 font-semibold ${row.profit < 0 ? "text-rose-700" : "text-emerald-700"}`}>
+                        {row.profit.toFixed(2)} TL
+                      </td>
+                      <td className={`font-numeric px-4 py-4 font-semibold ${row.margin < 15 ? "text-amber-700" : "text-emerald-700"}`}>
+                        %{row.margin.toFixed(1)}
+                      </td>
+                      <td className="font-numeric px-4 py-4 text-rose-700">-{row.refundImpact.toFixed(2)} TL</td>
+                    </tr>
+                  ))}
+                </tbody>
+              </table>
             </div>
           )}
         </ContentCard>
-
         <ContentCard title={translateUiText("Son Hareketler", locale)}>
           {recentPayments.length === 0 ? (
             <EmptyPanel title={translateUiText("Kayıt Bulunamadi", locale)} description={translateUiText("Secili filtrelere uygun hareket yok.", locale)} />

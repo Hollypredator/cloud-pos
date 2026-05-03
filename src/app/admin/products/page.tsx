@@ -21,6 +21,7 @@ import {
   reorderCategories,
   uploadMediaFile,
   updateCategoryPrepStation,
+  updateIngredient,
   updateProduct,
 } from "@/lib/data";
 import { requireRole } from "@/lib/auth";
@@ -244,6 +245,7 @@ async function addProductAction(formData: FormData) {
     productKind,
     unit,
     department,
+    cost: Number(formData.get("cost") ?? 0),
   });
   if (!result.ok) {
     redirect(await resolveProductsFeedbackPath("error", actionErrorMessage(result, "Ürün eklenemedi.")));
@@ -300,6 +302,7 @@ async function updateProductAction(formData: FormData) {
     productKind,
     unit,
     department,
+    cost: Number(formData.get("cost") ?? 0),
   });
   if (!result.ok) {
     redirect(await resolveProductsFeedbackPath("error", actionErrorMessage(result, "Ürün güncellenemedi.")));
@@ -396,9 +399,27 @@ async function addIngredientAction(formData: FormData) {
   if (typeof name !== "string" || typeof unit !== "string") {
     redirect(await resolveProductsFeedbackPath("error", "Malzeme bilgileri geçersiz."));
   }
-  const result = await createIngredient(name, unit);
+  const cost = Number(formData.get("cost") ?? 0);
+  const result = await createIngredient(name, unit, cost);
   if (!result.ok) {
     redirect(await resolveProductsFeedbackPath("error", actionErrorMessage(result, "Malzeme eklenemedi.")));
+  }
+  redirect(await resolveProductsReturnPath());
+}
+
+async function updateIngredientAction(formData: FormData) {
+  "use server";
+  await requireRole(["admin"], "/admin/products");
+  const ingredientId = formData.get("ingredientId");
+  const name = formData.get("name");
+  const unit = formData.get("unit");
+  const cost = Number(formData.get("cost") ?? 0);
+  if (typeof ingredientId !== "string" || typeof name !== "string" || typeof unit !== "string" || !Number.isFinite(cost)) {
+    redirect(await resolveProductsFeedbackPath("error", "Malzeme guncelleme bilgileri geçersiz."));
+  }
+  const result = await updateIngredient(ingredientId, name, unit, cost);
+  if (!result.ok) {
+    redirect(await resolveProductsFeedbackPath("error", actionErrorMessage(result, "Malzeme güncellenemedi.")));
   }
   redirect(await resolveProductsReturnPath());
 }
@@ -446,6 +467,39 @@ async function detachIngredientAction(formData: FormData) {
     redirect(await resolveProductsFeedbackPath("error", actionErrorMessage(result, "Malzeme urunden ayrilamadi.")));
   }
   redirect(await resolveProductsReturnPath());
+}
+
+async function copyRecipeAction(formData: FormData) {
+  "use server";
+  await requireRole(["admin"], "/admin/products");
+
+  const targetProductId = formData.get("targetProductId");
+  const sourceProductId = formData.get("sourceProductId");
+  if (typeof targetProductId !== "string" || typeof sourceProductId !== "string") {
+    redirect(await resolveProductsFeedbackPath("error", "Recete kopyalama bilgileri gecersiz."));
+  }
+  if (targetProductId === sourceProductId) {
+    redirect(await resolveProductsFeedbackPath("error", "Kaynak ve hedef urun ayni olamaz."));
+  }
+
+  const data = await getProductManagementData({ tab: "catalog" });
+  const sourceRows = data.productIngredients.filter((row) => row.product_id === sourceProductId);
+  if (sourceRows.length === 0) {
+    redirect(await resolveProductsFeedbackPath("error", "Kaynak urunde kopyalanacak recete bulunamadi."));
+  }
+
+  for (const row of sourceRows) {
+    const result = await attachIngredientToProduct({
+      productId: targetProductId,
+      ingredientId: row.ingredient_id,
+      quantity: row.quantity,
+    });
+    if (!result.ok) {
+      redirect(await resolveProductsFeedbackPath("error", actionErrorMessage(result, "Recete kopyalanamadi.")));
+    }
+  }
+
+  redirect(await resolveProductsFeedbackPath("success", "Recete hedef urune kopyalandi."));
 }
 
 async function addModifierGroupAction(formData: FormData) {
@@ -520,13 +574,20 @@ function prepStationLabel(station?: string | null) {
 export default async function AdminProductsPage({
   searchParams,
 }: {
-  searchParams: Promise<{ tab?: string; categoryId?: string; feedback?: string; tone?: "success" | "error" }>;
+  searchParams: Promise<{
+    tab?: string;
+    categoryId?: string;
+    productId?: string;
+    q?: string;
+    feedback?: string;
+    tone?: "success" | "error";
+  }>;
 }) {
   const locale = await getCurrentLocale();
   await requireRole(["admin"], "/admin/products");
-  const { tab: tabParam, categoryId: categoryIdParam, feedback, tone } = await searchParams;
-  const activeTab = ["catalog", "menu", "categories", "bulk", "features", "import"].includes(tabParam ?? "")
-    ? (tabParam as "catalog" | "menu" | "categories" | "bulk" | "features" | "import")
+  const { tab: tabParam, categoryId: categoryIdParam, productId: productIdParam, q: qParam, feedback, tone } = await searchParams;
+  const activeTab = ["catalog", "menu", "categories", "bulk", "features", "import", "recipe"].includes(tabParam ?? "")
+    ? (tabParam as "catalog" | "menu" | "categories" | "bulk" | "features" | "import" | "recipe")
     : "catalog";
   const productManagementResult = await measureAsync("product_management", () => getProductManagementData({ tab: activeTab }));
   const {
@@ -588,6 +649,42 @@ export default async function AdminProductsPage({
   const visibleProducts = products.filter((product) => product.category_id === selectedCategoryId);
   const availableProducts = products.filter((product) => product.is_available).length;
   const lowStockProducts = products.filter((product) => product.stock_count <= 10).length;
+  const recipeQuery = (qParam ?? "").trim();
+  const normalizedRecipeQuery = recipeQuery.toLocaleLowerCase("tr-TR");
+  const recipeProducts = [...products]
+    .sort((a, b) => a.name.localeCompare(b.name, "tr-TR"))
+    .filter((product) =>
+      normalizedRecipeQuery
+        ? product.name.toLocaleLowerCase("tr-TR").includes(normalizedRecipeQuery)
+        : true,
+    );
+  const selectedRecipeProductId = recipeProducts.some((product) => product.id === productIdParam)
+    ? productIdParam ?? recipeProducts[0]?.id ?? ""
+    : recipeProducts[0]?.id ?? "";
+  const selectedRecipeProduct = products.find((product) => product.id === selectedRecipeProductId) ?? null;
+  const selectedRecipeRows = selectedRecipeProduct
+    ? (ingredientsByProduct.get(selectedRecipeProduct.id) ?? [])
+    : [];
+  const selectedRecipeTotalCost = selectedRecipeRows.reduce(
+    (sum, item) => sum + item.quantity * (ingredients.find((ingredient) => ingredient.id === item.ingredient_id)?.cost ?? 0),
+    0,
+  );
+  const selectedRecipeOverheadCost = Number(selectedRecipeProduct?.cost ?? 0);
+  const selectedRecipeTotalUnitCost = selectedRecipeTotalCost + selectedRecipeOverheadCost;
+  const selectedRecipePrice = Number(selectedRecipeProduct?.price ?? 0);
+  const selectedRecipeProfit = selectedRecipePrice - selectedRecipeTotalUnitCost;
+  const selectedRecipeMargin = selectedRecipePrice > 0 ? (selectedRecipeProfit / selectedRecipePrice) * 100 : 0;
+  const sourceRecipeCandidates = recipeProducts.filter((product) => product.id !== selectedRecipeProductId);
+
+  function buildRecipeHref(productId: string) {
+    const params = new URLSearchParams();
+    params.set("tab", "recipe");
+    params.set("productId", productId);
+    if (recipeQuery) {
+      params.set("q", recipeQuery);
+    }
+    return `/admin/products?${params.toString()}`;
+  }
 
   return (
     <BackofficePage
@@ -654,6 +751,7 @@ export default async function AdminProductsPage({
             { label: translateUiText("Menü Yönetimi", locale), active: activeTab === "menu", href: "/admin/products?tab=menu" },
             { label: "Ana Kategoriler", active: activeTab === "categories", href: "/admin/products?tab=categories" },
             { label: "Toplu Islemler", active: activeTab === "bulk", href: "/admin/products?tab=bulk" },
+            { label: "Recipe Studio", active: activeTab === "recipe", href: "/admin/products?tab=recipe" },
             { label: "Market Import", active: activeTab === "import", href: "/admin/products?tab=import" },
             { label: "Ürün Ozellikleri", active: activeTab === "features", href: "/admin/products?tab=features" },
           ]}
@@ -765,6 +863,54 @@ export default async function AdminProductsPage({
                 })}
               </div>
 
+              {visibleProducts.length > 0 && (
+                <div className="mt-8 grid gap-4 sm:grid-cols-2 lg:grid-cols-4">
+                  {(() => {
+                    const stats = visibleProducts.reduce((acc, p) => {
+                      const recipeCost = (ingredientsByProduct.get(p.id) ?? []).reduce(
+                        (sum, item) => sum + (item.quantity * (ingredients.find(i => i.id === item.ingredient_id)?.cost ?? 0)),
+                        0
+                      );
+                      const totalCost = Number(p.cost ?? 0) + recipeCost;
+                      const profit = Number(p.price) - totalCost;
+                      const margin = Number(p.price) > 0 ? (profit / Number(p.price)) * 100 : 0;
+                      
+                      acc.totalProfit += profit;
+                      acc.totalRevenue += Number(p.price);
+                      acc.avgMarginSum += margin;
+                      if (profit < 0) acc.lossCount++;
+                      if (margin < 15 && profit >= 0) acc.warningCount++;
+                      return acc;
+                    }, { totalProfit: 0, totalRevenue: 0, avgMarginSum: 0, lossCount: 0, warningCount: 0 });
+
+                    const avgMargin = stats.totalRevenue > 0 ? (stats.totalProfit / stats.totalRevenue) * 100 : 0;
+
+                    return (
+                      <>
+                        <div className="rounded-[22px] border border-slate-200 bg-white p-5 shadow-sm">
+                          <p className="text-[10px] font-bold uppercase tracking-widest text-slate-400">Ort. Kâr Marjı</p>
+                          <p className={`mt-2 text-2xl font-bold ${avgMargin > 30 ? 'text-emerald-600' : avgMargin > 15 ? 'text-amber-600' : 'text-rose-600'}`}>
+                            %{avgMargin.toFixed(1)}
+                          </p>
+                        </div>
+                        <div className="rounded-[22px] border border-slate-200 bg-white p-5 shadow-sm">
+                          <p className="text-[10px] font-bold uppercase tracking-widest text-slate-400">Potansiyel Kâr</p>
+                          <p className="mt-2 text-2xl font-bold text-slate-900">{stats.totalProfit.toFixed(2)} TL</p>
+                        </div>
+                        <div className="rounded-[22px] border border-slate-200 bg-white p-5 shadow-sm">
+                          <p className="text-[10px] font-bold uppercase tracking-widest text-slate-400">Kritik Ürünler</p>
+                          <p className={`mt-2 text-2xl font-bold ${stats.lossCount > 0 ? 'text-rose-600' : 'text-slate-900'}`}>{stats.lossCount} Zarar</p>
+                        </div>
+                        <div className="rounded-[22px] border border-slate-200 bg-white p-5 shadow-sm">
+                          <p className="text-[10px] font-bold uppercase tracking-widest text-slate-400">Düşük Marj</p>
+                          <p className={`mt-2 text-2xl font-bold ${stats.warningCount > 0 ? 'text-amber-600' : 'text-slate-900'}`}>{stats.warningCount} İncele</p>
+                        </div>
+                      </>
+                    );
+                  })()}
+                </div>
+              )}
+
               {visibleProducts.length === 0 ? (
                 <div className="mt-4">
                   <EmptyPanel title="Ürün Yok" description="Secili kategori için ürün kaydı bulunmuyor." />
@@ -781,8 +927,59 @@ export default async function AdminProductsPage({
                                 {orderedCategories.find((category) => category.id === product.category_id)?.name ?? "Kategori"}
                               </p>
                               <h3 className="mt-2 text-xl font-semibold tracking-tight text-slate-900 sm:text-2xl">{product.name}</h3>
-                              <p className="mt-2 text-sm text-slate-500">{product.description ?? "Aciklama girilmedi."}</p>
-                              <p className="mt-2 text-sm font-semibold text-slate-700">{Number(product.price).toFixed(2)} TL</p>
+                              <p className="mt-2 line-clamp-1 text-sm text-slate-500">{product.description ?? "Aciklama girilmedi."}</p>
+                              
+                              {(() => {
+                                const recipeCost = (ingredientsByProduct.get(product.id) ?? []).reduce(
+                                  (sum, item) => sum + (item.quantity * (ingredients.find(i => i.id === item.ingredient_id)?.cost ?? 0)),
+                                  0
+                                );
+                                const totalCost = Number(product.cost ?? 0) + recipeCost;
+                                const totalRevenue = Number(product.price);
+                                const profit = totalRevenue - totalCost;
+                                const margin = totalRevenue > 0 ? (profit / totalRevenue) * 100 : 0;
+                                
+                                const isCritical = profit < 0;
+                                const isWarning = margin < 15 && profit >= 0;
+                                
+                                return (
+                                  <div className="mt-4 space-y-3">
+                                    <div className="flex items-end justify-between gap-4">
+                                       <div className="flex flex-col">
+                                         <span className="text-[10px] font-bold uppercase tracking-widest text-slate-400">Satış Fiyatı</span>
+                                         <span className="text-lg font-bold text-slate-900">{totalRevenue.toFixed(2)} TL</span>
+                                       </div>
+                                       <div className="flex flex-col text-right">
+                                         <span className="text-[10px] font-bold uppercase tracking-widest text-slate-400">Tahmini Kâr</span>
+                                         <span className={`text-lg font-bold ${isCritical ? 'text-rose-600' : 'text-emerald-600'}`}>
+                                           {profit.toFixed(2)} TL
+                                         </span>
+                                       </div>
+                                    </div>
+                                    
+                                    <div className="relative h-2 w-full overflow-hidden rounded-full bg-slate-100">
+                                      <div 
+                                        className={`absolute left-0 top-0 h-full transition-all duration-500 ${isCritical ? 'bg-rose-500' : isWarning ? 'bg-amber-500' : 'bg-emerald-500'}`}
+                                        style={{ width: `${Math.max(0, Math.min(100, margin))}%` }}
+                                      />
+                                    </div>
+                                    
+                                    <div className="flex items-center justify-between text-[10px] font-bold uppercase tracking-wider">
+                                       <span className="text-slate-500">Maliyet: %{(100 - margin).toFixed(0)}</span>
+                                       <span className={isCritical ? 'text-rose-600' : isWarning ? 'text-amber-600' : 'text-emerald-600'}>
+                                         Marj: %{margin.toFixed(0)}
+                                       </span>
+                                    </div>
+
+                                    {isCritical && (
+                                      <div className="flex items-center gap-2 rounded-xl bg-rose-50 p-2 text-[10px] font-bold text-rose-700">
+                                        <span className="flex h-4 w-4 items-center justify-center rounded-full bg-rose-200">!</span>
+                                        ZARAR EDİSİYOR: Fiyatı veya reçeteyi gözden geçirin.
+                                      </div>
+                                    )}
+                                  </div>
+                                );
+                              })()}
                             </div>
                             <span className={`inline-flex w-full justify-center rounded-full px-3 py-1 text-xs font-semibold sm:w-auto ${product.is_available ? "bg-emerald-100 text-emerald-700" : "bg-slate-100 text-slate-600"}`}>
                               {product.is_available ? "Aktif" : "Pasif"}
@@ -813,6 +1010,10 @@ export default async function AdminProductsPage({
                             <div className="grid gap-3 md:grid-cols-2">
                               <input name="price" type="number" step="0.01" min="0" defaultValue={product.price} className="rounded-2xl border border-slate-200 bg-slate-50 px-4 py-3 text-sm" />
                               <input name="stockCount" type="number" min="0" defaultValue={product.stock_count} className="rounded-2xl border border-slate-200 bg-slate-50 px-4 py-3 text-sm" />
+                              <div className="flex flex-col gap-1 md:col-span-2">
+                                <label className="text-[10px] font-bold uppercase tracking-wider text-slate-400 ml-1">Doğrudan Ek Maliyet / Overhead</label>
+                                <input name="cost" type="number" step="0.01" min="0" defaultValue={product.cost ?? 0} className="rounded-2xl border border-slate-200 bg-slate-50 px-4 py-3 text-sm" />
+                              </div>
                             </div>
                             {isMarketScope ? (
                               <div className="grid gap-3 md:grid-cols-2">
@@ -864,23 +1065,55 @@ export default async function AdminProductsPage({
                             </button>
                           </form>
 
-                          <div className="mt-4 space-y-3 rounded-[20px] bg-slate-50 p-3">
-                            <p className="text-sm font-semibold text-slate-900">Recete</p>
-                            {(ingredientsByProduct.get(product.id) ?? []).length === 0 ? <p className="text-sm text-slate-500">Malzeme baglanmamis.</p> : null}
-                            {(ingredientsByProduct.get(product.id) ?? []).map((item) => (
-                              <div key={`${product.id}-${item.ingredient_id}`} className="flex flex-col items-start justify-between gap-3 rounded-xl border border-slate-200 bg-white px-3 py-2 text-sm sm:flex-row sm:items-center">
-                                <span className="min-w-0 break-words text-slate-700">
-                                  {item.ingredientName} - {item.quantity} {item.unit}
-                                </span>
-                                <form action={detachIngredientAction} className="w-full sm:w-auto">
-                                  <input type="hidden" name="productId" value={product.id} />
-                                  <input type="hidden" name="ingredientId" value={item.ingredient_id} />
-                                  <button type="submit" className="w-full text-left text-xs font-semibold text-rose-700 sm:w-auto sm:text-right">
-                                    Cikar
-                                  </button>
-                                </form>
+                          <div className="mt-4 space-y-3 rounded-[20px] bg-slate-50 p-4">
+                            <h4 className="text-[10px] font-bold uppercase tracking-widest text-slate-400">Ürün Reçete Detayı</h4>
+                            
+                            <div className="mt-2 divide-y divide-slate-200">
+                              {(ingredientsByProduct.get(product.id) ?? []).length === 0 ? (
+                                <p className="py-4 text-center text-sm text-slate-500">Bu ürünün henüz bir reçetesi yok.</p>
+                              ) : (
+                                (ingredientsByProduct.get(product.id) ?? []).map((item) => {
+                                  const ingredientDetail = ingredients.find(i => i.id === item.ingredient_id);
+                                  const itemCost = (ingredientDetail?.cost ?? 0) * item.quantity;
+                                  
+                                  return (
+                                    <div key={`${product.id}-${item.ingredient_id}`} className="grid grid-cols-[1fr_80px_100px_40px] items-center gap-3 py-3 text-sm">
+                                      <div className="flex flex-col">
+                                        <span className="font-semibold text-slate-900">{item.ingredientName}</span>
+                                        <span className="text-[10px] text-slate-500">Birim: {ingredientDetail?.cost.toFixed(2)} TL/{item.unit}</span>
+                                      </div>
+                                      <div className="text-right text-slate-600">
+                                        {item.quantity} {item.unit}
+                                      </div>
+                                      <div className="text-right font-bold text-slate-900">
+                                        {itemCost.toFixed(2)} TL
+                                      </div>
+                                      <form action={detachIngredientAction} className="flex justify-end">
+                                        <input type="hidden" name="productId" value={product.id} />
+                                        <input type="hidden" name="ingredientId" value={item.ingredient_id} />
+                                        <button type="submit" className="flex h-6 w-6 items-center justify-center rounded-full bg-rose-50 text-rose-600 hover:bg-rose-100">
+                                          &times;
+                                        </button>
+                                      </form>
+                                    </div>
+                                  );
+                                })
+                              )}
+                            </div>
+
+                            {(ingredientsByProduct.get(product.id) ?? []).length > 0 && (
+                              <div className="mt-2 border-t border-slate-200 pt-3">
+                                <div className="flex justify-between text-xs font-bold uppercase tracking-wider text-slate-500">
+                                  <span>Toplam Reçete Maliyeti</span>
+                                  <span className="text-slate-900">
+                                    {(ingredientsByProduct.get(product.id) ?? []).reduce(
+                                      (sum, item) => sum + (item.quantity * (ingredients.find(i => i.id === item.ingredient_id)?.cost ?? 0)),
+                                      0
+                                    ).toFixed(2)} TL
+                                  </span>
+                                </div>
                               </div>
-                            ))}
+                            )}
                             <form action={attachIngredientAction} className="grid gap-2">
                               <input type="hidden" name="productId" value={product.id} />
                               <select name="ingredientId" required className="rounded-xl border border-slate-200 bg-white px-3 py-2 text-sm">
@@ -1177,6 +1410,208 @@ export default async function AdminProductsPage({
           </div>
         ) : null}
 
+        {activeTab === "recipe" ? (
+          <div className="mt-6 grid gap-5 xl:grid-cols-[280px_minmax(0,1fr)_320px]">
+            <ContentCard title="Urun Secimi">
+              <form method="get" className="mb-4 grid gap-2">
+                <input type="hidden" name="tab" value="recipe" />
+                <input
+                  name="q"
+                  defaultValue={recipeQuery}
+                  placeholder="Urun ara..."
+                  className="rounded-2xl border border-slate-200 bg-slate-50 px-4 py-3 text-sm"
+                />
+                <button type="submit" className="rounded-2xl border border-slate-200 bg-white px-4 py-3 text-sm font-semibold text-slate-700">
+                  Filtrele
+                </button>
+              </form>
+              <div className="max-h-[620px] space-y-2 overflow-y-auto pr-1">
+                {recipeProducts.map((product) => {
+                  const recipeCost = (ingredientsByProduct.get(product.id) ?? []).reduce(
+                    (sum, item) => sum + item.quantity * (ingredients.find((ingredient) => ingredient.id === item.ingredient_id)?.cost ?? 0),
+                    0,
+                  );
+                  const totalUnitCost = Number(product.cost ?? 0) + recipeCost;
+                  const margin = Number(product.price) > 0 ? ((Number(product.price) - totalUnitCost) / Number(product.price)) * 100 : 0;
+                  const isActive = product.id === selectedRecipeProductId;
+                  return (
+                    <Link
+                      key={product.id}
+                      href={buildRecipeHref(product.id)}
+                      className={`block rounded-2xl border px-3 py-3 transition ${
+                        isActive
+                          ? "border-[#ff5a34] bg-[#fff2ee]"
+                          : "border-slate-200 bg-slate-50 hover:border-slate-300 hover:bg-white"
+                      }`}
+                    >
+                      <p className="truncate text-sm font-semibold text-slate-900">{product.name}</p>
+                      <div className="mt-2 flex items-center justify-between text-xs text-slate-500">
+                        <span>Fiyat: {Number(product.price).toFixed(2)} TL</span>
+                        <span className={margin < 15 ? "font-semibold text-amber-700" : "font-semibold text-emerald-700"}>
+                          %{margin.toFixed(0)}
+                        </span>
+                      </div>
+                    </Link>
+                  );
+                })}
+              </div>
+            </ContentCard>
+
+            <ContentCard title="Recete Editoru">
+              {!selectedRecipeProduct ? (
+                <EmptyPanel title="Urun secilmedi" description="Soldaki listeden bir urun secerek recete duzenlemeye baslayin." />
+              ) : (
+                <div className="space-y-4">
+                  <div className="rounded-2xl border border-slate-200 bg-slate-50 p-4">
+                    <p className="text-lg font-semibold text-slate-900">{selectedRecipeProduct.name}</p>
+                    <p className="mt-1 text-sm text-slate-500">
+                      {orderedCategories.find((category) => category.id === selectedRecipeProduct.category_id)?.name ?? "Kategori"}
+                    </p>
+                    <div className="mt-3 grid gap-2 sm:grid-cols-4">
+                      <div className="rounded-xl border border-slate-200 bg-white px-3 py-2">
+                        <p className="text-[10px] font-bold uppercase tracking-wider text-slate-400">Fiyat</p>
+                        <p className="mt-1 text-sm font-semibold text-slate-900">{selectedRecipePrice.toFixed(2)} TL</p>
+                      </div>
+                      <div className="rounded-xl border border-slate-200 bg-white px-3 py-2">
+                        <p className="text-[10px] font-bold uppercase tracking-wider text-slate-400">Recete</p>
+                        <p className="mt-1 text-sm font-semibold text-slate-900">{selectedRecipeTotalCost.toFixed(2)} TL</p>
+                      </div>
+                      <div className="rounded-xl border border-slate-200 bg-white px-3 py-2">
+                        <p className="text-[10px] font-bold uppercase tracking-wider text-slate-400">Toplam Maliyet</p>
+                        <p className="mt-1 text-sm font-semibold text-slate-900">{selectedRecipeTotalUnitCost.toFixed(2)} TL</p>
+                      </div>
+                      <div className="rounded-xl border border-slate-200 bg-white px-3 py-2">
+                        <p className="text-[10px] font-bold uppercase tracking-wider text-slate-400">Marj</p>
+                        <p className={`mt-1 text-sm font-semibold ${selectedRecipeMargin < 15 ? "text-amber-700" : "text-emerald-700"}`}>
+                          %{selectedRecipeMargin.toFixed(1)}
+                        </p>
+                      </div>
+                    </div>
+                  </div>
+
+                  <div className="rounded-2xl border border-slate-200 bg-white">
+                    <div className="border-b border-slate-200 px-4 py-3">
+                      <p className="text-sm font-semibold text-slate-900">Recete Kalemleri</p>
+                    </div>
+                    <div className="divide-y divide-slate-100">
+                      {selectedRecipeRows.length === 0 ? (
+                        <p className="px-4 py-6 text-center text-sm text-slate-500">Bu urunun henuz recetesi yok.</p>
+                      ) : (
+                        selectedRecipeRows.map((item) => {
+                          const ingredientDetail = ingredients.find((ingredient) => ingredient.id === item.ingredient_id);
+                          const ingredientUnitCost = Number(ingredientDetail?.cost ?? 0);
+                          return (
+                            <form key={`${selectedRecipeProduct.id}-${item.ingredient_id}`} action={attachIngredientAction} className="grid gap-2 px-4 py-3 sm:grid-cols-[1fr_120px_110px_auto_auto] sm:items-center">
+                              <input type="hidden" name="productId" value={selectedRecipeProduct.id} />
+                              <input type="hidden" name="ingredientId" value={item.ingredient_id} />
+                              <div>
+                                <p className="text-sm font-semibold text-slate-900">{item.ingredientName}</p>
+                                <p className="text-xs text-slate-500">{ingredientUnitCost.toFixed(2)} TL / {item.unit}</p>
+                              </div>
+                              <input
+                                name="quantity"
+                                type="number"
+                                min="0.01"
+                                step="0.01"
+                                defaultValue={item.quantity}
+                                className="rounded-xl border border-slate-200 bg-slate-50 px-3 py-2 text-sm"
+                              />
+                              <p className="text-right text-sm font-semibold text-slate-900">
+                                {(ingredientUnitCost * item.quantity).toFixed(2)} TL
+                              </p>
+                              <button type="submit" className="rounded-xl border border-slate-200 bg-slate-50 px-3 py-2 text-xs font-semibold text-slate-700">
+                                Guncelle
+                              </button>
+                              <button formAction={detachIngredientAction} type="submit" className="rounded-xl border border-rose-200 bg-rose-50 px-3 py-2 text-xs font-semibold text-rose-700">
+                                Cikar
+                              </button>
+                            </form>
+                          );
+                        })
+                      )}
+                    </div>
+                  </div>
+
+                  <form action={attachIngredientAction} className="grid gap-2 rounded-2xl border border-slate-200 bg-slate-50 p-4 sm:grid-cols-[1fr_120px_auto] sm:items-center">
+                    <input type="hidden" name="productId" value={selectedRecipeProduct.id} />
+                    <select name="ingredientId" required className="rounded-xl border border-slate-200 bg-white px-3 py-2 text-sm">
+                      <option value="">Malzeme sec</option>
+                      {ingredients.map((ingredient) => (
+                        <option key={ingredient.id} value={ingredient.id}>
+                          {ingredient.name} ({ingredient.unit})
+                        </option>
+                      ))}
+                    </select>
+                    <input
+                      name="quantity"
+                      type="number"
+                      min="0.01"
+                      step="0.01"
+                      required
+                      placeholder="Miktar"
+                      className="rounded-xl border border-slate-200 bg-white px-3 py-2 text-sm"
+                    />
+                    <button type="submit" className="rounded-xl bg-[#ff5a34] px-4 py-2 text-sm font-semibold text-white">
+                      Kalem Ekle
+                    </button>
+                  </form>
+
+                  <form action={copyRecipeAction} className="grid gap-2 rounded-2xl border border-slate-200 bg-white p-4 sm:grid-cols-[1fr_auto] sm:items-center">
+                    <input type="hidden" name="targetProductId" value={selectedRecipeProduct.id} />
+                    <select name="sourceProductId" required className="rounded-xl border border-slate-200 bg-slate-50 px-3 py-2 text-sm">
+                      <option value="">Recete kopyalanacak urunu sec</option>
+                      {sourceRecipeCandidates.map((product) => (
+                        <option key={product.id} value={product.id}>
+                          {product.name}
+                        </option>
+                      ))}
+                    </select>
+                    <button type="submit" className="rounded-xl border border-slate-200 bg-slate-50 px-4 py-2 text-sm font-semibold text-slate-700">
+                      Receteyi Kopyala
+                    </button>
+                  </form>
+                </div>
+              )}
+            </ContentCard>
+
+            <ContentCard title="Hizli Maliyet Yonetimi">
+              <div className="space-y-3">
+                <div className="rounded-2xl border border-slate-200 bg-slate-50 px-4 py-3 text-sm text-slate-600">
+                  Malzeme birim maliyetini hizli guncelleyin. Recete maliyeti aninda yansir.
+                </div>
+                <div className="max-h-[620px] space-y-2 overflow-y-auto pr-1">
+                  {ingredients.map((ingredient) => (
+                    <form key={ingredient.id} action={updateIngredientAction} className="rounded-2xl border border-slate-200 bg-slate-50 p-3">
+                      <input type="hidden" name="ingredientId" value={ingredient.id} />
+                      <input type="hidden" name="name" value={ingredient.name} />
+                      <input type="hidden" name="unit" value={ingredient.unit} />
+                      <div className="flex items-center justify-between gap-3">
+                        <div className="min-w-0">
+                          <p className="truncate text-sm font-semibold text-slate-900">{ingredient.name}</p>
+                          <p className="text-xs text-slate-500">{ingredient.unit}</p>
+                        </div>
+                        <div className="flex items-center gap-2">
+                          <input
+                            name="cost"
+                            type="number"
+                            min="0"
+                            step="0.01"
+                            defaultValue={Number(ingredient.cost ?? 0).toFixed(2)}
+                            className="w-24 rounded-xl border border-slate-200 bg-white px-3 py-2 text-sm"
+                          />
+                          <button type="submit" className="rounded-xl border border-slate-200 bg-white px-3 py-2 text-xs font-semibold text-slate-700">
+                            Kaydet
+                          </button>
+                        </div>
+                      </div>
+                    </form>
+                  ))}
+                </div>
+              </div>
+            </ContentCard>
+          </div>
+        ) : null}
+
         {activeTab === "import" ? (
           <div className="mt-6 grid gap-5 xl:grid-cols-2">
             <ContentCard title="Market Import">
@@ -1225,21 +1660,32 @@ export default async function AdminProductsPage({
         {activeTab === "features" ? (
           <div className="mt-6 grid gap-5 xl:grid-cols-2">
             <ContentCard title="Malzeme Kutuphanesi">
-              <form action={addIngredientAction} className="grid gap-3 md:grid-cols-[minmax(0,1fr)_160px_auto]">
+              <form action={addIngredientAction} className="grid gap-3 md:grid-cols-[minmax(0,1fr)_120px_100px_auto]">
                 <input name="name" required placeholder="Yeni malzeme" className="rounded-2xl border border-slate-200 bg-slate-50 px-4 py-3 text-sm" />
                 <input name="unit" required placeholder="Birim" className="rounded-2xl border border-slate-200 bg-slate-50 px-4 py-3 text-sm" />
+                <input name="cost" type="number" step="0.01" required placeholder="Maliyet" className="rounded-2xl border border-slate-200 bg-slate-50 px-4 py-3 text-sm" />
                 <button type="submit" className="rounded-2xl bg-[#ff5a34] px-4 py-3 text-sm font-semibold text-white">Ekle</button>
               </form>
-              <div className="mt-4 space-y-2">
+              <div className="mt-4 space-y-3">
                 {ingredients.map((ingredient) => (
-                  <div key={ingredient.id} className="flex flex-col items-start justify-between gap-3 rounded-2xl border border-slate-200 bg-slate-50 px-4 py-3 sm:flex-row sm:items-center">
-                    <div className="min-w-0">
-                      <p className="font-semibold text-slate-900">{ingredient.name}</p>
-                      <p className="text-sm text-slate-500">{ingredient.unit}</p>
-                    </div>
-                    <form action={deleteIngredientAction} className="w-full sm:w-auto">
+                  <div key={ingredient.id} className="rounded-2xl border border-slate-200 bg-slate-50 p-4">
+                    <form action={updateIngredientAction} className="flex flex-wrap items-center gap-3">
                       <input type="hidden" name="ingredientId" value={ingredient.id} />
-                      <button type="submit" className="w-full rounded-xl border border-rose-200 bg-rose-50 px-3 py-2 text-xs font-semibold text-rose-700 sm:w-auto">Sil</button>
+                      <div className="min-w-0 flex-1">
+                        <input name="name" defaultValue={ingredient.name} className="w-full bg-transparent font-semibold text-slate-900 focus:outline-none" />
+                        <div className="mt-1 flex gap-2">
+                           <input name="unit" defaultValue={ingredient.unit} className="w-16 bg-transparent text-xs text-slate-500 focus:outline-none" />
+                           <span className="text-xs text-slate-300">|</span>
+                           <div className="flex items-center gap-1">
+                             <input name="cost" type="number" step="0.01" defaultValue={Number(ingredient.cost ?? 0).toFixed(2)} className="w-20 bg-transparent text-xs font-medium text-emerald-600 focus:outline-none" />
+                             <span className="text-[10px] text-slate-400">TL</span>
+                           </div>
+                        </div>
+                      </div>
+                      <div className="flex items-center gap-2">
+                        <button type="submit" className="rounded-xl bg-slate-200 px-3 py-2 text-xs font-semibold text-slate-700 hover:bg-slate-300">Güncelle</button>
+                        <button formAction={deleteIngredientAction} type="submit" className="rounded-xl border border-rose-200 bg-rose-50 px-3 py-2 text-xs font-semibold text-rose-700 hover:bg-rose-100">Sil</button>
+                      </div>
                     </form>
                   </div>
                 ))}

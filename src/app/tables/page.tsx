@@ -102,10 +102,11 @@ async function setTableStatusAction(formData: FormData) {
 export default async function TablesPage({
   searchParams,
 }: {
-  searchParams: Promise<{ status?: string; feedback?: string; tone?: "success" | "error" }>;
+  searchParams: Promise<{ status?: string; feedback?: string; tone?: "success" | "error"; mode?: string }>;
 }) {
   await requireRole(["admin", "waiter", "cashier", "kitchen"], "/tables");
-  const { status: rawFilter, feedback, tone } = await searchParams;
+  const { status: rawFilter, feedback, tone, mode } = await searchParams;
+  const isTabletMode = mode === "tablet";
   const activeFilter = parseTableFilter(rawFilter);
   const currentUser = await getCurrentUserWithRole();
   const allowAll = currentUser.usingDemoData;
@@ -160,6 +161,7 @@ export default async function TablesPage({
     <BackofficePage
       title="Masa Takip ve Hızlı İşlem"
       description="Masa durumlarini izle, adisyon ve servis akisina tek ekrandan gec"
+      minimal={isTabletMode}
       sidebar={
         <div className="space-y-5">
           <WorkflowGuide

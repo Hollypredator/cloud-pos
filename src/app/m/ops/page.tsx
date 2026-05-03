@@ -3,6 +3,7 @@ import { LiveOpsBridge } from "@/components/live-ops-bridge";
 import { LiveRouteRefresh } from "@/components/live-route-refresh";
 import { requireRole } from "@/lib/auth";
 import { getOpsPageSnapshot } from "@/lib/data";
+import { formatOrderSourceLabel } from "@/lib/order-label";
 import { logServerPerf, measureAsync } from "@/lib/perf";
 
 function formatMoney(value: number) {
@@ -13,14 +14,14 @@ function orderRef(order: { id: string; check_number?: string | null }) {
   return order.check_number?.trim() ? order.check_number : order.id.slice(0, 8);
 }
 
-function orderSourceLabel(order: { channel?: string; table_number?: number; customer_name?: string | null }) {
-  if (order.channel === "delivery") {
-    return order.customer_name ? `Paket servis / ${order.customer_name}` : "Paket servis";
-  }
-  if (order.channel === "pickup") {
-    return order.customer_name ? `Gel-al / ${order.customer_name}` : "Gel-al";
-  }
-  return `Masa ${order.table_number ?? "-"}`;
+function orderSourceLabel(order: {
+  channel?: string;
+  table_number?: number;
+  table_name?: string | null;
+  table_zone_name?: string | null;
+  customer_name?: string | null;
+}) {
+  return formatOrderSourceLabel(order, { customerSeparator: " / " });
 }
 
 function statusLabel(status: string) {
@@ -40,7 +41,7 @@ function toneClass(value: number, critical = false) {
 }
 
 export default async function MobileOpsPage() {
-  await requireRole(["admin", "waiter", "cashier", "kitchen"], "/m/ops");
+  await requireRole(["admin", "cashier", "kitchen"], "/m/ops");
   const snapshotResult = await measureAsync("m_ops_snapshot", () => getOpsPageSnapshot({ includeSetup: false }));
   logServerPerf("/m/ops", [snapshotResult]);
 
@@ -193,3 +194,4 @@ export default async function MobileOpsPage() {
     </>
   );
 }
+

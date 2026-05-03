@@ -112,7 +112,7 @@ function formatMoney(value: number) {
 
 async function setTableStatusAction(formData: FormData) {
   "use server";
-  await requireRole(["admin", "waiter", "cashier"], "/m/tables");
+  await requireRole(["admin", "cashier"], "/m/tables");
 
   const tableId = String(formData.get("tableId") ?? "").trim();
   const nextStatus = String(formData.get("status") ?? "").trim();
@@ -158,7 +158,7 @@ export default async function MobileTablesPage({
 }: {
   searchParams: Promise<TablesSearchParams>;
 }) {
-  await requireRole(["admin", "waiter", "cashier", "kitchen"], "/m/tables");
+  await requireRole(["admin", "cashier", "kitchen"], "/m/tables");
   const {
     status: rawFilter,
     feedback,
@@ -171,10 +171,10 @@ export default async function MobileTablesPage({
 
   const currentUser = await getCurrentUserWithRole();
   const allowAll = currentUser.usingDemoData;
-  const canOpenOrders = allowAll || hasRoleAccess(currentUser.role, ["admin", "waiter", "cashier"]);
+  const canOpenOrders = allowAll || hasRoleAccess(currentUser.role, ["admin", "cashier"]);
   const canUseCashier = allowAll || hasRoleAccess(currentUser.role, ["admin", "cashier"]);
   const canOpenKitchen = allowAll || hasRoleAccess(currentUser.role, ["admin", "kitchen"]);
-  const canManageReservations = allowAll || hasRoleAccess(currentUser.role, ["admin", "waiter", "cashier"]);
+  const canManageReservations = allowAll || hasRoleAccess(currentUser.role, ["admin", "cashier"]);
 
   const { tables, usingDemoData: usingTablesDemo } = await getTableMap();
   const sortedTables = [...tables].sort((left, right) => left.table_number - right.table_number);
@@ -415,6 +415,9 @@ export default async function MobileTablesPage({
                 tables={sortedTables}
                 initialTableId={selectedTableId}
                 mobilePresentation="stack"
+                entryMode="table_first"
+                layoutMode="tablet_3pane"
+                initialView="composer"
               />
             </div>
           </div>
@@ -423,3 +426,4 @@ export default async function MobileTablesPage({
     </>
   );
 }
+

@@ -26,7 +26,7 @@ function feedbackHref(tone: "success" | "error", message: string, extra?: Record
 
 async function createCourierAction(formData: FormData) {
   "use server";
-  await requireRole(["admin", "cashier", "waiter"], "/delivery");
+  await requireRole(["admin", "cashier"], "/delivery");
 
   const fullName = formData.get("fullName");
   const phone = formData.get("phone");
@@ -46,7 +46,7 @@ async function createCourierAction(formData: FormData) {
 
 async function assignCourierAction(formData: FormData) {
   "use server";
-  await requireRole(["admin", "cashier", "waiter"], "/delivery");
+  await requireRole(["admin", "cashier"], "/delivery");
 
   const orderId = formData.get("orderId");
   const courierValue = formData.get("courierValue");
@@ -85,7 +85,7 @@ async function assignCourierAction(formData: FormData) {
 
 async function updateCourierAction(formData: FormData) {
   "use server";
-  await requireRole(["admin", "cashier", "waiter"], "/delivery");
+  await requireRole(["admin", "cashier"], "/delivery");
 
   const courierId = formData.get("courierId");
   const fullName = formData.get("fullName");
@@ -110,7 +110,7 @@ async function updateCourierAction(formData: FormData) {
 
 async function deleteCourierAction(formData: FormData) {
   "use server";
-  await requireRole(["admin", "cashier", "waiter"], "/delivery");
+  await requireRole(["admin", "cashier"], "/delivery");
 
   const courierId = formData.get("courierId");
   if (typeof courierId !== "string") {
@@ -127,7 +127,7 @@ async function deleteCourierAction(formData: FormData) {
 
 async function completeDeliveryAction(formData: FormData) {
   "use server";
-  await requireRole(["admin", "cashier", "waiter"], "/delivery");
+  await requireRole(["admin", "cashier"], "/delivery");
 
   const orderId = formData.get("orderId");
   const stage = formData.get("stage");
@@ -265,7 +265,7 @@ export default async function DeliveryPage({
 }: {
   searchParams: Promise<{ feedback?: string; tone?: "success" | "error"; order?: string; courier?: string; showAll?: string; stage?: string }>;
 }) {
-  await requireRole(["admin", "cashier", "waiter"], "/delivery");
+  await requireRole(["admin", "cashier"], "/delivery");
   const featureAccessResult = await measureAsync("feature_access", () => getFeatureAccess("delivery_dispatch"));
   const featureAccess = featureAccessResult.value;
   if (!featureAccess.enabled) {
@@ -769,3 +769,4 @@ export default async function DeliveryPage({
     </BackofficePage>
   );
 }
+

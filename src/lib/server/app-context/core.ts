@@ -7,6 +7,7 @@ import { getActiveStationProfile } from "@/lib/station-server";
 import { getSupabaseAuthServerClient } from "@/lib/supabase/auth-server";
 import { getSupabaseServerClient } from "@/lib/supabase/server";
 import type { AppRole, Branch, BranchProfile, Business, StaffAccessScope, StaffBranchAccess, StationProfile } from "@/lib/types";
+import { updateUserActivity } from "@/lib/data";
 
 const demoBusiness: Business = {
   id: "demo-business-1",
@@ -449,6 +450,13 @@ export const getRequestAppContext = cache(async () => {
     businessesResult,
   ] = await Promise.all([authClient.auth.getUser(), getActiveBusinessesRowForRequest()]);
 
+  if (user) {
+    // Only update activity if we have a real user.
+    // In a production app, we would throttle this update.
+    updateUserActivity(user.id, "platform_access_users").catch(() => {});
+    updateUserActivity(user.id, "profiles").catch(() => {});
+  }
+
   const cachedBusinesses = businessesResult?.businesses ?? [];
   const fallbackContext =
     cachedBusinesses.length === 0 ? await resolveBusinessBySlug(activeSlug || DEFAULT_BUSINESS_SLUG) : null;
@@ -638,6 +646,3 @@ export async function getBusinessContextBySlug(businessSlug?: string) {
     useLegacySchema: Boolean(useLegacySchema),
   };
 }
-
-
-

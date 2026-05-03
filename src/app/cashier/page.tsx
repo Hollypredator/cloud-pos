@@ -294,14 +294,15 @@ function totals(orders: Order[]) {
 export default async function CashierPage({
   searchParams,
 }: {
-  searchParams: Promise<{ order?: string; feedback?: string; tone?: "success" | "error" }>;
+  searchParams: Promise<{ order?: string; feedback?: string; tone?: "success" | "error"; mode?: string }>;
 }) {
   await requireRole(["admin", "cashier"], "/cashier");
   const requestHeaders = await headers();
   const renderMobileMarkup = isLikelyMobileUserAgent(requestHeaders.get("user-agent"));
   const locale = await getCurrentLocale();
   const localeCode = locale === "en" ? "en-US" : locale === "fr" ? "fr-FR" : "tr-TR";
-  const { order: selectedOrderId, feedback, tone } = await searchParams;
+  const { order: selectedOrderId, feedback, tone, mode } = await searchParams;
+  const isTabletMode = mode === "tablet";
   const perfProfile = getWebPerfProfile("/cashier");
   const cashierSnapshotResult = await measureAsync("cashier_snapshot", () => getCashierPageSnapshot(selectedOrderId));
   logServerPerf(`/cashier profile=${perfProfile.mode}:${perfProfile.bucket}`, [cashierSnapshotResult]);
@@ -319,6 +320,7 @@ export default async function CashierPage({
     <BackofficePage
       title="Kasa Ekrani"
       description="Tahsilat, split bill, iade ve adisyon kapanış operasyonu"
+      minimal={isTabletMode}
       actions={
         <>
           <LiveOpsBridge tables={["orders", "tables", "payments", "cash_register_sessions"]} fallbackIntervalMs={900} />
@@ -406,18 +408,7 @@ export default async function CashierPage({
         </section>
       ) : null}
 
-      {!renderMobileMarkup ? (
-        <WorkflowGuide
-          title="Kasada 3 Adim"
-          description="Yeni gelen biri egitim almadan tahsilat akisini izleyebilir."
-          className="app-mobile-hide bg-[linear-gradient(125deg,rgba(15,23,42,0.03),rgba(255,255,255,0.92)_45%,rgba(255,106,61,0.08))]"
-          steps={[
-            { title: "Masayi veya adisyonu sec", description: "Ustteki masa kartlarindan ödeme bekleyen adisyonu sec ve popup olarak buyut." },
-            { title: "Tutari kontrol et", description: "Gerekirse indirim veya servis ucreti güncelle; kalan bakiyeyi kontrol et." },
-            { title: "Ödeme al veya bol", description: "Nakit, kart, karma ödeme al; esit paylastir veya ürün bazli bol ile tahsilati tamamla." },
-          ]}
-        />
-      ) : null}
+
 
       {!renderMobileMarkup ? (
         <ContentCard title="Masa ve Adisyon Secimi" className="app-mobile-hide bg-[linear-gradient(140deg,rgba(255,255,255,0.96),rgba(255,255,255,0.84))]">

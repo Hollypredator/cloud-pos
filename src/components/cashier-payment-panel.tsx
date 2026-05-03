@@ -12,6 +12,36 @@ function buildSplitSummary(items: OrderItem[], selectedQuantities: number[]) {
     .join(", ");
 }
 
+function VirtualNumpad({ value, onChange }: { value: string; onChange: (val: string) => void }) {
+  const handlePress = (key: string) => {
+    if (key === "DEL") {
+      onChange(value.length > 1 ? value.slice(0, -1) : "0");
+    } else if (key === ".") {
+      if (!value.includes(".")) onChange(value + ".");
+    } else {
+      if (value === "0" || value === "0.00") onChange(key);
+      else onChange(value + key);
+    }
+  };
+
+  const keys = ["1", "2", "3", "4", "5", "6", "7", "8", "9", ".", "0", "DEL"];
+
+  return (
+    <div className="grid grid-cols-3 gap-2">
+      {keys.map((key) => (
+        <button
+          key={key}
+          type="button"
+          onClick={() => handlePress(key)}
+          className="rounded-xl border border-slate-200 bg-white py-4 text-xl font-bold text-slate-700 shadow-sm transition hover:bg-slate-50 active:bg-slate-200"
+        >
+          {key === "DEL" ? "⌫" : key}
+        </button>
+      ))}
+    </div>
+  );
+}
+
 export function CashierPaymentPanel({
   orderId,
   returnOrderId,
@@ -143,12 +173,9 @@ export function CashierPaymentPanel({
     <div className="mt-4 space-y-4 rounded-[24px] border border-slate-200 bg-[#fbfbfc] p-4">
       <div className="grid gap-3 lg:grid-cols-2">
         <div className="rounded-[20px] border border-slate-200 bg-white p-4">
-          <div className="flex flex-col items-start justify-between gap-3 sm:flex-row sm:items-center">
-            <div>
-              <p className="text-xs font-bold uppercase tracking-[0.16em] text-slate-500">Esit Paylastir</p>
-              <p className="mt-1 text-sm text-slate-500">Tek dokunusta kisi basi tahsilat oluştur.</p>
-            </div>
-            <span className="rounded-full bg-[#fff2ee] px-3 py-1 text-xs font-semibold text-[#ff5a34]">Split Bill</span>
+          <div className="flex flex-col items-start gap-1">
+            <p className="text-xs font-bold uppercase tracking-[0.16em] text-slate-500">Esit Paylastir</p>
+            <p className="text-sm text-slate-500">Tek dokunusta kisi basi tahsilat oluştur.</p>
           </div>
           <div className="mt-3 grid gap-2 sm:grid-cols-3">
             {[2, 3, 4].map((splitCount) => (
@@ -273,22 +300,29 @@ export function CashierPaymentPanel({
           </div>
         </div>
 
-        <div className="grid gap-3 sm:grid-cols-[180px_1fr]">
-          <input
-            name="amount"
-            type="number"
-            min="0.01"
-            step="0.01"
-            value={amount}
-            onChange={(event) => setAmount(event.target.value)}
-            className="rounded-2xl border border-slate-300 px-4 py-3 text-lg font-semibold text-slate-900"
-          />
-          <input
-            value={note}
-            onChange={(event) => setNote(event.target.value)}
-            placeholder="Ödeme notu (opsiyonel)"
-            className="rounded-2xl border border-slate-300 px-4 py-3 text-sm"
-          />
+        <div>
+          <p className="text-xs font-bold uppercase tracking-[0.16em] text-slate-500 mb-2">Tutar Girisi</p>
+          <div className="grid gap-4 sm:grid-cols-[1fr_250px]">
+            <div className="rounded-[20px] border border-slate-200 bg-[#f8fafc] p-4">
+               <VirtualNumpad value={amount} onChange={setAmount} />
+               <input type="hidden" name="amount" value={amount} />
+            </div>
+            <div className="flex flex-col justify-start gap-3">
+              <div className="rounded-[20px] border border-slate-200 bg-white p-5 text-right shadow-sm flex-1 flex flex-col justify-center">
+                 <p className="text-[11px] font-bold uppercase text-slate-400 mb-2">Tahsil Edilecek</p>
+                 <div>
+                   <span className="text-4xl font-extrabold tracking-tight text-slate-900 break-all">{amount}</span>
+                   <span className="ml-1 text-lg font-semibold text-slate-400">TL</span>
+                 </div>
+              </div>
+              <input
+                value={note}
+                onChange={(event) => setNote(event.target.value)}
+                placeholder="Ödeme notu (opsiyonel)"
+                className="w-full rounded-2xl border border-slate-300 px-4 py-4 text-sm"
+              />
+            </div>
+          </div>
         </div>
 
         <div className="grid gap-2 rounded-2xl bg-emerald-50 px-4 py-3 text-sm">
