@@ -200,7 +200,7 @@ export function QrOrderingClient({
         const err = await res.json();
         alert(`Sipariş gönderilemedi: ${err.message}`);
       }
-    } catch (e) {
+    } catch {
       alert("Bağlantı hatası oluştu.");
     } finally {
       setIsSubmitting(false);
@@ -228,7 +228,7 @@ export function QrOrderingClient({
   }
 
   return (
-    <div className="mx-auto flex min-h-screen w-full max-w-5xl flex-col gap-4 px-3 py-4 md:px-6 md:py-6 pb-24">
+    <div className="mx-auto flex min-h-screen w-full max-w-5xl flex-col gap-4 px-3 py-4 pb-[calc(6rem+env(safe-area-inset-bottom))] md:px-6 md:py-6">
       <section className="rounded-3xl border border-white/10 bg-slate-900/65 p-3 shadow-[0_18px_35px_rgba(2,6,23,0.45)] backdrop-blur">
         <div className="sticky top-3 z-20 mb-3 rounded-2xl border border-white/10 bg-slate-900/95 px-2 py-2 shadow-[0_10px_20px_rgba(2,6,23,0.35)] backdrop-blur">
           <div className="overflow-x-auto pb-1 scrollbar-hide">
@@ -337,7 +337,7 @@ export function QrOrderingClient({
               </div>
             )}
             
-            <div className="flex items-center justify-between border-t border-white/10 pt-4 mt-2">
+            <div className="mt-2 flex flex-wrap items-center justify-between gap-3 border-t border-white/10 pt-4">
               <div className="flex items-center gap-4">
                 <button 
                   onClick={() => setQuantity(q => Math.max(1, q - 1))}
@@ -351,7 +351,7 @@ export function QrOrderingClient({
               </div>
               <button 
                 onClick={handleAddToCart}
-                className="rounded-2xl bg-[linear-gradient(135deg,#ff6d3d_0%,#f0b04f_100%)] px-6 py-3 font-bold text-white shadow-[0_4px_14px_rgba(255,109,61,0.4)]"
+                className="w-full rounded-2xl bg-[linear-gradient(135deg,#ff6d3d_0%,#f0b04f_100%)] px-6 py-3 font-bold text-white shadow-[0_4px_14px_rgba(255,109,61,0.4)] sm:w-auto"
               >
                 Sepete Ekle
               </button>
@@ -362,15 +362,15 @@ export function QrOrderingClient({
 
       {cartItems.length > 0 && (
         <>
-          <div className="fixed bottom-0 left-0 right-0 z-40 border-t border-slate-800 bg-slate-900/95 p-4 backdrop-blur-xl">
-            <div className="mx-auto flex max-w-5xl items-center justify-between">
+          <div className="fixed bottom-0 left-0 right-0 z-40 border-t border-slate-800 bg-slate-900/95 p-4 pb-[max(1rem,env(safe-area-inset-bottom))] backdrop-blur-xl">
+            <div className="mx-auto flex max-w-5xl flex-wrap items-center justify-between gap-3">
               <div>
                 <p className="text-sm font-medium text-slate-300">{cartItemCount} Ürün</p>
                 <p className="text-lg font-bold text-emerald-400">{formatPrice(cartTotal)}</p>
               </div>
               <button
                 onClick={() => setIsCartOpen(true)}
-                className="rounded-2xl bg-emerald-600 px-8 py-3.5 font-bold text-white shadow-[0_8px_20px_rgba(5,150,105,0.3)] transition hover:bg-emerald-500"
+                className="w-full rounded-2xl bg-emerald-600 px-8 py-3.5 font-bold text-white shadow-[0_8px_20px_rgba(5,150,105,0.3)] transition hover:bg-emerald-500 sm:w-auto"
               >
                 Sepeti Gör
               </button>
@@ -390,8 +390,8 @@ export function QrOrderingClient({
                 <div className="space-y-4">
                   {cartItems.map((item) => (
                     <div key={item.id} className="rounded-2xl border border-white/10 bg-slate-900/50 p-4">
-                      <div className="flex justify-between font-semibold text-white">
-                        <span>{item.quantity}x {item.product.name}</span>
+                      <div className="flex items-start justify-between gap-2 font-semibold text-white">
+                        <span className="min-w-0 break-words">{item.quantity}x {item.product.name}</span>
                         <span>{formatPrice(Number(item.product.price) * item.quantity)}</span>
                       </div>
                       {Object.values(item.selectedModifiers).length > 0 && (
@@ -441,3 +441,4 @@ export function QrOrderingClient({
     </div>
   );
 }
+

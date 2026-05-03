@@ -33,7 +33,7 @@ function VirtualNumpad({ value, onChange }: { value: string; onChange: (val: str
           key={key}
           type="button"
           onClick={() => handlePress(key)}
-          className="rounded-xl border border-slate-200 bg-white py-4 text-xl font-bold text-slate-700 shadow-sm transition hover:bg-slate-50 active:bg-slate-200"
+          className="min-h-[44px] rounded-xl border border-slate-200 bg-white py-4 text-xl font-bold text-slate-700 shadow-sm transition hover:bg-slate-50 active:bg-slate-200"
         >
           {key === "DEL" ? "⌫" : key}
         </button>
@@ -183,7 +183,7 @@ export function CashierPaymentPanel({
                 key={splitCount}
                 type="button"
                 onClick={() => applySplit(splitCount)}
-                className="rounded-2xl border border-slate-200 bg-slate-50 px-3 py-3 text-sm font-semibold text-slate-700 transition hover:border-slate-300 hover:bg-white"
+                className="min-h-[44px] rounded-2xl border border-slate-200 bg-slate-50 px-3 py-3 text-sm font-semibold text-slate-700 transition hover:border-slate-300 hover:bg-white"
               >
                 {splitCount} Kisi
               </button>
@@ -217,7 +217,7 @@ export function CashierPaymentPanel({
                 key={preset.label}
                 type="button"
                 onClick={() => setAmount(Math.max(0.01, preset.value).toFixed(2))}
-                className="rounded-2xl border border-slate-200 bg-slate-50 px-3 py-3 text-sm font-semibold text-slate-700 transition hover:border-slate-300 hover:bg-white"
+                className="min-h-[44px] rounded-2xl border border-slate-200 bg-slate-50 px-3 py-3 text-sm font-semibold text-slate-700 transition hover:border-slate-300 hover:bg-white"
               >
                 {preset.label}
               </button>
@@ -235,7 +235,7 @@ export function CashierPaymentPanel({
           <button
             type="button"
             onClick={applySelectedItems}
-            className="w-full rounded-2xl border border-slate-200 bg-slate-50 px-3 py-2 text-sm font-semibold text-slate-700 sm:w-auto"
+            className="min-h-[44px] w-full rounded-2xl border border-slate-200 bg-slate-50 px-3 py-2 text-sm font-semibold text-slate-700 sm:w-auto"
           >
             Secilenleri Tutarla
           </button>
@@ -244,7 +244,7 @@ export function CashierPaymentPanel({
           {items.map((item, index) => (
             <div
               key={`${item.product_id}-${index}`}
-              className="grid items-center gap-2 rounded-2xl bg-slate-50 px-3 py-3 sm:grid-cols-[1fr_92px]"
+              className="grid items-center gap-2 rounded-2xl bg-slate-50 px-3 py-3 sm:grid-cols-[minmax(0,1fr)_110px]"
             >
               <div>
                 <p className="text-sm font-semibold text-slate-800">{item.name}</p>
@@ -255,7 +255,7 @@ export function CashierPaymentPanel({
               <select
                 value={selectedQuantities[index] ?? 0}
                 onChange={(event) => updateSelectedQuantity(index, Number(event.target.value))}
-                className="rounded-xl border border-slate-300 px-2 py-2 text-sm"
+                className="min-h-[44px] w-full rounded-xl border border-slate-300 px-2 py-2 text-sm"
               >
                 {Array.from({ length: item.quantity + 1 }, (_, value) => (
                   <option key={value} value={value}>
@@ -288,7 +288,7 @@ export function CashierPaymentPanel({
                 key={value}
                 type="button"
                 onClick={() => setMethod(value as "cash" | "card" | "mixed")}
-                className={`rounded-2xl px-3 py-3 text-sm font-semibold transition ${
+                className={`min-h-[44px] rounded-2xl px-3 py-3 text-sm font-semibold transition ${
                   method === value
                     ? "bg-gradient-to-r from-[#ff5a34] to-[#f0b14f] text-white shadow-[0_10px_20px_rgba(255,111,60,0.24)]"
                     : "border border-slate-200 bg-slate-50 text-slate-700 hover:border-slate-300 hover:bg-white"
@@ -302,7 +302,7 @@ export function CashierPaymentPanel({
 
         <div>
           <p className="text-xs font-bold uppercase tracking-[0.16em] text-slate-500 mb-2">Tutar Girisi</p>
-          <div className="grid gap-4 sm:grid-cols-[1fr_250px]">
+          <div className="grid gap-4 lg:grid-cols-[minmax(0,1fr)_250px]">
             <div className="rounded-[20px] border border-slate-200 bg-[#f8fafc] p-4">
                <VirtualNumpad value={amount} onChange={setAmount} />
                <input type="hidden" name="amount" value={amount} />
@@ -340,7 +340,7 @@ export function CashierPaymentPanel({
           <button
             type="submit"
             disabled={pending}
-            className="w-full rounded-2xl bg-emerald-600 px-4 py-3 text-sm font-semibold text-white shadow-[0_10px_20px_rgba(16,185,129,0.24)] disabled:cursor-not-allowed disabled:opacity-70"
+            className="min-h-[44px] w-full rounded-2xl bg-emerald-600 px-4 py-3 text-sm font-semibold text-white shadow-[0_10px_20px_rgba(16,185,129,0.24)] disabled:cursor-not-allowed disabled:opacity-70"
           >
             {pending ? submitPendingLabel : submitIdleLabel}
           </button>
@@ -348,7 +348,7 @@ export function CashierPaymentPanel({
           <PendingSubmitButton
             idleLabel={submitIdleLabel}
             pendingLabel={submitPendingLabel}
-            className="w-full rounded-2xl bg-emerald-600 px-4 py-3 text-sm font-semibold text-white shadow-[0_10px_20px_rgba(16,185,129,0.24)]"
+            className="min-h-[44px] w-full rounded-2xl bg-emerald-600 px-4 py-3 text-sm font-semibold text-white shadow-[0_10px_20px_rgba(16,185,129,0.24)]"
           />
         )}
       </form>

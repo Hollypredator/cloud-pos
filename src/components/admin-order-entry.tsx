@@ -866,8 +866,8 @@ export function AdminOrderEntry({
               </div>
             ) : null}
 
-            <div className={`grid gap-4 ${useStackLayout ? "" : "md:grid-cols-[0.95fr_0.6fr_1.25fr]"}`}>
-              <aside className={`${useStackLayout ? "" : "md:sticky md:top-4 md:h-fit"} space-y-3 rounded-2xl border border-slate-200 bg-white p-4 shadow-sm`}>
+            <div className={`grid gap-4 ${useStackLayout ? "" : "md:grid-cols-[minmax(240px,0.95fr)_minmax(220px,0.62fr)_minmax(0,1.2fr)]"}`}>
+              <aside className={`${useStackLayout ? "" : "md:sticky md:top-4 md:h-fit"} min-w-0 space-y-3 rounded-2xl border border-slate-200 bg-white p-4 shadow-sm`}>
                 <p className="text-xs font-semibold uppercase tracking-[0.14em] text-slate-500">Kanal</p>
                 <div className="grid grid-cols-1 gap-2 sm:grid-cols-3 md:grid-cols-1">
                   {(["dine_in", "pickup", "delivery"] as OrderChannel[]).map((value) => (
@@ -968,7 +968,7 @@ export function AdminOrderEntry({
                           <p className="mt-1 text-xs text-slate-600">
                             {entry.quantity} x {(Number(entry.product.price) + modifierTotal).toFixed(2)} TL
                           </p>
-                          <div className="mt-2 flex items-center gap-2">
+                          <div className="mt-2 flex flex-wrap items-center gap-2">
                             <button
                               type="button"
                               onClick={() => removeProduct(entry.key)}
@@ -1009,7 +1009,7 @@ export function AdminOrderEntry({
                 </button>
               </aside>
 
-              <section className="rounded-2xl border border-slate-200 bg-white p-4 shadow-sm">
+              <section className="min-w-0 rounded-2xl border border-slate-200 bg-white p-4 shadow-sm">
                 <div className="flex items-center justify-between gap-2">
                   <p className="text-xs font-semibold uppercase tracking-[0.14em] text-slate-500">Kategoriler</p>
                   <span className="rounded-full bg-slate-100 px-3 py-1 text-xs font-semibold text-slate-700">
@@ -1038,7 +1038,7 @@ export function AdminOrderEntry({
                 </div>
               </section>
 
-              <section className="space-y-3 rounded-2xl border border-slate-200 bg-white p-4 shadow-sm">
+              <section className="min-w-0 space-y-3 rounded-2xl border border-slate-200 bg-white p-4 shadow-sm">
                 <div className="flex items-center justify-between gap-2">
                   <h3 className="text-base font-semibold text-slate-900">{activeCategory?.name ?? "Urunler"}</h3>
                   <span className="rounded-lg bg-slate-100 px-3 py-1 text-xs font-semibold text-slate-700">
@@ -1116,9 +1116,9 @@ export function AdminOrderEntry({
                     Bu kategoride aktif ürün yok.
                   </p>
                 ) : (
-                  <div className="grid gap-3 sm:grid-cols-2">
+                  <div className="grid gap-3 xl:grid-cols-2">
                     {filteredVisibleProducts.map((product) => (
-                      <article key={`table-first-product-${product.id}`} className="rounded-xl border border-slate-200 bg-slate-50 p-3">
+                      <article key={`table-first-product-${product.id}`} className="overflow-hidden rounded-xl border border-slate-200 bg-slate-50 p-3">
                         <div className="flex items-start justify-between gap-2">
                           <div>
                             <p className="text-sm font-semibold text-slate-900">{product.name}</p>
@@ -1126,7 +1126,7 @@ export function AdminOrderEntry({
                           </div>
                           <span className="text-sm font-semibold text-emerald-700">{Number(product.price).toFixed(2)} TL</span>
                         </div>
-                        <div className="mt-3 flex items-center gap-2">
+                        <div className="mt-3 flex flex-wrap items-center gap-2">
                           <button
                             type="button"
                             onClick={() => setConfiguredQuantity(product.id, getConfiguredQuantity(product.id) - 1)}
@@ -1153,7 +1153,7 @@ export function AdminOrderEntry({
                           <button
                             type="button"
                             onClick={() => openModifierPicker(product)}
-                            className="ml-auto min-h-[48px] rounded-lg bg-slate-900 px-4 py-2 text-sm font-semibold text-white"
+                            className="min-h-[44px] w-full rounded-lg bg-slate-900 px-4 py-2 text-sm font-semibold text-white sm:ml-auto sm:w-auto"
                           >
                             {(groupsByProduct.get(product.id) ?? []).length > 0 ? "Secenekli Ekle" : "Ekle"}
                           </button>
@@ -1401,9 +1401,9 @@ export function AdminOrderEntry({
                 Bu kategoride aktif ürün yok.
               </p>
             ) : (
-              <div className="mt-4 grid gap-3 sm:grid-cols-2">
+              <div className="mt-4 grid gap-3 lg:grid-cols-2">
                 {visibleProducts.map((product) => (
-                  <div key={product.id} className="rounded-xl border border-slate-200 p-4">
+                  <div key={product.id} className="overflow-hidden rounded-xl border border-slate-200 p-4">
                     <div className="flex flex-col items-start justify-between gap-2 sm:flex-row sm:gap-3">
                       <div>
                         <p className="font-semibold text-slate-900">{product.name}</p>
@@ -1438,7 +1438,7 @@ export function AdminOrderEntry({
                       <button
                         type="button"
                         onClick={() => openModifierPicker(product)}
-                        className="rounded-lg bg-slate-900 px-3 py-2 text-sm font-semibold text-white"
+                        className="w-full rounded-lg bg-slate-900 px-3 py-2 text-sm font-semibold text-white sm:ml-auto sm:w-auto"
                       >
                         {(groupsByProduct.get(product.id) ?? []).length > 0 ? "Seceneklerle Ekle" : "Ekle"}
                       </button>
@@ -1731,7 +1731,7 @@ export function AdminOrderEntry({
                     <p className="mt-1 text-sm text-emerald-700">{Number(product.price).toFixed(2)} TL</p>
                   </div>
                 </div>
-                <div className="mt-3 flex items-center gap-2">
+                <div className="mt-3 flex flex-wrap items-center gap-2">
                   <button
                     type="button"
                     onClick={() => setConfiguredQuantity(product.id, getConfiguredQuantity(product.id) - 1)}
@@ -1758,7 +1758,7 @@ export function AdminOrderEntry({
                   <button
                     type="button"
                     onClick={() => openModifierPicker(product)}
-                    className="mobile-cta-primary ml-auto inline-flex h-10 items-center justify-center rounded-lg px-4 text-sm font-semibold text-white"
+                    className="mobile-cta-primary inline-flex h-10 w-full items-center justify-center rounded-lg px-4 text-sm font-semibold text-white sm:ml-auto sm:w-auto"
                   >
                     {(groupsByProduct.get(product.id) ?? []).length > 0 ? "Secenekli Ekle" : "Ekle"}
                   </button>

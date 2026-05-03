@@ -7,9 +7,20 @@ type QrAccessPayload = {
 };
 
 const DEFAULT_TTL_SECONDS = 60 * 20;
+const DEV_FALLBACK_SECRET = "dev-insecure-qr-access-secret";
 
 function getQrAccessSecret() {
-  return process.env.QR_ACCESS_SECRET ?? "";
+  const configuredSecret = process.env.QR_ACCESS_SECRET?.trim();
+  if (configuredSecret) {
+    return configuredSecret;
+  }
+
+  // Keep production strict while making local/dev QR testing work out of the box.
+  if (process.env.NODE_ENV !== "production") {
+    return DEV_FALLBACK_SECRET;
+  }
+
+  return "";
 }
 
 function toBase64Url(value: string) {
@@ -88,4 +99,3 @@ export function verifyQrAccessToken(input: {
 
   return { ok: true as const };
 }
-
