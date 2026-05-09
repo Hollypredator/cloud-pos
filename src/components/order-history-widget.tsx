@@ -1,6 +1,6 @@
 "use client";
 
-import { useEffect, useEffectEvent, useRef, useState } from "react";
+import { useEffect, useEffectEvent, useMemo, useRef, useState } from "react";
 
 type HistoryOrder = {
   id: string;
@@ -19,35 +19,43 @@ export function OrderHistoryWidget({
   businessSlug,
   qrCodeIdentifier,
   qrAccessToken,
+  orderIds,
 }: {
   businessSlug?: string;
   qrCodeIdentifier: string;
   qrAccessToken: string;
+  orderIds?: string[];
 }) {
   const [orders, setOrders] = useState<HistoryOrder[]>([]);
   const [loading, setLoading] = useState(true);
+  const [error, setError] = useState<string | null>(null);
   const timerRef = useRef<ReturnType<typeof setTimeout> | null>(null);
   const inFlightRef = useRef(false);
   const lastFetchedAtRef = useRef(0);
 
+  const normalizedOrderIds = useMemo(
+    () => (orderIds ?? []).map((id) => id.trim()).filter((id) => id.length > 0),
+    [orderIds],
+  );
+  const orderIdsKey = useMemo(() => normalizedOrderIds.join(","), [normalizedOrderIds]);
+
   const fetchHistory = useEffectEvent(async (force = false) => {
-    if (inFlightRef.current) {
-      return;
-    }
-    if (!force && Date.now() - lastFetchedAtRef.current < 1200) {
-      return;
-    }
+    if (inFlightRef.current) return;
+    if (!force && Date.now() - lastFetchedAtRef.current < 1200) return;
+
     inFlightRef.current = true;
     try {
       const response = await fetch(
-        `/api/orders/history?qr=${encodeURIComponent(qrCodeIdentifier)}${businessSlug ? `&b=${encodeURIComponent(businessSlug)}` : ""}&t=${encodeURIComponent(qrAccessToken)}`,
-        {
-          cache: "no-store",
-        },
+        `/api/orders/history?qr=${encodeURIComponent(qrCodeIdentifier)}${businessSlug ? `&b=${encodeURIComponent(businessSlug)}` : ""}&t=${encodeURIComponent(qrAccessToken)}&ids=${encodeURIComponent(normalizedOrderIds.join(","))}`,
+        { cache: "no-store" },
       );
-      const data = (await response.json()) as { ok: boolean; orders: HistoryOrder[] };
-      if (!data.ok) return;
+      const data = (await response.json()) as { ok: boolean; orders: HistoryOrder[]; message?: string };
+      if (!response.ok || !data.ok) {
+        setError(data.message ?? "Siparis gecmisi alinamadi.");
+        return;
+      }
       setOrders(data.orders);
+      setError(null);
       lastFetchedAtRef.current = Date.now();
     } finally {
       inFlightRef.current = false;
@@ -59,27 +67,17 @@ export function OrderHistoryWidget({
     let active = true;
 
     async function syncHistory() {
-      if (!active) {
-        return;
-      }
+      if (!active) return;
       await fetchHistory();
-      if (!active) {
-        return;
-      }
-      if (timerRef.current) {
-        clearTimeout(timerRef.current);
-      }
+      if (!active) return;
+      if (timerRef.current) clearTimeout(timerRef.current);
       timerRef.current = setTimeout(syncHistory, document.hidden ? 20000 : 10000);
     }
 
     function handleAttentionRefresh(event?: Event) {
-      if (document.hidden) {
-        return;
-      }
+      if (document.hidden) return;
       const detail = (event as CustomEvent<{ tables?: string[] }> | undefined)?.detail;
-      if (detail && Array.isArray(detail.tables) && !detail.tables.includes("orders")) {
-        return;
-      }
+      if (detail && Array.isArray(detail.tables) && !detail.tables.includes("orders")) return;
       void fetchHistory(true);
     }
 
@@ -90,22 +88,22 @@ export function OrderHistoryWidget({
 
     return () => {
       active = false;
-      if (timerRef.current) {
-        clearTimeout(timerRef.current);
-      }
+      if (timerRef.current) clearTimeout(timerRef.current);
       window.removeEventListener("focus", handleAttentionRefresh);
       document.removeEventListener("visibilitychange", handleAttentionRefresh);
       window.removeEventListener("live-ops:update", handleAttentionRefresh);
     };
-  }, [businessSlug, qrCodeIdentifier, qrAccessToken]);
+  }, [businessSlug, qrCodeIdentifier, qrAccessToken, orderIdsKey]);
 
   return (
     <section className="rounded-2xl border border-slate-200 bg-white p-4">
-      <h2 className="text-sm font-semibold text-slate-900">Son Sipariş Gecmisi</h2>
+      <h2 className="text-sm font-semibold text-slate-900">Son Siparis Gecmisi</h2>
       {loading ? (
-        <p className="mt-2 text-sm text-slate-500">Geçmiş yukleniyor...</p>
+        <p className="mt-2 text-sm text-slate-500">Gecmis yukleniyor...</p>
+      ) : error ? (
+        <p className="mt-2 text-sm text-rose-600">{error}</p>
       ) : orders.length === 0 ? (
-        <p className="mt-2 text-sm text-slate-500">Kayıt bulunmuyor.</p>
+        <p className="mt-2 text-sm text-slate-500">Kayit bulunmuyor.</p>
       ) : (
         <ul className="mt-2 space-y-2">
           {orders.map((order) => (

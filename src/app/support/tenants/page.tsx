@@ -74,6 +74,9 @@ export default async function SupportTenantsPage({
               <div className="rounded-xl border border-slate-200 bg-slate-50 px-4 py-3 text-sm text-slate-700">{translateUiText("Paket", locale)}: {tenant.plan}</div>
               <div className="rounded-xl border border-slate-200 bg-slate-50 px-4 py-3 text-sm text-slate-700">{translateUiText("Sube", locale)}: {tenant.branch_count}</div>
               <div className="rounded-xl border border-slate-200 bg-slate-50 px-4 py-3 text-sm text-slate-700 sm:col-span-2">
+                Isletme tipi: {tenant.business_type === "self_service_coffee" ? "Self-Service Coffee" : "Restaurant / Cafe"}
+              </div>
+              <div className="rounded-xl border border-slate-200 bg-slate-50 px-4 py-3 text-sm text-slate-700 sm:col-span-2">
                 {translateUiText("Acik destek kaydi", locale)}: {tenant.support_ticket_count}
               </div>
             </div>

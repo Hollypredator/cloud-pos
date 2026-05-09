@@ -29,6 +29,7 @@ type ProductIngredientRow = {
 
 type ProductDeps = {
   getDefaultBusinessScope: () => Promise<Scope>;
+  isDemoCatalogFallbackEnabled?: () => Promise<boolean>;
   logAuditEvent: (input: {
     entityType: string;
     entityId: string;
@@ -93,7 +94,7 @@ async function getCachedProductManagementRow(input: {
             .from("categories")
             .select("*")
             .eq("business_id", input.businessId!)
-            .eq("profile_scope", input.profileScope)
+            .or(`profile_scope.eq.${input.profileScope},profile_scope.is.null`)
             .order("sort_order", { ascending: true });
 
       const [
@@ -115,7 +116,7 @@ async function getCachedProductManagementRow(input: {
                 "id, business_id, category_id, name, price, stock_count, image_url, description, is_available, profile_scope, barcode, plu_code, product_kind, unit, department, cost",
               )
               .eq("business_id", input.businessId!)
-              .eq("profile_scope", input.profileScope))
+              .or(`profile_scope.eq.${input.profileScope},profile_scope.is.null`))
           .order("created_at", { ascending: false }),
         includes.includeIngredients
           ? (
@@ -182,8 +183,31 @@ export async function getProductManagementDataImpl(
 ) {
   const supabase = getSupabaseServerClient();
   const scope = await deps.getDefaultBusinessScope();
+  const demoCatalogFallbackEnabled = deps.isDemoCatalogFallbackEnabled
+    ? await deps.isDemoCatalogFallbackEnabled()
+    : true;
+  const activeBusinessType = (scope as { activeBusinessType?: string | null }).activeBusinessType;
+  const isSelfServiceBusiness = activeBusinessType === "self_service_coffee";
+  const isRestaurantBusiness = activeBusinessType === "restaurant_cafe";
   const activeProfileScope = (scope.activeBranchProfile ?? "restaurant") as ProductProfileScope;
   if (!supabase) {
+    if (!demoCatalogFallbackEnabled) {
+      return {
+        categories: [] as Category[],
+        products: [] as Product[],
+        ingredients: [] as Ingredient[],
+        modifierGroups: [] as ProductModifierGroup[],
+        modifierOptions: [] as ProductModifierOption[],
+        productIngredients: [] as Array<{
+          product_id: string;
+          ingredient_id: string;
+          quantity: number;
+          ingredient: Ingredient | null;
+        }>,
+        activeProfileScope,
+        usingDemoData: false,
+      };
+    }
     const categories = deps.demoCategories.filter(
       (category) => (category.profile_scope ?? "restaurant") === activeProfileScope,
     );
@@ -234,6 +258,23 @@ export async function getProductManagementDataImpl(
   });
 
   if (!cached || cached.hasError) {
+    if (!demoCatalogFallbackEnabled) {
+      return {
+        categories: [] as Category[],
+        products: [] as Product[],
+        ingredients: [] as Ingredient[],
+        modifierGroups: [] as ProductModifierGroup[],
+        modifierOptions: [] as ProductModifierOption[],
+        productIngredients: [] as Array<{
+          product_id: string;
+          ingredient_id: string;
+          quantity: number;
+          ingredient: Ingredient | null;
+        }>,
+        activeProfileScope,
+        usingDemoData: false,
+      };
+    }
     return {
       categories: deps.demoCategories.filter((category) => (category.profile_scope ?? "restaurant") === activeProfileScope),
       products: deps.demoProducts.filter((product) => (product.profile_scope ?? "restaurant") === activeProfileScope),
@@ -262,6 +303,27 @@ export async function getProductManagementDataImpl(
   const scopedModifierGroupIds = new Set(scopedModifierGroups.map((group) => group.id));
   const scopedModifierOptions = cached.modifierOptions.filter((option) => scopedModifierGroupIds.has(option.group_id));
   const scopedProductIngredients = cached.productIngredients.filter((row) => scopedProductIds.has(row.product_id));
+  const shouldUseDemoForEmptyCatalog =
+    demoCatalogFallbackEnabled &&
+    ((isSelfServiceBusiness && (scopedCategories.length === 0 || scopedProducts.length === 0)) ||
+      (isRestaurantBusiness && scopedCategories.length === 0 && scopedProducts.length === 0));
+  if (shouldUseDemoForEmptyCatalog) {
+    return {
+      categories: deps.demoCategories.filter((category) => (category.profile_scope ?? "restaurant") === activeProfileScope),
+      products: deps.demoProducts.filter((product) => (product.profile_scope ?? "restaurant") === activeProfileScope),
+      ingredients: deps.demoIngredients,
+      modifierGroups: deps.demoModifierGroups,
+      modifierOptions: deps.demoModifierOptions,
+      productIngredients: deps.demoProductIngredients.map((row) => ({
+        product_id: row.product_id,
+        ingredient_id: row.ingredient_id,
+        quantity: row.quantity,
+        ingredient: deps.demoIngredients.find((item) => item.id === row.ingredient_id) ?? null,
+      })),
+      activeProfileScope,
+      usingDemoData: true,
+    };
+  }
 
   return {
     categories: scopedCategories,

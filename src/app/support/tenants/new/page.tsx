@@ -5,6 +5,7 @@ import { requireSupportAccess } from "@/lib/auth";
 import { createSupportTenantProvision } from "@/lib/domains/support";
 import { getCurrentLocale } from "@/lib/i18n-server";
 import { translateUiText } from "@/lib/i18n";
+import type { BusinessType } from "@/lib/types";
 
 function feedbackHref(tone: "success" | "error", message: string) {
   const params = new URLSearchParams({ tone, feedback: message });
@@ -20,6 +21,7 @@ async function createTenantAction(formData: FormData) {
   const plan = formData.get("plan");
   const branchName = formData.get("branchName");
   const branchSlug = formData.get("branchSlug");
+  const businessType = formData.get("businessType");
   const ownerEmail = formData.get("ownerEmail");
   const ownerFullName = formData.get("ownerFullName");
   const ownerPassword = formData.get("ownerPassword");
@@ -36,6 +38,9 @@ async function createTenantAction(formData: FormData) {
   const result = await createSupportTenantProvision({
     businessName,
     businessSlug,
+    businessType: (typeof businessType === "string" && ["restaurant_cafe", "self_service_coffee"].includes(businessType)
+      ? businessType
+      : "restaurant_cafe") as BusinessType,
     plan: typeof plan === "string" && ["starter", "growth", "custom"].includes(plan)
       ? (plan as "starter" | "growth" | "custom")
       : "growth",
@@ -111,6 +116,10 @@ export default async function SupportTenantCreatePage({
             <option value="starter">Starter</option>
             <option value="growth">Growth</option>
             <option value="custom">Custom</option>
+          </select>
+          <select name="businessType" defaultValue="restaurant_cafe" className="rounded-xl border border-slate-300 px-4 py-3 text-sm md:col-span-2">
+            <option value="restaurant_cafe">Restaurant / Cafe</option>
+            <option value="self_service_coffee">Self-Service Coffee</option>
           </select>
         </div>
 

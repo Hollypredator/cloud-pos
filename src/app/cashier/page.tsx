@@ -26,6 +26,8 @@ import { QuerySnapshotSeed } from "@/components/query-snapshot-seed";
 import { ReceiptPreviewLauncher } from "@/components/receipt-preview-launcher";
 import { getAppBaseUrl } from "@/lib/app-url";
 import { requireRole } from "@/lib/auth";
+import { getBusinessScopeContext } from "@/lib/server/app-context";
+import { resolveOperatingProfile, getOperatingProfileCapabilities } from "@/lib/operating-profile";
 import { getCurrentLocale } from "@/lib/i18n-server";
 import { getCashierPageSnapshot } from "@/lib/domains/orders";
 import { executeWebOpsCommand } from "@/lib/ops/server-action";
@@ -177,6 +179,33 @@ async function completePaymentAction(formData: FormData) {
   }
 }
 
+async function serveOrderAction(formData: FormData) {
+  "use server";
+  await requireRole(["admin", "cashier"], "/cashier");
+
+  const orderId = formData.get("orderId");
+  const returnOrderId = resolveReturnOrderId(formData);
+  if (typeof orderId !== "string") {
+    redirect(feedbackHref("error", "Sipariş bulunamadi.", returnOrderId));
+  }
+
+  try {
+    const result = await executeWebOpsCommand({
+      type: "ORDER_STATUS_SET",
+      payload: {
+        order_id: orderId,
+        status: "paid",
+      },
+    });
+    if (result.status !== "ACK") {
+      redirect(feedbackHref("error", result.message ?? "Durum güncellenemedi.", returnOrderId ?? orderId));
+    }
+    redirect(feedbackHref("success", "Sipariş teslim edildi.", returnOrderId ?? orderId));
+  } catch {
+    redirect(feedbackHref("error", "Durum güncellenemedi.", returnOrderId ?? orderId));
+  }
+}
+
 async function cancelOrderAction(formData: FormData) {
   "use server";
   await requireRole(["admin", "cashier"], "/cashier");
@@ -304,6 +333,9 @@ export default async function CashierPage({
   const { order: selectedOrderId, feedback, tone, mode } = await searchParams;
   const isTabletMode = mode === "tablet";
   const perfProfile = getWebPerfProfile("/cashier");
+  const businessScope = await getBusinessScopeContext();
+  const operatingProfile = resolveOperatingProfile(businessScope?.activeBusinessType);
+  const operatingCapabilities = getOperatingProfileCapabilities(operatingProfile);
   const cashierSnapshotResult = await measureAsync("cashier_snapshot", () => getCashierPageSnapshot(selectedOrderId));
   logServerPerf(`/cashier profile=${perfProfile.mode}:${perfProfile.bucket}`, [cashierSnapshotResult]);
   const { servedOrders, paidOrders, selectedOrder, usingDemoData } = cashierSnapshotResult.value;
@@ -832,20 +864,41 @@ export default async function CashierPage({
                         className="scroll-mt-[130px] grid gap-2 rounded-[20px] border border-rose-200 bg-rose-50/60 p-4 content-start"
                       />
                     ) : (
-                      <form id="wizard-close" action={cancelOrderAction} className="scroll-mt-[130px] grid gap-2 rounded-[20px] border border-rose-200 bg-rose-50/60 p-4 content-start">
-                        <input type="hidden" name="orderId" value={order.id} />
-                        <input type="hidden" name="returnOrderId" value={order.id} />
-                        <input type="hidden" name="requestKey" value={cancelRequestKey} />
-                        <p className="text-xs font-bold uppercase tracking-[0.16em] text-rose-700">Adisyon Iptal</p>
-                        <input
-                          name="note"
-                          placeholder="Iptal nedeni"
-                          className="rounded-2xl border border-rose-200 bg-white px-4 py-3 text-sm"
-                        />
-                        <button type="submit" className="rounded-2xl border border-rose-300 px-4 py-3 text-sm font-semibold text-rose-700">
-                          Iptal
-                        </button>
-                      </form>
+                      <div id="wizard-close" className="scroll-mt-[130px] grid gap-2 rounded-[20px] border border-slate-200 bg-slate-50 p-4 content-start">
+                        {operatingCapabilities.order_ready_board && remaining <= 0.009 ? (
+                          <form action={serveOrderAction} className="w-full">
+                            <input type="hidden" name="orderId" value={order.id} />
+                            <input type="hidden" name="returnOrderId" value={order.id} />
+                            <button
+                              type="submit"
+                              className="w-full rounded-2xl bg-emerald-600 px-4 py-3 text-sm font-semibold text-white shadow-[0_12px_24px_rgba(16,185,129,0.22)]"
+                            >
+                              Teslim Edildi
+                            </button>
+                            <p className="mt-2 text-center text-xs text-slate-500">
+                              Hesap ödendi. Müsteriye teslim edildiginde siparisi kapatin.
+                            </p>
+                          </form>
+                        ) : (
+                          <form action={cancelOrderAction} className="w-full grid gap-2">
+                            <input type="hidden" name="orderId" value={order.id} />
+                            <input type="hidden" name="returnOrderId" value={order.id} />
+                            <input type="hidden" name="requestKey" value={cancelRequestKey} />
+                            <p className="text-xs font-bold uppercase tracking-[0.16em] text-rose-700">Adisyon Iptal</p>
+                            <input
+                              name="note"
+                              placeholder="Iptal nedeni"
+                              className="rounded-2xl border border-slate-300 bg-white px-4 py-3 text-sm"
+                            />
+                            <button
+                              type="submit"
+                              className="w-full rounded-2xl border border-rose-300 bg-white px-4 py-3 text-sm font-semibold text-rose-700 transition hover:bg-rose-50"
+                            >
+                              Iptal
+                            </button>
+                          </form>
+                        )}
+                      </div>
                     )}
                   </section>
                 </div>

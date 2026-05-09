@@ -4,7 +4,15 @@ import { canUseDemoModeBypass, getCurrentUserWithRole, hasRoleAccess } from "@/l
 import { getBusinessContextBySlug, getTableById, getTableByQr } from "@/lib/domains/orders";
 import { executeOpsCommand, makeOpsCommandEnvelope } from "@/lib/ops/command-executor";
 import { getCorrelationId, logApiEvent, withCorrelationId } from "@/lib/observability";
+import {
+  isQrConfirmationEnabledForBusinessSlug,
+  QR_CONFIRMATION_UI_VERSION,
+  QR_CONFIRMATION_WINDOW_SECONDS,
+} from "@/lib/qr-confirmation";
+import { getSupabaseServerClient } from "@/lib/supabase/server";
 import { getBusinessScopeContext } from "@/lib/server/app-context";
+import { resolveOperatingProfile } from "@/lib/operating-profile";
+import { getQrAccessFailurePayload, verifyQrAccessToken } from "@/lib/qr-access";
 import type { FulfillmentStatus, OrderChannel } from "@/lib/types";
 
 type Body = {
@@ -35,7 +43,60 @@ type Body = {
     }>;
   }>;
   totalPrice?: number;
+  qrConfirmation?: {
+    confirmedAtClient?: string;
+    uiVersion?: string;
+    cartItemCount?: number;
+    cartTotal?: number;
+    cartSnapshotHash?: string;
+  };
 };
+
+function resolveOrderCreateFailureMessage(commandStatus: "ACK" | "RETRY" | "CONFLICT" | "REJECT", message?: string | null) {
+  if (commandStatus === "CONFLICT") {
+    return message ?? "Ayni siparis istegi zaten islenmis. Lutfen siparis durumunu kontrol edin.";
+  }
+  if (commandStatus === "RETRY") {
+    return message ?? "Siparis gecici olarak islenemedi. Lutfen tekrar deneyin.";
+  }
+  if (commandStatus === "REJECT") {
+    return message ?? "Siparis dogrulanamadi. Lutfen sepeti kontrol edin.";
+  }
+  return message ?? "Siparis kaydedilemedi.";
+}
+
+function parseQrConfirmation(input: Body["qrConfirmation"]) {
+  if (!input) {
+    return null;
+  }
+
+  const confirmedAtClient = typeof input.confirmedAtClient === "string" ? input.confirmedAtClient.trim() : "";
+  const uiVersion = typeof input.uiVersion === "string" ? input.uiVersion.trim() : "";
+  const cartSnapshotHash = typeof input.cartSnapshotHash === "string" ? input.cartSnapshotHash.trim() : "";
+  const cartItemCount = Number(input.cartItemCount);
+  const cartTotal = Number(input.cartTotal);
+
+  if (!confirmedAtClient || Number.isNaN(Date.parse(confirmedAtClient))) {
+    return null;
+  }
+  if (!uiVersion || !cartSnapshotHash) {
+    return null;
+  }
+  if (!Number.isFinite(cartItemCount) || cartItemCount < 0) {
+    return null;
+  }
+  if (!Number.isFinite(cartTotal) || cartTotal < 0) {
+    return null;
+  }
+
+  return {
+    confirmedAtClient,
+    uiVersion,
+    cartSnapshotHash,
+    cartItemCount,
+    cartTotal,
+  };
+}
 
 export async function POST(request: Request) {
   const startedAt = performance.now();
@@ -58,38 +119,67 @@ export async function POST(request: Request) {
       body = (await request.json()) as Body & { qrAccessToken?: string };
     } catch {
       logApiEvent("warn", "orders.create.invalid_body", { correlationId });
-      return json({ ok: false, message: "Geçersiz istek govdesi." }, { status: 400 });
+      return json({ ok: false, code: "INVALID_BODY", message: "Gecersiz istek govdesi." }, { status: 400 });
     }
 
     if (!canCreateOrders && body.qrAccessToken && body.qrCodeIdentifier) {
-      const { verifyQrAccessToken } = await import("@/lib/qr-access");
-      const isValid = verifyQrAccessToken({
+      const tokenCheck = verifyQrAccessToken({
         token: body.qrAccessToken,
         qrCodeIdentifier: body.qrCodeIdentifier,
         businessSlug: body.businessSlug,
       });
-      if (isValid.ok) {
+      if (tokenCheck.ok) {
         canCreateOrders = true;
         isQrOrder = true;
+      } else {
+        const failure = getQrAccessFailurePayload(tokenCheck.reason);
+        logApiEvent(failure.status >= 500 ? "error" : "warn", "orders.create.qr_token_invalid", {
+          correlationId,
+          reason: tokenCheck.reason,
+          qrCodeIdentifier: body.qrCodeIdentifier,
+          businessSlug: body.businessSlug ?? null,
+        });
+        return json({ ok: false, code: failure.code, message: failure.message }, { status: failure.status });
       }
     }
 
     if (!canCreateOrders) {
       logApiEvent("warn", "orders.create.forbidden", { correlationId });
-      return json({ ok: false, message: "Sipariş oluşturma yetkiniz yok." }, { status: 403 });
+      return json({ ok: false, code: "FORBIDDEN", message: "Siparis olusturma yetkiniz yok." }, { status: 403 });
     }
 
     const businessScope = allowDemoBypass ? null : await getBusinessScopeContext();
+    const operatingProfile = resolveOperatingProfile(businessScope?.activeBusinessType);
 
-    const channel = isQrOrder ? "dine_in" : (body.channel ?? "dine_in");
+    let channel = isQrOrder ? "dine_in" : (body.channel ?? "dine_in");
+    if (operatingProfile === "coffee_self_service") {
+      channel = "pickup";
+    }
+    const qrConfirmationRequired = isQrOrder && isQrConfirmationEnabledForBusinessSlug(body.businessSlug);
+    const parsedQrConfirmation = parseQrConfirmation(body.qrConfirmation);
+    if (qrConfirmationRequired && !parsedQrConfirmation) {
+      logApiEvent("warn", "orders.create.qr_confirmation_invalid", {
+        correlationId,
+        businessSlug: body.businessSlug ?? null,
+        qrCodeIdentifier: body.qrCodeIdentifier ?? null,
+      });
+      return json(
+        {
+          ok: false,
+          code: "QR_CONFIRMATION_REQUIRED",
+          message: "Siparis onayi eksik veya gecersiz. Lutfen siparis onay ekranini tamamlayin.",
+        },
+        { status: 400 },
+      );
+    }
     if (!body.items?.length || typeof body.totalPrice !== "number") {
       logApiEvent("warn", "orders.create.missing_fields", { correlationId, channel });
-      return json({ ok: false, message: "Eksik sipariş alanları var." }, { status: 400 });
+      return json({ ok: false, code: "MISSING_FIELDS", message: "Eksik siparis alanlari var." }, { status: 400 });
     }
 
     if (channel === "dine_in" && !body.qrCodeIdentifier && !body.tableId) {
       logApiEvent("warn", "orders.create.missing_qr", { correlationId });
-      return json({ ok: false, message: "Masa siparişi için masa seçimi gerekli." }, { status: 400 });
+      return json({ ok: false, code: "MISSING_TABLE", message: "Masa siparisi icin masa secimi gerekli." }, { status: 400 });
     }
 
     let table = null;
@@ -113,7 +203,7 @@ export async function POST(request: Request) {
         tableId: body.tableId ?? null,
         qrCodeIdentifier: body.qrCodeIdentifier ?? null,
       });
-      return json({ ok: false, message: "Masa bulunamadi." }, { status: 404 });
+      return json({ ok: false, code: "TABLE_NOT_FOUND", message: "Masa bulunamadi." }, { status: 404 });
     }
 
     if (channel === "dine_in" && table && body.tableId && table.id !== body.tableId) {
@@ -122,7 +212,7 @@ export async function POST(request: Request) {
         tableId: body.tableId,
         resolvedTableId: table.id,
       });
-      return json({ ok: false, message: "Masa seçimi doğrulanamadı." }, { status: 400 });
+      return json({ ok: false, code: "TABLE_MISMATCH", message: "Masa secimi dogrulanamadi." }, { status: 400 });
     }
 
     if (channel === "dine_in" && table && body.qrCodeIdentifier && table.qr_code_identifier !== body.qrCodeIdentifier) {
@@ -131,7 +221,7 @@ export async function POST(request: Request) {
         qrCodeIdentifier: body.qrCodeIdentifier,
         resolvedQr: table.qr_code_identifier,
       });
-      return json({ ok: false, message: "Masa QR bilgisi doğrulanamadı." }, { status: 400 });
+      return json({ ok: false, code: "QR_MISMATCH", message: "Masa QR bilgisi dogrulanamadi." }, { status: 400 });
     }
 
     const businessContext = table
@@ -140,10 +230,28 @@ export async function POST(request: Request) {
 
     const targetBusinessId = table?.business_id ?? businessContext.businessId ?? null;
     const targetBranchId = table?.branch_id ?? null;
+
+    if (operatingProfile === "coffee_self_service" && !table && targetBusinessId && targetBranchId) {
+      const supabase = getSupabaseServerClient();
+      if (supabase) {
+        const { data: virtualTable } = await supabase
+          .from("tables")
+          .select("id, business_id, branch_id")
+          .eq("business_id", targetBusinessId)
+          .eq("branch_id", targetBranchId)
+          .eq("name", "Pickup Counter")
+          .limit(1)
+          .maybeSingle();
+        if (virtualTable) {
+          table = virtualTable as any;
+        }
+      }
+    }
+
     if (businessScope && !businessScope.useLegacySchema) {
       if (!businessScope.businessId) {
         logApiEvent("warn", "orders.create.no_business_scope", { correlationId });
-        return json({ ok: false, message: "Aktif işletme seçilmedi." }, { status: 403 });
+        return json({ ok: false, code: "NO_BUSINESS_SCOPE", message: "Aktif isletme secilmedi." }, { status: 403 });
       }
       if (targetBusinessId && targetBusinessId !== businessScope.businessId) {
         logApiEvent("warn", "orders.create.cross_business_forbidden", {
@@ -151,9 +259,10 @@ export async function POST(request: Request) {
           requestedBusinessId: targetBusinessId,
           activeBusinessId: businessScope.businessId,
         });
-        return json({ ok: false, message: "Bu işletme için sipariş oluşturma yetkiniz yok." }, { status: 403 });
+        return json({ ok: false, code: "CROSS_BUSINESS_FORBIDDEN", message: "Bu isletme icin siparis olusturma yetkiniz yok." }, { status: 403 });
       }
     }
+
     if (businessScope && auth.accessScope === "branch") {
       const allowedBranchIds = new Set<string>();
       for (const branchId of auth.branchAccessIds ?? []) {
@@ -172,7 +281,7 @@ export async function POST(request: Request) {
           candidateBranchId,
           allowedBranchIds: [...allowedBranchIds],
         });
-        return json({ ok: false, message: "Bu şube için sipariş oluşturma yetkiniz yok." }, { status: 403 });
+        return json({ ok: false, code: "CROSS_BRANCH_FORBIDDEN", message: "Bu sube icin siparis olusturma yetkiniz yok." }, { status: 403 });
       }
     }
 
@@ -190,7 +299,7 @@ export async function POST(request: Request) {
         items: body.items,
         total_price: body.totalPrice,
         channel,
-        customer_name: isQrOrder ? "QR Sipariş" : (body.customerName ?? null),
+        customer_name: isQrOrder ? "QR Siparis" : (body.customerName ?? null),
         customer_phone: body.customerPhone ?? null,
         delivery_address: body.deliveryAddress ?? null,
         delivery_note: body.deliveryNote ?? null,
@@ -204,38 +313,112 @@ export async function POST(request: Request) {
 
     const result = await executeOpsCommand(command, { enforceCashOnly: false });
     if (result.status !== "ACK") {
+      const statusCode = result.status === "CONFLICT" ? 409 : result.status === "RETRY" ? 503 : 422;
+      const message = resolveOrderCreateFailureMessage(result.status, result.message);
       logApiEvent("error", "orders.create.failed", {
         correlationId,
         channel,
         error: result.message ?? null,
         commandStatus: result.status,
+        operationMs: Math.round(performance.now() - startedAt),
       });
       return json(
         {
           ok: false,
-          message: result.message ?? "Sipariş kaydedilemedi.",
+          code: `ORDER_CREATE_${result.status}`,
+          message,
           resultStatus: result.status,
         },
-        { status: result.status === "CONFLICT" ? 409 : result.status === "RETRY" ? 503 : 422 },
+        { status: statusCode },
       );
+    }
+
+    const createdOrderId = typeof result.data?.order_id === "string" ? result.data.order_id : null;
+    let confirmationPayload:
+      | {
+          confirmationId: string;
+          confirmedAt: string;
+          cancelUntil: string;
+          cancelWindowSeconds: number;
+        }
+      | null = null;
+
+    if (isQrOrder && createdOrderId && table && parsedQrConfirmation) {
+      const confirmedAt = new Date().toISOString();
+      const cancelUntil = new Date(Date.now() + QR_CONFIRMATION_WINDOW_SECONDS * 1000).toISOString();
+      const supabase = getSupabaseServerClient();
+      if (supabase) {
+        const snapshotPayload = {
+          confirmedAtClient: parsedQrConfirmation.confirmedAtClient,
+          confirmedAtServer: confirmedAt,
+          cartItemCount: parsedQrConfirmation.cartItemCount,
+          cartTotal: parsedQrConfirmation.cartTotal,
+          payloadTotal: body.totalPrice ?? null,
+          payloadItemCount: body.items?.length ?? null,
+          items: body.items ?? [],
+        };
+        const insertResult = await supabase
+          .from("order_confirmation_snapshots")
+          .insert({
+            order_id: createdOrderId,
+            business_id: table.business_id ?? null,
+            branch_id: table.branch_id ?? null,
+            table_id: table.id,
+            qr_code_identifier: table.qr_code_identifier,
+            confirmed_at: confirmedAt,
+            cancel_until: cancelUntil,
+            snapshot_json: snapshotPayload,
+            snapshot_hash: parsedQrConfirmation.cartSnapshotHash,
+            ui_version: parsedQrConfirmation.uiVersion || QR_CONFIRMATION_UI_VERSION,
+          })
+          .select("id")
+          .maybeSingle();
+
+        if (!insertResult.error && insertResult.data?.id) {
+          confirmationPayload = {
+            confirmationId: insertResult.data.id,
+            confirmedAt,
+            cancelUntil,
+            cancelWindowSeconds: QR_CONFIRMATION_WINDOW_SECONDS,
+          };
+          logApiEvent("info", "qr.confirmation.accepted", {
+            correlationId,
+            orderId: createdOrderId,
+            confirmationId: insertResult.data.id,
+            businessSlug: body.businessSlug ?? null,
+            qrCodeIdentifier: body.qrCodeIdentifier ?? null,
+          });
+        } else {
+          logApiEvent("error", "qr.confirmation.insert_failed", {
+            correlationId,
+            orderId: createdOrderId,
+            error: insertResult.error?.message ?? "unknown",
+            businessSlug: body.businessSlug ?? null,
+            qrCodeIdentifier: body.qrCodeIdentifier ?? null,
+          });
+        }
+      }
     }
 
     logApiEvent("info", "orders.create.success", {
       correlationId,
-      orderId: typeof result.data?.order_id === "string" ? result.data.order_id : null,
+      orderId: createdOrderId,
       channel,
       commandId: result.command_id,
+      isQrOrder,
+      operationMs: Math.round(performance.now() - startedAt),
     });
     return json({
       ok: true,
-      orderId: typeof result.data?.order_id === "string" ? result.data.order_id : null,
+      orderId: createdOrderId,
       commandId: result.command_id,
+      confirmation: confirmationPayload,
     });
   } catch (error) {
     logApiEvent("error", "orders.create.unhandled", {
       correlationId,
       error: error instanceof Error ? error.message : "unknown",
     });
-    return json({ ok: false, message: "Sipariş işlemi sırasında beklenmeyen hata oluştu." }, { status: 500 });
+    return json({ ok: false, code: "UNHANDLED", message: "Siparis islemi sirasinda beklenmeyen hata olustu." }, { status: 500 });
   }
 }

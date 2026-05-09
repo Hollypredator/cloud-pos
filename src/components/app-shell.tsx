@@ -12,12 +12,13 @@ import { normalizeLocale, translateUiText } from "@/lib/i18n";
 import type { AppShellPayload } from "@/lib/app-shell";
 import type { AppRole } from "@/lib/types";
 
-const shellPrefixes = ["/ops", "/kitchen", "/cashier", "/service-requests", "/tables", "/delivery", "/admin"];
+const shellPrefixes = ["/ops", "/kitchen", "/cashier", "/service-requests", "/tables", "/delivery", "/admin", "/pickup-board"];
 const mobileOpsPrefixes = [
   "/ops",
   "/tables",
   "/cashier",
   "/kitchen",
+  "/pickup-board",
   "/delivery",
   "/service-requests",
   "/admin",
@@ -34,17 +35,23 @@ type MobileQuickAction = {
   feature?: FeatureKey;
 };
 
-const mobileQuickActions: MobileQuickAction[] = [
+const mobileQuickActionsRestaurant: MobileQuickAction[] = [
   { href: "/tables", label: "Masa Takip", icon: "MT", roles: ["admin", "kitchen", "cashier"], group: "order_flow" },
-  { href: "/admin/orders", label: "Sipariş Baslat", icon: "SP", roles: ["owner", "admin", "waiter", "cashier"], group: "order_flow" },
+  { href: "/admin/orders", label: "Siparis Baslat", icon: "SP", roles: ["owner", "admin", "waiter", "cashier"], group: "order_flow" },
   { href: "/cashier", label: "Adisyonlar", icon: "AD", roles: ["admin", "cashier", "waiter"], group: "order_flow" },
   { href: "/service-requests", label: "Masa Talepleri", icon: "SR", roles: ["admin", "cashier"], group: "service_flow" },
   { href: "/delivery", label: "Teslimat", icon: "DL", roles: ["admin", "cashier"], group: "service_flow", feature: "delivery_dispatch" },
   { href: "/kitchen", label: "Mutfak", icon: "MK", roles: ["admin", "kitchen"], group: "service_flow", feature: "kitchen_display" },
   { href: "/cashier/session", label: "Gun Islemleri", icon: "GI", roles: ["admin", "cashier"], group: "management" },
-  { href: "/tables", label: "Masa Yönetimi", icon: "MY", roles: ["owner", "admin"], group: "management" },
+  { href: "/tables", label: "Masa Yonetimi", icon: "MY", roles: ["owner", "admin"], group: "management" },
 ];
 
+const mobileQuickActionsSelfService: MobileQuickAction[] = [
+  { href: "/admin/orders", label: "Siparis Akisi", icon: "SP", roles: ["owner", "admin", "waiter", "cashier"], group: "order_flow" },
+  { href: "/cashier", label: "Tahsilat", icon: "TS", roles: ["admin", "cashier", "waiter"], group: "order_flow" },
+  { href: "/pickup-board", label: "Pickup Board", icon: "PB", roles: ["admin", "kitchen", "cashier"], group: "service_flow" },
+  { href: "/cashier/session", label: "Gun Islemleri", icon: "GI", roles: ["admin", "cashier"], group: "management" },
+];
 function getLocale() {
   if (typeof document === "undefined") return "tr";
   return normalizeLocale(document.documentElement.lang || "tr");
@@ -57,7 +64,7 @@ function isScopedPath(pathname: string | null, prefixes: string[]) {
   return prefixes.some((prefix) => pathname === prefix || pathname.startsWith(`${prefix}/`));
 }
 
-function resolveMobileOpsRedirect(pathname: string | null) {
+function resolveMobileOpsRedirect(pathname: string | null, activeBusinessType: AppShellPayload["activeBusinessType"]) {
   if (!pathname) {
     return null;
   }
@@ -69,30 +76,46 @@ function resolveMobileOpsRedirect(pathname: string | null) {
     return null;
   }
   if (pathname.startsWith("/admin/tables")) {
+    if (activeBusinessType === "self_service_coffee") {
+      return "/admin/orders";
+    }
     return "/tables";
   }
   if (pathname.startsWith("/admin")) {
     return "/ops";
   }
+  if (activeBusinessType === "self_service_coffee") {
+    if (pathname.startsWith("/tables")) {
+      return "/admin/orders";
+    }
+    if (pathname.startsWith("/kitchen")) {
+      return "/admin/orders";
+    }
+    if (pathname.startsWith("/service-requests")) {
+      return "/admin/orders";
+    }
+    if (pathname.startsWith("/delivery")) {
+      return "/admin/orders";
+    }
+  }
   return null;
 }
-
 function resolveMobileTitle(pathname: string | null, locale: "tr" | "en" | "fr") {
   if (!pathname) {
     return translateUiText("Operasyon", locale);
   }
   if (pathname === "/ops" || pathname.startsWith("/ops/")) return translateUiText("Operasyon Merkezi", locale);
   if (pathname === "/tables" || pathname.startsWith("/tables/")) return translateUiText("Masa Takip", locale);
-  if (pathname === "/admin/orders" || pathname.startsWith("/admin/orders/")) return translateUiText("Sipariş Akışı", locale);
+  if (pathname === "/admin/orders" || pathname.startsWith("/admin/orders/")) return translateUiText("Siparis Akisi", locale);
   if (pathname === "/admin/tables" || pathname.startsWith("/admin/tables/")) return translateUiText("Masa Takip", locale);
   if (pathname === "/cashier" || pathname.startsWith("/cashier/")) return translateUiText("Kasa Ekrani", locale);
   if (pathname === "/kitchen" || pathname.startsWith("/kitchen/")) return translateUiText("Mutfak Board", locale);
+  if (pathname === "/pickup-board" || pathname.startsWith("/pickup-board/")) return translateUiText("Pickup Board", locale);
   if (pathname === "/delivery" || pathname.startsWith("/delivery/")) return translateUiText("Teslimat Board", locale);
   if (pathname === "/service-requests" || pathname.startsWith("/service-requests/")) return translateUiText("Masa Talepleri", locale);
   if (pathname === "/admin") return translateUiText("Operasyon Merkezi", locale);
   return translateUiText("Operasyon", locale);
 }
-
 function canAccessQuickAction(role: AppRole | null, usingDemoData: boolean, roles: AppRole[]) {
   return usingDemoData || (!!role && (roles.includes(role) || (role === "owner" && roles.includes("admin"))));
 }
@@ -120,6 +143,7 @@ export function AppShell({
 }) {
   const pathname = usePathname();
   const router = useRouter();
+  const [hasHydrated, setHasHydrated] = useState(false);
   const [shellData, setShellData] = useState<AppShellPayload | null>(initialData ?? null);
   const [loading, setLoading] = useState(false);
   const [isCoarsePointer, setIsCoarsePointer] = useState(false);
@@ -127,31 +151,38 @@ export function AppShell({
   const [actionsOpen, setActionsOpen] = useState(false);
   const hasRequestedInitialRef = useRef(false);
   const locale = getLocale();
+  const stablePathname = hasHydrated ? pathname : null;
+
+  useEffect(() => {
+    setHasHydrated(true);
+  }, []);
 
   const showShell = useMemo(
-    () => isScopedPath(pathname, shellPrefixes),
-    [pathname],
+    () => isScopedPath(stablePathname, shellPrefixes),
+    [stablePathname],
   );
   const isMobileOpsRoute = useMemo(
-    () => isScopedPath(pathname, mobileOpsPrefixes),
-    [pathname],
+    () => isScopedPath(stablePathname, mobileOpsPrefixes),
+    [stablePathname],
   );
   const mobileExperienceEnabled = shellData?.mobileAppExperienceEnabled ?? true;
   const mobileAppMode = Boolean(mobileExperienceEnabled && isCoarsePointer && isMobileOpsRoute);
   const touchFirstMode = showShell;
   const pwaEnabled = Boolean(shellData?.mobileReadOnlyPwaEnabled);
   const pwaRuntimeEnabled = Boolean(pwaEnabled && mobileAppMode);
-  const mobileTitle = resolveMobileTitle(pathname, locale);
+  const activeBusinessType = shellData?.activeBusinessType ?? "restaurant_cafe";
+  const mobileTitle = resolveMobileTitle(stablePathname, locale);
   const quickActions = useMemo(() => {
     if (!shellData) {
       return [];
     }
-    return mobileQuickActions.filter(
+    const sourceActions = activeBusinessType === "self_service_coffee" ? mobileQuickActionsSelfService : mobileQuickActionsRestaurant;
+    return sourceActions.filter(
       (action) =>
         canAccessQuickAction(shellData.role, shellData.usingDemoData, action.roles) &&
         isFeatureEnabled(shellData.currentPlan, shellData.effectiveCapabilities, action.feature),
     );
-  }, [shellData]);
+  }, [activeBusinessType, shellData]);
   const quickActionGroups = useMemo(() => {
     const byGroup = {
       order_flow: [] as MobileQuickAction[],
@@ -164,24 +195,33 @@ export function AppShell({
     return [
       {
         key: "order_flow" as const,
-        title: translateUiText("Sipariş ve Kasa", locale),
-        description: translateUiText("Masa ac, adisyona gec, tahsilat yap.", locale),
+        title:
+          activeBusinessType === "self_service_coffee"
+            ? translateUiText("Siparis ve Tahsilat", locale)
+            : translateUiText("Siparis ve Kasa", locale),
+        description:
+          activeBusinessType === "self_service_coffee"
+            ? translateUiText("Siparisi al, odeme akisini yonet.", locale)
+            : translateUiText("Masa ac, adisyona gec, tahsilat yap.", locale),
         actions: byGroup.order_flow,
       },
       {
         key: "service_flow" as const,
-        title: translateUiText("Servis ve Dagitim", locale),
-        description: translateUiText("Mutfak, teslimat ve masa taleplerini yonet.", locale),
+        title: translateUiText("Servis", locale),
+        description:
+          activeBusinessType === "self_service_coffee"
+            ? translateUiText("Pickup sirasini yonet.", locale)
+            : translateUiText("Mutfak, teslimat ve masa taleplerini yonet.", locale),
         actions: byGroup.service_flow,
       },
       {
         key: "management" as const,
-        title: translateUiText("Yönetim", locale),
+        title: translateUiText("Yonetim", locale),
         description: translateUiText("Gunluk oturum ve ayar aksiyonlari.", locale),
         actions: byGroup.management,
       },
     ];
-  }, [locale, quickActions]);
+  }, [activeBusinessType, locale, quickActions]);
 
   const loadShellData = useEffectEvent(async (force = false) => {
     if (!force && loading) {
@@ -210,6 +250,7 @@ export function AppShell({
           prev.role === data.role &&
           prev.hasUser === data.hasUser &&
           prev.activeBusinessSlug === data.activeBusinessSlug &&
+          prev.activeBusinessType === data.activeBusinessType &&
           prev.activeBranchId === data.activeBranchId &&
           prev.activeBranchProfile === data.activeBranchProfile &&
           prev.activeStationProfile === data.activeStationProfile &&
@@ -249,12 +290,12 @@ export function AppShell({
     if (!mobileAppMode) {
       return;
     }
-    const redirectPath = resolveMobileOpsRedirect(pathname);
-    if (!redirectPath || pathname === redirectPath) {
+    const redirectPath = resolveMobileOpsRedirect(stablePathname, activeBusinessType);
+    if (!redirectPath || stablePathname === redirectPath) {
       return;
     }
     router.replace(redirectPath);
-  }, [mobileAppMode, pathname, router]);
+  }, [activeBusinessType, mobileAppMode, router, stablePathname]);
 
   useEffect(() => {
     if (!showShell) {
@@ -272,7 +313,7 @@ export function AppShell({
 
   useEffect(() => {
     setActionsOpen(false);
-  }, [pathname]);
+  }, [stablePathname]);
 
   useEffect(() => {
     if (!showShell || !pwaRuntimeEnabled || !isOffline) {
@@ -311,7 +352,7 @@ export function AppShell({
     }
 
     void loadShellData();
-  }, [pathname, shellData, showShell]);
+  }, [shellData, showShell, stablePathname]);
 
   useEffect(() => {
     if (!showShell) {
@@ -362,6 +403,7 @@ export function AppShell({
               sidebarAccentColor={shellData.sidebarAccentColor}
               ownerSidebarOrder={shellData.ownerSidebarOrder}
               adminSidebarOrder={shellData.adminSidebarOrder}
+              activeBusinessType={shellData.activeBusinessType}
               mobileAppMode={mobileAppMode}
             />
           ) : (
@@ -383,7 +425,7 @@ export function AppShell({
           ) : null}
           {!mobileAppMode && isOffline && pwaRuntimeEnabled ? (
             <div className="no-print sticky top-0 z-30 border-b border-amber-200 bg-amber-50 px-4 py-3 text-sm font-medium text-amber-900">
-              {translateUiText("Baglanti kesildi. Offline modda yalnızca okunabilir kullanım açık.", locale)}
+              {translateUiText("Baglanti kesildi. Offline modda yalnizca okunabilir kullanim acik.", locale)}
             </div>
           ) : null}
           {children}
@@ -409,7 +451,7 @@ export function AppShell({
               </div>
               {isOffline ? (
                 <div className="border-t border-amber-200 bg-amber-50 px-4 py-2 text-xs font-medium text-amber-900">
-                  {translateUiText("Baglanti gerekli. Offline modda sadece okunabilir kullanım açık.", locale)}
+                  {translateUiText("Baglanti gerekli. Offline modda sadece okunabilir kullanim acik.", locale)}
                 </div>
               ) : null}
             </div>
@@ -443,7 +485,7 @@ export function AppShell({
                   <div className="mx-auto w-full max-w-[980px]">
                     <div className="mb-3 flex items-center justify-between gap-3">
                       <p className="text-sm font-semibold uppercase tracking-[0.16em] text-slate-500">
-                        {translateUiText("Hızlı Aksiyonlar", locale)}
+                        {translateUiText("Hizli Aksiyonlar", locale)}
                       </p>
                       <button
                         type="button"
@@ -499,7 +541,7 @@ export function AppShell({
                           href="/login"
                           className="inline-flex min-h-[46px] items-center justify-center rounded-2xl bg-slate-900 px-4 py-3 text-sm font-semibold text-white"
                         >
-                          {translateUiText("Giriş", locale)}
+                          {translateUiText("Giris", locale)}
                         </Link>
                       )}
                     </div>
@@ -513,4 +555,5 @@ export function AppShell({
     </>
   );
 }
+
 

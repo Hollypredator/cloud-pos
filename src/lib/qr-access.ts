@@ -6,7 +6,7 @@ type QrAccessPayload = {
   exp: number;
 };
 
-const DEFAULT_TTL_SECONDS = 60 * 20;
+export const DEFAULT_QR_ACCESS_TTL_SECONDS = 60 * 20;
 const DEV_FALLBACK_SECRET = "dev-insecure-qr-access-secret";
 
 function getQrAccessSecret() {
@@ -48,11 +48,54 @@ export function createQrAccessToken(input: {
   const payload: QrAccessPayload = {
     qr: input.qrCodeIdentifier,
     b: (input.businessSlug ?? "").trim().toLowerCase(),
-    exp: Math.floor(Date.now() / 1000) + (input.ttlSeconds ?? DEFAULT_TTL_SECONDS),
+    exp: Math.floor(Date.now() / 1000) + (input.ttlSeconds ?? DEFAULT_QR_ACCESS_TTL_SECONDS),
   };
   const payloadEncoded = toBase64Url(JSON.stringify(payload));
   const signature = signPayload(payloadEncoded, secret);
   return `${payloadEncoded}.${signature}`;
+}
+
+export function getQrAccessTokenExpiryDate(input?: { ttlSeconds?: number }) {
+  const ttlSeconds = input?.ttlSeconds ?? DEFAULT_QR_ACCESS_TTL_SECONDS;
+  return new Date(Date.now() + ttlSeconds * 1000);
+}
+
+export type QrAccessFailureReason = "misconfigured" | "missing" | "invalid" | "expired" | "mismatch";
+
+export function getQrAccessFailurePayload(reason: QrAccessFailureReason) {
+  if (reason === "misconfigured") {
+    return {
+      status: 503,
+      code: "QR_TOKEN_MISCONFIGURED",
+      message: "QR erisim token ayari eksik.",
+    } as const;
+  }
+  if (reason === "missing") {
+    return {
+      status: 403,
+      code: "QR_TOKEN_MISSING",
+      message: "QR erisim oturumu bulunamadi. Lutfen QR kodu yeniden okutun.",
+    } as const;
+  }
+  if (reason === "expired") {
+    return {
+      status: 403,
+      code: "QR_TOKEN_EXPIRED",
+      message: "QR erisim oturumu suresi doldu. Lutfen QR kodu yeniden okutun.",
+    } as const;
+  }
+  if (reason === "mismatch") {
+    return {
+      status: 403,
+      code: "QR_TOKEN_MISMATCH",
+      message: "QR erisim dogrulanamadi. Lutfen QR kodu yeniden okutun.",
+    } as const;
+  }
+  return {
+    status: 403,
+    code: "QR_TOKEN_INVALID",
+    message: "QR erisim token gecersiz.",
+  } as const;
 }
 
 export function verifyQrAccessToken(input: {

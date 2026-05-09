@@ -18,6 +18,9 @@ export default async function SupportOnboardingPage() {
             <div className="flex flex-wrap items-center justify-between gap-3">
               <div>
                 <p className="text-lg font-semibold text-slate-900">{tenant.business_name}</p>
+                <p className="mt-1 text-xs font-semibold uppercase tracking-[0.12em] text-slate-500">
+                  {tenant.business_type === "self_service_coffee" ? "Self-Service Coffee" : "Restaurant / Cafe"}
+                </p>
                 <p className="mt-1 text-sm text-slate-500">Tamamlama: %{tenant.completion_score}</p>
               </div>
               <div className="rounded-full bg-slate-100 px-4 py-2 text-sm font-semibold text-slate-700">

@@ -6,14 +6,22 @@ import { getActiveBusinessSlug } from "@/lib/business-server";
 import { getActiveStationProfile } from "@/lib/station-server";
 import { getSupabaseAuthServerClient } from "@/lib/supabase/auth-server";
 import { getSupabaseServerClient } from "@/lib/supabase/server";
-import type { AppRole, Branch, BranchProfile, Business, StaffAccessScope, StaffBranchAccess, StationProfile } from "@/lib/types";
+import type { AppRole, Branch, BranchProfile, Business, BusinessType, StaffAccessScope, StaffBranchAccess, StationProfile } from "@/lib/types";
 import { updateUserActivity } from "@/lib/data";
+import { resolveOperatingProfile, getOperatingProfileCapabilities } from "@/lib/operating-profile";
+
+const DEFAULT_BUSINESS_TYPE: BusinessType = "restaurant_cafe";
+
+function normalizeBusinessType(value: unknown): BusinessType {
+  return value === "self_service_coffee" ? "self_service_coffee" : DEFAULT_BUSINESS_TYPE;
+}
 
 const demoBusiness: Business = {
   id: "demo-business-1",
   name: "Demo Business",
   slug: DEFAULT_BUSINESS_SLUG,
   plan: "growth",
+  business_type: DEFAULT_BUSINESS_TYPE,
   is_active: true,
   created_at: new Date(0).toISOString(),
   updated_at: new Date(0).toISOString(),
@@ -42,7 +50,7 @@ const demoBranches: Branch[] = [
   },
 ];
 
-type ActiveBusinessSummary = Pick<Business, "id" | "name" | "slug" | "plan">;
+type ActiveBusinessSummary = Pick<Business, "id" | "name" | "slug" | "plan" | "business_type">;
 type AppShellBranchSummary = { id: string; name: string; branch_profile: BranchProfile };
 
 function inferBranchProfileFromIdentity(input: { name?: string | null; slug?: string | null }): BranchProfile {
@@ -58,12 +66,23 @@ const resolveBusinessBySlug = cache(async (businessSlug?: string) => {
   if (serviceClient) {
     const reader = unstable_cache(
       async () => {
-        const { data, error } = await serviceClient
+        let { data, error } = await serviceClient
           .from("businesses")
-          .select("id, name, slug, plan, is_active, created_at, updated_at")
+          .select("id, name, slug, plan, business_type, is_active, created_at, updated_at")
           .eq("slug", slug)
           .eq("is_active", true)
           .maybeSingle();
+
+        if (error?.message?.toLowerCase().includes("business_type")) {
+          const fallback = await serviceClient
+            .from("businesses")
+            .select("id, name, slug, plan, is_active, created_at, updated_at")
+            .eq("slug", slug)
+            .eq("is_active", true)
+            .maybeSingle();
+          data = fallback.data as typeof data;
+          error = fallback.error as typeof error;
+        }
 
         if (error) {
           if (error.message.toLowerCase().includes("businesses")) {
@@ -76,8 +95,13 @@ const resolveBusinessBySlug = cache(async (businessSlug?: string) => {
           return { business: null as Business | null, usingDemoData: false, useLegacySchema: false };
         }
 
+        const normalizedBusiness = {
+          ...(data as Omit<Business, "business_type"> & { business_type?: unknown }),
+          business_type: normalizeBusinessType((data as { business_type?: unknown }).business_type),
+        } satisfies Business;
+
         return {
-          business: data as Business,
+          business: normalizedBusiness,
           usingDemoData: false,
           useLegacySchema: false,
         };
@@ -94,12 +118,23 @@ const resolveBusinessBySlug = cache(async (businessSlug?: string) => {
     return { business: demoBusiness, usingDemoData: true, useLegacySchema: false };
   }
 
-  const { data, error } = await authClient
+  let { data, error } = await authClient
     .from("businesses")
-    .select("id, name, slug, plan, is_active, created_at, updated_at")
+    .select("id, name, slug, plan, business_type, is_active, created_at, updated_at")
     .eq("slug", slug)
     .eq("is_active", true)
     .maybeSingle();
+
+  if (error?.message?.toLowerCase().includes("business_type")) {
+    const fallback = await authClient
+      .from("businesses")
+      .select("id, name, slug, plan, is_active, created_at, updated_at")
+      .eq("slug", slug)
+      .eq("is_active", true)
+      .maybeSingle();
+    data = fallback.data as typeof data;
+    error = fallback.error as typeof error;
+  }
 
   if (error) {
     if (error.message.toLowerCase().includes("businesses")) {
@@ -112,8 +147,13 @@ const resolveBusinessBySlug = cache(async (businessSlug?: string) => {
     return { business: null as Business | null, usingDemoData: false, useLegacySchema: false };
   }
 
+  const normalizedBusiness = {
+    ...(data as Omit<Business, "business_type"> & { business_type?: unknown }),
+    business_type: normalizeBusinessType((data as { business_type?: unknown }).business_type),
+  } satisfies Business;
+
   return {
-    business: data as Business,
+    business: normalizedBusiness,
     usingDemoData: false,
     useLegacySchema: false,
   };
@@ -126,24 +166,39 @@ const getCachedActiveBusinessesRow = unstable_cache(
       return null;
     }
 
-    const { data, error } = await supabase
+    let { data, error } = await supabase
       .from("businesses")
-      .select("id, name, slug, plan")
+      .select("id, name, slug, plan, business_type")
       .eq("is_active", true)
       .order("name", { ascending: true });
+
+    if (error?.message?.toLowerCase().includes("business_type")) {
+      const fallback = await supabase
+        .from("businesses")
+        .select("id, name, slug, plan")
+        .eq("is_active", true)
+        .order("name", { ascending: true });
+      data = fallback.data as typeof data;
+      error = fallback.error as typeof error;
+    }
 
     if (error) {
       return {
         error: true as const,
         useLegacySchema: error.message.toLowerCase().includes("businesses"),
-        businesses: [] as Array<Pick<Business, "id" | "name" | "slug" | "plan">>,
+        businesses: [] as Array<Pick<Business, "id" | "name" | "slug" | "plan" | "business_type">>,
       };
     }
 
     return {
       error: false as const,
       useLegacySchema: false,
-      businesses: (data ?? []) as Array<Pick<Business, "id" | "name" | "slug" | "plan">>,
+      businesses: ((data ?? []) as Array<Pick<Business, "id" | "name" | "slug" | "plan"> & { business_type?: unknown }>).map(
+        (business) => ({
+          ...business,
+          business_type: normalizeBusinessType(business.business_type),
+        }),
+      ),
     };
   },
   ["active-businesses"],
@@ -161,24 +216,39 @@ async function getActiveBusinessesRowForRequest() {
     return null;
   }
 
-  const { data, error } = await authClient
+  let { data, error } = await authClient
     .from("businesses")
-    .select("id, name, slug, plan")
+    .select("id, name, slug, plan, business_type")
     .eq("is_active", true)
     .order("name", { ascending: true });
+
+  if (error?.message?.toLowerCase().includes("business_type")) {
+    const fallback = await authClient
+      .from("businesses")
+      .select("id, name, slug, plan")
+      .eq("is_active", true)
+      .order("name", { ascending: true });
+    data = fallback.data as typeof data;
+    error = fallback.error as typeof error;
+  }
 
   if (error) {
     return {
       error: true as const,
       useLegacySchema: error.message.toLowerCase().includes("businesses"),
-      businesses: [] as Array<Pick<Business, "id" | "name" | "slug" | "plan">>,
+      businesses: [] as Array<Pick<Business, "id" | "name" | "slug" | "plan" | "business_type">>,
     };
   }
 
   return {
     error: false as const,
     useLegacySchema: false,
-    businesses: (data ?? []) as Array<Pick<Business, "id" | "name" | "slug" | "plan">>,
+    businesses: ((data ?? []) as Array<Pick<Business, "id" | "name" | "slug" | "plan"> & { business_type?: unknown }>).map(
+      (business) => ({
+        ...business,
+        business_type: normalizeBusinessType(business.business_type),
+      }),
+    ),
   };
 }
 
@@ -400,7 +470,13 @@ export const getRequestAppContext = cache(async () => {
   const authClient = await getSupabaseAuthServerClient();
 
   if (!authClient) {
-    const demoBusinesses: ActiveBusinessSummary[] = [{ id: demoBusiness.id, name: demoBusiness.name, slug: demoBusiness.slug, plan: demoBusiness.plan }];
+    const demoBusinesses: ActiveBusinessSummary[] = [{
+      id: demoBusiness.id,
+      name: demoBusiness.name,
+      slug: demoBusiness.slug,
+      plan: demoBusiness.plan,
+      business_type: demoBusiness.business_type,
+    }];
     const demoBranchRows: AppShellBranchSummary[] = demoBranches.map((branch) => ({
       id: branch.id,
       name: branch.name,
@@ -470,6 +546,7 @@ export const getRequestAppContext = cache(async () => {
               name: fallbackContext.business.name,
               slug: fallbackContext.business.slug,
               plan: fallbackContext.business.plan,
+              business_type: fallbackContext.business.business_type,
             },
           ]
         : [];
@@ -605,6 +682,7 @@ export const getDefaultBusinessScope = cache(async () => {
   return {
     activeSlug: context.activeSlug,
     businessId: context.businessId,
+    activeBusinessType: context.activeBusiness?.business_type ?? DEFAULT_BUSINESS_TYPE,
     branchId: context.branchId,
     activeBranchProfile: context.activeBranchProfile,
     activeBranchSelection: context.activeBranchSelection,
@@ -617,6 +695,9 @@ export const getDefaultBusinessScope = cache(async () => {
 
 export const getAppShellSnapshot = cache(async () => {
   const context = await getRequestAppContext();
+  const operatingProfile = resolveOperatingProfile(context.activeBusiness?.business_type);
+  const operatingCapabilities = getOperatingProfileCapabilities(operatingProfile);
+
   return {
     sessionUserId: context.user?.id ?? null,
     sessionBusinessId: context.businessId ?? null,
@@ -626,8 +707,16 @@ export const getAppShellSnapshot = cache(async () => {
     usingDemoData: context.usingDemoData,
     accessScope: context.accessScope,
     primaryBranchId: context.primaryBranchId,
-    businesses: context.businesses.map((item) => ({ slug: item.slug, name: item.name, plan: item.plan })),
+    businesses: context.businesses.map((item) => ({
+      slug: item.slug,
+      name: item.name,
+      plan: item.plan,
+      business_type: item.business_type ?? "restaurant_cafe",
+    })),
     activeBusinessSlug: context.activeSlug,
+    activeBusinessType: context.activeBusiness?.business_type ?? "restaurant_cafe",
+    operatingProfile,
+    operatingCapabilities,
     branches: context.branches,
     activeBranchId: context.activeBranchId,
     activeBranchProfile: context.activeBranchProfile,

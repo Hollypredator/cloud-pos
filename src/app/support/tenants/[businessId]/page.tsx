@@ -1,12 +1,22 @@
 import { revalidatePath } from "next/cache";
 import Link from "next/link";
-import { notFound } from "next/navigation";
+import { notFound, redirect } from "next/navigation";
 import { FEATURE_META, getPlanLabel, hasFeature, type FeatureKey } from "@/lib/features";
 import { requireSupportAccess } from "@/lib/auth";
-import { getSupportTenantDetail, updateSupportTenantProfile, upsertSupportFeatureFlagOverride } from "@/lib/domains/support";
+import {
+  getSupportTenantDetail,
+  updateSupportTenantBusinessType,
+  updateSupportTenantProfile,
+  upsertSupportFeatureFlagOverride,
+} from "@/lib/domains/support";
 import { translateUiText } from "@/lib/i18n";
 import { getCurrentLocale } from "@/lib/i18n-server";
 import type { SupportBillingStatus, SupportRiskLevel, TenantLifecycleStage } from "@/lib/types";
+
+function feedbackHref(businessId: string, tone: "success" | "error", message: string) {
+  const params = new URLSearchParams({ tone, feedback: message });
+  return `/support/tenants/${businessId}?${params.toString()}`;
+}
 
 async function updateTenantProfileAction(formData: FormData) {
   "use server";
@@ -42,14 +52,34 @@ async function updateFeatureFlagAction(formData: FormData) {
   revalidatePath("/support/feature-flags");
 }
 
+async function updateBusinessTypeAction(formData: FormData) {
+  "use server";
+  const businessId = String(formData.get("businessId") ?? "");
+  const businessType = String(formData.get("businessType") ?? "restaurant_cafe");
+  await requireSupportAccess(`/support/tenants/${businessId}`, ["support_admin"]);
+  const result = await updateSupportTenantBusinessType({
+    businessId,
+    businessType: businessType === "self_service_coffee" ? "self_service_coffee" : "restaurant_cafe",
+  });
+  if (!result.ok) {
+    redirect(feedbackHref(businessId, "error", result.error ?? "Isletme tipi guncellenemedi."));
+  }
+  revalidatePath(`/support/tenants/${businessId}`);
+  revalidatePath("/support/tenants");
+  redirect(feedbackHref(businessId, "success", "Isletme tipi guncellendi."));
+}
+
 export default async function SupportTenantDetailPage({
   params,
+  searchParams,
 }: {
   params: Promise<{ businessId: string }>;
+  searchParams?: Promise<{ tone?: "success" | "error"; feedback?: string }>;
 }) {
   const locale = await getCurrentLocale();
   await requireSupportAccess("/support/tenants");
   const { businessId } = await params;
+  const search = (await searchParams) ?? {};
   const { tenant } = await getSupportTenantDetail(businessId);
 
   if (!tenant) {
@@ -74,8 +104,21 @@ export default async function SupportTenantDetailPage({
         <p className="mt-2 text-sm text-slate-500">/{tenant.slug}</p>
       </header>
 
-      <section className="grid gap-4 md:grid-cols-2 xl:grid-cols-6">
+      {search.feedback ? (
+        <div
+          className={`rounded-2xl border px-4 py-3 text-sm ${
+            search.tone === "error"
+              ? "border-rose-200 bg-rose-50 text-rose-800"
+              : "border-emerald-200 bg-emerald-50 text-emerald-800"
+          }`}
+        >
+          {search.feedback}
+        </div>
+      ) : null}
+
+      <section className="grid gap-4 md:grid-cols-2 xl:grid-cols-7">
         <div className="rounded-2xl bg-white p-6 shadow-sm"><p className="text-xs uppercase tracking-[0.24em] text-slate-500">{translateUiText("Paket", locale)}</p><p className="mt-3 text-2xl font-semibold text-slate-900">{getPlanLabel(tenant.plan)}</p></div>
+        <div className="rounded-2xl bg-white p-6 shadow-sm"><p className="text-xs uppercase tracking-[0.24em] text-slate-500">Isletme Tipi</p><p className="mt-3 text-2xl font-semibold text-slate-900">{tenant.business_type === "self_service_coffee" ? "Self-Service" : "Restaurant"}</p></div>
         <div className="rounded-2xl bg-white p-6 shadow-sm"><p className="text-xs uppercase tracking-[0.24em] text-slate-500">{translateUiText("Şube", locale)}</p><p className="mt-3 text-2xl font-semibold text-slate-900">{tenant.branch_count}</p></div>
         <div className="rounded-2xl bg-white p-6 shadow-sm"><p className="text-xs uppercase tracking-[0.24em] text-slate-500">{translateUiText("Açık Ticket", locale)}</p><p className="mt-3 text-2xl font-semibold text-slate-900">{tenant.open_ticket_count}</p></div>
         <div className="rounded-2xl bg-white p-6 shadow-sm"><p className="text-xs uppercase tracking-[0.24em] text-slate-500">{translateUiText("Durum", locale)}</p><p className="mt-3 text-2xl font-semibold text-slate-900">{tenant.is_active ? translateUiText("Aktif", locale) : translateUiText("Pasif", locale)}</p></div>
@@ -143,6 +186,27 @@ export default async function SupportTenantDetailPage({
         </form>
 
         <div className="space-y-4">
+          <article className="rounded-2xl bg-white p-6 shadow-sm">
+            <p className="text-sm font-semibold text-slate-900">Isletme Tipi</p>
+            <form action={updateBusinessTypeAction} className="mt-4 space-y-3">
+              <input type="hidden" name="businessId" value={businessId} />
+              <select
+                name="businessType"
+                defaultValue={tenant.business_type}
+                className="w-full rounded-xl border border-slate-300 px-3 py-2 text-sm"
+              >
+                <option value="restaurant_cafe">Restaurant / Cafe</option>
+                <option value="self_service_coffee">Self-Service Coffee</option>
+              </select>
+              <button
+                type="submit"
+                className="rounded-xl border border-slate-300 px-4 py-2 text-sm font-semibold text-slate-700"
+              >
+                Isletme Tipini Guncelle
+              </button>
+            </form>
+          </article>
+
           <article className="rounded-2xl bg-white p-6 shadow-sm">
             <p className="text-sm font-semibold text-slate-900">{translateUiText("Safe Diagnostics", locale)}</p>
             <div className="mt-4 space-y-2 text-sm text-slate-600">

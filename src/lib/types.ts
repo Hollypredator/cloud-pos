@@ -62,6 +62,15 @@ export type SupportTicketPriority = "low" | "normal" | "high" | "urgent";
 export type SupportTicketStatus = "open" | "in_progress" | "resolved" | "closed";
 export type SupportPlanRequestStatus = "open" | "approved" | "rejected" | "cancelled";
 export type BusinessPlan = "starter" | "growth" | "custom";
+export type BusinessType = "restaurant_cafe" | "self_service_coffee";
+export type OperatingProfile = "restaurant_classic" | "coffee_self_service";
+export type OperatingProfileCapabilities = {
+  channels: OrderChannel[];
+  payment_mode: "pay_at_order" | "pay_at_checkout";
+  pickup_identity: "number_plus_name" | "table_number";
+  order_ready_board: boolean;
+  hide_table_ui: boolean;
+};
 export type StaffAccessScope = "business" | "branch";
 export type TenantLifecycleStage = "lead" | "demo" | "onboarding" | "active" | "at_risk" | "churned" | "archived";
 export type SupportBillingStatus = "healthy" | "attention" | "overdue";
@@ -146,6 +155,21 @@ export type OrderItemModifierSelection = {
   option_name: string;
   price_delta: number;
   quantity?: number;
+};
+
+export type QrOrderConfirmationRequest = {
+  confirmedAtClient: string;
+  uiVersion: string;
+  cartItemCount: number;
+  cartTotal: number;
+  cartSnapshotHash: string;
+};
+
+export type QrOrderConfirmationResponse = {
+  confirmationId: string;
+  confirmedAt: string;
+  cancelUntil: string;
+  cancelWindowSeconds: number;
 };
 
 export type Order = {
@@ -334,6 +358,7 @@ export type Business = {
   name: string;
   slug: string;
   plan: BusinessPlan;
+  business_type: BusinessType;
   is_active: boolean;
   created_at: string;
   updated_at: string;
@@ -548,6 +573,7 @@ export type SupportTenantSummary = {
   business_name: string;
   business_slug: string;
   plan: BusinessPlan;
+  business_type: BusinessType;
   is_active: boolean;
   branch_count: number;
   tenant_model: TenantModel;
@@ -570,6 +596,7 @@ export type SupportHealthSummary = {
 export type SupportOnboardingSummary = {
   business_id: string;
   business_name: string;
+  business_type: BusinessType;
   products: number;
   tables: number;
   staff: number;

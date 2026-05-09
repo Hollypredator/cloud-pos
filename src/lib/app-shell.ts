@@ -1,6 +1,6 @@
 import type { ApplicationSettings } from "@/lib/app-settings";
 import type { EffectiveCapabilities, FeatureKey } from "@/lib/features";
-import type { AppRole, BusinessPlan, StaffAccessScope } from "@/lib/types";
+import type { AppRole, BusinessPlan, BusinessType, StaffAccessScope } from "@/lib/types";
 import type { BranchProfile, StationProfile } from "@/lib/types";
 
 export type AppShellPayload = {
@@ -11,6 +11,7 @@ export type AppShellPayload = {
   sessionBusinessId: string | null;
   sessionBranchId: string | null;
   activeBusinessSlug: string;
+  activeBusinessType: BusinessType;
   businesses: Array<{ slug: string; name: string }>;
   activeBranchId: string;
   activeBranchProfile: BranchProfile;

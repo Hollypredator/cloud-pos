@@ -60,3 +60,23 @@
   - Retryable hata tipini loglardan sınıflandır.
   - Gerekli ise timeout/retry limitlerini revize et.
   - Olayi postmortem'e "finans durum uzlasmazligi" basligiyla ekle.
+
+## 8. Ozel Prosedur - QR Siparis Arizasi
+- Semptom:
+  - Musteri QR sayfasinda siparisi tamamlayamiyor.
+  - `403` token hatasi, `404` masa bulunamadi, `503` token misconfigured.
+  - Ayni sepet icin tekrar siparis acildigi bildirimi.
+- Ilk kontrol:
+  - Istekte `x-correlation-id` ve `x-operation-ms` degerlerini not et.
+  - `orders.create.qr_token_invalid`, `orders.latest.qr_token_invalid`, `orders.history.qr_token_invalid` eventlerini kontrol et.
+  - `orders.create.failed` icinde `commandStatus` ve `resultStatus` alanlarini kontrol et.
+  - `qr.token.refresh.*` eventlerini kontrol et (yenileme endpoint sagligi).
+- Acil aksiyon:
+  - Musteriyi ayni QR kodu yeniden okutmaya yonlendir.
+  - `QR_ACCESS_SECRET` varligini ve ortama dogru yuklendigini dogrula.
+  - `TABLE_NOT_FOUND` durumunda ilgili masanin `qr_code_identifier` kaydini kontrol et.
+  - Cift siparis raporunda `x-idempotency-key` tekrarlarini kontrol et.
+- Alarm esikleri:
+  - `orders.latest.delay_alert` warning: pending >= 15 dk veya preparing >= 20 dk.
+  - `orders.latest.delay_alert` critical: pending >= 25 dk veya preparing >= 35 dk.
+  - `kitchen.delay.alert` critical count > 0 oldugunda incident triage baslat.

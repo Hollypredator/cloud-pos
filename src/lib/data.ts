@@ -1,3 +1,5 @@
+import * as AppContextCore from "@/lib/server/app-context/core";
+import { resolveOperatingProfile } from "@/lib/operating-profile";
 import { revalidateTag, unstable_cache } from "next/cache";
 import { cache } from "react";
 import { getSupabaseServerClient } from "@/lib/supabase/server";
@@ -61,6 +63,7 @@ import type {
   BlogPost,
   BlogPostStatus,
   Business,
+  BusinessType,
   Branch,
   BranchProfile,
   CashRegisterSession,
@@ -307,12 +310,12 @@ function parseOrderStationStatuses(raw: unknown) {
 function normalizeStationLabel(value?: string | null) {
   return String(value ?? "")
     .toLocaleLowerCase("tr-TR")
-    .replaceAll("Ä±", "i")
-    .replaceAll("Ã¶", "o")
-    .replaceAll("Ã¼", "u")
-    .replaceAll("ÅŸ", "s")
-    .replaceAll("Ã§", "c")
-    .replaceAll("ÄŸ", "g");
+    .replaceAll("Ãƒâ€Ã‚Â±", "i")
+    .replaceAll("ÃƒÆ’Ã‚Â¶", "o")
+    .replaceAll("ÃƒÆ’Ã‚Â¼", "u")
+    .replaceAll("Ãƒâ€¦Ã…Â¸", "s")
+    .replaceAll("ÃƒÆ’Ã‚Â§", "c")
+    .replaceAll("Ãƒâ€Ã…Â¸", "g");
 }
 
 function inferStationByCategoryName(name?: string | null): PrepStation {
@@ -458,10 +461,14 @@ function resolveOrderSettlementStatus(
   netAmount: number,
   allowRefunded: boolean,
   currentStatus: OrderStatus,
+  businessType?: string,
 ) {
   const roundedTarget = toMoney(targetAmount);
   const roundedNet = toMoney(netAmount);
   if (roundedNet >= roundedTarget) {
+    if (businessType === "self_service_coffee" && (currentStatus === "pending" || currentStatus === "preparing" || currentStatus === "ready")) {
+      return currentStatus;
+    }
     return "paid" as OrderStatus;
   }
   if (allowRefunded && roundedNet > 0) {
@@ -484,21 +491,21 @@ function resolveOrderSettlementStatus(
 
 function mapPaymentMutationConflictToMessage(conflictReason: string, paymentType: "sale" | "refund") {
   if (conflictReason === "ORDER_NOT_FOUND") {
-    return "Sipariş bulunamadi.";
+    return "SipariÃ…Å¸ bulunamadi.";
   }
   if (conflictReason === "INVALID_AMOUNT") {
-    return paymentType === "sale" ? "Ödeme tutari sifirdan buyuk olmali." : "Iade tutari sifirdan buyuk olmali.";
+    return paymentType === "sale" ? "Ãƒâ€“deme tutari sifirdan buyuk olmali." : "Iade tutari sifirdan buyuk olmali.";
   }
   if (conflictReason === "ORDER_CANCELLED") {
     return paymentType === "sale"
-      ? "Iptal edilmis siparise ödeme eklenemez."
+      ? "Iptal edilmis siparise ÃƒÂ¶deme eklenemez."
       : "Iptal edilmis siparise iade eklenemez.";
   }
   if (conflictReason === "ORDER_REFUNDED" && paymentType === "sale") {
-    return "Iade edilmis siparise ödeme eklenemez.";
+    return "Iade edilmis siparise ÃƒÂ¶deme eklenemez.";
   }
   if (conflictReason === "OVERPAYMENT") {
-    return "Ödeme tutari kalan bakiyeden buyuk olamaz.";
+    return "Ãƒâ€“deme tutari kalan bakiyeden buyuk olamaz.";
   }
   if (conflictReason === "OVER_REFUND") {
     return "Iade tutari iade edilebilir bakiyeden buyuk olamaz.";
@@ -507,12 +514,12 @@ function mapPaymentMutationConflictToMessage(conflictReason: string, paymentType
     return "Iade edilebilir tahsilat bulunamadi.";
   }
   if (conflictReason === "STATUS_TRANSITION_BLOCKED") {
-    return "Sipariş durum gecisi doğrulanamadı.";
+    return "SipariÃ…Å¸ durum gecisi doÃ„Å¸rulanamadÃ„Â±.";
   }
   if (conflictReason === "CONCURRENT_UPDATE") {
-    return "Sipariş baska bir terminalde güncellendi. Lütfen tekrar deneyin.";
+    return "SipariÃ…Å¸ baska bir terminalde gÃƒÂ¼ncellendi. LÃƒÂ¼tfen tekrar deneyin.";
   }
-  return paymentType === "sale" ? "Ödeme işlemi tamamlanamadi." : "Iade işlemi tamamlanamadi.";
+  return paymentType === "sale" ? "Ãƒâ€“deme iÃ…Å¸lemi tamamlanamadi." : "Iade iÃ…Å¸lemi tamamlanamadi.";
 }
 
 function parsePaymentMutationRpcRow(raw: unknown) {
@@ -680,6 +687,7 @@ async function reconcileOrderSettlementState(input: {
     amountPaid,
     input.allowRefunded,
     currentStatus,
+    (input.scope as any).activeBusinessType,
   );
   const nextStatus = isAllowedOrderStatusTransition(currentStatus, nextStatusCandidate)
     ? nextStatusCandidate
@@ -816,6 +824,69 @@ const demoProducts: Product[] = [
     is_available: true,
   },
 ];
+
+const demoSelfServiceCategories: Category[] = [
+  { id: "ss-cat-1", name: "Sicak", sort_order: 1, prep_station: "bar" },
+  { id: "ss-cat-2", name: "Soguk", sort_order: 2, prep_station: "bar" },
+  { id: "ss-cat-3", name: "Yiyecek", sort_order: 3, prep_station: "dessert" },
+  { id: "ss-cat-4", name: "Ekstra", sort_order: 4, prep_station: "bar" },
+];
+
+const demoSelfServiceProducts: Product[] = [
+  { id: "ss-prod-1", category_id: "ss-cat-1", name: "Espresso", price: 110, stock_count: 999, image_url: null, description: "Single shot espresso", is_available: true },
+  { id: "ss-prod-2", category_id: "ss-cat-1", name: "Doppio", price: 125, stock_count: 999, image_url: null, description: "Double shot espresso", is_available: true },
+  { id: "ss-prod-3", category_id: "ss-cat-1", name: "Americano", price: 135, stock_count: 999, image_url: null, description: "Hot water + espresso", is_available: true },
+  { id: "ss-prod-4", category_id: "ss-cat-1", name: "Latte", price: 155, stock_count: 999, image_url: null, description: "Espresso, steamed milk", is_available: true },
+  { id: "ss-prod-5", category_id: "ss-cat-1", name: "Cappuccino", price: 160, stock_count: 999, image_url: null, description: "Espresso, milk foam", is_available: true },
+  { id: "ss-prod-6", category_id: "ss-cat-1", name: "Flat White", price: 165, stock_count: 999, image_url: null, description: "Ristretto based silky milk", is_available: true },
+  { id: "ss-prod-7", category_id: "ss-cat-1", name: "Mocha", price: 175, stock_count: 999, image_url: null, description: "Chocolate flavored latte", is_available: true },
+  { id: "ss-prod-8", category_id: "ss-cat-1", name: "Caramel Macchiato", price: 185, stock_count: 999, image_url: null, description: "Vanilla, milk, espresso, caramel", is_available: true },
+  { id: "ss-prod-9", category_id: "ss-cat-1", name: "White Chocolate Mocha", price: 190, stock_count: 999, image_url: null, description: "White mocha sauce + espresso", is_available: true },
+  { id: "ss-prod-10", category_id: "ss-cat-1", name: "Filtre Kahve", price: 120, stock_count: 999, image_url: null, description: "Freshly brewed daily coffee", is_available: true },
+  { id: "ss-prod-11", category_id: "ss-cat-1", name: "Turk Kahvesi", price: 130, stock_count: 999, image_url: null, description: "Traditional cezve brew", is_available: true },
+  { id: "ss-prod-12", category_id: "ss-cat-1", name: "Chai Tea Latte", price: 170, stock_count: 999, image_url: null, description: "Spiced tea latte", is_available: true },
+
+  { id: "ss-prod-13", category_id: "ss-cat-2", name: "Iced Americano", price: 145, stock_count: 999, image_url: null, description: "Espresso over ice", is_available: true },
+  { id: "ss-prod-14", category_id: "ss-cat-2", name: "Iced Latte", price: 165, stock_count: 999, image_url: null, description: "Milk + espresso over ice", is_available: true },
+  { id: "ss-prod-15", category_id: "ss-cat-2", name: "Iced Mocha", price: 180, stock_count: 999, image_url: null, description: "Iced chocolate mocha", is_available: true },
+  { id: "ss-prod-16", category_id: "ss-cat-2", name: "Cold Brew", price: 170, stock_count: 999, image_url: null, description: "Long-steeped cold coffee", is_available: true },
+  { id: "ss-prod-17", category_id: "ss-cat-2", name: "Nitro Cold Brew", price: 195, stock_count: 999, image_url: null, description: "Nitrogen infused cold brew", is_available: true },
+  { id: "ss-prod-18", category_id: "ss-cat-2", name: "Vanilla Sweet Cream Cold Brew", price: 205, stock_count: 999, image_url: null, description: "Cold brew + vanilla cream", is_available: true },
+  { id: "ss-prod-19", category_id: "ss-cat-2", name: "Iced Caramel Macchiato", price: 205, stock_count: 999, image_url: null, description: "Iced caramel espresso drink", is_available: true },
+  { id: "ss-prod-20", category_id: "ss-cat-2", name: "Iced White Mocha", price: 210, stock_count: 999, image_url: null, description: "Iced white mocha", is_available: true },
+  { id: "ss-prod-21", category_id: "ss-cat-2", name: "Strawberry Acai Refresher", price: 190, stock_count: 999, image_url: null, description: "Fruity refresher", is_available: true },
+  { id: "ss-prod-22", category_id: "ss-cat-2", name: "Mango Dragonfruit Refresher", price: 195, stock_count: 999, image_url: null, description: "Tropical refresher", is_available: true },
+  { id: "ss-prod-23", category_id: "ss-cat-2", name: "Coffee Frappuccino", price: 210, stock_count: 999, image_url: null, description: "Blended coffee classic", is_available: true },
+  { id: "ss-prod-24", category_id: "ss-cat-2", name: "Caramel Frappuccino", price: 220, stock_count: 999, image_url: null, description: "Blended caramel coffee", is_available: true },
+  { id: "ss-prod-25", category_id: "ss-cat-2", name: "Mocha Cookie Crumble Frappuccino", price: 235, stock_count: 999, image_url: null, description: "Mocha + cookie crumble", is_available: true },
+  { id: "ss-prod-26", category_id: "ss-cat-2", name: "Java Chip Frappuccino", price: 230, stock_count: 999, image_url: null, description: "Chocolate chip blended coffee", is_available: true },
+  { id: "ss-prod-27", category_id: "ss-cat-2", name: "White Chocolate Frappuccino", price: 225, stock_count: 999, image_url: null, description: "White chocolate blended drink", is_available: true },
+  { id: "ss-prod-28", category_id: "ss-cat-2", name: "Matcha Frappuccino", price: 220, stock_count: 999, image_url: null, description: "Green tea blended drink", is_available: true },
+
+  { id: "ss-prod-29", category_id: "ss-cat-3", name: "Butter Croissant", price: 115, stock_count: 999, image_url: null, description: "All-butter daily bake", is_available: true },
+  { id: "ss-prod-30", category_id: "ss-cat-3", name: "Chocolate Croissant", price: 125, stock_count: 999, image_url: null, description: "Cocoa filled croissant", is_available: true },
+  { id: "ss-prod-31", category_id: "ss-cat-3", name: "San Sebastian", price: 210, stock_count: 999, image_url: null, description: "Burnt basque cheesecake", is_available: true },
+  { id: "ss-prod-32", category_id: "ss-cat-3", name: "Tiramisu", price: 205, stock_count: 999, image_url: null, description: "Espresso layered dessert", is_available: true },
+  { id: "ss-prod-33", category_id: "ss-cat-3", name: "Red Velvet Slice", price: 195, stock_count: 999, image_url: null, description: "Cream cheese frosting cake", is_available: true },
+  { id: "ss-prod-34", category_id: "ss-cat-3", name: "Bagel Sandwich", price: 185, stock_count: 999, image_url: null, description: "Bagel with smoked turkey", is_available: true },
+  { id: "ss-prod-35", category_id: "ss-cat-3", name: "Chicken Caesar Wrap", price: 210, stock_count: 999, image_url: null, description: "Chicken caesar style wrap", is_available: true },
+  { id: "ss-prod-36", category_id: "ss-cat-3", name: "Protein Box", price: 225, stock_count: 999, image_url: null, description: "Egg, cheese, fruit set", is_available: true },
+
+  { id: "ss-prod-37", category_id: "ss-cat-4", name: "Extra Espresso Shot", price: 110, stock_count: 999, image_url: null, description: "Add one more espresso shot", is_available: true },
+  { id: "ss-prod-38", category_id: "ss-cat-4", name: "Vanilla Syrup Add-on", price: 110, stock_count: 999, image_url: null, description: "Vanilla flavored syrup", is_available: true },
+  { id: "ss-prod-39", category_id: "ss-cat-4", name: "Caramel Sauce Add-on", price: 110, stock_count: 999, image_url: null, description: "Sweet caramel topping", is_available: true },
+  { id: "ss-prod-40", category_id: "ss-cat-4", name: "Cold Foam Add-on", price: 115, stock_count: 999, image_url: null, description: "Silky cold foam layer", is_available: true },
+];
+
+function getDemoMenuSeed(businessType?: BusinessType | null) {
+  const isSelfService = businessType === "self_service_coffee";
+  return {
+    categories: isSelfService ? demoSelfServiceCategories : demoCategories,
+    products: isSelfService ? demoSelfServiceProducts : demoProducts,
+    modifierGroups: isSelfService ? ([] as ProductModifierGroup[]) : demoModifierGroups,
+    modifierOptions: isSelfService ? ([] as ProductModifierOption[]) : demoModifierOptions,
+  };
+}
 
 const demoTables: DiningTable[] = [
   {
@@ -1098,6 +1169,7 @@ const demoBusiness: Business = {
   name: "Demo Business",
   slug: DEFAULT_BUSINESS_SLUG,
   plan: "growth",
+  business_type: "restaurant_cafe",
   is_active: true,
   created_at: new Date().toISOString(),
   updated_at: new Date().toISOString(),
@@ -1107,7 +1179,7 @@ const demoBranches: Branch[] = [
   {
     id: "demo-branch-1",
     business_id: "demo-business-1",
-    name: "Merkez Şube",
+    name: "Merkez Ã…Âube",
     slug: "merkez",
     is_active: true,
     created_at: new Date().toISOString(),
@@ -1116,7 +1188,7 @@ const demoBranches: Branch[] = [
   {
     id: "demo-branch-2",
     business_id: "demo-business-1",
-    name: "Bahce Şube",
+    name: "Bahce Ã…Âube",
     slug: "bahce",
     is_active: true,
     created_at: new Date().toISOString(),
@@ -1258,17 +1330,28 @@ const getCachedSeoSettingsRow = unstable_cache(
 
 const resolveBusinessBySlug = cache(async (businessSlug?: string) => {
   const slug = normalizeBusinessSlug(businessSlug);
-  const cacheKey = `business-by-slug:${slug}`;
+  const cacheKey = `business-by-slug:v2:${slug}`;
   const serviceClient = getSupabaseServerClient();
   if (serviceClient) {
     const reader = unstable_cache(
       async () => {
-        const { data, error } = await serviceClient
+        let { data, error } = await serviceClient
           .from("businesses")
-          .select("id, name, slug, plan, is_active, created_at, updated_at")
+          .select("id, name, slug, plan, business_type, is_active, created_at, updated_at")
           .eq("slug", slug)
           .eq("is_active", true)
           .maybeSingle();
+
+        if (error?.message?.toLowerCase().includes("business_type")) {
+          const fallback = await serviceClient
+            .from("businesses")
+            .select("id, name, slug, plan, is_active, created_at, updated_at")
+            .eq("slug", slug)
+            .eq("is_active", true)
+            .maybeSingle();
+          data = fallback.data as typeof data;
+          error = fallback.error as typeof error;
+        }
 
         if (error) {
           if (error.message.toLowerCase().includes("businesses")) {
@@ -1281,8 +1364,16 @@ const resolveBusinessBySlug = cache(async (businessSlug?: string) => {
           return { business: null as Business | null, usingDemoData: false, useLegacySchema: false };
         }
 
+        const normalizedBusiness = {
+          ...(data as Omit<Business, "business_type"> & { business_type?: unknown }),
+          business_type:
+            (data as { business_type?: unknown }).business_type === "self_service_coffee"
+              ? "self_service_coffee"
+              : "restaurant_cafe",
+        } satisfies Business;
+
         return {
-          business: data as Business,
+          business: normalizedBusiness,
           usingDemoData: false,
           useLegacySchema: false,
         };
@@ -1299,12 +1390,23 @@ const resolveBusinessBySlug = cache(async (businessSlug?: string) => {
     return { business: demoBusiness, usingDemoData: true, useLegacySchema: false };
   }
 
-  const { data, error } = await authClient
+  let { data, error } = await authClient
     .from("businesses")
-    .select("id, name, slug, plan, is_active, created_at, updated_at")
+    .select("id, name, slug, plan, business_type, is_active, created_at, updated_at")
     .eq("slug", slug)
     .eq("is_active", true)
     .maybeSingle();
+
+  if (error?.message?.toLowerCase().includes("business_type")) {
+    const fallback = await authClient
+      .from("businesses")
+      .select("id, name, slug, plan, is_active, created_at, updated_at")
+      .eq("slug", slug)
+      .eq("is_active", true)
+      .maybeSingle();
+    data = fallback.data as typeof data;
+    error = fallback.error as typeof error;
+  }
 
   if (error) {
     if (error.message.toLowerCase().includes("businesses")) {
@@ -1317,8 +1419,16 @@ const resolveBusinessBySlug = cache(async (businessSlug?: string) => {
     return { business: null as Business | null, usingDemoData: false, useLegacySchema: false };
   }
 
+  const normalizedBusiness = {
+    ...(data as Omit<Business, "business_type"> & { business_type?: unknown }),
+    business_type:
+      (data as { business_type?: unknown }).business_type === "self_service_coffee"
+        ? "self_service_coffee"
+        : "restaurant_cafe",
+  } satisfies Business;
+
   return {
-    business: data as Business,
+    business: normalizedBusiness,
     usingDemoData: false,
     useLegacySchema: false,
   };
@@ -1545,12 +1655,12 @@ export async function updateBranch(input: { branchId: string; name: string; slug
 export async function setBranchActiveStatus(input: { branchId: string; isActive: boolean }) {
   const supabase = await getTenantDataClient();
   if (!supabase) {
-    return { ok: false, error: "Demo modda şube durum guncelleme pasif." };
+    return { ok: false, error: "Demo modda Ã…Å¸ube durum guncelleme pasif." };
   }
 
   const scope = await getDefaultBusinessScope();
   if (!scope.businessId) {
-    return { ok: false, error: "Aktif işletme bulunamadi." };
+    return { ok: false, error: "Aktif iÃ…Å¸letme bulunamadi." };
   }
 
   if (!input.isActive) {
@@ -1563,7 +1673,7 @@ export async function setBranchActiveStatus(input: { branchId: string; isActive:
       return { ok: false, error: countError.message };
     }
     if ((count ?? 0) <= 1) {
-      return { ok: false, error: "En az bir aktif şube kalmali." };
+      return { ok: false, error: "En az bir aktif Ã…Å¸ube kalmali." };
     }
   }
 
@@ -1589,12 +1699,12 @@ export async function setBranchActiveStatus(input: { branchId: string; isActive:
 export async function deleteBranch(branchId: string) {
   const supabase = await getTenantDataClient();
   if (!supabase) {
-    return { ok: false, error: "Demo modda şube silme pasif." };
+    return { ok: false, error: "Demo modda Ã…Å¸ube silme pasif." };
   }
 
   const scope = await getDefaultBusinessScope();
   if (!scope.businessId) {
-    return { ok: false, error: "Aktif işletme bulunamadi." };
+    return { ok: false, error: "Aktif iÃ…Å¸letme bulunamadi." };
   }
 
   const { count: branchCount, error: countError } = await supabase
@@ -1605,7 +1715,7 @@ export async function deleteBranch(branchId: string) {
     return { ok: false, error: countError.message };
   }
   if ((branchCount ?? 0) <= 1) {
-    return { ok: false, error: "Son şube silinemez." };
+    return { ok: false, error: "Son Ã…Å¸ube silinemez." };
   }
 
   const dependencyChecks = await Promise.all([
@@ -1619,7 +1729,7 @@ export async function deleteBranch(branchId: string) {
     return { ok: false, error: dependencyError.message };
   }
   if (linkedCount > 0) {
-    return { ok: false, error: "Bu subede masa, sipariş veya kurye kaydı oldugu için silinemez." };
+    return { ok: false, error: "Bu subede masa, sipariÃ…Å¸ veya kurye kaydÃ„Â± oldugu iÃƒÂ§in silinemez." };
   }
 
   const { error } = await supabase
@@ -1699,7 +1809,7 @@ export async function listBusinesses() {
 export async function createBusiness(input: { name: string; slug: string; plan?: BusinessPlan }) {
   const supabase = getSupabaseServerClient();
   if (!supabase) {
-    return { ok: false, error: "Demo modda işletme oluşturma pasif." };
+    return { ok: false, error: "Demo modda iÃ…Å¸letme oluÃ…Å¸turma pasif." };
   }
 
   const slug = normalizeBusinessSlug(input.slug);
@@ -1722,7 +1832,7 @@ export async function createBusiness(input: { name: string; slug: string; plan?:
     return { ok: false, error: error.message };
   }
   if (!data) {
-    return { ok: false, error: "İşletme oluşturulamadı." };
+    return { ok: false, error: "Ã„Â°Ã…Å¸letme oluÃ…Å¸turulamadÃ„Â±." };
   }
 
   await logAuditEvent({
@@ -1737,7 +1847,7 @@ export async function createBusiness(input: { name: string; slug: string; plan?:
 export async function setBusinessActiveStatus(input: { businessId: string; isActive: boolean }) {
   const supabase = getSupabaseServerClient();
   if (!supabase) {
-    return { ok: false, error: "Demo modda işletme guncelleme pasif." };
+    return { ok: false, error: "Demo modda iÃ…Å¸letme guncelleme pasif." };
   }
 
   const { data: activeRows } = await supabase
@@ -1746,7 +1856,7 @@ export async function setBusinessActiveStatus(input: { businessId: string; isAct
     .eq("is_active", true);
   const activeCount = (activeRows ?? []).length;
   if (!input.isActive && activeCount <= 1) {
-    return { ok: false, error: "En az bir aktif işletme kalmali." };
+    return { ok: false, error: "En az bir aktif iÃ…Å¸letme kalmali." };
   }
 
   const { error } = await supabase
@@ -1814,6 +1924,7 @@ export async function createSupportTenantProvision(input: {
   ownerEmail: string;
   ownerFullName?: string;
   ownerPassword?: string;
+  businessType?: BusinessType;
 }) {
   const supabase = getSupabaseServerClient();
   if (!supabase) {
@@ -1869,6 +1980,7 @@ export async function createSupportTenantProvision(input: {
     .insert({
       name: businessName,
       slug: businessSlug,
+      business_type: input.businessType ?? "restaurant_cafe",
       plan: input.plan ?? "growth",
       is_active: true,
     })
@@ -2055,7 +2167,7 @@ export async function updateActiveBusinessPlan(plan: BusinessPlan) {
 
   const scope = await getDefaultBusinessScope();
   if (!scope.businessId) {
-    return { ok: false, error: "Aktif işletme bulunamadi." };
+    return { ok: false, error: "Aktif iÃ…Å¸letme bulunamadi." };
   }
 
   const { error } = await supabase.from("businesses").update({ plan }).eq("id", scope.businessId);
@@ -2153,7 +2265,7 @@ export async function createCourier(input: { fullName: string; phone?: string; b
   const scope = await getDefaultBusinessScope();
   const businessId = input.businessId ?? scope.businessId;
   if (!businessId) {
-    return { ok: false, error: "Aktif işletme bulunamadi." };
+    return { ok: false, error: "Aktif iÃ…Å¸letme bulunamadi." };
   }
 
   const { data, error } = await supabase
@@ -2258,7 +2370,7 @@ export async function deleteCourier(courierId: string) {
 
   const activeAssignments = await activeAssignmentsQuery;
   if ((activeAssignments.count ?? 0) > 0) {
-    return { ok: false, error: "Aktif teslimati olan kurye silinemez. Önce siparisleri kapatin veya baska kuryeye atayin." };
+    return { ok: false, error: "Aktif teslimati olan kurye silinemez. Ãƒâ€“nce siparisleri kapatin veya baska kuryeye atayin." };
   }
 
   let deleteQuery = supabase.from("couriers").delete().eq("id", courierId);
@@ -2317,17 +2429,30 @@ function fireAndForgetAuditEvent(input: {
 
 export async function getMenu(businessSlug?: string) {
   const supabase = getSupabaseServerClient();
+  const defaultDemoMenu = getDemoMenuSeed();
+  const { settings: applicationSettings } = await getApplicationSettings();
+  const demoCatalogFallbackEnabled = applicationSettings.embeddedDemoCatalogEnabled;
   if (!supabase) {
+    if (!demoCatalogFallbackEnabled) {
+      return {
+        categories: [] as Category[],
+        products: [] as Product[],
+        modifierGroups: [] as ProductModifierGroup[],
+        modifierOptions: [] as ProductModifierOption[],
+        usingDemoData: false,
+      };
+    }
     return {
-      categories: demoCategories,
-      products: demoProducts,
-      modifierGroups: demoModifierGroups,
-      modifierOptions: demoModifierOptions,
+      categories: defaultDemoMenu.categories,
+      products: defaultDemoMenu.products,
+      modifierGroups: defaultDemoMenu.modifierGroups,
+      modifierOptions: defaultDemoMenu.modifierOptions,
       usingDemoData: true,
     };
   }
 
   const { business, useLegacySchema } = await resolveBusinessBySlug(businessSlug);
+  const demoMenu = getDemoMenuSeed(business?.business_type ?? null);
   if (!business && !useLegacySchema) {
     return {
       categories: [] as Category[],
@@ -2407,11 +2532,36 @@ export async function getMenu(businessSlug?: string) {
   try {
     const cached = await reader();
     if (!cached || cached.hasError) {
+      if (!demoCatalogFallbackEnabled) {
+        return {
+          categories: [] as Category[],
+          products: [] as Product[],
+          modifierGroups: [] as ProductModifierGroup[],
+          modifierOptions: [] as ProductModifierOption[],
+          usingDemoData: false,
+        };
+      }
       return {
-        categories: demoCategories,
-        products: demoProducts,
-        modifierGroups: demoModifierGroups,
-        modifierOptions: demoModifierOptions,
+        categories: demoMenu.categories,
+        products: demoMenu.products,
+        modifierGroups: demoMenu.modifierGroups,
+        modifierOptions: demoMenu.modifierOptions,
+        usingDemoData: true,
+      };
+    }
+
+    const isSelfServiceBusiness = business?.business_type === "self_service_coffee";
+    const isRestaurantBusiness = business?.business_type === "restaurant_cafe";
+    const shouldUseDemoForEmptyMenu =
+      demoCatalogFallbackEnabled &&
+      ((isSelfServiceBusiness && (cached.categories.length === 0 || cached.products.length === 0)) ||
+        (isRestaurantBusiness && cached.categories.length === 0 && cached.products.length === 0));
+    if (shouldUseDemoForEmptyMenu) {
+      return {
+        categories: demoMenu.categories,
+        products: demoMenu.products,
+        modifierGroups: demoMenu.modifierGroups,
+        modifierOptions: demoMenu.modifierOptions,
         usingDemoData: true,
       };
     }
@@ -2424,11 +2574,20 @@ export async function getMenu(businessSlug?: string) {
       usingDemoData: false,
     };
   } catch {
+    if (!demoCatalogFallbackEnabled) {
+      return {
+        categories: [] as Category[],
+        products: [] as Product[],
+        modifierGroups: [] as ProductModifierGroup[],
+        modifierOptions: [] as ProductModifierOption[],
+        usingDemoData: false,
+      };
+    }
     return {
-      categories: demoCategories,
-      products: demoProducts,
-      modifierGroups: demoModifierGroups,
-      modifierOptions: demoModifierOptions,
+      categories: demoMenu.categories,
+      products: demoMenu.products,
+      modifierGroups: demoMenu.modifierGroups,
+      modifierOptions: demoMenu.modifierOptions,
       usingDemoData: true,
     };
   }
@@ -2572,7 +2731,7 @@ export async function createTableRequest(input: {
     return { ok: false, error: error.message };
   }
   if (!data) {
-    return { ok: false, error: "Talep oluşturulamadı." };
+    return { ok: false, error: "Talep oluÃ…Å¸turulamadÃ„Â±." };
   }
 
   await logAuditEvent({
@@ -3117,7 +3276,7 @@ export async function createOrder(input: {
       } else if (updateExistingError) {
         return { ok: false, error: updateExistingError.message };
       } else if (!updatedExistingRows || updatedExistingRows.length === 0) {
-        return { ok: false, error: "Sipariş baska bir kullanıcı tarafindan güncellendi. Lütfen tekrar deneyin." };
+        return { ok: false, error: "SipariÃ…Å¸ baska bir kullanÃ„Â±cÃ„Â± tarafindan gÃƒÂ¼ncellendi. LÃƒÂ¼tfen tekrar deneyin." };
       }
 
       orderId = mergeRow.id;
@@ -3140,7 +3299,7 @@ export async function createOrder(input: {
       return { ok: false, error: orderError.message };
     }
     if (!orderData) {
-      return { ok: false, error: "Sipariş oluşturulamadı." };
+      return { ok: false, error: "SipariÃ…Å¸ oluÃ…Å¸turulamadÃ„Â±." };
     }
 
     orderId = orderData.id;
@@ -3149,7 +3308,7 @@ export async function createOrder(input: {
 
   const persistedOrderId = orderId;
   if (!persistedOrderId) {
-    return { ok: false, error: "Sipariş oluşturulamadı." };
+    return { ok: false, error: "SipariÃ…Å¸ oluÃ…Å¸turulamadÃ„Â±." };
   }
 
   const unitCostSnapshotByProductId = await getOrderItemUnitCostSnapshotMap({
@@ -4247,6 +4406,10 @@ export async function getCashierPageSnapshot(selectedOrderId?: string) {
   const openStatuses: OrderStatus[] =
     cashierOpenScope === "served_only" ? ["ready", "served", "partially_paid"] : ["pending", "preparing", "ready", "served", "partially_paid"];
 
+  const businessScope = await AppContextCore.getDefaultBusinessScope();
+  const operatingProfile = resolveOperatingProfile(businessScope?.activeBusinessType);
+  const isSelfServiceCoffee = operatingProfile === "coffee_self_service";
+
   const [servedResult, paidResult, selectedOrderResult] = await Promise.all([
     listOrders(openStatuses, {
       includeItems: false,
@@ -4276,6 +4439,7 @@ export async function getCashierPageSnapshot(selectedOrderId?: string) {
   const autoSettledFromOpen = servedWithPayments
     .filter(
       (order) =>
+        !isSelfServiceCoffee &&
         Number(order.remaining_balance ?? Number(order.final_price ?? order.total_price)) <= 0.009 &&
         order.status !== "cancelled" &&
         order.status !== "refunded",
@@ -4283,7 +4447,7 @@ export async function getCashierPageSnapshot(selectedOrderId?: string) {
     .map((order) => ({ ...order, status: "paid" as OrderStatus }));
   const servedOrders = servedWithPayments.filter(
     (order) =>
-      Number(order.remaining_balance ?? Number(order.final_price ?? order.total_price)) > 0.009 &&
+      (isSelfServiceCoffee || Number(order.remaining_balance ?? Number(order.final_price ?? order.total_price)) > 0.009) &&
       order.status !== "paid" &&
       order.status !== "cancelled" &&
       order.status !== "refunded",
@@ -4641,7 +4805,7 @@ export async function updateOrderStatus(orderId: string, nextStatus: OrderStatus
 
   const currentStatus = (orderRow.status as OrderStatus | null) ?? "pending";
   if (!isAllowedOrderStatusTransition(currentStatus, nextStatus)) {
-    return { ok: false, error: `Geçersiz sipariş gecisi: ${currentStatus} -> ${nextStatus}` };
+    return { ok: false, error: `GeÃƒÂ§ersiz sipariÃ…Å¸ gecisi: ${currentStatus} -> ${nextStatus}` };
   }
 
   const expectedLockVersion = Number((orderRow as { lock_version?: number | null }).lock_version ?? 0);
@@ -4673,7 +4837,7 @@ export async function updateOrderStatus(orderId: string, nextStatus: OrderStatus
   } else if (error) {
     return { ok: false, error: error.message };
   } else if (!updatedRows || updatedRows.length === 0) {
-    return { ok: false, error: "Sipariş baska bir kullanıcı tarafindan güncellendi. Lütfen tekrar deneyin." };
+    return { ok: false, error: "SipariÃ…Å¸ baska bir kullanÃ„Â±cÃ„Â± tarafindan gÃƒÂ¼ncellendi. LÃƒÂ¼tfen tekrar deneyin." };
   }
 
   if (nextStatus === "paid") {
@@ -4744,7 +4908,7 @@ export async function updateOrderStationStatus(
       ? currentStatus
       : deriveOrderStatusFromStationStatuses(stationStatuses, currentStatus);
   if (!isAllowedOrderStatusTransition(currentStatus, aggregateStatus)) {
-    return { ok: false, error: `Geçersiz sipariş gecisi: ${currentStatus} -> ${aggregateStatus}` };
+    return { ok: false, error: `GeÃƒÂ§ersiz sipariÃ…Å¸ gecisi: ${currentStatus} -> ${aggregateStatus}` };
   }
   const expectedLockVersion = Number((orderRow as { lock_version?: number | null }).lock_version ?? 0);
 
@@ -4799,7 +4963,7 @@ export async function updateOrderStationStatus(
     return { ok: false, error: updateError.message };
   }
   if (!updatedRows || updatedRows.length === 0) {
-    return { ok: false, error: "Sipariş baska bir kullanıcı tarafindan güncellendi. Lütfen tekrar deneyin." };
+    return { ok: false, error: "SipariÃ…Å¸ baska bir kullanÃ„Â±cÃ„Â± tarafindan gÃƒÂ¼ncellendi. LÃƒÂ¼tfen tekrar deneyin." };
   }
 
   fireAndForgetAuditEvent({
@@ -4833,7 +4997,7 @@ export async function applyOrderFinancials(input: {
   }
   const { data: orderRow, error: findError } = await findQuery.maybeSingle();
   if (findError || !orderRow) {
-    return { ok: false, error: findError?.message ?? "Sipariş bulunamadi." };
+    return { ok: false, error: findError?.message ?? "SipariÃ…Å¸ bulunamadi." };
   }
 
   const subtotal = Number(orderRow.total_price);
@@ -4881,7 +5045,7 @@ export async function applyOrderFinancials(input: {
   } else if (error) {
     return { ok: false, error: error.message };
   } else if (!financialRows || financialRows.length === 0) {
-    return { ok: false, error: "Sipariş baska bir kullanıcı tarafindan güncellendi. Lütfen tekrar deneyin." };
+    return { ok: false, error: "SipariÃ…Å¸ baska bir kullanÃ„Â±cÃ„Â± tarafindan gÃƒÂ¼ncellendi. LÃƒÂ¼tfen tekrar deneyin." };
   }
 
   fireAndForgetAuditEvent({
@@ -4907,7 +5071,7 @@ export async function completeOrderPayment(input: {
 }) {
   const supabase = getSupabaseServerClient() ?? (await getTenantDataClient());
   if (!supabase) {
-    return { ok: false, error: "Demo modda ödeme işlemi pasif." };
+    return { ok: false, error: "Demo modda ÃƒÂ¶deme iÃ…Å¸lemi pasif." };
   }
 
   const scope = await getDefaultBusinessScope();
@@ -4923,17 +5087,17 @@ export async function completeOrderPayment(input: {
   }
   const { data: orderRow, error: findError } = await findQuery.maybeSingle();
   if (findError || !orderRow) {
-    return { ok: false, error: findError?.message ?? "Sipariş bulunamadi." };
+    return { ok: false, error: findError?.message ?? "SipariÃ…Å¸ bulunamadi." };
   }
   if (orderRow.status === "cancelled" || orderRow.status === "refunded" || orderRow.status === "partially_refunded") {
-    return { ok: false, error: "Iptal veya iade edilmis siparise ödeme eklenemez." };
+    return { ok: false, error: "Iptal veya iade edilmis siparise ÃƒÂ¶deme eklenemez." };
   }
   const requestKey = typeof input.requestKey === "string" && input.requestKey.trim() ? input.requestKey.trim() : null;
   const requestedAmount = Number.isFinite(Number(input.amount))
     ? toMoney(Math.max(0, Number(input.amount)))
     : null;
   if (requestedAmount !== null && requestedAmount <= 0) {
-    return { ok: false, error: "Ödeme tutari sifirdan buyuk olmali." };
+    return { ok: false, error: "Ãƒâ€“deme tutari sifirdan buyuk olmali." };
   }
 
   const paymentMutationRpcResult = await supabase.rpc("apply_order_payment_mutation", {
@@ -5005,10 +5169,10 @@ export async function completeOrderPayment(input: {
   const remaining = toMoney(Math.max(0, targetAmount - alreadyPaid));
   const amount = toMoney(Math.max(0, Number(input.amount ?? remaining)));
   if (amount <= 0) {
-    return { ok: false, error: "Ödeme tutari sifirdan buyuk olmali." };
+    return { ok: false, error: "Ãƒâ€“deme tutari sifirdan buyuk olmali." };
   }
   if (toMoney(amount - remaining) > 0) {
-    return { ok: false, error: "Ödeme tutari kalan bakiyeden buyuk olamaz." };
+    return { ok: false, error: "Ãƒâ€“deme tutari kalan bakiyeden buyuk olamaz." };
   }
   if (requestKey) {
     let idempotencyLookup = supabase
@@ -5163,7 +5327,7 @@ export async function cancelOrder(orderId: string, note?: string, requestKey?: s
   }
   const { data: orderRow, error: findError } = await findQuery.maybeSingle();
   if (findError || !orderRow) {
-    return { ok: false, error: findError?.message ?? "Sipariş bulunamadi." };
+    return { ok: false, error: findError?.message ?? "SipariÃ…Å¸ bulunamadi." };
   }
   const normalizedRequestKey = typeof requestKey === "string" && requestKey.trim() ? requestKey.trim() : null;
   if (normalizedRequestKey) {
@@ -5187,7 +5351,7 @@ export async function cancelOrder(orderId: string, note?: string, requestKey?: s
     }
   }
   if (orderRow.status === "paid" || orderRow.status === "partially_paid" || orderRow.status === "partially_refunded") {
-    return { ok: false, error: "Ödeme alinmis sipariş iptal edilemez. Iade akisini kullanin." };
+    return { ok: false, error: "Ãƒâ€“deme alinmis sipariÃ…Å¸ iptal edilemez. Iade akisini kullanin." };
   }
   const paymentSummary = await getOrderPaymentSummaryMap(supabase, [orderId]);
   const netPaid = paymentSummary.get(orderId)?.net ?? 0;
@@ -5261,7 +5425,7 @@ export async function cancelOrder(orderId: string, note?: string, requestKey?: s
 export async function cancelOrderItem(orderId: string, productId: string) {
   const supabase = getSupabaseServerClient() ?? (await getTenantDataClient());
   if (!supabase) {
-    return { ok: false, error: "Demo modda işlem pasif." };
+    return { ok: false, error: "Demo modda iÃ…Å¸lem pasif." };
   }
 
   const scope = await getDefaultBusinessScope();
@@ -5275,17 +5439,17 @@ export async function cancelOrderItem(orderId: string, productId: string) {
 
   const { data: orderRow, error: findError } = await findQuery.maybeSingle();
   if (findError || !orderRow) {
-    return { ok: false, error: findError?.message ?? "Sipariş bulunamadi." };
+    return { ok: false, error: findError?.message ?? "SipariÃ…Å¸ bulunamadi." };
   }
 
   if (orderRow.status === "paid" || orderRow.status === "cancelled" || orderRow.status === "refunded") {
-    return { ok: false, error: "Kapanmis veya iptal edilmis bir adisyondan ürün silinemez." };
+    return { ok: false, error: "Kapanmis veya iptal edilmis bir adisyondan ÃƒÂ¼rÃƒÂ¼n silinemez." };
   }
 
   const items = Array.isArray(orderRow.items) ? (orderRow.items as OrderItem[]) : [];
   const targetIndex = items.findIndex((item) => item.product_id === productId);
   if (targetIndex === -1) {
-    return { ok: false, error: "Ürün adisyonda bulunamadi." };
+    return { ok: false, error: "ÃƒÅ“rÃƒÂ¼n adisyonda bulunamadi." };
   }
 
   const itemToEdit = items[targetIndex];
@@ -5343,14 +5507,14 @@ export async function cancelOrderItem(orderId: string, productId: string) {
   });
 
   if (updateResult.error) {
-    return { ok: false, error: "Sipariş güncellenemedi." };
+    return { ok: false, error: "SipariÃ…Å¸ gÃƒÂ¼ncellenemedi." };
   }
 
   fireAndForgetAuditEvent({
     entityType: "order",
     entityId: orderId,
     action: "update",
-    details: { note: "Ürün iptal edildi/dusuruldu", productId }
+    details: { note: "ÃƒÅ“rÃƒÂ¼n iptal edildi/dusuruldu", productId }
   });
 
   revalidateOrderFlowCaches();
@@ -5382,7 +5546,7 @@ export async function refundOrder(input: {
   }
   const { data: orderRow, error: findError } = await findQuery.maybeSingle();
   if (findError || !orderRow) {
-    return { ok: false, error: findError?.message ?? "Sipariş bulunamadi." };
+    return { ok: false, error: findError?.message ?? "SipariÃ…Å¸ bulunamadi." };
   }
   if (orderRow.status === "cancelled") {
     return { ok: false, error: "Iptal edilmis siparise iade eklenemez." };
@@ -5647,12 +5811,12 @@ export async function assignOrderCourier(input: {
       return { ok: false, error: existingError.message };
     }
     if (!existing) {
-      return { ok: false, error: "Sipariş bulunamadi veya erişim izni yok." };
+      return { ok: false, error: "SipariÃ…Å¸ bulunamadi veya eriÃ…Å¸im izni yok." };
     }
     if (existing.fulfillment_status === "out_for_delivery" && existing.courier_id === input.courierId) {
       return { ok: true, noop: true };
     }
-    return { ok: false, error: "Sipariş mevcut durumunda kurye atamasi kabul etmiyor." };
+    return { ok: false, error: "SipariÃ…Å¸ mevcut durumunda kurye atamasi kabul etmiyor." };
   }
 
   fireAndForgetAuditEvent({
@@ -5695,7 +5859,7 @@ export async function markDeliveryCompleted(orderId: string) {
     return { ok: false, error: currentOrderError.message };
   }
   if (!currentOrder) {
-    return { ok: false, error: "Sipariş bulunamadi veya erişim izni yok." };
+    return { ok: false, error: "SipariÃ…Å¸ bulunamadi veya eriÃ…Å¸im izni yok." };
   }
   if (currentOrder.fulfillment_status === "completed") {
     return { ok: true, noop: true };
@@ -6003,7 +6167,7 @@ export async function setTableSupervisor(input: {
 
   const scope = await getDefaultBusinessScope();
   if (!scope.useLegacySchema && !scope.businessId) {
-    return { ok: false, error: "Aktif işletme bulunamadi." };
+    return { ok: false, error: "Aktif iÃ…Å¸letme bulunamadi." };
   }
 
   let tableQuery = supabase
@@ -6037,7 +6201,7 @@ export async function setTableSupervisor(input: {
     const { error } = await deleteQuery;
     if (error) {
       if (error.message.toLowerCase().includes("table_supervisors")) {
-        return { ok: false, error: "Sorumlu garson tablosu bulunamadi. Son migration'i çalıştırın." };
+        return { ok: false, error: "Sorumlu garson tablosu bulunamadi. Son migration'i ÃƒÂ§alÃ„Â±Ã…Å¸tÃ„Â±rÃ„Â±n." };
       }
       return { ok: false, error: error.message };
     }
@@ -6079,7 +6243,7 @@ export async function setTableSupervisor(input: {
     return { ok: false, error: accessError.message };
   }
   if (!accessRows || accessRows.length === 0) {
-    return { ok: false, error: "Secilen garson aktif işletme kapsaminda değil." };
+    return { ok: false, error: "Secilen garson aktif iÃ…Å¸letme kapsaminda deÃ„Å¸il." };
   }
 
   const { error } = await supabase
@@ -6097,7 +6261,7 @@ export async function setTableSupervisor(input: {
 
   if (error) {
     if (error.message.toLowerCase().includes("table_supervisors")) {
-      return { ok: false, error: "Sorumlu garson tablosu bulunamadi. Son migration'i çalıştırın." };
+      return { ok: false, error: "Sorumlu garson tablosu bulunamadi. Son migration'i ÃƒÂ§alÃ„Â±Ã…Å¸tÃ„Â±rÃ„Â±n." };
     }
     return { ok: false, error: error.message };
   }
@@ -6738,15 +6902,21 @@ export async function getProductManagementData(
     tab?: import("@/lib/server/products-data").ProductManagementTab;
   },
 ) {
+  const scope = await getDefaultBusinessScope();
+  const demoMenu = getDemoMenuSeed((scope as { activeBusinessType?: BusinessType | null }).activeBusinessType ?? null);
   return getProductManagementDataImpl({
     getDefaultBusinessScope,
+    isDemoCatalogFallbackEnabled: async () => {
+      const { settings } = await getApplicationSettings();
+      return settings.embeddedDemoCatalogEnabled;
+    },
     logAuditEvent,
     revalidateProductManagementCaches,
-    demoCategories,
-    demoProducts,
+    demoCategories: demoMenu.categories,
+    demoProducts: demoMenu.products,
     demoIngredients,
-    demoModifierGroups,
-    demoModifierOptions,
+    demoModifierGroups: demoMenu.modifierGroups,
+    demoModifierOptions: demoMenu.modifierOptions,
     demoProductIngredients,
   }, options);
 }
@@ -7034,7 +7204,7 @@ export async function createIngredient(name: string, unit: string, cost: number)
   }
   const scope = await getDefaultBusinessScope();
   if (!scope.useLegacySchema && !scope.businessId) {
-    return { ok: false, error: "Aktif işletme bulunamadi." };
+    return { ok: false, error: "Aktif iÃ…Å¸letme bulunamadi." };
   }
 
   const payload = !scope.useLegacySchema && scope.businessId
@@ -7100,7 +7270,7 @@ export async function attachIngredientToProduct(input: {
 }) {
   const supabase = getSupabaseServerClient() ?? (await getTenantDataClient());
   if (!supabase) {
-    return { ok: false, error: "Demo modda ürün malzemesi duzenleme pasif." };
+    return { ok: false, error: "Demo modda ÃƒÂ¼rÃƒÂ¼n malzemesi duzenleme pasif." };
   }
   const scope = await getDefaultBusinessScope();
   if (!scope.useLegacySchema && scope.businessId) {
@@ -7120,7 +7290,7 @@ export async function attachIngredientToProduct(input: {
     ]);
 
     if (!product || !ingredient) {
-      return { ok: false, error: "Malzeme veya ürün aktif işletmede bulunamadi." };
+      return { ok: false, error: "Malzeme veya ÃƒÂ¼rÃƒÂ¼n aktif iÃ…Å¸letmede bulunamadi." };
     }
   }
 
@@ -7140,7 +7310,7 @@ export async function attachIngredientToProduct(input: {
 export async function detachIngredientFromProduct(productId: string, ingredientId: string) {
   const supabase = getSupabaseServerClient() ?? (await getTenantDataClient());
   if (!supabase) {
-    return { ok: false, error: "Demo modda ürün malzemesi duzenleme pasif." };
+    return { ok: false, error: "Demo modda ÃƒÂ¼rÃƒÂ¼n malzemesi duzenleme pasif." };
   }
   const scope = await getDefaultBusinessScope();
   if (!scope.useLegacySchema && scope.businessId) {
@@ -7151,7 +7321,7 @@ export async function detachIngredientFromProduct(productId: string, ingredientI
       .eq("business_id", scope.businessId)
       .maybeSingle();
     if (!product) {
-      return { ok: false, error: "Ürün aktif işletmede bulunamadi." };
+      return { ok: false, error: "ÃƒÅ“rÃƒÂ¼n aktif iÃ…Å¸letmede bulunamadi." };
     }
   }
 
@@ -7367,7 +7537,7 @@ export async function updateProfileRole(profileId: string, role: AppRole) {
 
   const businessScope = await getDefaultBusinessScope();
   if (!businessScope.businessId) {
-    return { ok: false, error: "Aktif işletme bulunamadi." };
+    return { ok: false, error: "Aktif iÃ…Å¸letme bulunamadi." };
   }
 
   const { data: existingAccess, error: accessFindError } = await authClient
@@ -7381,7 +7551,7 @@ export async function updateProfileRole(profileId: string, role: AppRole) {
   }
 
   if (!existingAccess || existingAccess.length === 0) {
-    return { ok: false, error: "Bu personel aktif işletme kapsaminda bulunamadi." };
+    return { ok: false, error: "Bu personel aktif iÃ…Å¸letme kapsaminda bulunamadi." };
   }
 
   const { error: profileError } = await authClient.from("profiles").update({ role }).eq("id", profileId);
@@ -7421,7 +7591,7 @@ export async function updateProfileRole(profileId: string, role: AppRole) {
     }
 
     if (!branchId) {
-      return { ok: false, error: "Şube personeli için önce en az bir aktif şube olusturulmalidir." };
+      return { ok: false, error: "Ã…Âube personeli iÃƒÂ§in ÃƒÂ¶nce en az bir aktif Ã…Å¸ube olusturulmalidir." };
     }
   }
 
@@ -7489,12 +7659,12 @@ export async function updateStaffAccount(input: {
   const normalizedBranchId = normalizedAccessScope === "branch" ? input.branchId ?? null : null;
 
   if (normalizedAccessScope === "branch" && !normalizedBranchId) {
-    return { ok: false, error: "Şube personeli için bir şube secilmelidir." };
+    return { ok: false, error: "Ã…Âube personeli iÃƒÂ§in bir Ã…Å¸ube secilmelidir." };
   }
 
   const businessScope = await getDefaultBusinessScope();
   if (!businessScope.businessId) {
-    return { ok: false, error: "Aktif işletme bulunamadi." };
+    return { ok: false, error: "Aktif iÃ…Å¸letme bulunamadi." };
   }
 
   const { data: existingAccess, error: existingAccessError } = await authClient
@@ -7508,7 +7678,7 @@ export async function updateStaffAccount(input: {
   }
 
   if (!existingAccess || existingAccess.length === 0) {
-    return { ok: false, error: "Bu personel aktif işletme kapsaminda bulunamadi." };
+    return { ok: false, error: "Bu personel aktif iÃ…Å¸letme kapsaminda bulunamadi." };
   }
 
   const authUpdate = await serviceClient.auth.admin.updateUserById(input.profileId, {
@@ -7580,7 +7750,7 @@ export async function deleteStaffAccount(profileId: string) {
 
   const businessScope = await getDefaultBusinessScope();
   if (!businessScope.businessId) {
-    return { ok: false, error: "Aktif işletme bulunamadi." };
+    return { ok: false, error: "Aktif iÃ…Å¸letme bulunamadi." };
   }
 
   const { data: accessRows, error: accessError } = await authClient
@@ -7588,15 +7758,15 @@ export async function deleteStaffAccount(profileId: string) {
     .select("business_id")
     .eq("profile_id", profileId);
   if (accessError || !accessRows || accessRows.length === 0) {
-    return { ok: false, error: accessError?.message ?? "Personel erişim kaydı bulunamadi." };
+    return { ok: false, error: accessError?.message ?? "Personel eriÃ…Å¸im kaydÃ„Â± bulunamadi." };
   }
 
   if (!(accessRows as Array<{ business_id: string }>).some((row) => row.business_id === businessScope.businessId)) {
-    return { ok: false, error: "Bu personel aktif işletme kapsaminda bulunamadi." };
+    return { ok: false, error: "Bu personel aktif iÃ…Å¸letme kapsaminda bulunamadi." };
   }
 
   if ((accessRows as Array<{ business_id: string }>).some((row) => row.business_id !== businessScope.businessId)) {
-    return { ok: false, error: "Bu hesap birden fazla işletmede kullaniliyor. Guvenlik için global silme engellendi." };
+    return { ok: false, error: "Bu hesap birden fazla iÃ…Å¸letmede kullaniliyor. Guvenlik iÃƒÂ§in global silme engellendi." };
   }
 
   const { data: profile, error: profileError } = await authClient
@@ -7655,7 +7825,7 @@ export async function createStaffAccount(input: {
   const authClient = await getSupabaseAuthServerClient();
   const serviceClient = getSupabaseServerClient();
   if (!authClient || !serviceClient) {
-    return { ok: false, error: "Demo modda kullanıcı oluşturma pasif." };
+    return { ok: false, error: "Demo modda kullanÃ„Â±cÃ„Â± oluÃ…Å¸turma pasif." };
   }
 
   const email = input.email.trim().toLowerCase();
@@ -7673,12 +7843,12 @@ export async function createStaffAccount(input: {
   const normalizedBranchId = normalizedAccessScope === "branch" ? input.branchId ?? null : null;
 
   if (normalizedAccessScope === "branch" && !normalizedBranchId) {
-    return { ok: false, error: "Şube personeli için bir şube secilmelidir." };
+    return { ok: false, error: "Ã…Âube personeli iÃƒÂ§in bir Ã…Å¸ube secilmelidir." };
   }
 
   const businessScope = await getDefaultBusinessScope();
   if (!businessScope.businessId) {
-    return { ok: false, error: "Aktif işletme bulunamadi." };
+    return { ok: false, error: "Aktif iÃ…Å¸letme bulunamadi." };
   }
 
   const { data: usersData, error: usersError } = await serviceClient.auth.admin.listUsers();
@@ -7700,7 +7870,7 @@ export async function createStaffAccount(input: {
 
     const businessIds = [...new Set((existingAccessRows as Array<{ business_id: string }>).map((row) => row.business_id))];
     if (businessIds.some((businessId) => businessId !== businessScope.businessId)) {
-      return { ok: false, error: "Bu e-posta baska bir işletmede kullaniliyor. Tenant guvenligi için ayni hesap yeniden baglanamaz." };
+      return { ok: false, error: "Bu e-posta baska bir iÃ…Å¸letmede kullaniliyor. Tenant guvenligi iÃƒÂ§in ayni hesap yeniden baglanamaz." };
     }
   }
 
@@ -7732,7 +7902,7 @@ export async function createStaffAccount(input: {
   }
 
   if (!userId) {
-    return { ok: false, error: "Kullanıcı hesabi oluşturulamadı." };
+    return { ok: false, error: "KullanÃ„Â±cÃ„Â± hesabi oluÃ…Å¸turulamadÃ„Â±." };
   }
 
   const { error: profileError } = await serviceClient.from("profiles").upsert(
@@ -7793,7 +7963,7 @@ export async function assignExistingAuthUserToBusiness(input: {
   const authClient = await getSupabaseAuthServerClient();
   const serviceClient = getSupabaseServerClient();
   if (!authClient || !serviceClient) {
-    return { ok: false, error: "Demo modda kullanıcı baglama pasif." };
+    return { ok: false, error: "Demo modda kullanÃ„Â±cÃ„Â± baglama pasif." };
   }
 
   const email = input.email.trim().toLowerCase();
@@ -7805,12 +7975,12 @@ export async function assignExistingAuthUserToBusiness(input: {
   const normalizedAccessScope: StaffAccessScope = input.role === "owner" ? "business" : "branch";
   const normalizedBranchId = normalizedAccessScope === "branch" ? input.branchId ?? null : null;
   if (normalizedAccessScope === "branch" && !normalizedBranchId) {
-    return { ok: false, error: "Şube personeli için bir şube secilmelidir." };
+    return { ok: false, error: "Ã…Âube personeli iÃƒÂ§in bir Ã…Å¸ube secilmelidir." };
   }
 
   const businessScope = await getDefaultBusinessScope();
   if (!businessScope.businessId) {
-    return { ok: false, error: "Aktif işletme bulunamadi." };
+    return { ok: false, error: "Aktif iÃ…Å¸letme bulunamadi." };
   }
 
   const { data: usersData, error: usersError } = await serviceClient.auth.admin.listUsers();
@@ -7820,7 +7990,7 @@ export async function assignExistingAuthUserToBusiness(input: {
 
   const authUser = usersData.users.find((user) => user.email?.toLowerCase() === email);
   if (!authUser) {
-    return { ok: false, error: "Auth kayitlarinda bu e-postayla kullanıcı bulunamadi." };
+    return { ok: false, error: "Auth kayitlarinda bu e-postayla kullanÃ„Â±cÃ„Â± bulunamadi." };
   }
 
   const userId = authUser.id;
@@ -7839,7 +8009,7 @@ export async function assignExistingAuthUserToBusiness(input: {
     ).data ?? [];
   const businessIds = [...new Set((existingAccessRows as Array<{ business_id: string }>).map((row) => row.business_id))];
   if (businessIds.some((businessId) => businessId !== businessScope.businessId)) {
-    return { ok: false, error: "Bu hesap baska bir isletmeye bağlı. Tenant guvenligi nedeniyle eklenemedi." };
+    return { ok: false, error: "Bu hesap baska bir isletmeye baÃ„Å¸lÃ„Â±. Tenant guvenligi nedeniyle eklenemedi." };
   }
 
   const { error: profileError } = await serviceClient.from("profiles").upsert(
@@ -7915,7 +8085,7 @@ export async function createDemoStaffSet() {
   if (failed.length > 0) {
     return {
       ok: false,
-      error: `Bazi demo hesaplari oluşturulamadı: ${failed.map((item) => item.email).join(", ")}`,
+      error: `Bazi demo hesaplari oluÃ…Å¸turulamadÃ„Â±: ${failed.map((item) => item.email).join(", ")}`,
     };
   }
 
@@ -8057,7 +8227,7 @@ export async function bulkUpdateCategoryPrices(categoryId: string, percent: numb
 
   const scale = 1 + percent / 100;
   if (scale <= 0) {
-    return { ok: false, error: "Geçersiz yuzde degeri." };
+    return { ok: false, error: "GeÃƒÂ§ersiz yuzde degeri." };
   }
 
   const scope = await getDefaultBusinessScope();
@@ -8789,7 +8959,7 @@ export async function openCashSession(openingCash: number, note?: string, opened
   }
   const { data: active } = await activeQuery;
   if ((active ?? []).length > 0) {
-    return { ok: false, error: "Açık kasa oturumu zaten var." };
+    return { ok: false, error: "AÃƒÂ§Ã„Â±k kasa oturumu zaten var." };
   }
 
   let insert = await supabase
@@ -8883,7 +9053,7 @@ export async function closeCashSession(input: {
       return { ok: false, error: openOrderError.message };
     }
     if ((openOrderRows?.length ?? 0) > 0) {
-      return { ok: false, error: "Gun sonu kapatilamadi. Açık adisyon bulunuyor." };
+      return { ok: false, error: "Gun sonu kapatilamadi. AÃƒÂ§Ã„Â±k adisyon bulunuyor." };
     }
   }
 
@@ -9542,7 +9712,7 @@ const demoSalesLeads: SalesLead[] = [
     phone: "+90 532 111 11 11",
     email: "elif@mavifincan.com",
     branch_count: 2,
-    note: "QR menü ve stok takibiyle ilgileniyor.",
+    note: "QR menÃƒÂ¼ ve stok takibiyle ilgileniyor.",
     status: "qualified",
     source: "landing_form",
     created_at: minutesAgo(180),
@@ -9567,13 +9737,13 @@ const demoLeadNotes: SalesLeadNote[] = [
   {
     id: "demo-lead-note-1",
     lead_id: "demo-lead-1",
-    note: "Cuma gunu demo takvimi için aranacak.",
+    note: "Cuma gunu demo takvimi iÃƒÂ§in aranacak.",
     created_at: minutesAgo(110),
   },
   {
     id: "demo-lead-note-2",
     lead_id: "demo-lead-2",
-    note: "Ilk şube için QR menü ve vardiya takibi oncelikli.",
+    note: "Ilk Ã…Å¸ube iÃƒÂ§in QR menÃƒÂ¼ ve vardiya takibi oncelikli.",
     created_at: minutesAgo(35),
   },
 ];
@@ -9593,10 +9763,10 @@ const demoMediaAssets: MediaAsset[] = [
 const demoBlogPosts: BlogPost[] = [
   {
     id: "demo-blog-1",
-    title: "Cafe operasyonunda ilk dijital kurulum nasıl yapilir?",
+    title: "Cafe operasyonunda ilk dijital kurulum nasÃ„Â±l yapilir?",
     slug: "cafe-operasyonunda-ilk-dijital-kurulum",
-    excerpt: "Masa, ürün, ekip ve raporlama akislarini tek gunde nasıl toparlayabilecegini anlatiyor.",
-    body: "Cloud POS ile ilk kurulumda önce işletme yapisini, sonra masa planini, ardindan ürün ve personel rollerini tanimlayin. Bu akışı takip ettiginizde landing, demo ve operasyon paneli ayni veri modelini kullanir.",
+    excerpt: "Masa, ÃƒÂ¼rÃƒÂ¼n, ekip ve raporlama akislarini tek gunde nasÃ„Â±l toparlayabilecegini anlatiyor.",
+    body: "Cloud POS ile ilk kurulumda ÃƒÂ¶nce iÃ…Å¸letme yapisini, sonra masa planini, ardindan ÃƒÂ¼rÃƒÂ¼n ve personel rollerini tanimlayin. Bu akÃ„Â±Ã…Å¸Ã„Â± takip ettiginizde landing, demo ve operasyon paneli ayni veri modelini kullanir.",
     cover_image_url: "https://images.unsplash.com/photo-1556740749-887f6717d7e4?auto=format&fit=crop&w=1200&q=80",
     status: "published",
     published_at: minutesAgo(1440),
@@ -9616,13 +9786,13 @@ export async function createSalesLead(input: {
 }) {
   const supabase = getSupabaseServerClient();
   if (!supabase) {
-    return { ok: false, error: "Demo modda lead kaydı veritabanina yazilamaz." };
+    return { ok: false, error: "Demo modda lead kaydÃ„Â± veritabanina yazilamaz." };
   }
 
   const companyName = input.companyName.trim();
   const contactName = input.contactName.trim();
   if (!companyName || !contactName) {
-    return { ok: false, error: "İşletme adi ve yetkili gerekli." };
+    return { ok: false, error: "Ã„Â°Ã…Å¸letme adi ve yetkili gerekli." };
   }
 
   const branchCount = Math.max(1, Number(input.branchCount ?? 1) || 1);
@@ -9781,12 +9951,12 @@ function normalizeSitePageSlug(slug?: string) {
   const normalized = (slug || "home")
     .trim()
     .toLowerCase()
-    .replace(/ı/g, "i")
-    .replace(/ğ/g, "g")
-    .replace(/ü/g, "u")
-    .replace(/ş/g, "s")
-    .replace(/ö/g, "o")
-    .replace(/ç/g, "c")
+    .replace(/Ã„Â±/g, "i")
+    .replace(/Ã„Å¸/g, "g")
+    .replace(/ÃƒÂ¼/g, "u")
+    .replace(/Ã…Å¸/g, "s")
+    .replace(/ÃƒÂ¶/g, "o")
+    .replace(/ÃƒÂ§/g, "c")
     .replace(/[^a-z0-9]+/g, "-")
     .replace(/^-+|-+$/g, "");
   return normalized || "home";
@@ -10295,7 +10465,7 @@ export async function ensureDemoOperationsData() {
   }
 
   if (products.length === 0 || tables.length === 0) {
-    return { ok: false, error: "Demo mod için en az bir masa ve ürün olmali." };
+    return { ok: false, error: "Demo mod iÃƒÂ§in en az bir masa ve ÃƒÂ¼rÃƒÂ¼n olmali." };
   }
 
   const primary = products[0];
@@ -10435,7 +10605,7 @@ export async function ensureDemoOperationsData() {
 export async function clearDemoOperationsData() {
   const supabase = getSupabaseServerClient();
   if (!supabase) {
-    return { ok: false, error: "Demo fallback modunda kayıt temizleme pasif." };
+    return { ok: false, error: "Demo fallback modunda kayÃ„Â±t temizleme pasif." };
   }
 
   const scope = await getDefaultBusinessScope();
@@ -10508,12 +10678,12 @@ export async function clearDemoOperationsData() {
 export async function clearBusinessOperationalData(options?: { deleteTables?: boolean }) {
   const supabase = await getTenantDataClient();
   if (!supabase) {
-    return { ok: false, error: "Demo fallback modunda işletme temizligi pasif." };
+    return { ok: false, error: "Demo fallback modunda iÃ…Å¸letme temizligi pasif." };
   }
 
   const scope = await getDefaultBusinessScope();
   if (!scope.businessId) {
-    return { ok: false, error: "Aktif işletme bulunamadi." };
+    return { ok: false, error: "Aktif iÃ…Å¸letme bulunamadi." };
   }
 
   const deleteTables = Boolean(options?.deleteTables);
@@ -11010,7 +11180,7 @@ export async function upsertBlogPost(input: {
 }) {
   const supabase = getSupabaseServerClient();
   if (!supabase) {
-    return { ok: false, error: "Demo modda blog kaydı guncellenemez." };
+    return { ok: false, error: "Demo modda blog kaydÃ„Â± guncellenemez." };
   }
 
   const payload = {
@@ -11038,7 +11208,7 @@ export async function upsertBlogPost(input: {
 export async function deleteBlogPost(id: string) {
   const supabase = getSupabaseServerClient();
   if (!supabase) {
-    return { ok: false, error: "Demo modda blog kaydı silinemez." };
+    return { ok: false, error: "Demo modda blog kaydÃ„Â± silinemez." };
   }
 
   const { error } = await supabase.from("blog_posts").delete().eq("id", id);
@@ -11694,7 +11864,7 @@ export async function createSupportTicket(input: {
 
   const context = await getRequestAppContext();
   if (!context.businessId) {
-    return { ok: false, error: "Aktif işletme bulunamadi." };
+    return { ok: false, error: "Aktif iÃ…Å¸letme bulunamadi." };
   }
 
   const subject = input.subject.trim();
@@ -11878,7 +12048,7 @@ export async function createSupportTicketMessage(input: {
   const actor = await getCurrentSupportActor();
   const message = input.message.trim();
   if (!message) {
-    return { ok: false, error: "Mesaj boş olamaz." };
+    return { ok: false, error: "Mesaj boÃ…Å¸ olamaz." };
   }
 
   const { data: ticket } = await supabase
@@ -11970,24 +12140,35 @@ export async function assignSupportTicket(id: string, supportUserId: string | nu
 
 export async function listSupportTenantSummaries() {
   const supabase = getSupabaseServerClient();
-  if (!supabase) {
+  const authClient = supabase ? null : await getSupabaseAuthServerClient();
+  const client = supabase ?? authClient;
+  if (!client) {
     return { tenants: [] as SupportTenantSummary[], usingDemoData: true };
   }
 
-  const { data: businesses, error } = await supabase
+  let { data: businesses, error } = await client
     .from("businesses")
-    .select("id, name, slug, plan, is_active")
+    .select("id, name, slug, plan, business_type, is_active")
     .order("name", { ascending: true });
+
+  if (error?.message?.toLowerCase().includes("business_type")) {
+    const fallback = await client
+      .from("businesses")
+      .select("id, name, slug, plan, is_active")
+      .order("name", { ascending: true });
+    businesses = fallback.data as typeof businesses;
+    error = fallback.error as typeof error;
+  }
 
   if (error) {
     return { tenants: [] as SupportTenantSummary[], usingDemoData: false };
   }
 
   const tenants = await Promise.all(
-    ((businesses ?? []) as Array<{ id: string; name: string; slug: string; plan: BusinessPlan; is_active: boolean }>).map(async (business) => {
+    ((businesses ?? []) as Array<{ id: string; name: string; slug: string; plan: BusinessPlan; business_type?: string; is_active: boolean }>).map(async (business) => {
       const [branchRowsResult, ticketResult] = await Promise.all([
-        supabase.from("branches").select("id").eq("business_id", business.id).eq("is_active", true),
-        supabase.from("support_tickets").select("id", { count: "exact", head: true }).eq("business_id", business.id).neq("status", "closed"),
+        client.from("branches").select("id").eq("business_id", business.id).eq("is_active", true),
+        client.from("support_tickets").select("id", { count: "exact", head: true }).eq("business_id", business.id).neq("status", "closed"),
       ]);
       const branchCount = (branchRowsResult.data ?? []).length;
       const restaurantBranchCount = branchCount;
@@ -11999,6 +12180,7 @@ export async function listSupportTenantSummaries() {
         business_name: business.name,
         business_slug: business.slug,
         plan: business.plan,
+        business_type: (business.business_type === "self_service_coffee" ? "self_service_coffee" : "restaurant_cafe") as BusinessType,
         is_active: business.is_active,
         branch_count: branchCount,
         tenant_model: tenantModel,
@@ -12067,7 +12249,7 @@ export async function listSupportOnboardingSummaries() {
 
   const { data: businesses, error } = await supabase
     .from("businesses")
-    .select("id, name")
+    .select("id, name, business_type")
     .eq("is_active", true)
     .order("name", { ascending: true });
 
@@ -12076,7 +12258,7 @@ export async function listSupportOnboardingSummaries() {
   }
 
   const tenants = await Promise.all(
-    ((businesses ?? []) as Array<{ id: string; name: string }>).map(async (business) => {
+    ((businesses ?? []) as Array<{ id: string; name: string; business_type: string }>).map(async (business) => {
       const [productsResult, tablesResult, staffResult, branchesResult] = await Promise.all([
         supabase.from("products").select("id", { count: "exact", head: true }).eq("business_id", business.id),
         supabase.from("tables").select("id", { count: "exact", head: true }).eq("business_id", business.id),
@@ -12093,6 +12275,7 @@ export async function listSupportOnboardingSummaries() {
       return {
         business_id: business.id,
         business_name: business.name,
+        business_type: business.business_type as BusinessType,
         products,
         tables,
         staff,
@@ -12111,15 +12294,30 @@ export async function getSupportTenantDetail(businessId: string) {
     return { tenant: null, usingDemoData: true };
   }
 
-  const { data: business, error } = await supabase
+  let { data: business, error } = await supabase
     .from("businesses")
-    .select("id, name, slug, plan, is_active, created_at, updated_at")
+    .select("id, name, slug, plan, business_type, is_active, created_at, updated_at")
     .eq("id", businessId)
     .maybeSingle();
+
+  if (error?.message?.toLowerCase().includes("business_type")) {
+    const fallback = await supabase
+      .from("businesses")
+      .select("id, name, slug, plan, is_active, created_at, updated_at")
+      .eq("id", businessId)
+      .maybeSingle();
+    business = fallback.data as typeof business;
+    error = fallback.error as typeof error;
+  }
 
   if (error || !business) {
     return { tenant: null, usingDemoData: false };
   }
+
+  const normalizedBusinessType: BusinessType =
+    (business as { business_type?: string }).business_type === "self_service_coffee"
+      ? "self_service_coffee"
+      : "restaurant_cafe";
 
   const [branchResult, branchListResult, ticketResult, recentTicketsResult, orderResult, paymentResult, planRequestsResult, auditResult, incidentsResult, profileResult, featureFlagsResult, staffResult] = await Promise.all([
     supabase.from("branches").select("id", { count: "exact", head: true }).eq("business_id", businessId).eq("is_active", true),
@@ -12218,6 +12416,7 @@ export async function getSupportTenantDetail(businessId: string) {
   return {
     tenant: {
       ...(business as Business),
+      business_type: normalizedBusinessType,
       branch_count: activeBranchCount,
       branch_profile_summary: branchProfileSummary,
       branches: activeBranches,
@@ -12284,7 +12483,7 @@ export async function createSupportPlanRequest(input: {
 
   const context = await getRequestAppContext();
   if (!context.businessId || !context.activeBusiness?.plan) {
-    return { ok: false, error: "Aktif işletme bulunamadi." };
+    return { ok: false, error: "Aktif iÃ…Å¸letme bulunamadi." };
   }
 
   const { data, error } = await supabase
@@ -12548,6 +12747,42 @@ export async function updateSupportTenantProfile(input: {
       lifecycleStage: input.lifecycleStage,
       billingStatus: input.billingStatus,
       riskLevel: input.riskLevel,
+    },
+  });
+
+  return { ok: true };
+}
+
+export async function updateSupportTenantBusinessType(input: {
+  businessId: string;
+  businessType: BusinessType;
+}) {
+  const supabase = getSupabaseServerClient();
+  const authClient = supabase ? null : await getSupabaseAuthServerClient();
+  const client = supabase ?? authClient;
+  if (!client) {
+    return { ok: false, error: "Demo modda isletme tipi guncellenemez." };
+  }
+
+  const { error } = await client
+    .from("businesses")
+    .update({ business_type: input.businessType })
+    .eq("id", input.businessId);
+
+  if (error) {
+    if (error.message.toLowerCase().includes("business_type")) {
+      return { ok: false, error: "business_type kolonu bulunamadi. Lutfen 20260509_add_business_type.sql migration'ini calistirin." };
+    }
+    return { ok: false, error: error.message };
+  }
+
+  await writeSupportAuditLog({
+    action: "tenant.business_type.updated",
+    entityType: "business",
+    entityId: input.businessId,
+    businessId: input.businessId,
+    details: {
+      businessType: input.businessType,
     },
   });
 
@@ -12891,7 +13126,7 @@ export async function upsertSupportKnowledgeArticle(input: {
 }) {
   const supabase = getSupabaseServerClient();
   if (!supabase) {
-    return { ok: false, error: "Demo modda knowledge kaydı guncellenemez." };
+    return { ok: false, error: "Demo modda knowledge kaydÃ„Â± guncellenemez." };
   }
 
   const payload = {
@@ -12976,3 +13211,14 @@ export async function getSupportDashboardSnapshot() {
 
 
 
+
+export async function getPickupBoardSnapshot() {
+  const [preparingResult, readyResult] = await Promise.all([
+    listOrders(["preparing"], { limit: 12, ascending: true }),
+    listOrders(["served"], { limit: 12, ascending: false }),
+  ]);
+  return {
+    preparing: preparingResult.orders,
+    ready: readyResult.orders,
+  };
+} 

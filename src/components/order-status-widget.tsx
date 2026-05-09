@@ -28,13 +28,13 @@ function orderRef(order: Pick<LatestOrder, "id" | "checkNumber">) {
 }
 
 function statusLabel(status: OrderStatus) {
-  if (status === "pending") return "Sipariş alındı";
+  if (status === "pending") return "Siparis alindi";
   if (status === "preparing") return "Hazirlaniyor";
-  if (status === "ready") return "Servise hazır";
-  if (status === "served") return "Servise hazır";
-  if (status === "partially_paid") return "Kısmi ödeme";
-  if (status === "paid") return "Ödeme tamamlandı";
-  if (status === "partially_refunded") return "Kısmi iade";
+  if (status === "ready") return "Servise hazir";
+  if (status === "served") return "Servise hazir";
+  if (status === "partially_paid") return "Kismi odeme";
+  if (status === "paid") return "Odeme tamamlandi";
+  if (status === "partially_refunded") return "Kismi iade";
   if (status === "cancelled") return "Iptal edildi";
   if (status === "refunded") return "Iade edildi";
   return status;
@@ -62,28 +62,28 @@ export function OrderStatusWidget({
 }) {
   const [order, setOrder] = useState<LatestOrder | null>(null);
   const [loading, setLoading] = useState(true);
+  const [error, setError] = useState<string | null>(null);
   const timerRef = useRef<ReturnType<typeof setTimeout> | null>(null);
   const inFlightRef = useRef(false);
   const lastFetchedAtRef = useRef(0);
 
   const fetchLatest = useEffectEvent(async (force = false) => {
-    if (inFlightRef.current) {
-      return;
-    }
-    if (!force && Date.now() - lastFetchedAtRef.current < 1200) {
-      return;
-    }
+    if (inFlightRef.current) return;
+    if (!force && Date.now() - lastFetchedAtRef.current < 1200) return;
+
     inFlightRef.current = true;
     try {
       const response = await fetch(
         `/api/orders/latest?qr=${encodeURIComponent(qrCodeIdentifier)}${businessSlug ? `&b=${encodeURIComponent(businessSlug)}` : ""}&t=${encodeURIComponent(qrAccessToken)}`,
-        {
-          cache: "no-store",
-        },
+        { cache: "no-store" },
       );
-      const data = (await response.json()) as { ok: boolean; order: LatestOrder | null };
-      if (!data.ok) return;
+      const data = (await response.json()) as { ok: boolean; order: LatestOrder | null; message?: string };
+      if (!response.ok || !data.ok) {
+        setError(data.message ?? "Durum verisi alinamadi.");
+        return;
+      }
       setOrder(data.order);
+      setError(null);
       lastFetchedAtRef.current = Date.now();
     } finally {
       inFlightRef.current = false;
@@ -95,27 +95,17 @@ export function OrderStatusWidget({
     let active = true;
 
     async function syncLatest() {
-      if (!active) {
-        return;
-      }
+      if (!active) return;
       await fetchLatest();
-      if (!active) {
-        return;
-      }
-      if (timerRef.current) {
-        clearTimeout(timerRef.current);
-      }
+      if (!active) return;
+      if (timerRef.current) clearTimeout(timerRef.current);
       timerRef.current = setTimeout(syncLatest, document.hidden ? 15000 : 8000);
     }
 
     function handleAttentionRefresh(event?: Event) {
-      if (document.hidden) {
-        return;
-      }
+      if (document.hidden) return;
       const detail = (event as CustomEvent<{ tables?: string[] }> | undefined)?.detail;
-      if (detail && Array.isArray(detail.tables) && !detail.tables.includes("orders")) {
-        return;
-      }
+      if (detail && Array.isArray(detail.tables) && !detail.tables.includes("orders")) return;
       void fetchLatest(true);
     }
 
@@ -126,9 +116,7 @@ export function OrderStatusWidget({
 
     return () => {
       active = false;
-      if (timerRef.current) {
-        clearTimeout(timerRef.current);
-      }
+      if (timerRef.current) clearTimeout(timerRef.current);
       window.removeEventListener("focus", handleAttentionRefresh);
       document.removeEventListener("visibilitychange", handleAttentionRefresh);
       window.removeEventListener("live-ops:update", handleAttentionRefresh);
@@ -137,11 +125,13 @@ export function OrderStatusWidget({
 
   return (
     <section className="rounded-2xl border border-slate-200 bg-white p-4">
-      <h2 className="text-sm font-semibold text-slate-900">Sipariş Durumu</h2>
+      <h2 className="text-sm font-semibold text-slate-900">Siparis Durumu</h2>
       {loading ? (
         <p className="mt-2 text-sm text-slate-500">Durum yukleniyor...</p>
+      ) : error ? (
+        <p className="mt-2 text-sm text-rose-600">{error}</p>
       ) : !order ? (
-        <p className="mt-2 text-sm text-slate-500">Bu masa için aktif sipariş bulunmuyor.</p>
+        <p className="mt-2 text-sm text-slate-500">Bu masa icin aktif siparis bulunmuyor.</p>
       ) : (
         <div className="mt-2 space-y-2">
           <div className="flex flex-col items-start justify-between gap-2 sm:flex-row sm:items-center">
@@ -152,7 +142,7 @@ export function OrderStatusWidget({
           </div>
           <StatusTimeline status={order.status} />
           <p className="text-xs text-slate-500">{new Date(order.createdAt).toLocaleString("tr-TR")}</p>
-          <p className="text-xs text-slate-500">Tahmini kalan süre: {estimateEta(order.status, order.createdAt)}</p>
+          <p className="text-xs text-slate-500">Tahmini kalan sure: {estimateEta(order.status, order.createdAt)}</p>
           <p className="text-sm text-slate-700">Toplam: {Number(order.finalPrice).toFixed(2)} TL</p>
         </div>
       )}
@@ -164,8 +154,8 @@ function StatusTimeline({ status }: { status: OrderStatus }) {
   const steps: Array<{ key: OrderStatus | "done"; label: string }> = [
     { key: "pending", label: "Alindi" },
     { key: "preparing", label: "Hazirlaniyor" },
-    { key: "ready", label: "Hazır" },
-    { key: "paid", label: "Ödeme" },
+    { key: "ready", label: "Hazir" },
+    { key: "paid", label: "Odeme" },
   ];
   const timelineStatus: OrderStatus = status === "served" ? "ready" : status;
   const order = ["pending", "preparing", "ready", "paid"] as const;

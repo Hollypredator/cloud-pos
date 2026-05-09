@@ -35,6 +35,7 @@ export type SeoSettings = {
 export type ApplicationSettings = {
   appPrintingEnabled: boolean;
   demoMode: boolean;
+  embeddedDemoCatalogEnabled: boolean;
   mobileAppExperienceEnabled: boolean;
   mobileReadOnlyPwaEnabled: boolean;
   autoSessionCloseEnabled: boolean;
@@ -96,6 +97,7 @@ export const defaultSeoSettings: SeoSettings = {
 export const defaultApplicationSettings: ApplicationSettings = {
   appPrintingEnabled: false,
   demoMode: false,
+  embeddedDemoCatalogEnabled: true,
   mobileAppExperienceEnabled: true,
   mobileReadOnlyPwaEnabled: false,
   autoSessionCloseEnabled: false,
@@ -168,6 +170,10 @@ export function normalizeApplicationSettings(input?: Partial<ApplicationSettings
   return {
     appPrintingEnabled: Boolean(merged.appPrintingEnabled),
     demoMode: Boolean(merged.demoMode),
+    embeddedDemoCatalogEnabled:
+      typeof merged.embeddedDemoCatalogEnabled === "boolean"
+        ? merged.embeddedDemoCatalogEnabled
+        : defaultApplicationSettings.embeddedDemoCatalogEnabled,
     mobileAppExperienceEnabled: Boolean(merged.mobileAppExperienceEnabled),
     mobileReadOnlyPwaEnabled: Boolean(merged.mobileReadOnlyPwaEnabled),
     autoSessionCloseEnabled: Boolean(merged.autoSessionCloseEnabled),
