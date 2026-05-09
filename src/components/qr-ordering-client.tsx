@@ -945,35 +945,44 @@ export function QrOrderingClient({
                 <div className="grid grid-cols-2 gap-4 lg:grid-cols-3 2xl:grid-cols-4">
                   {visibleProducts.map((product) => {
                     const isSelected = selectedProductId === product.id;
+                    const handleTilePress = () => {
+                      const groups = groupsByProduct.get(product.id) ?? [];
+                      const hasRequiredGroups = groups.some((group) => group.is_required);
+                      if (hasRequiredGroups) {
+                        handleProductSelect(product.id);
+                        return;
+                      }
+                      quickAddProduct(product);
+                    };
                     return (
                       <article
                         key={product.id}
-                        className={`rounded-3xl border p-4 transition ${
+                        role="button"
+                        tabIndex={0}
+                        onClick={handleTilePress}
+                        onKeyDown={(event) => {
+                          if (event.key === "Enter" || event.key === " ") {
+                            event.preventDefault();
+                            handleTilePress();
+                          }
+                        }}
+                        className={`cursor-pointer rounded-3xl border p-4 transition active:scale-[0.99] focus:outline-none focus-visible:ring-2 focus-visible:ring-rose-400 ${
                           isSelected
                             ? "border-rose-400/70 bg-rose-500/10 shadow-[0_14px_35px_rgba(244,63,94,0.3)]"
                             : "border-white/10 bg-[linear-gradient(145deg,rgba(30,41,59,0.85)_0%,rgba(17,24,39,0.95)_100%)]"
                         }`}
                       >
-                        <button
-                          type="button"
-                          onClick={() => {
-                            const groups = groupsByProduct.get(product.id) ?? [];
-                            const hasRequiredGroups = groups.some((group) => group.is_required);
-                            if (hasRequiredGroups) {
-                              handleProductSelect(product.id);
-                              return;
-                            }
-                            quickAddProduct(product);
-                          }}
-                          className="w-full"
-                        >
+                        <div className="w-full">
                           <div className="mb-2 text-center text-5xl">{getProductEmoji(product.name)}</div>
                           <p className="text-center text-[1.35rem] font-bold leading-tight">{product.name}</p>
                           <p className="mt-2 text-center text-[1.9rem] font-black text-rose-400">{formatPrice(product.price)}</p>
-                        </button>
+                        </div>
                         <button
                           type="button"
-                          onClick={() => quickAddProduct(product)}
+                          onClick={(event) => {
+                            event.stopPropagation();
+                            handleTilePress();
+                          }}
                           className="mt-3 w-full rounded-full bg-white/10 px-3 py-2 text-sm font-semibold text-slate-100 transition hover:bg-white/20"
                         >
                           Ekle

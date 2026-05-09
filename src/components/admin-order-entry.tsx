@@ -613,7 +613,16 @@ export function AdminOrderEntry({
                   {selfServiceProducts.map((product) => (
                     <article
                       key={`self-service-product-${product.id}`}
-                      className="rounded-2xl border border-slate-700/70 bg-[radial-gradient(circle_at_top,#273247_0%,#1e293b_35%,#111827_100%)] p-4"
+                      role="button"
+                      tabIndex={0}
+                      onClick={() => openModifierPicker(product)}
+                      onKeyDown={(event) => {
+                        if (event.key === "Enter" || event.key === " ") {
+                          event.preventDefault();
+                          openModifierPicker(product);
+                        }
+                      }}
+                      className="cursor-pointer rounded-2xl border border-slate-700/70 bg-[radial-gradient(circle_at_top,#273247_0%,#1e293b_35%,#111827_100%)] p-4 transition hover:border-rose-300/40 active:scale-[0.99] focus:outline-none focus-visible:ring-2 focus-visible:ring-rose-400"
                     >
                       <div className="mb-4 inline-flex h-11 w-11 items-center justify-center rounded-full bg-slate-700/80 text-xs font-black text-slate-100">
                         {product.name.slice(0, 2).toUpperCase()}
@@ -622,7 +631,10 @@ export function AdminOrderEntry({
                       <p className="mt-2 text-3xl font-black tracking-tight text-rose-400">₺{Number(product.price).toFixed(2)}</p>
                       <button
                         type="button"
-                        onClick={() => openModifierPicker(product)}
+                        onClick={(event) => {
+                          event.stopPropagation();
+                          openModifierPicker(product);
+                        }}
                         className="mt-4 rounded-full bg-slate-700 px-4 py-1.5 text-xs font-semibold text-white hover:bg-slate-600"
                       >
                         Ekle
