@@ -18,22 +18,35 @@ type MobileAction = {
   feature?: FeatureKey;
 };
 
-const mobileActions: MobileAction[] = [
-  { href: "/m/tables", label: "Masa Akışı", icon: "MS", roles: ["admin", "cashier"], group: "order" },
-  { href: "/m/tables?flow=new-order", label: "Sipariş Ac", icon: "SP", roles: ["owner", "admin", "cashier"], group: "order" },
-  { href: "/m/cashier", label: "Adisyon", icon: "AD", roles: ["admin", "cashier", "waiter"], group: "order" },
-  { href: "/m/kitchen", label: "Mutfak", icon: "MK", roles: ["admin", "kitchen"], group: "ops", feature: "kitchen_display" },
-  { href: "/m/delivery", label: "Teslimat", icon: "DL", roles: ["admin", "cashier"], group: "ops", feature: "delivery_dispatch" },
-  { href: "/m/service-requests", label: "Talepler", icon: "TR", roles: ["admin", "cashier"], group: "ops" },
-  { href: "/cashier/session", label: "Gun Islemleri", icon: "GI", roles: ["admin", "cashier"], group: "management" },
-  { href: "/admin/tables", label: "Masa Yönetimi", icon: "MY", roles: ["owner", "admin"], group: "management" },
-];
+function resolveMobileActions(activeBusinessType: AppShellPayload["activeBusinessType"]): MobileAction[] {
+  if (activeBusinessType === "self_service_coffee") {
+    return [
+      { href: "/m/tables?flow=new-order", label: "Siparis Ac", icon: "SP", roles: ["owner", "admin", "cashier", "waiter"], group: "order" },
+      { href: "/m/cashier", label: "Siparis Yonetimi", icon: "SY", roles: ["admin", "cashier", "waiter"], group: "order" },
+      { href: "/m/kitchen", label: "Mutfak", icon: "MK", roles: ["admin", "kitchen"], group: "ops", feature: "kitchen_display" },
+      { href: "/cashier/session", label: "Gun Islemleri", icon: "GI", roles: ["admin", "cashier"], group: "management" },
+    ];
+  }
 
-function resolveMobileTitle(pathname: string | null) {
+  return [
+    { href: "/m/tables", label: "Masa Akisi", icon: "MS", roles: ["admin", "cashier"], group: "order" },
+    { href: "/m/tables?flow=new-order", label: "Siparis Ac", icon: "SP", roles: ["owner", "admin", "cashier"], group: "order" },
+    { href: "/m/cashier", label: "Adisyon", icon: "AD", roles: ["admin", "cashier", "waiter"], group: "order" },
+    { href: "/m/kitchen", label: "Mutfak", icon: "MK", roles: ["admin", "kitchen"], group: "ops", feature: "kitchen_display" },
+    { href: "/m/delivery", label: "Teslimat", icon: "DL", roles: ["admin", "cashier"], group: "ops", feature: "delivery_dispatch" },
+    { href: "/m/service-requests", label: "Talepler", icon: "TR", roles: ["admin", "cashier"], group: "ops" },
+    { href: "/cashier/session", label: "Gun Islemleri", icon: "GI", roles: ["admin", "cashier"], group: "management" },
+    { href: "/admin/tables", label: "Masa Yonetimi", icon: "MY", roles: ["owner", "admin"], group: "management" },
+  ];
+}
+
+function resolveMobileTitle(pathname: string | null, activeBusinessType: AppShellPayload["activeBusinessType"]) {
   if (!pathname) return "Operasyon";
   if (pathname === "/m/ops" || pathname.startsWith("/m/ops/")) return "Operasyon";
   if (pathname === "/m/tables" || pathname.startsWith("/m/tables/")) return "Masa Takip";
-  if (pathname === "/m/cashier" || pathname.startsWith("/m/cashier/")) return "Adisyon";
+  if (pathname === "/m/cashier" || pathname.startsWith("/m/cashier/")) {
+    return activeBusinessType === "self_service_coffee" ? "Siparis Yonetimi" : "Adisyon";
+  }
   if (pathname === "/m/kitchen" || pathname.startsWith("/m/kitchen/")) return "Mutfak";
   if (pathname === "/m/delivery" || pathname.startsWith("/m/delivery/")) return "Teslimat";
   if (pathname === "/m/service-requests" || pathname.startsWith("/m/service-requests/")) return "Masa Talepleri";
@@ -114,7 +127,8 @@ export function MobileOpsShell({
   const [isCoarsePointer, setIsCoarsePointer] = useState(false);
   const [isNarrowViewport, setIsNarrowViewport] = useState(false);
 
-  const mobileTitle = resolveMobileTitle(pathname);
+  const activeBusinessType = shellData?.activeBusinessType ?? "restaurant_cafe";
+  const mobileTitle = resolveMobileTitle(pathname, activeBusinessType);
   const pwaEnabled = Boolean(shellData?.mobileReadOnlyPwaEnabled);
   const role = shellData?.role ?? null;
   const usingDemoData = Boolean(shellData?.usingDemoData);
@@ -132,7 +146,8 @@ export function MobileOpsShell({
   });
 
   const groupedActions = useMemo(() => {
-    const actions = mobileActions.filter(
+    const sourceActions = resolveMobileActions(activeBusinessType);
+    const actions = sourceActions.filter(
       (action) =>
         canAccessAction(role, usingDemoData, action.roles) &&
         isFeatureEnabled(currentPlan, shellData?.effectiveCapabilities, action.feature),
@@ -142,11 +157,11 @@ export function MobileOpsShell({
       const group = groupKey as MobileAction["group"];
       return {
         key: group,
-        title: actionGroupLabel(group),
+        title: group === "order" && activeBusinessType === "self_service_coffee" ? "Siparis Yonetimi" : actionGroupLabel(group),
         actions: actions.filter((item) => item.group === group),
       };
     });
-  }, [currentPlan, role, shellData?.effectiveCapabilities, usingDemoData]);
+  }, [activeBusinessType, currentPlan, role, shellData?.effectiveCapabilities, usingDemoData]);
 
   useEffect(() => {
     if (!shellData) {

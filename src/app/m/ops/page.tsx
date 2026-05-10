@@ -3,8 +3,10 @@ import { LiveOpsBridge } from "@/components/live-ops-bridge";
 import { LiveRouteRefresh } from "@/components/live-route-refresh";
 import { requireRole } from "@/lib/auth";
 import { getOpsPageSnapshot } from "@/lib/data";
+import { resolveOperatingProfile } from "@/lib/operating-profile";
 import { formatOrderSourceLabel } from "@/lib/order-label";
 import { logServerPerf, measureAsync } from "@/lib/perf";
+import { getBusinessScopeContext } from "@/lib/server/app-context";
 
 function formatMoney(value: number) {
   return `${value.toFixed(2)} TL`;
@@ -42,6 +44,8 @@ function toneClass(value: number, critical = false) {
 
 export default async function MobileOpsPage() {
   await requireRole(["admin", "cashier", "kitchen"], "/m/ops");
+  const businessScope = await getBusinessScopeContext();
+  const isSelfServiceCoffee = resolveOperatingProfile(businessScope?.activeBusinessType) === "coffee_self_service";
   const snapshotResult = await measureAsync("m_ops_snapshot", () => getOpsPageSnapshot({ includeSetup: false }));
   logServerPerf("/m/ops", [snapshotResult]);
 
@@ -60,11 +64,11 @@ export default async function MobileOpsPage() {
       tone: toneClass(ops.delayedKitchenOrders, true),
     },
     {
-      title: "Kasa Kuyrugu",
+      title: isSelfServiceCoffee ? "Siparis Yonetimi Kuyrugu" : "Kasa Kuyrugu",
       value: ops.servedOrders,
-      description: "Tahsilat bekleyen adisyon",
+      description: isSelfServiceCoffee ? "Durum guncelleme bekleyen pickup siparisler" : "Tahsilat bekleyen adisyon",
       href: "/m/cashier",
-      cta: "Kasa Ekrani",
+      cta: isSelfServiceCoffee ? "Siparis Yonetimi" : "Kasa Ekrani",
       tone: toneClass(ops.servedOrders),
     },
     {
@@ -86,8 +90,8 @@ export default async function MobileOpsPage() {
   ];
 
   const quickActions = [
-    { href: "/m/tables?flow=new-order", label: "Sipariş Ac" },
-    { href: "/m/cashier", label: "Tahsilat" },
+    { href: "/m/tables?flow=new-order", label: "Siparis Ac" },
+    { href: "/m/cashier", label: isSelfServiceCoffee ? "Siparis Yonetimi" : "Tahsilat" },
     { href: "/m/kitchen", label: "Mutfak" },
     { href: "/m/delivery", label: "Teslimat" },
   ];

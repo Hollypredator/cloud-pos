@@ -304,14 +304,18 @@ export function AppNav({
           (!link.requiresBusinessScope || branchAccessScope === "business") &&
           (!link.businessTypes || link.businessTypes.includes(activeBusinessType)),
       );
-      if (isMarketSidebar) {
-        return allowed;
-      }
-      return allowed.sort((a, b) => {
+      const ordered = isMarketSidebar
+        ? allowed
+        : allowed.sort((a, b) => {
         const aIndex = orderPreset.indexOf(a.href);
         const bIndex = orderPreset.indexOf(b.href);
         return (aIndex === -1 ? Number.MAX_SAFE_INTEGER : aIndex) - (bIndex === -1 ? Number.MAX_SAFE_INTEGER : bIndex);
       });
+      return ordered.map((link) =>
+        activeBusinessType === "self_service_coffee" && link.href === "/cashier"
+          ? { ...link, label: "Siparis Yonetimi" }
+          : link,
+      );
     },
     [activeBusinessType, allowAll, branchAccessScope, isMarketSidebar, orderPreset, role, sidebarLinks],
   );

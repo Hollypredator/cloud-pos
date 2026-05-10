@@ -1,17 +1,22 @@
 import Link from "next/link";
 import { headers } from "next/headers";
 import { redirect } from "next/navigation";
+import { revalidatePath } from "next/cache";
 import { Suspense } from "react";
 import { BackofficePage, ContentCard, EmptyPanel, SidebarPanel, SummaryCard, WorkflowGuide } from "@/components/backoffice-ui";
 import { MobileTaskCard, MobileTaskList } from "@/components/mobile-ops-ui";
 import { OpsLiveBadge } from "@/components/ops-live-badge";
+import { PendingSubmitButton } from "@/components/pending-submit-button";
 import { isLikelyMobileUserAgent } from "@/lib/device";
-import { getCurrentUserWithRole } from "@/lib/auth";
+import { getCurrentUserWithRole, requireRole } from "@/lib/auth";
 import { getOpsPageSnapshot, getSetupChecklistSummary } from "@/lib/data";
 import { getCurrentLocale } from "@/lib/i18n-server";
 import { translateUiText } from "@/lib/i18n";
+import { executeWebOpsCommand } from "@/lib/ops/server-action";
+import { resolveOperatingProfile } from "@/lib/operating-profile";
 import { formatOrderSourceLabel } from "@/lib/order-label";
 import { logServerPerf, measureAsync } from "@/lib/perf";
+import { getBusinessScopeContext } from "@/lib/server/app-context";
 import { getWebPerfProfile } from "@/lib/web-perf-profile";
 
 function statusTone(status: string) {
@@ -71,6 +76,47 @@ function formatClock(value: string, locale: "tr" | "en" | "fr") {
 
 function checklistTone(done: boolean) {
   return done ? "bg-emerald-100 text-emerald-700" : "bg-amber-100 text-amber-800";
+}
+
+function resolveNextPickupStatus(currentStatus: string): "preparing" | "ready" | "served" | null {
+  if (currentStatus === "pending") return "preparing";
+  if (currentStatus === "preparing") return "ready";
+  if (currentStatus === "ready") return "served";
+  return null;
+}
+
+function resolvePickupActionLabel(currentStatus: string, locale: "tr" | "en" | "fr") {
+  if (currentStatus === "pending") return translateUiText("Hazirlanmaya Al", locale);
+  if (currentStatus === "preparing") return translateUiText("SipariÅŸ HazÄ±r", locale);
+  if (currentStatus === "ready") return translateUiText("Teslim Edildi", locale);
+  return null;
+}
+
+async function movePickupOrderStatus(formData: FormData) {
+  "use server";
+  await requireRole(["admin", "kitchen", "cashier"], "/ops");
+
+  const orderId = formData.get("orderId");
+  const nextStatus = formData.get("nextStatus");
+  if (
+    typeof orderId !== "string" ||
+    (nextStatus !== "preparing" && nextStatus !== "ready" && nextStatus !== "served")
+  ) {
+    return;
+  }
+
+  await executeWebOpsCommand({
+    type: "ORDER_STATUS_SET",
+    payload: {
+      order_id: orderId,
+      status: nextStatus,
+    },
+  });
+
+  revalidatePath("/ops");
+  revalidatePath("/pickup-board");
+  revalidatePath("/kitchen");
+  revalidatePath("/cashier");
 }
 
 async function DeferredSetupPrompt({
@@ -209,6 +255,8 @@ export default async function OpsPage({
   }
 
   const role = auth.role;
+  const businessScope = await getBusinessScopeContext();
+  const isSelfServiceCoffee = resolveOperatingProfile(businessScope?.activeBusinessType) === "coffee_self_service";
   const allowAll = auth.usingDemoData;
   if (!allowAll && role === "waiter") {
     redirect("/admin/orders");
@@ -246,9 +294,9 @@ export default async function OpsPage({
     },
     {
       key: "cashier_queue",
-      label: translateUiText("Kasada Bekleyen", locale),
+      label: isSelfServiceCoffee ? translateUiText("Siparis Yonetimi Kuyrugu", locale) : translateUiText("Kasada Bekleyen", locale),
       value: String(ops.servedOrders),
-      hint: translateUiText("Tahsilat için hazır sipariş", locale),
+      hint: isSelfServiceCoffee ? translateUiText("Durum guncelleme bekleyen pickup siparisler", locale) : translateUiText("Tahsilat icin hazir siparis", locale),
       tone: ops.servedOrders > 0 ? ("success" as const) : ("neutral" as const),
     },
   ];
@@ -280,12 +328,12 @@ export default async function OpsPage({
     canCashier
       ? {
           key: "cashier",
-          title: translateUiText("Kasada Tahsilat Kuyrugu", locale),
+          title: isSelfServiceCoffee ? translateUiText("Siparis Yonetimi Kuyrugu", locale) : translateUiText("Kasada Tahsilat Kuyrugu", locale),
           value: ops.servedOrders,
-          hint: translateUiText("Servise hazır adisyonlar kapanış bekliyor.", locale),
+          hint: isSelfServiceCoffee ? translateUiText("Durum guncelleme bekleyen pickup siparisler", locale) : translateUiText("Servise hazir adisyonlar kapanis bekliyor.", locale),
           href: "/cashier",
           tone: ops.servedOrders > 0 ? "mobile-tone-warning" : "mobile-tone-neutral",
-          cta: translateUiText("Tahsilata Gec", locale),
+          cta: isSelfServiceCoffee ? translateUiText("Siparis Yonetimine Gec", locale) : translateUiText("Tahsilata Gec", locale),
         }
       : null,
     canWaiterOps
@@ -396,7 +444,7 @@ export default async function OpsPage({
               ) : null}
               {canCashier ? (
                 <Link href="/cashier" className="rounded-2xl border border-white/50 bg-white/60 px-4 py-4 text-center text-sm font-semibold text-slate-800 shadow-sm backdrop-blur-sm transition-all hover:-translate-y-0.5 hover:bg-white/90 hover:shadow-md sm:text-left">
-                  {translateUiText("Kasa Ekrani", locale)}
+                  {isSelfServiceCoffee ? translateUiText("Siparis Yonetimi", locale) : translateUiText("Kasa Ekrani", locale)}
                 </Link>
               ) : null}
               {canWaiterOps ? (
@@ -463,7 +511,7 @@ export default async function OpsPage({
             {translateUiText("Masa Akışı", locale)}
           </Link>
           <Link href="/cashier" className="mobile-cta-secondary inline-flex items-center justify-center px-3 py-3 text-sm font-semibold">
-            {translateUiText("Tahsilat", locale)}
+            {isSelfServiceCoffee ? translateUiText("Siparis Yonetimi", locale) : translateUiText("Tahsilat", locale)}
           </Link>
         </div>
         </MobileTaskList>
@@ -510,6 +558,33 @@ export default async function OpsPage({
                       </p>
                     </div>
                   </div>
+                  {order.channel === "pickup" ? (
+                    (() => {
+                      const nextPickupStatus = resolveNextPickupStatus(order.status);
+                      const pickupActionLabel = resolvePickupActionLabel(order.status, locale);
+                      if (!nextPickupStatus || !pickupActionLabel) {
+                        return null;
+                      }
+                      return (
+                        <form action={movePickupOrderStatus} className="mt-3">
+                          <input type="hidden" name="orderId" value={order.id} />
+                          <input type="hidden" name="nextStatus" value={nextPickupStatus} />
+                          <PendingSubmitButton
+                            idleLabel={pickupActionLabel}
+                            pendingLabel={translateUiText("Guncelleniyor...", locale)}
+                            showToastOnClick
+                            className={`w-full rounded-2xl px-4 py-3 text-sm font-semibold text-white sm:w-auto ${
+                              nextPickupStatus === "preparing"
+                                ? "bg-gradient-to-r from-[#ff5a34] to-[#f0b14f]"
+                                : nextPickupStatus === "ready"
+                                  ? "bg-slate-900"
+                                  : "bg-emerald-700"
+                            }`}
+                          />
+                        </form>
+                      );
+                    })()
+                  ) : null}
                 </div>
               ))}
               <div className="flex flex-wrap items-center justify-end gap-2 pt-1">
@@ -593,9 +668,9 @@ export default async function OpsPage({
               <p className="mt-2 text-sm text-slate-500">{translateUiText("Operasyonda halen kapanmamis siparişler", locale)}</p>
             </div>
             <div className="rounded-[24px] border border-white/60 bg-white/50 p-4 shadow-sm backdrop-blur-md transition-all hover:bg-white/80">
-              <p className="text-xs font-bold uppercase tracking-[0.16em] text-slate-500">{translateUiText("Kasa Bekleyen", locale)}</p>
+              <p className="text-xs font-bold uppercase tracking-[0.16em] text-slate-500">{isSelfServiceCoffee ? translateUiText("Siparis Yonetimi", locale) : translateUiText("Kasa Bekleyen", locale)}</p>
               <p className="mt-3 text-4xl font-semibold tracking-tight text-slate-900">{ops.servedOrders}</p>
-              <p className="mt-2 text-sm text-slate-500">{translateUiText("Tahsilat bekleyen servisler", locale)}</p>
+              <p className="mt-2 text-sm text-slate-500">{isSelfServiceCoffee ? translateUiText("Durum guncelleme bekleyen pickup siparisler", locale) : translateUiText("Tahsilat bekleyen servisler", locale)}</p>
             </div>
           </div>
         </ContentCard>
@@ -604,7 +679,7 @@ export default async function OpsPage({
           <div className="grid gap-3 sm:grid-cols-2">
             {canCashier ? (
               <Link href="/cashier/session" className="rounded-[24px] border border-slate-200 bg-slate-50 px-4 py-5 text-center text-sm font-semibold text-slate-800 transition hover:border-slate-300 hover:bg-white sm:text-left">
-                {translateUiText("Kasa Acilis / Kapanis", locale)}
+                {isSelfServiceCoffee ? translateUiText("Siparis Yonetimi", locale) : translateUiText("Kasa Acilis / Kapanis", locale)}
               </Link>
             ) : null}
             {canAdmin ? (

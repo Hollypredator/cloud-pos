@@ -42,6 +42,8 @@ type QrCreateOrderResponse = QrApiFailure & {
   confirmation?: QrOrderConfirmation | null;
 };
 
+type SelfServicePaymentMethod = "cash" | "card";
+
 type SubmitPayloadItem = {
   product_id: string;
   name: string;
@@ -593,6 +595,7 @@ export function QrOrderingClient({
     idempotencyKey: string;
     qrConfirmation?: QrConfirmationPayload;
     customerName?: string;
+    paymentMethod: SelfServicePaymentMethod;
   }) {
     return fetch("/api/orders", {
       method: "POST",
@@ -606,6 +609,7 @@ export function QrOrderingClient({
         qrAccessToken: input.token,
         businessSlug,
         customerName: input.customerName,
+        paymentMethod: input.paymentMethod,
         items: input.payloadItems,
         totalPrice: cartTotal,
         qrConfirmation: input.qrConfirmation,
@@ -613,8 +617,12 @@ export function QrOrderingClient({
     });
   }
 
-  const submitOrder = async () => {
-    if (cartItems.length === 0 || !qrCodeIdentifier) {
+  const submitOrder = async (paymentMethod: SelfServicePaymentMethod) => {
+    if (cartItems.length === 0) {
+      return;
+    }
+    if (!qrCodeIdentifier) {
+      setSubmitError("Gecerli QR kodu olmadan siparis acilamaz.");
       return;
     }
     if (qrConfirmationEnabled && !confirmationChecked) {
@@ -699,7 +707,14 @@ export function QrOrderingClient({
           }
         : undefined;
 
-      let response = await callCreateOrder({ token: tokenToUse, payloadItems, idempotencyKey, qrConfirmation: qrConfirmationPayload, customerName: customerName.trim() || undefined });
+      let response = await callCreateOrder({
+        token: tokenToUse,
+        payloadItems,
+        idempotencyKey,
+        qrConfirmation: qrConfirmationPayload,
+        customerName: customerName.trim() || undefined,
+        paymentMethod,
+      });
       let data = (await response.json()) as QrCreateOrderResponse;
 
       if (!response.ok && response.status === 403 && data.code?.startsWith("QR_TOKEN_")) {
@@ -707,7 +722,14 @@ export function QrOrderingClient({
         if (!tokenToUse) {
           throw new Error("QR token yenilenemedi.");
         }
-        response = await callCreateOrder({ token: tokenToUse, payloadItems, idempotencyKey, qrConfirmation: qrConfirmationPayload, customerName: customerName.trim() || undefined });
+        response = await callCreateOrder({
+          token: tokenToUse,
+          payloadItems,
+          idempotencyKey,
+          qrConfirmation: qrConfirmationPayload,
+          customerName: customerName.trim() || undefined,
+          paymentMethod,
+        });
         data = (await response.json()) as QrCreateOrderResponse;
       }
 
@@ -1156,7 +1178,9 @@ export function QrOrderingClient({
                 <div className="grid grid-cols-2 gap-3">
                   <button
                     type="button"
-                    onClick={submitOrder}
+                    onClick={() => {
+                      void submitOrder("cash");
+                    }}
                     disabled={isSubmitting}
                     className="rounded-2xl bg-[linear-gradient(135deg,#ff5f7a_0%,#ff385c_100%)] px-4 py-3 text-xl font-bold text-white disabled:opacity-50"
                   >
@@ -1164,7 +1188,9 @@ export function QrOrderingClient({
                   </button>
                   <button
                     type="button"
-                    onClick={submitOrder}
+                    onClick={() => {
+                      void submitOrder("card");
+                    }}
                     disabled={isSubmitting}
                     className="rounded-2xl bg-[linear-gradient(135deg,#8b5cf6_0%,#6d28d9_100%)] px-4 py-3 text-xl font-bold text-white disabled:opacity-50"
                   >
@@ -1539,7 +1565,7 @@ export function QrOrderingClient({
                           <button
                             onClick={() => {
                               void trackFunnel("checkout_confirm_ack", { cartItems: cartItemCount, cartTotal });
-                              void submitOrder();
+                              void submitOrder("cash");
                             }}
                             disabled={isSubmitting || !confirmationChecked}
                             className="w-full rounded-xl bg-[linear-gradient(135deg,#059669_0%,#10b981_100%)] px-4 py-3 text-sm font-bold text-white shadow-[0_10px_25px_rgba(5,150,105,0.4)] disabled:opacity-50"
@@ -1551,7 +1577,9 @@ export function QrOrderingClient({
                     )
                   ) : (
                     <button
-                      onClick={submitOrder}
+                      onClick={() => {
+                        void submitOrder("cash");
+                      }}
                       disabled={isSubmitting}
                       className="w-full rounded-2xl bg-[linear-gradient(135deg,#059669_0%,#10b981_100%)] py-4 text-lg font-bold text-white shadow-[0_10px_25px_rgba(5,150,105,0.4)] disabled:opacity-50"
                     >

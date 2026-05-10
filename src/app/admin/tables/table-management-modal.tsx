@@ -237,7 +237,7 @@ export function TableManagementModal({
 
   return (
     <div className="fixed inset-0 z-50 flex items-end justify-center bg-slate-950/42 p-0 backdrop-blur-[2px] sm:items-center sm:p-4">
-      <div className="panel-surface h-[100dvh] w-full max-w-6xl overflow-auto overscroll-y-contain rounded-none p-4 pb-[max(1rem,env(safe-area-inset-bottom))] sm:max-h-[92vh] sm:h-auto sm:rounded-[32px] sm:p-6">
+      <div className="panel-surface h-[100dvh] w-full max-w-6xl overflow-y-auto overflow-x-hidden overscroll-y-contain rounded-none p-4 pb-[max(1rem,env(safe-area-inset-bottom))] sm:max-h-[92vh] sm:h-auto sm:rounded-[32px] sm:p-6">
         <div className="mb-5 flex flex-wrap items-start justify-between gap-4 border-b border-slate-200 pb-5">
           <div>
             <p className="text-xs font-bold uppercase tracking-[0.16em] text-slate-500">{translateUiText("Masa Yönetimi", locale)}</p>
@@ -292,7 +292,7 @@ export function TableManagementModal({
         </div>
 
         {activeTab === "order" ? (
-          <section className="mt-5 rounded-[28px] border border-slate-200 bg-white p-5">
+          <section className="mt-5 min-w-0 rounded-[28px] border border-slate-200 bg-white p-4 sm:p-5">
             <div className="mb-4 border-b border-slate-200 pb-4">
               <h3 className="font-display text-2xl font-semibold tracking-tight text-slate-900">
                 {translateUiText("Bu Masada Sipariş Girisi", locale)}
@@ -310,6 +310,9 @@ export function TableManagementModal({
               tables={allTables}
               initialTableId={table.id}
               lockedTableId={table.id}
+              entryMode="table_first"
+              layoutMode="modal_3pane"
+              initialView="composer"
               onOrderCreated={() => {
                 void refreshOrderData(false);
                 setActiveTab("history");

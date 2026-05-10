@@ -36,7 +36,7 @@ import { posQueryKeys } from "@/lib/pos/query-keys";
 import { logServerPerf, measureAsync } from "@/lib/perf";
 import { getWebPerfProfile } from "@/lib/web-perf-profile";
 import { isLikelyMobileUserAgent } from "@/lib/device";
-import type { Order, OrderItem, PaymentMethod } from "@/lib/types";
+import type { Order, OrderItem, OrderStatus, PaymentMethod } from "@/lib/types";
 
 function buildReceiptLink(orderId: string) {
   const base = getAppBaseUrl();
@@ -90,6 +90,30 @@ function statusTone(status: string) {
   return "bg-slate-100 text-slate-700";
 }
 
+function statusLabel(status: OrderStatus) {
+  if (status === "pending") return "Bekliyor";
+  if (status === "preparing") return "Hazirlaniyor";
+  if (status === "ready") return "Hazir";
+  if (status === "served") return "Teslim edildi";
+  if (status === "cancelled") return "Iptal";
+  if (status === "paid") return "Kapandi";
+  return status;
+}
+
+function resolveNextPickupStatus(status: OrderStatus): OrderStatus | null {
+  if (status === "pending") return "preparing";
+  if (status === "preparing") return "ready";
+  if (status === "ready") return "served";
+  return null;
+}
+
+function resolveNextPickupActionLabel(status: OrderStatus) {
+  if (status === "pending") return "Hazirlanmaya Al";
+  if (status === "preparing") return "Siparis Hazir";
+  if (status === "ready") return "Teslim Edildi";
+  return null;
+}
+
 function feedbackHref(tone: "success" | "error", message: string, orderId?: string) {
   const params = new URLSearchParams();
   params.set("tone", tone);
@@ -107,6 +131,29 @@ function resolveReturnOrderId(formData: FormData) {
   }
   const normalized = returnOrderId.trim();
   return normalized || undefined;
+}
+
+async function requireCashierOrderManagementRole() {
+  const auth = await requireRole(["admin", "cashier", "waiter"], "/cashier");
+  if (auth.bypass || auth.role !== "waiter") {
+    return;
+  }
+
+  const businessScope = await getBusinessScopeContext();
+  const operatingProfile = resolveOperatingProfile(businessScope?.activeBusinessType);
+  if (operatingProfile !== "coffee_self_service") {
+    redirect("/unauthorized");
+  }
+}
+
+function summarizeOrderItems(order: Pick<Order, "items">, maxItems = 3) {
+  const items = Array.isArray(order.items) ? (order.items as OrderItem[]) : [];
+  if (items.length === 0) {
+    return "Kalem bilgisi yok";
+  }
+  const preview = items.slice(0, maxItems).map((item) => `${item.quantity}x ${item.name}`).join(", ");
+  const remaining = items.length - maxItems;
+  return remaining > 0 ? `${preview} +${remaining}` : preview;
 }
 
 async function applyFinancialsAction(formData: FormData) {
@@ -206,9 +253,42 @@ async function serveOrderAction(formData: FormData) {
   }
 }
 
+async function advancePickupStatusAction(formData: FormData) {
+  "use server";
+  await requireCashierOrderManagementRole();
+
+  const orderId = formData.get("orderId");
+  const currentStatus = formData.get("currentStatus");
+  const returnOrderId = resolveReturnOrderId(formData);
+  if (typeof orderId !== "string" || typeof currentStatus !== "string") {
+    redirect(feedbackHref("error", "Siparis bilgileri gecersiz.", returnOrderId));
+  }
+
+  const nextStatus = resolveNextPickupStatus(currentStatus as OrderStatus);
+  if (!nextStatus) {
+    redirect(feedbackHref("error", "Bu siparisin durumu ilerletilemez.", returnOrderId ?? orderId));
+  }
+
+  try {
+    const result = await executeWebOpsCommand({
+      type: "ORDER_STATUS_SET",
+      payload: {
+        order_id: orderId,
+        status: nextStatus,
+      },
+    });
+    if (result.status !== "ACK") {
+      redirect(feedbackHref("error", result.message ?? "Durum guncellenemedi.", returnOrderId ?? orderId));
+    }
+    redirect(feedbackHref("success", "Siparis durumu guncellendi.", returnOrderId ?? orderId));
+  } catch {
+    redirect(feedbackHref("error", "Durum guncellenemedi.", returnOrderId ?? orderId));
+  }
+}
+
 async function cancelOrderAction(formData: FormData) {
   "use server";
-  await requireRole(["admin", "cashier"], "/cashier");
+  await requireCashierOrderManagementRole();
 
   const orderId = formData.get("orderId");
   const note = formData.get("note");
@@ -244,7 +324,7 @@ async function cancelOrderAction(formData: FormData) {
 
 async function cancelOrderItemAction(formData: FormData) {
   "use server";
-  await requireRole(["admin", "cashier"], "/cashier");
+  await requireCashierOrderManagementRole();
 
   const orderId = formData.get("orderId");
   const productId = formData.get("productId");
@@ -323,22 +403,44 @@ function totals(orders: Order[]) {
 export default async function CashierPage({
   searchParams,
 }: {
-  searchParams: Promise<{ order?: string; feedback?: string; tone?: "success" | "error"; mode?: string }>;
+  searchParams: Promise<{
+    order?: string;
+    feedback?: string;
+    tone?: "success" | "error";
+    mode?: string;
+    historyStatus?: string;
+    historyFrom?: string;
+    historyTo?: string;
+  }>;
 }) {
-  await requireRole(["admin", "cashier"], "/cashier");
+  const auth = await requireRole(["admin", "cashier", "waiter"], "/cashier");
   const requestHeaders = await headers();
   const renderMobileMarkup = isLikelyMobileUserAgent(requestHeaders.get("user-agent"));
   const locale = await getCurrentLocale();
   const localeCode = locale === "en" ? "en-US" : locale === "fr" ? "fr-FR" : "tr-TR";
-  const { order: selectedOrderId, feedback, tone, mode } = await searchParams;
+  const { order: selectedOrderId, feedback, tone, mode, historyStatus, historyFrom, historyTo } = await searchParams;
   const isTabletMode = mode === "tablet";
   const perfProfile = getWebPerfProfile("/cashier");
   const businessScope = await getBusinessScopeContext();
   const operatingProfile = resolveOperatingProfile(businessScope?.activeBusinessType);
   const operatingCapabilities = getOperatingProfileCapabilities(operatingProfile);
-  const cashierSnapshotResult = await measureAsync("cashier_snapshot", () => getCashierPageSnapshot(selectedOrderId));
+  const isSelfServiceCoffee = operatingProfile === "coffee_self_service";
+  if (!auth.bypass && auth.role === "waiter" && !isSelfServiceCoffee) {
+    redirect("/unauthorized");
+  }
+
+  const historyStatusFilter = typeof historyStatus === "string" && historyStatus.trim() ? historyStatus.trim() : "all";
+  const historyFromFilter = typeof historyFrom === "string" ? historyFrom : "";
+  const historyToFilter = typeof historyTo === "string" ? historyTo : "";
+  const cashierSnapshotResult = await measureAsync("cashier_snapshot", () =>
+    getCashierPageSnapshot(selectedOrderId, {
+      historyStatus: historyStatusFilter,
+      historyFrom: historyFromFilter,
+      historyTo: historyToFilter,
+    }),
+  );
   logServerPerf(`/cashier profile=${perfProfile.mode}:${perfProfile.bucket}`, [cashierSnapshotResult]);
-  const { servedOrders, paidOrders, selectedOrder, usingDemoData } = cashierSnapshotResult.value;
+  const { servedOrders, paidOrders, activePickupOrders, historyPickupOrders, selectedOrder, usingDemoData } = cashierSnapshotResult.value;
 
   const servedTotals = totals(servedOrders);
   const paidTotals = totals(paidOrders);
@@ -347,6 +449,199 @@ export default async function CashierPage({
     paid_order_ids: paidOrders.map((order) => order.id),
     selected_order_id: selectedOrder?.id ?? null,
   };
+
+  if (isSelfServiceCoffee) {
+    const readyCount = activePickupOrders.filter((order) => order.status === "ready").length;
+    return (
+      <BackofficePage
+        title="Siparis Yonetimi"
+        description="Aktif pickup siparislerini guncelle, gecmis siparisleri takip et"
+        minimal={isTabletMode}
+        actions={
+          <>
+            <LiveOpsBridge tables={["orders"]} fallbackIntervalMs={900} />
+            <LiveRouteRefresh tables={["orders"]} debounceMs={120} minIntervalMs={700} />
+            <Link href="/pickup-board" className="w-full rounded-2xl border border-slate-200 bg-white px-5 py-3 text-center text-sm font-semibold text-slate-800 sm:w-auto">
+              Pickup Board
+            </Link>
+            <Link href="/ops" className="w-full rounded-2xl border border-slate-200 bg-white px-5 py-3 text-center text-sm font-semibold text-slate-800 sm:w-auto">
+              Panele Don
+            </Link>
+          </>
+        }
+      >
+        {feedback ? (
+          <NoticeBanner
+            tone={tone === "error" ? "error" : "success"}
+            title={tone === "error" ? "Islem tamamlanamadi" : "Islem tamamlandi"}
+            description={feedback}
+          />
+        ) : null}
+
+        {usingDemoData ? (
+          <div className="rounded-[24px] border border-amber-200 bg-amber-50 px-5 py-4 text-sm text-amber-900">
+            Demo veri modu aktif. Durum, iptal ve gecmis akislarini bu ekran uzerinden test edebilirsin.
+          </div>
+        ) : null}
+
+        <section className="grid gap-4 md:grid-cols-3">
+          <SummaryCard label="Aktif Pickup" value={String(activePickupOrders.length)} hint="Guncelleme bekleyen siparisler" tone="accent" />
+          <SummaryCard label="Hazir Bekleyen" value={String(readyCount)} hint="Teslim edilmeyi bekleyenler" tone="success" />
+          <SummaryCard label="Gecmis Siparis" value={String(historyPickupOrders.length)} hint="Tum pickup gecmisi" />
+        </section>
+
+        <ContentCard title="Gecmis Filtreleri">
+          <form method="get" action="/cashier" className="grid gap-3 md:grid-cols-[1fr_1fr_1fr_auto_auto] md:items-end">
+            <label className="grid gap-1 text-xs font-semibold text-slate-600">
+              Durum
+              <select name="historyStatus" defaultValue={historyStatusFilter} className="rounded-xl border border-slate-300 bg-white px-3 py-2 text-sm text-slate-700">
+                <option value="all">Tum Durumlar</option>
+                <option value="pending">Bekliyor</option>
+                <option value="preparing">Hazirlaniyor</option>
+                <option value="ready">Hazir</option>
+                <option value="served">Teslim Edildi</option>
+                <option value="partially_paid">Kismi Odeme</option>
+                <option value="paid">Kapandi</option>
+                <option value="partially_refunded">Kismi Iade</option>
+                <option value="cancelled">Iptal</option>
+                <option value="refunded">Iade</option>
+              </select>
+            </label>
+            <label className="grid gap-1 text-xs font-semibold text-slate-600">
+              Baslangic
+              <input type="date" name="historyFrom" defaultValue={historyFromFilter} className="rounded-xl border border-slate-300 bg-white px-3 py-2 text-sm text-slate-700" />
+            </label>
+            <label className="grid gap-1 text-xs font-semibold text-slate-600">
+              Bitis
+              <input type="date" name="historyTo" defaultValue={historyToFilter} className="rounded-xl border border-slate-300 bg-white px-3 py-2 text-sm text-slate-700" />
+            </label>
+            <button type="submit" className="rounded-xl bg-slate-900 px-4 py-2 text-sm font-semibold text-white">
+              Filtrele
+            </button>
+            <Link href="/cashier" className="rounded-xl border border-slate-300 bg-white px-4 py-2 text-center text-sm font-semibold text-slate-700">
+              Temizle
+            </Link>
+          </form>
+        </ContentCard>
+
+        <section className="grid gap-5 xl:grid-cols-[1.15fr_0.85fr]">
+          <ContentCard title="Aktif Siparisler">
+            {activePickupOrders.length === 0 ? (
+              <EmptyPanel title="Aktif siparis yok" description="Yeni siparis geldiginde burada listelenecek." />
+            ) : (
+              <div className="space-y-3">
+                {activePickupOrders.map((order) => {
+                  const nextActionLabel = resolveNextPickupActionLabel(order.status);
+                  return (
+                    <article key={order.id} className="rounded-[22px] border border-slate-200 bg-slate-50 p-4">
+                      <div className="flex flex-wrap items-start justify-between gap-3">
+                        <div>
+                          <p className="text-xs font-bold uppercase tracking-[0.16em] text-slate-500">Pickup</p>
+                          <h3 className="mt-2 text-xl font-semibold tracking-tight text-slate-900">Siparis #{orderRef(order)}</h3>
+                          <p className="mt-1 text-sm text-slate-500">{order.customer_name ?? "Misafir"}</p>
+                          <p className="mt-1 text-xs text-slate-500">{new Date(order.created_at).toLocaleTimeString(localeCode)}</p>
+                          <p className="mt-2 text-xs text-slate-500">{summarizeOrderItems(order)}</p>
+                        </div>
+                        <div className="text-right">
+                          <span className={`inline-flex rounded-full px-3 py-1 text-xs font-semibold uppercase ${statusTone(order.status)}`}>
+                            {statusLabel(order.status)}
+                          </span>
+                          <p className="mt-2 text-lg font-semibold text-emerald-700">{Number(order.final_price ?? order.total_price).toFixed(2)} TL</p>
+                        </div>
+                      </div>
+                      <div className="mt-3 flex flex-wrap gap-2">
+                        <Link href={`/cashier?order=${order.id}`} className="rounded-2xl border border-slate-200 bg-white px-4 py-2 text-sm font-semibold text-slate-700">
+                          Detay
+                        </Link>
+                        {nextActionLabel ? (
+                          <form action={advancePickupStatusAction}>
+                            <input type="hidden" name="orderId" value={order.id} />
+                            <input type="hidden" name="returnOrderId" value={order.id} />
+                            <input type="hidden" name="currentStatus" value={order.status} />
+                            <button type="submit" className="rounded-2xl bg-slate-900 px-4 py-2 text-sm font-semibold text-white">
+                              {nextActionLabel}
+                            </button>
+                          </form>
+                        ) : null}
+                        <form action={cancelOrderAction} className="flex items-center gap-2">
+                          <input type="hidden" name="orderId" value={order.id} />
+                          <input type="hidden" name="returnOrderId" value={order.id} />
+                          <input type="hidden" name="requestKey" value={crypto.randomUUID()} />
+                          <input name="note" placeholder="Iptal notu" className="rounded-xl border border-slate-300 bg-white px-3 py-2 text-xs" />
+                          <button type="submit" className="rounded-2xl border border-rose-300 bg-white px-3 py-2 text-xs font-semibold text-rose-700">
+                            Iptal
+                          </button>
+                        </form>
+                      </div>
+                    </article>
+                  );
+                })}
+              </div>
+            )}
+          </ContentCard>
+
+          <ContentCard title="Gecmis Siparisler">
+            {historyPickupOrders.length === 0 ? (
+              <EmptyPanel title="Gecmis yok" description="Tamamlanan ve iptal edilen siparisler burada listelenecek." />
+            ) : (
+              <div className="space-y-2">
+                {historyPickupOrders.map((order) => (
+                  <article key={`history-${order.id}`} className="rounded-2xl border border-slate-200 bg-white px-4 py-3">
+                    <div className="flex items-center justify-between gap-2">
+                      <p className="text-sm font-semibold text-slate-900">#{orderRef(order)} - {order.customer_name ?? "Misafir"}</p>
+                      <span className={`rounded-full px-2 py-1 text-[11px] font-semibold uppercase ${statusTone(order.status)}`}>
+                        {statusLabel(order.status)}
+                      </span>
+                    </div>
+                    <div className="mt-1 flex items-center justify-between text-xs text-slate-500">
+                      <span>{new Date(order.created_at).toLocaleString(localeCode)}</span>
+                      <span>{Number(order.final_price ?? order.total_price).toFixed(2)} TL</span>
+                    </div>
+                    <p className="mt-2 text-xs text-slate-500">{summarizeOrderItems(order)}</p>
+                  </article>
+                ))}
+              </div>
+            )}
+          </ContentCard>
+        </section>
+
+        {selectedOrder && selectedOrder.channel === "pickup" ? (
+          <ContentCard title={`Siparis Detayi #${orderRef(selectedOrder)}`}>
+            <div className="space-y-3">
+              <div className="flex flex-wrap items-center justify-between gap-3 rounded-2xl bg-slate-50 px-4 py-3">
+                <div>
+                  <p className="text-sm font-semibold text-slate-900">{selectedOrder.customer_name ?? "Misafir"}</p>
+                  <p className="text-xs text-slate-500">{new Date(selectedOrder.created_at).toLocaleString(localeCode)}</p>
+                </div>
+                <span className={`rounded-full px-3 py-1 text-xs font-semibold uppercase ${statusTone(selectedOrder.status)}`}>
+                  {statusLabel(selectedOrder.status)}
+                </span>
+              </div>
+
+              <div className="space-y-2">
+                {(selectedOrder.items as OrderItem[]).map((item, index) => (
+                  <article key={`detail-item-${item.product_id}-${index}`} className="flex items-center justify-between gap-2 rounded-2xl border border-slate-200 bg-white px-3 py-3">
+                    <div>
+                      <p className="text-sm font-semibold text-slate-900">{item.quantity}x {item.name}</p>
+                      <p className="text-xs text-slate-500">{Number(item.line_total).toFixed(2)} TL</p>
+                    </div>
+                    <form action={cancelOrderItemAction}>
+                      <input type="hidden" name="orderId" value={selectedOrder.id} />
+                      <input type="hidden" name="returnOrderId" value={selectedOrder.id} />
+                      <input type="hidden" name="productId" value={item.product_id} />
+                      <button type="submit" className="rounded-xl border border-rose-300 bg-rose-50 px-3 py-2 text-xs font-semibold text-rose-700">
+                        Kalem Iptal
+                      </button>
+                    </form>
+                  </article>
+                ))}
+              </div>
+            </div>
+          </ContentCard>
+        ) : null}
+      </BackofficePage>
+    );
+  }
 
   return (
     <BackofficePage

@@ -71,6 +71,31 @@ export type OperatingProfileCapabilities = {
   order_ready_board: boolean;
   hide_table_ui: boolean;
 };
+export type CustomerDisplayConnectionState = "waiting" | "connected" | "disconnected";
+export type CustomerDisplayItem = {
+  key: string;
+  name: string;
+  quantity: number;
+  lineTotal: number;
+};
+export type CustomerDisplaySnapshot = {
+  sessionId: string;
+  updatedAt: number;
+  status: "idle" | "composing" | "submitting" | "created" | "error";
+  channel: OrderChannel;
+  customerName?: string | null;
+  items: CustomerDisplayItem[];
+  subtotal: number;
+  total: number;
+  orderId?: string | null;
+  checkNumber?: string | null;
+  message?: string;
+};
+export type CustomerDisplayEvent = {
+  type: "snapshot" | "ping";
+  snapshot?: CustomerDisplaySnapshot;
+  sentAt: number;
+};
 export type StaffAccessScope = "business" | "branch";
 export type TenantLifecycleStage = "lead" | "demo" | "onboarding" | "active" | "at_risk" | "churned" | "archived";
 export type SupportBillingStatus = "healthy" | "attention" | "overdue";

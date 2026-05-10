@@ -12,13 +12,12 @@ import { normalizeLocale, translateUiText } from "@/lib/i18n";
 import type { AppShellPayload } from "@/lib/app-shell";
 import type { AppRole } from "@/lib/types";
 
-const shellPrefixes = ["/ops", "/kitchen", "/cashier", "/service-requests", "/tables", "/delivery", "/admin", "/pickup-board"];
+const shellPrefixes = ["/ops", "/kitchen", "/cashier", "/service-requests", "/tables", "/delivery", "/admin"];
 const mobileOpsPrefixes = [
   "/ops",
   "/tables",
   "/cashier",
   "/kitchen",
-  "/pickup-board",
   "/delivery",
   "/service-requests",
   "/admin",
@@ -48,7 +47,7 @@ const mobileQuickActionsRestaurant: MobileQuickAction[] = [
 
 const mobileQuickActionsSelfService: MobileQuickAction[] = [
   { href: "/admin/orders", label: "Siparis Akisi", icon: "SP", roles: ["owner", "admin", "waiter", "cashier"], group: "order_flow" },
-  { href: "/cashier", label: "Tahsilat", icon: "TS", roles: ["admin", "cashier", "waiter"], group: "order_flow" },
+  { href: "/cashier", label: "Siparis Yonetimi", icon: "TS", roles: ["admin", "cashier", "waiter"], group: "order_flow" },
   { href: "/pickup-board", label: "Pickup Board", icon: "PB", roles: ["admin", "kitchen", "cashier"], group: "service_flow" },
   { href: "/cashier/session", label: "Gun Islemleri", icon: "GI", roles: ["admin", "cashier"], group: "management" },
 ];
@@ -100,7 +99,7 @@ function resolveMobileOpsRedirect(pathname: string | null, activeBusinessType: A
   }
   return null;
 }
-function resolveMobileTitle(pathname: string | null, locale: "tr" | "en" | "fr") {
+function resolveMobileTitle(pathname: string | null, locale: "tr" | "en" | "fr", activeBusinessType: AppShellPayload["activeBusinessType"]) {
   if (!pathname) {
     return translateUiText("Operasyon", locale);
   }
@@ -108,7 +107,11 @@ function resolveMobileTitle(pathname: string | null, locale: "tr" | "en" | "fr")
   if (pathname === "/tables" || pathname.startsWith("/tables/")) return translateUiText("Masa Takip", locale);
   if (pathname === "/admin/orders" || pathname.startsWith("/admin/orders/")) return translateUiText("Siparis Akisi", locale);
   if (pathname === "/admin/tables" || pathname.startsWith("/admin/tables/")) return translateUiText("Masa Takip", locale);
-  if (pathname === "/cashier" || pathname.startsWith("/cashier/")) return translateUiText("Kasa Ekrani", locale);
+  if (pathname === "/cashier" || pathname.startsWith("/cashier/")) {
+    return activeBusinessType === "self_service_coffee"
+      ? translateUiText("Siparis Yonetimi", locale)
+      : translateUiText("Kasa Ekrani", locale);
+  }
   if (pathname === "/kitchen" || pathname.startsWith("/kitchen/")) return translateUiText("Mutfak Board", locale);
   if (pathname === "/pickup-board" || pathname.startsWith("/pickup-board/")) return translateUiText("Pickup Board", locale);
   if (pathname === "/delivery" || pathname.startsWith("/delivery/")) return translateUiText("Teslimat Board", locale);
@@ -171,7 +174,7 @@ export function AppShell({
   const pwaEnabled = Boolean(shellData?.mobileReadOnlyPwaEnabled);
   const pwaRuntimeEnabled = Boolean(pwaEnabled && mobileAppMode);
   const activeBusinessType = shellData?.activeBusinessType ?? "restaurant_cafe";
-  const mobileTitle = resolveMobileTitle(stablePathname, locale);
+  const mobileTitle = resolveMobileTitle(stablePathname, locale, activeBusinessType);
   const quickActions = useMemo(() => {
     if (!shellData) {
       return [];
@@ -197,11 +200,11 @@ export function AppShell({
         key: "order_flow" as const,
         title:
           activeBusinessType === "self_service_coffee"
-            ? translateUiText("Siparis ve Tahsilat", locale)
+            ? translateUiText("Siparis Yonetimi", locale)
             : translateUiText("Siparis ve Kasa", locale),
         description:
           activeBusinessType === "self_service_coffee"
-            ? translateUiText("Siparisi al, odeme akisini yonet.", locale)
+            ? translateUiText("Aktif siparisleri guncelle, gecmisi takip et.", locale)
             : translateUiText("Masa ac, adisyona gec, tahsilat yap.", locale),
         actions: byGroup.order_flow,
       },

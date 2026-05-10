@@ -27,6 +27,7 @@ type Body = {
   courierName?: string;
   courierPhone?: string;
   fulfillmentStatus?: FulfillmentStatus;
+  paymentMethod?: "cash" | "card";
   items?: Array<{
     product_id: string;
     name: string;
@@ -229,21 +230,21 @@ export async function POST(request: Request) {
       : await getBusinessContextBySlug(body.businessSlug);
 
     const targetBusinessId = table?.business_id ?? businessContext.businessId ?? null;
-    const targetBranchId = table?.branch_id ?? null;
+    const targetBranchId = table?.branch_id ?? businessScope?.branchId ?? null;
 
     if (operatingProfile === "coffee_self_service" && !table && targetBusinessId && targetBranchId) {
       const supabase = getSupabaseServerClient();
       if (supabase) {
         const { data: virtualTable } = await supabase
           .from("tables")
-          .select("id, business_id, branch_id")
+          .select("id, business_id, branch_id, table_number, status, qr_code_identifier")
           .eq("business_id", targetBusinessId)
           .eq("branch_id", targetBranchId)
           .eq("name", "Pickup Counter")
           .limit(1)
           .maybeSingle();
         if (virtualTable) {
-          table = virtualTable as any;
+          table = virtualTable;
         }
       }
     }
@@ -299,13 +300,14 @@ export async function POST(request: Request) {
         items: body.items,
         total_price: body.totalPrice,
         channel,
-        customer_name: isQrOrder ? "QR Siparis" : (body.customerName ?? null),
+        customer_name: body.customerName?.trim() || (isQrOrder ? "QR Siparis" : null),
         customer_phone: body.customerPhone ?? null,
         delivery_address: body.deliveryAddress ?? null,
         delivery_note: body.deliveryNote ?? null,
         courier_name: body.courierName ?? null,
         courier_phone: body.courierPhone ?? null,
         fulfillment_status: body.fulfillmentStatus ?? null,
+        payment_method_preference: body.paymentMethod ?? null,
       },
       idempotencyKey: request.headers.get("x-idempotency-key")?.trim() || undefined,
       commandId: request.headers.get("x-command-id")?.trim() || undefined,
@@ -400,9 +402,30 @@ export async function POST(request: Request) {
       }
     }
 
+    const ackCheckNumber = typeof result.data?.check_number === "string" ? result.data.check_number.trim() : "";
+    let createdCheckNumber: string | null = ackCheckNumber.length > 0 ? ackCheckNumber : null;
+    if (createdOrderId && !createdCheckNumber) {
+      const supabase = getSupabaseServerClient();
+      if (supabase) {
+        let checkNumberQuery = supabase
+          .from("orders")
+          .select("check_number")
+          .eq("id", createdOrderId);
+        if (targetBusinessId) {
+          checkNumberQuery = checkNumberQuery.eq("business_id", targetBusinessId);
+        }
+        const { data: checkNumberRow } = await checkNumberQuery.limit(1).maybeSingle();
+        const resolvedCheckNumber = (checkNumberRow as { check_number?: string | null } | null)?.check_number;
+        createdCheckNumber = typeof resolvedCheckNumber === "string" && resolvedCheckNumber.trim()
+          ? resolvedCheckNumber.trim()
+          : null;
+      }
+    }
+
     logApiEvent("info", "orders.create.success", {
       correlationId,
       orderId: createdOrderId,
+      checkNumber: createdCheckNumber,
       channel,
       commandId: result.command_id,
       isQrOrder,
@@ -411,6 +434,7 @@ export async function POST(request: Request) {
     return json({
       ok: true,
       orderId: createdOrderId,
+      checkNumber: createdCheckNumber,
       commandId: result.command_id,
       confirmation: confirmationPayload,
     });

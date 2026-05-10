@@ -71,7 +71,7 @@ export default async function AdminOrdersPage({
                 {translateUiText("Operasyon Merkezine Don", locale)}
               </Link>
               <Link href="/cashier" className="rounded-2xl bg-slate-100 px-4 py-4 text-sm font-semibold text-slate-800 transition hover:bg-slate-200">
-                {translateUiText("Kasa Ekranina Git", locale)}
+                {isSelfServiceCoffee ? translateUiText("Siparis Yonetimine Git", locale) : translateUiText("Kasa Ekranina Git", locale)}
               </Link>
             </div>
           </SidebarPanel>
@@ -126,7 +126,6 @@ export default async function AdminOrdersPage({
         entryMode={isSelfServiceCoffee ? "classic" : "table_first"}
         layoutMode={entryLayoutMode}
         initialView={operatingCapabilities.hide_table_ui ? "composer" : preselectedTableId ? "composer" : "table_picker"}
-        businessType={businessType}
         operatingProfile={operatingProfile}
         operatingCapabilities={operatingCapabilities}
       />

@@ -1,9 +1,18 @@
 "use client";
 
-import { useMemo, useState, useRef, useEffect } from "react";
+import { useCallback, useMemo, useState, useRef, useEffect } from "react";
 import Link from "next/link";
+import {
+  clearActiveCustomerDisplaySession,
+  createCustomerDisplaySession,
+  CUSTOMER_DISPLAY_SESSIONS_STORAGE_KEY,
+  getActiveCustomerDisplaySession,
+  publishCustomerDisplaySnapshot,
+  type CustomerDisplaySessionRecord,
+} from "@/lib/customer-display";
 import type {
   Category,
+  CustomerDisplaySnapshot,
   DiningTable,
   OrderChannel,
   OrderItemModifierSelection,
@@ -24,7 +33,7 @@ type CartEntry = {
 
 type CartMap = Record<string, CartEntry>;
 type EntryMode = "classic" | "table_first";
-type LayoutMode = "auto" | "tablet_3pane" | "mobile_stack";
+type LayoutMode = "auto" | "tablet_3pane" | "mobile_stack" | "modal_3pane";
 type InitialView = "table_picker" | "composer";
 
 function channelLabel(channel: OrderChannel) {
@@ -53,6 +62,19 @@ function buildCartKey(productId: string, modifiers: OrderItemModifierSelection[]
   return suffix ? `${productId}:${suffix}` : productId;
 }
 
+function toDisplayItems(cart: CartMap) {
+  return Object.values(cart).map((entry) => {
+    const modifierTotal = entry.modifiers.reduce((sum, modifier) => sum + Number(modifier.price_delta), 0);
+    const unitPrice = Number(entry.product.price) + modifierTotal;
+    return {
+      key: entry.key,
+      name: entry.product.name,
+      quantity: entry.quantity,
+      lineTotal: unitPrice * entry.quantity,
+    };
+  });
+}
+
 export function AdminOrderEntry({
   businessSlug,
   categories,
@@ -67,7 +89,6 @@ export function AdminOrderEntry({
   entryMode = "classic",
   layoutMode = "auto",
   initialView = "table_picker",
-  businessType,
   operatingProfile = "restaurant_classic",
   operatingCapabilities,
 }: {
@@ -84,7 +105,6 @@ export function AdminOrderEntry({
   entryMode?: EntryMode;
   layoutMode?: LayoutMode;
   initialView?: InitialView;
-  businessType?: string;
   operatingProfile?: OperatingProfile;
   operatingCapabilities?: OperatingProfileCapabilities;
 }) {
@@ -117,7 +137,10 @@ export function AdminOrderEntry({
   const [tablePickerFilter, setTablePickerFilter] = useState<"all" | TableStatus>("all");
   const [tablePickerQuery, setTablePickerQuery] = useState("");
   const [productSearchQuery, setProductSearchQuery] = useState("");
+  const [displaySession, setDisplaySession] = useState<CustomerDisplaySessionRecord | null>(null);
+  const [displayCodeCopied, setDisplayCodeCopied] = useState(false);
   const searchInputRef = useRef<HTMLInputElement>(null);
+  const displayFreezeUntilRef = useRef(0);
   const isSelfServiceCoffee = operatingProfile === "coffee_self_service";
 
   useEffect(() => {
@@ -139,6 +162,21 @@ export function AdminOrderEntry({
       setChannel("pickup");
     }
   }, [channel, isSelfServiceCoffee]);
+
+  useEffect(() => {
+    if (!isSelfServiceCoffee || typeof window === "undefined") {
+      return;
+    }
+    setDisplaySession(getActiveCustomerDisplaySession());
+    const handleStorage = (event: StorageEvent) => {
+      if (event.key !== CUSTOMER_DISPLAY_SESSIONS_STORAGE_KEY) {
+        return;
+      }
+      setDisplaySession(getActiveCustomerDisplaySession());
+    };
+    window.addEventListener("storage", handleStorage);
+    return () => window.removeEventListener("storage", handleStorage);
+  }, [isSelfServiceCoffee]);
   const [tablePickerView, setTablePickerView] = useState<InitialView>(() => {
     if (operatingCapabilities?.hide_table_ui) {
       return "composer";
@@ -247,6 +285,68 @@ export function AdminOrderEntry({
       return name.includes(query) || `masa ${table.table_number}`.includes(query);
     });
   }, [tablePickerFilter, tablePickerQuery, tables]);
+
+  const publishDisplaySnapshot = useCallback(
+    (
+      input: Omit<CustomerDisplaySnapshot, "sessionId" | "updatedAt">,
+      targetSession = displaySession,
+    ) => {
+      if (!isSelfServiceCoffee || !targetSession) {
+        return;
+      }
+      const snapshot: CustomerDisplaySnapshot = {
+        sessionId: targetSession.sessionId,
+        updatedAt: Date.now(),
+        ...input,
+      };
+      publishCustomerDisplaySnapshot(targetSession.sessionId, snapshot);
+    },
+    [displaySession, isSelfServiceCoffee],
+  );
+
+  function createDisplayPairCode() {
+    const nextSession = createCustomerDisplaySession();
+    setDisplaySession(nextSession);
+    setDisplayCodeCopied(false);
+    publishDisplaySnapshot(
+      {
+        status: "idle",
+        channel,
+        customerName: customerName.trim() || null,
+        items: toDisplayItems(cart),
+        subtotal: total,
+        total,
+        message: "Baglanti kuruldu. Siparis bekleniyor.",
+      },
+      nextSession,
+    );
+  }
+
+  async function copyDisplayPairCode() {
+    if (!displaySession || typeof navigator === "undefined") {
+      return;
+    }
+    try {
+      await navigator.clipboard.writeText(displaySession.pairCode);
+      setDisplayCodeCopied(true);
+      window.setTimeout(() => setDisplayCodeCopied(false), 1500);
+    } catch {
+      setDisplayCodeCopied(false);
+    }
+  }
+
+  function openCustomerDisplay() {
+    if (!displaySession || typeof window === "undefined") {
+      return;
+    }
+    window.open(`/customer-display?code=${encodeURIComponent(displaySession.pairCode)}`, "_blank", "noopener,noreferrer");
+  }
+
+  function clearDisplaySession() {
+    clearActiveCustomerDisplaySession();
+    setDisplaySession(null);
+    setDisplayCodeCopied(false);
+  }
 
   function getConfiguredQuantity(productId: string) {
     const raw = Number(productQuantities[productId] ?? 1);
@@ -451,6 +551,12 @@ export function AdminOrderEntry({
         modifiers: entry.modifiers,
       };
     });
+    const displayItems = items.map((item, index) => ({
+      key: `${item.product_id}-${index}`,
+      name: item.name,
+      quantity: item.quantity,
+      lineTotal: item.line_total,
+    }));
 
     if (items.length === 0) {
       setMessageTone("error");
@@ -497,12 +603,38 @@ export function AdminOrderEntry({
           totalPrice: total,
         }),
       });
-      const data = (await response.json()) as { ok: boolean; message?: string; orderId?: string };
+      const data = (await response.json()) as { ok: boolean; message?: string; orderId?: string; checkNumber?: string | null };
+      const resolvedCheckNumber =
+        typeof data.checkNumber === "string" && data.checkNumber.trim()
+          ? data.checkNumber.trim()
+          : null;
       if (!response.ok || !data.ok) {
         setMessageTone("error");
         setMessage(data.message ?? "Siparis acilamadi.");
+        displayFreezeUntilRef.current = Date.now() + 10_000;
+        publishDisplaySnapshot({
+          status: "error",
+          channel,
+          customerName: customerName.trim() || null,
+          items: displayItems,
+          subtotal: total,
+          total,
+          message: data.message ?? "Siparis acilamadi.",
+        });
         return;
       }
+      displayFreezeUntilRef.current = Date.now() + 4_000;
+      publishDisplaySnapshot({
+        status: "created",
+        channel,
+        customerName: customerName.trim() || null,
+        items: displayItems,
+        subtotal: total,
+        total,
+        orderId: data.orderId ?? null,
+        checkNumber: resolvedCheckNumber,
+        message: resolvedCheckNumber ? `Siparis alindi: #${resolvedCheckNumber}` : "Siparis alindi.",
+      });
       setCart({});
       setCustomerName("");
       setCustomerPhone("");
@@ -510,7 +642,7 @@ export function AdminOrderEntry({
       setDeliveryNote("");
       setMobileCartOpen(false);
       setMessageTone("success");
-      setMessage(`Siparis acildi: #${String(data.orderId ?? "").slice(0, 8)}`);
+      setMessage(resolvedCheckNumber ? `Siparis acildi: #${resolvedCheckNumber}` : "Siparis acildi.");
       window.dispatchEvent(new Event("live-ops:update"));
       if (data.orderId) {
         onOrderCreated?.(data.orderId);
@@ -518,6 +650,16 @@ export function AdminOrderEntry({
     } catch {
       setMessageTone("error");
       setMessage("Baglanti hatasi olustu.");
+      displayFreezeUntilRef.current = Date.now() + 10_000;
+      publishDisplaySnapshot({
+        status: "error",
+        channel,
+        customerName: customerName.trim() || null,
+        items: displayItems,
+        subtotal: total,
+        total,
+        message: "Baglanti hatasi olustu.",
+      });
     } finally {
       setSubmitting(false);
     }
@@ -548,6 +690,56 @@ export function AdminOrderEntry({
     });
   }, [allCategoryId, orderedCategories, productSearchQuery, products, selectedCategoryId]);
 
+  useEffect(() => {
+    if (!isSelfServiceCoffee || !displaySession) {
+      return;
+    }
+    if (!submitting && Date.now() < displayFreezeUntilRef.current) {
+      return;
+    }
+
+    publishDisplaySnapshot({
+      status: submitting ? "submitting" : "composing",
+      channel,
+      customerName: customerName.trim() || null,
+      items: toDisplayItems(cart),
+      subtotal: total,
+      total,
+      message: submitting
+        ? "Siparis aciliyor..."
+        : cartCount > 0
+          ? "Kasiyer siparisi hazirliyor."
+          : "Urun secimi bekleniyor.",
+    });
+  }, [cart, cartCount, channel, customerName, displaySession, isSelfServiceCoffee, publishDisplaySnapshot, submitting, total]);
+
+  useEffect(() => {
+    if (!isSelfServiceCoffee || !displaySession) {
+      return;
+    }
+
+    const heartbeat = window.setInterval(() => {
+      if (!submitting && Date.now() < displayFreezeUntilRef.current) {
+        return;
+      }
+      publishDisplaySnapshot({
+        status: submitting ? "submitting" : "composing",
+        channel,
+        customerName: customerName.trim() || null,
+        items: toDisplayItems(cart),
+        subtotal: total,
+        total,
+        message: submitting
+          ? "Siparis aciliyor..."
+          : cartCount > 0
+            ? "Kasiyer siparisi hazirliyor."
+            : "Urun secimi bekleniyor.",
+      });
+    }, 3000);
+
+    return () => window.clearInterval(heartbeat);
+  }, [cart, cartCount, channel, customerName, displaySession, isSelfServiceCoffee, publishDisplaySnapshot, submitting, total]);
+
   if (isSelfServiceCoffee) {
     return (
       <>
@@ -562,6 +754,51 @@ export function AdminOrderEntry({
               <p className="mt-2 text-2xl font-bold text-rose-400">{cartCount}</p>
             </div>
           </header>
+
+          <div className="border-b border-slate-800 bg-slate-900/55 px-6 py-4">
+            <div className="flex flex-wrap items-end gap-3">
+              <div className="min-w-[220px]">
+                <p className="text-xs uppercase tracking-[0.16em] text-slate-400">Musteri Ekrani Eslesme Kodu</p>
+                <p className="mt-1 text-2xl font-black tracking-[0.14em] text-emerald-300">
+                  {displaySession?.pairCode ?? "------"}
+                </p>
+              </div>
+              <button
+                type="button"
+                onClick={createDisplayPairCode}
+                className="rounded-xl bg-emerald-600 px-4 py-2 text-sm font-semibold text-white hover:bg-emerald-500"
+              >
+                Kod Uret
+              </button>
+              <button
+                type="button"
+                onClick={openCustomerDisplay}
+                disabled={!displaySession}
+                className="rounded-xl border border-slate-500 bg-slate-800 px-4 py-2 text-sm font-semibold text-slate-100 disabled:cursor-not-allowed disabled:opacity-40"
+              >
+                Musteri Ekranini Ac
+              </button>
+              <button
+                type="button"
+                onClick={copyDisplayPairCode}
+                disabled={!displaySession}
+                className="rounded-xl border border-slate-500 bg-slate-800 px-4 py-2 text-sm font-semibold text-slate-100 disabled:cursor-not-allowed disabled:opacity-40"
+              >
+                {displayCodeCopied ? "Kopyalandi" : "Kodu Kopyala"}
+              </button>
+              <button
+                type="button"
+                onClick={clearDisplaySession}
+                disabled={!displaySession}
+                className="rounded-xl border border-rose-500/50 bg-rose-500/10 px-4 py-2 text-sm font-semibold text-rose-200 disabled:cursor-not-allowed disabled:opacity-40"
+              >
+                Eslestirmeyi Temizle
+              </button>
+            </div>
+            <p className="mt-2 text-xs text-slate-400">
+              10.1&quot; ekranda <span className="font-semibold text-slate-200">/customer-display</span> acip bu kod ile baglanin.
+            </p>
+          </div>
 
           <div className="grid min-h-[700px] grid-cols-[minmax(0,1fr)_340px]">
             <div className="overflow-y-auto px-5 pb-6 pt-5">
@@ -732,11 +969,16 @@ export function AdminOrderEntry({
 
   if (entryMode === "table_first") {
     const isTerminal = layoutMode === "tablet_3pane";
+    const isModalThreePane = layoutMode === "modal_3pane";
+    const useThreePaneLayout = isTerminal || isModalThreePane;
+    const tableFirstSectionClassName = isTerminal
+      ? "fixed inset-0 z-50 bg-[#f1f5f9] p-4"
+      : "space-y-4 min-w-0";
 
     return (
-      <section className={isTerminal ? "fixed inset-0 z-50 bg-[#f1f5f9] p-4" : "space-y-4"}>
+      <section className={tableFirstSectionClassName}>
         {tablePickerView === "table_picker" ? (
-          <article className="rounded-2xl border border-slate-200 bg-white p-4 shadow-sm h-full overflow-y-auto">
+          <article className={`rounded-2xl border border-slate-200 bg-white p-4 shadow-sm overflow-y-auto ${isModalThreePane ? "max-h-[70vh]" : "h-full"}`}>
             <div className="flex flex-col gap-3 md:flex-row md:items-center md:justify-between">
               <div>
                 <p className="text-xs font-semibold uppercase tracking-[0.16em] text-slate-500">Masa Secimi</p>
@@ -811,9 +1053,9 @@ export function AdminOrderEntry({
               </div>
             )}
           </article>
-        ) : isTerminal ? (
+        ) : useThreePaneLayout ? (
           /* Specialized Terminal 3-Pane UI */
-          <div className="flex flex-col h-full gap-4 overflow-hidden">
+          <div className={`flex min-h-0 flex-col gap-4 overflow-hidden ${isTerminal ? "h-full" : ""}`}>
              {/* Header */}
              <header className="flex items-center justify-between rounded-2xl bg-white p-4 shadow-sm">
                 <div className="flex items-center gap-4">
@@ -832,29 +1074,37 @@ export function AdminOrderEntry({
                    </div>
                 </div>
                 <div className="flex items-center gap-3">
-                   <button 
-                      type="button"
-                      onClick={() => window.print()}
-                      className="inline-flex h-12 items-center gap-2 rounded-xl border border-slate-200 bg-white px-5 text-sm font-bold text-slate-700 shadow-sm"
-                   >
-                      <svg xmlns="http://www.w3.org/2000/svg" width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round"><path d="M6 9V2h12v7"/><path d="M6 18H4a2 2 0 0 1-2-2v-5a2 2 0 0 1 2-2h16a2 2 0 0 1 2 2v5a2 2 0 0 1-2 2h-2"/><rect width="12" height="8" x="6" y="14"/></svg>
-                      Fis Yazdir
-                   </button>
-                   <Link 
-                      href="/cashier"
-                      className="inline-flex h-12 items-center gap-2 rounded-xl bg-slate-900 px-5 text-sm font-bold text-white shadow-lg shadow-slate-900/20"
-                   >
-                      <svg xmlns="http://www.w3.org/2000/svg" width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round"><rect width="20" height="12" x="2" y="6" rx="2"/><circle cx="12" cy="12" r="2"/><path d="M6 12h.01M18 12h.01"/></svg>
-                      Kasiyer Paneli
-                   </Link>
+                   {isTerminal ? (
+                     <>
+                       <button
+                          type="button"
+                          onClick={() => window.print()}
+                          className="inline-flex h-12 items-center gap-2 rounded-xl border border-slate-200 bg-white px-5 text-sm font-bold text-slate-700 shadow-sm"
+                       >
+                          <svg xmlns="http://www.w3.org/2000/svg" width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round"><path d="M6 9V2h12v7"/><path d="M6 18H4a2 2 0 0 1-2-2v-5a2 2 0 0 1 2-2h16a2 2 0 0 1 2 2v5a2 2 0 0 1-2 2h-2"/><rect width="12" height="8" x="6" y="14"/></svg>
+                          Fis Yazdir
+                       </button>
+                       <Link
+                          href="/cashier"
+                          className="inline-flex h-12 items-center gap-2 rounded-xl bg-slate-900 px-5 text-sm font-bold text-white shadow-lg shadow-slate-900/20"
+                       >
+                          <svg xmlns="http://www.w3.org/2000/svg" width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round"><rect width="20" height="12" x="2" y="6" rx="2"/><circle cx="12" cy="12" r="2"/><path d="M6 12h.01M18 12h.01"/></svg>
+                          Kasiyer Paneli
+                       </Link>
+                     </>
+                   ) : (
+                     <p className="rounded-xl bg-slate-100 px-3 py-2 text-xs font-semibold uppercase tracking-[0.14em] text-slate-600">
+                       Modal Siparis Akisi
+                     </p>
+                   )}
                 </div>
              </header>
 
              {/* Main Content Area */}
-             <div className="flex-1 grid grid-cols-[220px_1fr_380px] gap-4 overflow-hidden">
+             <div className={`flex-1 min-h-0 grid gap-4 overflow-hidden ${isTerminal ? "grid-cols-[220px_1fr_380px]" : "lg:grid-cols-[minmax(220px,0.85fr)_minmax(0,1.25fr)_minmax(280px,0.9fr)]"}`}>
                 {/* Categories Column */}
-                <aside className="overflow-y-auto rounded-2xl bg-white/60 backdrop-blur-md p-3 shadow-sm border border-white">
-                   <div className="space-y-2">
+                <aside className={`min-w-0 overflow-y-auto rounded-2xl p-3 shadow-sm border ${isTerminal ? "bg-white/60 border-white backdrop-blur-md" : "bg-white border-slate-100"}`}>
+                   <div className={isTerminal ? "space-y-2" : "flex flex-wrap gap-2"}>
                       {orderedCategories.map((category, idx) => {
                          const isActive = category.id === activeCategoryId;
                          const colors = [
@@ -871,16 +1121,18 @@ export function AdminOrderEntry({
                                key={`term-cat-${category.id}`}
                                type="button"
                                onClick={() => setSelectedCategoryId(category.id)}
-                               className={`w-full min-h-[64px] rounded-xl p-3 text-left transition-all relative overflow-hidden group ${
+                               className={`${isTerminal ? "w-full min-h-[64px] p-3 text-left" : "min-h-[44px] whitespace-nowrap px-4 py-2.5 text-sm font-semibold"} rounded-xl transition-all relative overflow-hidden group ${
                                   isActive 
                                   ? `bg-gradient-to-br ${colorClass} text-white shadow-lg ring-2 ring-offset-2 ring-slate-200` 
                                   : "bg-white text-slate-700 hover:bg-slate-50 border border-slate-100"
                                }`}
                             >
                                <span className="relative z-10 font-bold text-sm">{category.name}</span>
-                               <span className={`absolute -right-2 -bottom-2 opacity-10 group-hover:scale-110 transition-transform ${isActive ? "text-white" : "text-slate-900"}`}>
-                                  <svg xmlns="http://www.w3.org/2000/svg" width="48" height="48" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round"><path d="M6 13.5V4a2 2 0 0 1 2-2h7l5 5v13a2 2 0 0 1-2 2H8"/></svg>
-                               </span>
+                               {isTerminal ? (
+                                 <span className={`absolute -right-2 -bottom-2 opacity-10 group-hover:scale-110 transition-transform ${isActive ? "text-white" : "text-slate-900"}`}>
+                                    <svg xmlns="http://www.w3.org/2000/svg" width="48" height="48" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round"><path d="M6 13.5V4a2 2 0 0 1 2-2h7l5 5v13a2 2 0 0 1-2 2H8"/></svg>
+                                 </span>
+                               ) : null}
                             </button>
                          );
                       })}
@@ -888,7 +1140,7 @@ export function AdminOrderEntry({
                 </aside>
 
                 {/* Products Column */}
-                <section className="flex flex-col gap-4 overflow-hidden">
+                <section className="min-w-0 flex flex-col gap-4 overflow-hidden">
                    <div className="rounded-2xl bg-white p-3 shadow-sm border border-slate-100">
                       <div className="relative">
                          <svg className="absolute left-4 top-1/2 -translate-y-1/2 text-slate-400" xmlns="http://www.w3.org/2000/svg" width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round"><circle cx="11" cy="11" r="8"/><path d="m21 21-4.3-4.3"/></svg>
@@ -910,7 +1162,7 @@ export function AdminOrderEntry({
                             <p className="text-sm font-medium">Bu kategoride urun bulunamadi.</p>
                          </div>
                       ) : (
-                         <div className="grid grid-cols-2 lg:grid-cols-3 gap-3">
+                         <div className="grid gap-3 sm:grid-cols-2 xl:grid-cols-3">
                             {filteredVisibleProducts.map((product) => (
                                <button
                                   key={`term-prod-${product.id}`}
@@ -938,7 +1190,7 @@ export function AdminOrderEntry({
                 </section>
 
                 {/* Cart Column (The Receipt) */}
-                <aside className="flex flex-col rounded-2xl bg-white shadow-xl border border-slate-100 overflow-hidden">
+                <aside className="min-w-0 flex flex-col rounded-2xl bg-white shadow-xl border border-slate-100 overflow-hidden">
                    <div className="bg-slate-900 p-4 text-white">
                       <div className="flex items-center justify-between">
                          <span className="text-xs font-bold uppercase tracking-widest opacity-60">Siparis Detayi</span>

@@ -286,6 +286,16 @@ function toScaled(value: number, scale = 4) {
   return Math.round(value * factor) / factor;
 }
 
+const UUID_V4_LOOSE_PATTERN = /^[0-9a-f]{8}-[0-9a-f]{4}-[1-8][0-9a-f]{3}-[89ab][0-9a-f]{3}-[0-9a-f]{12}$/i;
+
+function normalizeUuidForDb(value: string | null | undefined) {
+  const trimmed = typeof value === "string" ? value.trim() : "";
+  if (!trimmed) {
+    return null;
+  }
+  return UUID_V4_LOOSE_PATTERN.test(trimmed) ? trimmed : null;
+}
+
 const PREP_STATIONS: PrepStation[] = ["kitchen", "bar", "dessert"];
 
 function isValidOrderStationStatus(value: unknown): value is OrderStationStatus {
@@ -682,12 +692,14 @@ async function reconcileOrderSettlementState(input: {
   }
   const { data: currentOrderRow } = await currentOrderQuery.maybeSingle();
   const currentStatus = ((currentOrderRow as { status?: OrderStatus } | null)?.status ?? "served") as OrderStatus;
+  const activeBusinessType =
+    (input.scope as { activeBusinessType?: string | null }).activeBusinessType ?? undefined;
   const nextStatusCandidate = resolveOrderSettlementStatus(
     input.targetAmount,
     amountPaid,
     input.allowRefunded,
     currentStatus,
-    (input.scope as any).activeBusinessType,
+    activeBusinessType,
   );
   const nextStatus = isAllowedOrderStatusTransition(currentStatus, nextStatusCandidate)
     ? nextStatusCandidate
@@ -939,7 +951,7 @@ const demoTables: DiningTable[] = [
 const demoOrders: Order[] = [
   {
     id: "demo-order-1",
-    check_number: "001",
+    check_number: "0001",
     business_id: "demo-business-1",
     branch_id: "demo-branch-1",
     table_id: "demo-table-1",
@@ -975,7 +987,7 @@ const demoOrders: Order[] = [
   },
   {
     id: "demo-order-2",
-    check_number: "002",
+    check_number: "0002",
     business_id: "demo-business-1",
     branch_id: "demo-branch-1",
     table_id: null,
@@ -1020,7 +1032,7 @@ const demoOrders: Order[] = [
   },
   {
     id: "demo-order-3",
-    check_number: "003",
+    check_number: "0003",
     business_id: "demo-business-1",
     branch_id: "demo-branch-1",
     table_id: null,
@@ -1053,7 +1065,7 @@ const demoOrders: Order[] = [
   },
   {
     id: "demo-order-4",
-    check_number: "004",
+    check_number: "0004",
     business_id: "demo-business-1",
     branch_id: "demo-branch-1",
     table_id: "demo-table-4",
@@ -2427,6 +2439,32 @@ function fireAndForgetAuditEvent(input: {
   void logAuditEvent(input).catch(() => {});
 }
 
+function fireAndForgetOrderPostCreateMaintenance(input: {
+  supabase: TenantSupabaseClient;
+  scope: SettlementScope;
+  orderId: string;
+  tableId?: string | null;
+  items: OrderItem[];
+}) {
+  void (async () => {
+    if (input.tableId) {
+      await input.supabase.from("tables").update({ status: "occupied" as TableStatus }).eq("id", input.tableId);
+    }
+    await syncOrderStationStatusesAfterOrderWrite({
+      supabase: input.supabase,
+      scope: input.scope,
+      orderId: input.orderId,
+      items: input.items,
+    });
+  })().catch((error) => {
+    console.warn("[orders.create] post-create maintenance failed", {
+      orderId: input.orderId,
+      tableId: input.tableId ?? null,
+      error: error instanceof Error ? error.message : "unknown",
+    });
+  });
+}
+
 export async function getMenu(businessSlug?: string) {
   const supabase = getSupabaseServerClient();
   const defaultDemoMenu = getDemoMenuSeed();
@@ -2555,7 +2593,7 @@ export async function getMenu(businessSlug?: string) {
     const shouldUseDemoForEmptyMenu =
       demoCatalogFallbackEnabled &&
       ((isSelfServiceBusiness && (cached.categories.length === 0 || cached.products.length === 0)) ||
-        (isRestaurantBusiness && cached.categories.length === 0 && cached.products.length === 0));
+        (isRestaurantBusiness && (cached.categories.length === 0 || cached.products.length === 0)));
     if (shouldUseDemoForEmptyMenu) {
       return {
         categories: demoMenu.categories,
@@ -2921,7 +2959,13 @@ async function validateOrderItemProfileScope(input: {
   branchProfile: BranchProfile;
   items: OrderItem[];
 }) {
-  const productIds = [...new Set(input.items.map((item) => item.product_id).filter(Boolean))] as string[];
+  const productIds = [
+    ...new Set(
+      input.items
+        .map((item) => normalizeUuidForDb(item.product_id))
+        .filter((value): value is string => Boolean(value)),
+    ),
+  ];
   if (productIds.length === 0) {
     return { ok: true as const };
   }
@@ -3045,6 +3089,10 @@ export async function createOrder(input: {
   const scope = await getDefaultBusinessScope();
 
   const channel = input.channel ?? "dine_in";
+  const normalizedItems = input.items.map((item) => ({
+    ...item,
+    product_id_for_db: normalizeUuidForDb(item.product_id),
+  }));
   const fulfillmentStatus =
     input.fulfillmentStatus ?? (channel === "delivery" ? "awaiting_dispatch" : "not_applicable");
   const trimmedCustomerName = input.customerName?.trim() || null;
@@ -3115,8 +3163,8 @@ export async function createOrder(input: {
     status: "pending",
   };
 
-  const rpcPayload = input.items.map((item) => ({
-    product_id: item.product_id,
+  const rpcPayload = normalizedItems.map((item) => ({
+    product_id: item.product_id_for_db ?? "",
     name: item.name,
     quantity: item.quantity,
     unit_price: item.unit_price,
@@ -3148,15 +3196,13 @@ export async function createOrder(input: {
 
   const rpcOrder = ((rpcResult.data as Array<{ order_id: string; created_new: boolean }> | null) ?? [])[0] ?? null;
   if (!rpcResult.error && rpcOrder?.order_id) {
-    if (input.tableId) {
-      await supabase.from("tables").update({ status: "occupied" as TableStatus }).eq("id", input.tableId);
-    }
-    await syncOrderStationStatusesAfterOrderWrite({
+    fireAndForgetOrderPostCreateMaintenance({
       supabase,
       scope,
       orderId: rpcOrder.order_id,
+      tableId: input.tableId ?? null,
       items: input.items,
-    }).catch(() => {});
+    });
     fireAndForgetAuditEvent({
       entityType: "order",
       entityId: rpcOrder.order_id,
@@ -3313,17 +3359,17 @@ export async function createOrder(input: {
 
   const unitCostSnapshotByProductId = await getOrderItemUnitCostSnapshotMap({
     supabase,
-    productIds: [...new Set(input.items.map((item) => item.product_id).filter(Boolean))],
+    productIds: [...new Set(normalizedItems.map((item) => item.product_id_for_db).filter(Boolean) as string[])],
     businessId: effectiveBusinessId,
     useLegacySchema: scope.useLegacySchema,
   });
 
-  const payload = input.items.map((item) => {
-    const unitCostSnapshot = toScaled(Math.max(0, unitCostSnapshotByProductId.get(item.product_id) ?? 0), 4);
+  const payload = normalizedItems.map((item) => {
+    const unitCostSnapshot = toScaled(Math.max(0, unitCostSnapshotByProductId.get(item.product_id_for_db ?? "") ?? 0), 4);
     const quantity = Math.max(0, Number(item.quantity));
     return {
       order_id: persistedOrderId,
-      product_id: item.product_id,
+      product_id: item.product_id_for_db,
       product_name: item.name,
       quantity: item.quantity,
       unit_price: item.unit_price,
@@ -3340,9 +3386,9 @@ export async function createOrder(input: {
     (itemError.message.toLowerCase().includes("unit_cost_snapshot") ||
       itemError.message.toLowerCase().includes("line_cost_snapshot"))
   ) {
-    const legacyPayload = input.items.map((item) => ({
+    const legacyPayload = normalizedItems.map((item) => ({
       order_id: persistedOrderId,
-      product_id: item.product_id,
+      product_id: item.product_id_for_db,
       product_name: item.name,
       quantity: item.quantity,
       unit_price: item.unit_price,
@@ -3368,10 +3414,10 @@ export async function createOrder(input: {
     return { ok: false, error: itemError.message };
   }
 
-  const modifierPayload = input.items.flatMap((item) =>
+  const modifierPayload = normalizedItems.flatMap((item) =>
     (item.modifiers ?? []).map((modifier) => ({
       order_id: orderId,
-      product_id: item.product_id,
+      product_id: item.product_id_for_db,
       product_name: item.name,
       modifier_group_name: modifier.group_name,
       modifier_option_name: modifier.option_name,
@@ -3404,15 +3450,13 @@ export async function createOrder(input: {
     }
   }
 
-  if (input.tableId) {
-    await supabase.from("tables").update({ status: "occupied" as TableStatus }).eq("id", input.tableId);
-  }
-  await syncOrderStationStatusesAfterOrderWrite({
+  fireAndForgetOrderPostCreateMaintenance({
     supabase,
     scope,
     orderId: persistedOrderId,
+    tableId: input.tableId ?? null,
     items: input.items,
-  }).catch(() => {});
+  });
   fireAndForgetAuditEvent({
     entityType: "order",
     entityId: persistedOrderId,
@@ -4399,20 +4443,64 @@ export async function getKitchenOrdersSnapshot() {
   };
 }
 
-export async function getCashierPageSnapshot(selectedOrderId?: string) {
+const CASHIER_HISTORY_FILTERABLE_STATUSES: OrderStatus[] = [
+  "pending",
+  "preparing",
+  "ready",
+  "served",
+  "partially_paid",
+  "paid",
+  "partially_refunded",
+  "cancelled",
+  "refunded",
+];
+
+function normalizeDateInput(value: string | undefined, edge: "start" | "end") {
+  if (!value || !/^\d{4}-\d{2}-\d{2}$/.test(value)) {
+    return null;
+  }
+  const time = edge === "start" ? "T00:00:00.000+03:00" : "T23:59:59.999+03:00";
+  const parsed = new Date(`${value}${time}`);
+  if (Number.isNaN(parsed.getTime())) {
+    return null;
+  }
+  return parsed;
+}
+
+function resolveHistoryStatusFilter(value: string | undefined) {
+  if (!value || value === "all") {
+    return "all" as const;
+  }
+  return CASHIER_HISTORY_FILTERABLE_STATUSES.includes(value as OrderStatus)
+    ? (value as OrderStatus)
+    : "all";
+}
+
+export async function getCashierPageSnapshot(
+  selectedOrderId?: string,
+  options?: {
+    historyStatus?: string;
+    historyFrom?: string;
+    historyTo?: string;
+  },
+) {
   const cashierOpenScope = (process.env.CASHIER_OPEN_SCOPE ?? "all_open").toLowerCase();
   const cashierOpenLimit = Math.max(12, Number.parseInt(process.env.CASHIER_OPEN_LIMIT ?? "24", 10) || 24);
   const cashierPaidLimit = Math.max(4, Number.parseInt(process.env.CASHIER_PAID_LIMIT ?? "6", 10) || 6);
+  const cashierHistoryLimit = Math.max(20, Number.parseInt(process.env.CASHIER_HISTORY_LIMIT ?? "100", 10) || 100);
   const openStatuses: OrderStatus[] =
     cashierOpenScope === "served_only" ? ["ready", "served", "partially_paid"] : ["pending", "preparing", "ready", "served", "partially_paid"];
+  const historyStatusFilter = resolveHistoryStatusFilter(options?.historyStatus);
+  const historyFromDate = normalizeDateInput(options?.historyFrom, "start");
+  const historyToDate = normalizeDateInput(options?.historyTo, "end");
 
   const businessScope = await AppContextCore.getDefaultBusinessScope();
   const operatingProfile = resolveOperatingProfile(businessScope?.activeBusinessType);
   const isSelfServiceCoffee = operatingProfile === "coffee_self_service";
 
-  const [servedResult, paidResult, selectedOrderResult] = await Promise.all([
+  const [servedResult, paidResult, historyResult, selectedOrderResult] = await Promise.all([
     listOrders(openStatuses, {
-      includeItems: false,
+      includeItems: isSelfServiceCoffee,
       includePaymentSummary: true,
       includeStationStatuses: false,
       limit: cashierOpenLimit,
@@ -4425,6 +4513,17 @@ export async function getCashierPageSnapshot(selectedOrderId?: string) {
       limit: cashierPaidLimit,
       ascending: false,
     }),
+    listOrders(
+      ["pending", "preparing", "ready", "served", "partially_paid", "paid", "partially_refunded", "cancelled", "refunded"],
+      {
+        includeItems: isSelfServiceCoffee,
+        includePaymentSummary: true,
+        includeStationStatuses: false,
+        channels: ["pickup"],
+        limit: cashierHistoryLimit,
+        ascending: false,
+      },
+    ),
     typeof selectedOrderId === "string"
       ? getOrderReceipt(selectedOrderId)
       : Promise.resolve({ order: null as Order | null, usingDemoData: false }),
@@ -4458,12 +4557,45 @@ export async function getCashierPageSnapshot(selectedOrderId?: string) {
   const normalizedPaidOrders = Array.from(paidOrderMap.values())
     .sort((a, b) => b.created_at.localeCompare(a.created_at))
     .slice(0, 8);
+  const activePickupOrders = servedWithPayments.filter(
+    (order) =>
+      order.channel === "pickup" &&
+      order.status !== "paid" &&
+      order.status !== "cancelled" &&
+      order.status !== "refunded",
+  );
+  const historyPickupOrders = historyResult.orders
+    .filter((order) => order.channel === "pickup")
+    .filter((order) => (historyStatusFilter === "all" ? true : order.status === historyStatusFilter))
+    .filter((order) => {
+      if (!historyFromDate && !historyToDate) {
+        return true;
+      }
+      const createdAt = new Date(order.created_at);
+      if (Number.isNaN(createdAt.getTime())) {
+        return false;
+      }
+      if (historyFromDate && createdAt < historyFromDate) {
+        return false;
+      }
+      if (historyToDate && createdAt > historyToDate) {
+        return false;
+      }
+      return true;
+    })
+    .sort((a, b) => b.created_at.localeCompare(a.created_at));
 
   return {
     servedOrders,
     paidOrders: normalizedPaidOrders,
+    activePickupOrders,
+    historyPickupOrders,
     selectedOrder: selectedOrderResult.order,
-    usingDemoData: servedResult.usingDemoData || paidResult.usingDemoData || selectedOrderResult.usingDemoData,
+    usingDemoData:
+      servedResult.usingDemoData ||
+      paidResult.usingDemoData ||
+      historyResult.usingDemoData ||
+      selectedOrderResult.usingDemoData,
   };
 }
 
@@ -13214,11 +13346,13 @@ export async function getSupportDashboardSnapshot() {
 
 export async function getPickupBoardSnapshot() {
   const [preparingResult, readyResult] = await Promise.all([
-    listOrders(["preparing"], { limit: 12, ascending: true }),
-    listOrders(["served"], { limit: 12, ascending: false }),
+    listOrders(["pending", "preparing"], { limit: 240, ascending: true }),
+    listOrders(["ready"], { limit: 240, ascending: true }),
   ]);
+  const preparing = preparingResult.orders.filter((order) => order.channel === "pickup");
+  const ready = readyResult.orders.filter((order) => order.channel === "pickup");
   return {
-    preparing: preparingResult.orders,
-    ready: readyResult.orders,
+    preparing,
+    ready,
   };
 } 
