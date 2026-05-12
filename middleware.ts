@@ -178,6 +178,7 @@ export async function middleware(request: NextRequest) {
   const correlationId =
     requestHeaders.get("x-correlation-id") ?? requestHeaders.get("x-request-id") ?? crypto.randomUUID();
   requestHeaders.set("x-correlation-id", correlationId);
+  requestHeaders.set("x-pathname", request.nextUrl.pathname);
 
   const rateLimitResponse = checkRateLimit(request, correlationId);
   if (rateLimitResponse) {

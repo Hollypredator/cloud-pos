@@ -1,5 +1,6 @@
 import type { Metadata, Viewport } from "next";
 import { cookies } from "next/headers";
+import { headers } from "next/headers";
 import { Analytics } from "@vercel/analytics/next";
 import { SpeedInsights } from "@vercel/speed-insights/next";
 import "./globals.css";
@@ -12,6 +13,15 @@ import { Toaster } from "react-hot-toast";
 import { getAppShellPayload } from "@/lib/server/app-shell";
 
 const APP_SHELL_FETCH_BUDGET_MS = 220;
+const APP_RUNTIME_PREFIXES = ["/ops", "/kitchen", "/cashier", "/service-requests", "/tables", "/delivery", "/admin"];
+
+function shouldUseAppRuntime(pathname: string | null) {
+  if (!pathname) {
+    return false;
+  }
+
+  return APP_RUNTIME_PREFIXES.some((prefix) => pathname === prefix || pathname.startsWith(`${prefix}/`));
+}
 
 export const viewport: Viewport = {
   width: "device-width",
@@ -70,18 +80,25 @@ export default async function RootLayout({
 }: Readonly<{
   children: React.ReactNode;
 }>) {
+  const headerStore = await headers();
   const cookieStore = await cookies();
   const locale = await getCurrentLocale();
+  const pathname = headerStore.get("x-pathname");
+  const useAppRuntime = shouldUseAppRuntime(pathname);
   const hasAuthCookie = cookieStore.getAll().some((cookie) => cookie.name.includes("auth-token"));
-  const initialShellData = hasAuthCookie ? await getAppShellPayloadWithBudget() : null;
+  const initialShellData = useAppRuntime && hasAuthCookie ? await getAppShellPayloadWithBudget() : null;
 
   return (
     <html lang={locale}>
       <body className="antialiased">
-        <QueryProvider>
-          <PosCommandQueueRuntime />
-          <AppShell initialData={initialShellData}>{children}</AppShell>
-        </QueryProvider>
+        {useAppRuntime ? (
+          <QueryProvider>
+            <PosCommandQueueRuntime />
+            <AppShell initialData={initialShellData}>{children}</AppShell>
+          </QueryProvider>
+        ) : (
+          children
+        )}
         <Toaster position="top-center" />
         <SpeedInsights />
         <Analytics />
