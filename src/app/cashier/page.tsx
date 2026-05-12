@@ -3,6 +3,7 @@ import Link from "next/link";
 import { headers } from "next/headers";
 import { redirect } from "next/navigation";
 import {
+  CashierAdvancePickupStatusQueueButton,
   CashierCancelOrderQueueForm,
   CashierFinancialsQueueForm,
   CashierOrderItemCancelQueueButton,
@@ -554,14 +555,23 @@ export default async function CashierPage({
                           Detay
                         </Link>
                         {nextActionLabel ? (
-                          <form action={advancePickupStatusAction}>
-                            <input type="hidden" name="orderId" value={order.id} />
-                            <input type="hidden" name="returnOrderId" value={order.id} />
-                            <input type="hidden" name="currentStatus" value={order.status} />
-                            <button type="submit" className="rounded-2xl bg-slate-900 px-4 py-2 text-sm font-semibold text-white">
-                              {nextActionLabel}
-                            </button>
-                          </form>
+                          POS_CLIENT_QUEUE_CASHIER_ENABLED ? (
+                            <CashierAdvancePickupStatusQueueButton
+                              orderId={order.id}
+                              nextStatus={resolveNextPickupStatus(order.status) ?? "served"}
+                              label={nextActionLabel}
+                              className="rounded-2xl bg-slate-900 px-4 py-2 text-sm font-semibold text-white disabled:cursor-not-allowed disabled:opacity-70"
+                            />
+                          ) : (
+                            <form action={advancePickupStatusAction}>
+                              <input type="hidden" name="orderId" value={order.id} />
+                              <input type="hidden" name="returnOrderId" value={order.id} />
+                              <input type="hidden" name="currentStatus" value={order.status} />
+                              <button type="submit" className="rounded-2xl bg-slate-900 px-4 py-2 text-sm font-semibold text-white">
+                                {nextActionLabel}
+                              </button>
+                            </form>
+                          )
                         ) : null}
                         <form action={cancelOrderAction} className="flex items-center gap-2">
                           <input type="hidden" name="orderId" value={order.id} />

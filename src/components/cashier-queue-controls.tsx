@@ -5,7 +5,7 @@ import toast from "react-hot-toast";
 import { CashierPaymentPanel } from "@/components/cashier-payment-panel";
 import { enqueuePosCommand, flushPosCommandQueue } from "@/lib/pos/queue/engine";
 import { usePosCommandQueueStore } from "@/lib/pos/queue/store";
-import type { OrderItem, PaymentMethod } from "@/lib/types";
+import type { OrderItem, OrderStatus, PaymentMethod } from "@/lib/types";
 
 function toNumber(input: FormDataEntryValue | null, fallback = 0) {
   const value = Number(input);
@@ -429,5 +429,74 @@ export function CashierRefundQueueForm({
         {pending ? "Isleniyor..." : "Iade Baslat"}
       </button>
     </form>
+  );
+}
+
+export function CashierAdvancePickupStatusQueueButton({
+  orderId,
+  nextStatus,
+  label,
+  className,
+}: {
+  orderId: string;
+  nextStatus: OrderStatus;
+  label: string;
+  className?: string;
+}) {
+  const [trackedCommandId, setTrackedCommandId] = useState<string | null>(null);
+  const pending = usePosCommandQueueStore((state) =>
+    state.commandQueueState.items.some(
+      (item) =>
+        item.scope === "cashier" &&
+        item.type === "ORDER_STATUS_SET" &&
+        typeof item.payload.order_id === "string" &&
+        item.payload.order_id === orderId,
+    ),
+  );
+
+  useTrackedCommandResult(trackedCommandId, (status, message) => {
+    if (status === "ACK") {
+      toast.success("Siparis durumu guncellendi.");
+    } else {
+      toast.error(message ?? "Durum guncellenemedi.");
+    }
+    setTrackedCommandId(null);
+  });
+
+  function handleClick() {
+    if (pending) {
+      return;
+    }
+
+    const queued = enqueuePosCommand({
+      scope: "cashier",
+      type: "ORDER_STATUS_SET",
+      payload: {
+        order_id: orderId,
+        status: nextStatus,
+      },
+      optimistic: {
+        cashier: {
+          orderId,
+          apply: {
+            status: nextStatus,
+          },
+        },
+      },
+    });
+    setTrackedCommandId(queued.commandId);
+    toast.success("Durum komutu kuyruga alindi.");
+    void flushPosCommandQueue();
+  }
+
+  return (
+    <button
+      type="button"
+      onClick={handleClick}
+      disabled={pending}
+      className={className}
+    >
+      {pending ? "Guncelleniyor..." : label}
+    </button>
   );
 }
