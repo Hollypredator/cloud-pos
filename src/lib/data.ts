@@ -3089,10 +3089,12 @@ export async function createOrder(input: {
   const scope = await getDefaultBusinessScope();
 
   const channel = input.channel ?? "dine_in";
+  const inlineOrderItemsLimit = Math.max(0, Number.parseInt(process.env.ORDER_INLINE_ITEMS_LIMIT ?? "12", 10) || 12);
   const normalizedItems = input.items.map((item) => ({
     ...item,
     product_id_for_db: normalizeUuidForDb(item.product_id),
   }));
+  const inlineItemsForOrderRow = normalizedItems.length <= inlineOrderItemsLimit ? input.items : [];
   const fulfillmentStatus =
     input.fulfillmentStatus ?? (channel === "delivery" ? "awaiting_dispatch" : "not_applicable");
   const trimmedCustomerName = input.customerName?.trim() || null;
@@ -3128,7 +3130,7 @@ export async function createOrder(input: {
     business_id: effectiveBusinessId,
     branch_id: effectiveBranchId,
     table_id: input.tableId ?? null,
-    items: input.items,
+    items: inlineItemsForOrderRow,
     total_price: input.totalPrice,
     final_price: input.totalPrice,
     discount_amount: 0,
@@ -3146,7 +3148,7 @@ export async function createOrder(input: {
   };
   const fallbackPayload = {
     table_id: input.tableId ?? null,
-    items: input.items,
+    items: inlineItemsForOrderRow,
     total_price: input.totalPrice,
     final_price: input.totalPrice,
     discount_amount: 0,
@@ -3274,7 +3276,10 @@ export async function createOrder(input: {
 
     if (mergeRow) {
       const currentItems = Array.isArray(mergeRow.items) ? mergeRow.items : [];
-      const mergedItems = [...currentItems, ...input.items];
+      const mergedItems =
+        currentItems.length + normalizedItems.length <= inlineOrderItemsLimit
+          ? [...currentItems, ...input.items]
+          : [];
       const baseTotal = Number(mergeRow.total_price ?? 0);
       const baseFinal = Number(mergeRow.final_price ?? mergeRow.total_price ?? 0);
       const updatedTotal = baseTotal + Number(input.totalPrice);
@@ -3570,26 +3575,53 @@ async function getOrderPaymentSummaryRows(
   supabase: TenantSupabaseClient,
   orderIds: string[],
 ) {
-  const rpcResult = (await withQueryTimeout(
-    supabase.rpc("get_order_payment_summary", { p_order_ids: orderIds }),
-  )) as {
-    data: unknown[] | null;
-    error: { message: string } | null;
-  };
+  let rpcResult:
+    | {
+        data: unknown[] | null;
+        error: { message: string } | null;
+      }
+    | null = null;
+  try {
+    rpcResult = (await withQueryTimeout(
+      supabase.rpc("get_order_payment_summary", { p_order_ids: orderIds }),
+    )) as {
+      data: unknown[] | null;
+      error: { message: string } | null;
+    };
+  } catch (error) {
+    console.warn("[orders.payment-summary] rpc timed out, falling back to payments table", {
+      error: error instanceof Error ? error.message : "unknown",
+      orderCount: orderIds.length,
+    });
+  }
 
-  if (!rpcResult.error) {
+  if (rpcResult && !rpcResult.error) {
     return (rpcResult.data ?? []) as OrderPaymentSummaryAggregate[];
   }
 
   // Keep compatibility if the RPC is unavailable on a tenant.
-  const fallback = (await withQueryTimeout(
-    supabase.from("payments").select("order_id, payment_type, amount").in("order_id", orderIds),
-  )) as {
-    data: Array<{ order_id: string; payment_type: "sale" | "refund"; amount: number }> | null;
-    error: { message: string } | null;
-  };
+  let fallback:
+    | {
+        data: Array<{ order_id: string; payment_type: "sale" | "refund"; amount: number }> | null;
+        error: { message: string } | null;
+      }
+    | null = null;
+  try {
+    fallback = (await withQueryTimeout(
+      supabase.from("payments").select("order_id, payment_type, amount").in("order_id", orderIds),
+    )) as {
+      data: Array<{ order_id: string; payment_type: "sale" | "refund"; amount: number }> | null;
+      error: { message: string } | null;
+    };
+  } catch (error) {
+    console.warn("[orders.payment-summary] fallback query timed out", {
+      error: error instanceof Error ? error.message : "unknown",
+      orderCount: orderIds.length,
+    });
+    return [];
+  }
 
-  if (!fallback.error) {
+  if (fallback && !fallback.error) {
     const rolledUp = new Map<string, OrderPaymentSummaryEntry>();
     for (const row of fallback.data ?? []) {
       const current = rolledUp.get(row.order_id) ?? { paid: 0, refunds: 0, net: 0, count: 0 };
@@ -4505,39 +4537,96 @@ export async function getCashierPageSnapshot(
   const historyFromDate = normalizeDateInput(options?.historyFrom, "start");
   const historyToDate = normalizeDateInput(options?.historyTo, "end");
 
-  const [servedResult, paidResult, historyResult, selectedOrderResult] = await Promise.all([
-    listOrders(openStatuses, {
-      includeItems: false,
-      includePaymentSummary: true,
-      includeStationStatuses: false,
-      channels: isSelfServiceCoffee ? ["pickup"] : undefined,
-      limit: cashierOpenLimit,
-      ascending: false,
-    }),
-    isSelfServiceCoffee
-      ? Promise.resolve({ orders: [] as Order[], usingDemoData: false })
-      : listOrders(["paid"], {
-          includeItems: false,
-          includePaymentSummary: true,
-          includeStationStatuses: false,
-          limit: cashierPaidLimit,
-          ascending: false,
-        }),
-    listOrders(
-      ["pending", "preparing", "ready", "served", "partially_paid", "paid", "partially_refunded", "cancelled", "refunded"],
-      {
+  let servedResult: { orders: Order[]; usingDemoData: boolean };
+  let paidResult: { orders: Order[]; usingDemoData: boolean };
+  let historyResult: { orders: Order[]; usingDemoData: boolean };
+  let selectedOrderResult: { order: Order | null; usingDemoData: boolean };
+  try {
+    [servedResult, paidResult, historyResult, selectedOrderResult] = await Promise.all([
+      listOrders(openStatuses, {
         includeItems: false,
         includePaymentSummary: true,
         includeStationStatuses: false,
-        channels: ["pickup"],
-        limit: cashierHistoryLimit,
+        channels: isSelfServiceCoffee ? ["pickup"] : undefined,
+        limit: cashierOpenLimit,
         ascending: false,
-      },
-    ),
-    typeof selectedOrderId === "string"
-      ? getOrderReceipt(selectedOrderId)
-      : Promise.resolve({ order: null as Order | null, usingDemoData: false }),
-  ]);
+      }),
+      isSelfServiceCoffee
+        ? Promise.resolve({ orders: [] as Order[], usingDemoData: false })
+        : listOrders(["paid"], {
+            includeItems: false,
+            includePaymentSummary: true,
+            includeStationStatuses: false,
+            limit: cashierPaidLimit,
+            ascending: false,
+          }),
+      listOrders(
+        ["pending", "preparing", "ready", "served", "partially_paid", "paid", "partially_refunded", "cancelled", "refunded"],
+        {
+          includeItems: false,
+          includePaymentSummary: true,
+          includeStationStatuses: false,
+          channels: ["pickup"],
+          limit: cashierHistoryLimit,
+          ascending: false,
+        },
+      ),
+      typeof selectedOrderId === "string"
+        ? getOrderReceipt(selectedOrderId)
+        : Promise.resolve({ order: null as Order | null, usingDemoData: false }),
+    ]);
+  } catch (error) {
+    console.error("[cashier.snapshot] primary snapshot query failed", {
+      error: error instanceof Error ? error.message : "unknown",
+      selectedOrderId: selectedOrderId ?? null,
+      isSelfServiceCoffee,
+    });
+    try {
+      [servedResult, paidResult, historyResult, selectedOrderResult] = await Promise.all([
+        listOrders(openStatuses, {
+          includeItems: false,
+          includePaymentSummary: false,
+          includeStationStatuses: false,
+          channels: isSelfServiceCoffee ? ["pickup"] : undefined,
+          limit: cashierOpenLimit,
+          ascending: false,
+        }),
+        isSelfServiceCoffee
+          ? Promise.resolve({ orders: [] as Order[], usingDemoData: false })
+          : listOrders(["paid"], {
+              includeItems: false,
+              includePaymentSummary: false,
+              includeStationStatuses: false,
+              limit: cashierPaidLimit,
+              ascending: false,
+            }),
+        listOrders(
+          ["pending", "preparing", "ready", "served", "partially_paid", "paid", "partially_refunded", "cancelled", "refunded"],
+          {
+            includeItems: false,
+            includePaymentSummary: false,
+            includeStationStatuses: false,
+            channels: ["pickup"],
+            limit: cashierHistoryLimit,
+            ascending: false,
+          },
+        ),
+        typeof selectedOrderId === "string"
+          ? getOrderReceipt(selectedOrderId)
+          : Promise.resolve({ order: null as Order | null, usingDemoData: false }),
+      ]);
+    } catch (fallbackError) {
+      console.error("[cashier.snapshot] fallback snapshot query failed", {
+        error: fallbackError instanceof Error ? fallbackError.message : "unknown",
+        selectedOrderId: selectedOrderId ?? null,
+        isSelfServiceCoffee,
+      });
+      servedResult = { orders: [], usingDemoData: false };
+      paidResult = { orders: [], usingDemoData: false };
+      historyResult = { orders: [], usingDemoData: false };
+      selectedOrderResult = { order: null, usingDemoData: false };
+    }
+  }
 
   const servedWithPayments = servedResult.orders;
   const paidWithPayments = paidResult.orders.map((order) =>
