@@ -150,7 +150,7 @@ async function requireCashierOrderManagementRole() {
 function summarizeOrderItems(order: Pick<Order, "items">, maxItems = 3) {
   const items = Array.isArray(order.items) ? (order.items as OrderItem[]) : [];
   if (items.length === 0) {
-    return "Kalem bilgisi yok";
+    return "Kalem ozeti detay ekraninda goruntulenir.";
   }
   const preview = items.slice(0, maxItems).map((item) => `${item.quantity}x ${item.name}`).join(", ");
   const remaining = items.length - maxItems;
@@ -460,8 +460,8 @@ export default async function CashierPage({
         minimal={isTabletMode}
         actions={
           <>
-            <LiveOpsBridge tables={["orders"]} fallbackIntervalMs={900} />
-            <LiveRouteRefresh tables={["orders"]} debounceMs={120} minIntervalMs={700} />
+            <LiveOpsBridge tables={["orders"]} fallbackIntervalMs={1800} />
+            <LiveRouteRefresh tables={["orders"]} />
             <Link href="/pickup-board" className="w-full rounded-2xl border border-slate-200 bg-white px-5 py-3 text-center text-sm font-semibold text-slate-800 sm:w-auto">
               Pickup Board
             </Link>
@@ -660,8 +660,8 @@ export default async function CashierPage({
       minimal={isTabletMode}
       actions={
         <>
-          <LiveOpsBridge tables={["orders", "tables", "payments", "cash_register_sessions"]} fallbackIntervalMs={900} />
-          <LiveRouteRefresh tables={["orders", "payments", "cash_register_sessions"]} debounceMs={120} minIntervalMs={700} />
+          <LiveOpsBridge tables={["orders", "tables", "payments", "cash_register_sessions"]} fallbackIntervalMs={1800} />
+          <LiveRouteRefresh tables={["orders", "payments", "cash_register_sessions"]} />
           <Link href="/cashier/session" className="w-full rounded-2xl border border-slate-200 bg-white px-5 py-3 text-center text-sm font-semibold text-slate-800 sm:w-auto">
             Gun Islemleri
           </Link>

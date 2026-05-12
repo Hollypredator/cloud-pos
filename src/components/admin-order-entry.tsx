@@ -593,8 +593,7 @@ export function AdminOrderEntry({
         body: JSON.stringify({
           businessSlug,
           channel,
-          qrCodeIdentifier: selectedTable?.qr_code_identifier,
-          tableId: selectedTable?.id,
+          tableId: channel === "dine_in" ? selectedTable?.id : undefined,
           customerName: customerName.trim() || (isSelfServiceCoffee ? "Self Servis" : undefined),
           customerPhone: customerPhone.trim() || undefined,
           deliveryAddress: deliveryAddress.trim() || undefined,

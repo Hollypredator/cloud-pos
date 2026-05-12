@@ -52,6 +52,8 @@ export function StaffLoginForm({ next, error, labels }: StaffLoginFormProps) {
 
     try {
       const formData = new FormData(event.currentTarget);
+      const rawEmail = String(formData.get("email") ?? "");
+      formData.set("email", rawEmail.trim());
       formData.set("mode", "ajax");
       const response = await fetch("/auth/login", {
         method: "POST",
@@ -81,6 +83,7 @@ export function StaffLoginForm({ next, error, labels }: StaffLoginFormProps) {
 
       if (!payload.ok && payload.message) {
         setLocalError(payload.message);
+        return;
       }
 
       window.location.assign(redirectTo);

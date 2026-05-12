@@ -183,19 +183,76 @@ export async function POST(request: Request) {
       return json({ ok: false, code: "MISSING_TABLE", message: "Masa siparisi icin masa secimi gerekli." }, { status: 400 });
     }
 
+    const slugCandidates = Array.from(
+      new Set(
+        [body.businessSlug, businessScope?.activeSlug]
+          .map((value) => (typeof value === "string" ? value.trim().toLowerCase() : ""))
+          .filter(Boolean),
+      ),
+    );
+
     let table = null;
-    if (body.qrCodeIdentifier) {
-      table = await getTableByQr(body.qrCodeIdentifier, body.businessSlug);
-    } else if (body.tableId) {
-      table = await getTableById(body.tableId, body.businessSlug);
+    if (body.tableId) {
+      for (const slug of slugCandidates) {
+        table = await getTableById(body.tableId, slug);
+        if (table) {
+          break;
+        }
+      }
     }
-
-    if (!table && body.tableId) {
-      table = await getTableById(body.tableId, body.businessSlug);
-    }
-
     if (!table && body.qrCodeIdentifier) {
-      table = await getTableByQr(body.qrCodeIdentifier, body.businessSlug);
+      for (const slug of slugCandidates) {
+        table = await getTableByQr(body.qrCodeIdentifier, slug);
+        if (table) {
+          break;
+        }
+      }
+    }
+
+    if (!table && !businessScope?.useLegacySchema && businessScope?.businessId) {
+      const supabase = getSupabaseServerClient();
+      if (supabase) {
+        if (body.tableId) {
+          let scopedTableQuery = supabase
+            .from("tables")
+            .select("id, business_id, branch_id, table_number, status, qr_code_identifier")
+            .eq("business_id", businessScope.businessId)
+            .eq("id", body.tableId)
+            .limit(1);
+          if (businessScope.branchId) {
+            scopedTableQuery = scopedTableQuery.eq("branch_id", businessScope.branchId);
+          }
+          const { data: scopedTable } = await scopedTableQuery.maybeSingle();
+          if (scopedTable) {
+            table = scopedTable;
+            logApiEvent("info", "orders.create.table_resolved_by_scope", {
+              correlationId,
+              tableId: body.tableId,
+              activeSlug: businessScope.activeSlug,
+            });
+          }
+        }
+        if (!table && body.qrCodeIdentifier) {
+          let scopedQrTableQuery = supabase
+            .from("tables")
+            .select("id, business_id, branch_id, table_number, status, qr_code_identifier")
+            .eq("business_id", businessScope.businessId)
+            .eq("qr_code_identifier", body.qrCodeIdentifier)
+            .limit(1);
+          if (businessScope.branchId) {
+            scopedQrTableQuery = scopedQrTableQuery.eq("branch_id", businessScope.branchId);
+          }
+          const { data: scopedQrTable } = await scopedQrTableQuery.maybeSingle();
+          if (scopedQrTable) {
+            table = scopedQrTable;
+            logApiEvent("info", "orders.create.qr_resolved_by_scope", {
+              correlationId,
+              qrCodeIdentifier: body.qrCodeIdentifier,
+              activeSlug: businessScope.activeSlug,
+            });
+          }
+        }
+      }
     }
 
     if (channel === "dine_in" && !table) {

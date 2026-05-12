@@ -5,6 +5,32 @@ const LOGIN_TIMEOUT_MS = 15_000;
 const AJAX_LOGIN_MODE_HEADER = "x-cloudpos-login-mode";
 const AJAX_LOGIN_MODE_VALUE = "ajax";
 
+function normalizeRetryEmail(rawEmail: string) {
+  return rawEmail
+    .normalize("NFKC")
+    .replace(/[\u200B-\u200D\uFEFF]/g, "")
+    .trim()
+    .toLowerCase();
+}
+
+function normalizeRetryPassword(rawPassword: string) {
+  return rawPassword
+    .normalize("NFKC")
+    .replace(/[\u200B-\u200D\uFEFF]/g, "")
+    .trim();
+}
+
+function toFriendlyAuthError(message: string) {
+  const normalized = message.toLowerCase();
+  if (normalized.includes("invalid login credentials")) {
+    return "E-posta veya sifre hatali gorunuyor. Kopyala-yapistir yaptiysaniz basta/sonda bosluk olmadigindan emin olun.";
+  }
+  if (normalized.includes("email not confirmed")) {
+    return "E-posta dogrulamasi tamamlanmamis. Lutfen e-posta kutunuzu kontrol edin.";
+  }
+  return message;
+}
+
 async function withTimeout<T>(promise: Promise<T>, timeoutMs: number, timeoutMessage: string): Promise<T> {
   let timeoutId: ReturnType<typeof setTimeout> | null = null;
   try {
@@ -31,6 +57,7 @@ export async function POST(request: NextRequest) {
   const safeNext = normalizedNext;
   const wantsAjaxLoginResponse =
     request.headers.get(AJAX_LOGIN_MODE_HEADER) === AJAX_LOGIN_MODE_VALUE || mode === AJAX_LOGIN_MODE_VALUE;
+
   const buildErrorResponse = (path: string, message?: string) => {
     if (!wantsAjaxLoginResponse) {
       return NextResponse.redirect(new URL(path, request.url), 303);
@@ -58,6 +85,7 @@ export async function POST(request: NextRequest) {
   const successResponse = wantsAjaxLoginResponse
     ? NextResponse.json({ ok: true, redirectTo: safeNext }, { status: 200 })
     : NextResponse.redirect(new URL(safeNext, request.url), 303);
+
   const supabase = createServerClient(supabaseUrl, anonKey, {
     cookies: {
       getAll() {
@@ -72,16 +100,35 @@ export async function POST(request: NextRequest) {
   });
 
   try {
-    const { error } = await withTimeout(
+    const retryEmail = normalizeRetryEmail(email);
+    const retryPassword = normalizeRetryPassword(password);
+
+    const firstAttempt = await withTimeout(
       supabase.auth.signInWithPassword({ email, password }),
       LOGIN_TIMEOUT_MS,
-      "Giriş isteği zaman asimina ugradi.",
+      "Giris istegi zaman asimina ugradi.",
     );
-    if (error) {
-      return buildErrorResponse(`/login?error=${encodeURIComponent(error.message)}`, error.message);
+
+    let signInError = firstAttempt.error ?? null;
+    if (
+      signInError &&
+      signInError.message.toLowerCase().includes("invalid login credentials") &&
+      (retryEmail !== email || retryPassword !== password)
+    ) {
+      const retryAttempt = await withTimeout(
+        supabase.auth.signInWithPassword({ email: retryEmail, password: retryPassword }),
+        LOGIN_TIMEOUT_MS,
+        "Giris istegi zaman asimina ugradi.",
+      );
+      signInError = retryAttempt.error ?? null;
+    }
+
+    if (signInError) {
+      const friendlyMessage = toFriendlyAuthError(signInError.message);
+      return buildErrorResponse(`/login?error=${encodeURIComponent(friendlyMessage)}`, friendlyMessage);
     }
   } catch (error) {
-    const message = error instanceof Error ? error.message : "Giriş isteği başarısız.";
+    const message = error instanceof Error ? error.message : "Giris istegi basarisiz.";
     return buildErrorResponse(`/login?error=${encodeURIComponent(message)}`, message);
   }
 
@@ -89,7 +136,7 @@ export async function POST(request: NextRequest) {
   if (!hasAuthCookie) {
     return buildErrorResponse(
       "/login?error=Oturum%20olusturulamadi.%20Lutfen%20tekrar%20deneyin.",
-      "Oturum oluşturulamadı. Lütfen tekrar deneyin.",
+      "Oturum olusturulamadi. Lutfen tekrar deneyin.",
     );
   }
 

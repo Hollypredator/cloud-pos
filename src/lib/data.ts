@@ -4485,38 +4485,48 @@ export async function getCashierPageSnapshot(
   },
 ) {
   const cashierOpenScope = (process.env.CASHIER_OPEN_SCOPE ?? "all_open").toLowerCase();
-  const cashierOpenLimit = Math.max(12, Number.parseInt(process.env.CASHIER_OPEN_LIMIT ?? "24", 10) || 24);
+  const businessScope = await AppContextCore.getDefaultBusinessScope();
+  const operatingProfile = resolveOperatingProfile(businessScope?.activeBusinessType);
+  const isSelfServiceCoffee = operatingProfile === "coffee_self_service";
+  const cashierOpenLimit = Math.max(
+    12,
+    Number.parseInt(process.env.CASHIER_OPEN_LIMIT ?? (isSelfServiceCoffee ? "18" : "24"), 10) ||
+      (isSelfServiceCoffee ? 18 : 24),
+  );
   const cashierPaidLimit = Math.max(4, Number.parseInt(process.env.CASHIER_PAID_LIMIT ?? "6", 10) || 6);
-  const cashierHistoryLimit = Math.max(20, Number.parseInt(process.env.CASHIER_HISTORY_LIMIT ?? "100", 10) || 100);
+  const cashierHistoryLimit = Math.max(
+    20,
+    Number.parseInt(process.env.CASHIER_HISTORY_LIMIT ?? (isSelfServiceCoffee ? "40" : "100"), 10) ||
+      (isSelfServiceCoffee ? 40 : 100),
+  );
   const openStatuses: OrderStatus[] =
     cashierOpenScope === "served_only" ? ["ready", "served", "partially_paid"] : ["pending", "preparing", "ready", "served", "partially_paid"];
   const historyStatusFilter = resolveHistoryStatusFilter(options?.historyStatus);
   const historyFromDate = normalizeDateInput(options?.historyFrom, "start");
   const historyToDate = normalizeDateInput(options?.historyTo, "end");
 
-  const businessScope = await AppContextCore.getDefaultBusinessScope();
-  const operatingProfile = resolveOperatingProfile(businessScope?.activeBusinessType);
-  const isSelfServiceCoffee = operatingProfile === "coffee_self_service";
-
   const [servedResult, paidResult, historyResult, selectedOrderResult] = await Promise.all([
     listOrders(openStatuses, {
-      includeItems: isSelfServiceCoffee,
-      includePaymentSummary: true,
-      includeStationStatuses: false,
-      limit: cashierOpenLimit,
-      ascending: false,
-    }),
-    listOrders(["paid"], {
       includeItems: false,
       includePaymentSummary: true,
       includeStationStatuses: false,
-      limit: cashierPaidLimit,
+      channels: isSelfServiceCoffee ? ["pickup"] : undefined,
+      limit: cashierOpenLimit,
       ascending: false,
     }),
+    isSelfServiceCoffee
+      ? Promise.resolve({ orders: [] as Order[], usingDemoData: false })
+      : listOrders(["paid"], {
+          includeItems: false,
+          includePaymentSummary: true,
+          includeStationStatuses: false,
+          limit: cashierPaidLimit,
+          ascending: false,
+        }),
     listOrders(
       ["pending", "preparing", "ready", "served", "partially_paid", "paid", "partially_refunded", "cancelled", "refunded"],
       {
-        includeItems: isSelfServiceCoffee,
+        includeItems: false,
         includePaymentSummary: true,
         includeStationStatuses: false,
         channels: ["pickup"],
