@@ -99,7 +99,7 @@ export default async function MobileOpsPage() {
   return (
     <>
       <LiveOpsBridge tables={["orders", "tables", "table_requests", "payments"]} />
-      <LiveRouteRefresh tables={["orders", "table_requests", "payments", "tables"]} minIntervalMs={3200} />
+      <LiveRouteRefresh tables={["orders", "table_requests", "payments", "tables"]} debounceMs={260} minIntervalMs={1500} />
 
       {usingDemoData ? (
         <div className="m-card m-banner-warning">

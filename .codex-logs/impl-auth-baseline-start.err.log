@@ -1,0 +1,14 @@
+TypeError: fetch failed
+    at async C (C:\Users\coban\OneDrive\Masaüstü\POS SİSTEM\.next\server\chunks\[root-of-the-server]__90b7bb96._.js:1:1569)
+    at async b (C:\Users\coban\OneDrive\Masaüstü\POS SİSTEM\.next\server\chunks\[root-of-the-server]__90b7bb96._.js:1:2893)
+    at async u (C:\Users\coban\OneDrive\Masaüstü\POS SİSTEM\.next\server\chunks\[root-of-the-server]__90b7bb96._.js:1:6333) {
+  [cause]: AggregateError: 
+      at ignore-listed frames {
+    code: 'EACCES'
+  }
+}
+{"timestamp":"2026-03-22T12:02:44.867Z","level":"warn","event":"orders.create.forbidden","correlationId":"75969483-e57a-40e3-87f8-66d5fa1ae2d9"}
+{"timestamp":"2026-03-22T12:02:44.898Z","level":"warn","event":"orders.create.forbidden","correlationId":"9591e712-8659-4472-a52f-64e0c1821f84"}
+{"timestamp":"2026-03-22T12:02:44.904Z","level":"warn","event":"orders.create.forbidden","correlationId":"fb8dacce-2a8a-4085-9e0d-c3d735a92c89"}
+{"timestamp":"2026-03-22T12:02:44.910Z","level":"warn","event":"orders.create.forbidden","correlationId":"4501e8bc-9380-4051-8a4c-009d239d93eb"}
+{"timestamp":"2026-03-22T12:02:44.915Z","level":"warn","event":"orders.create.forbidden","correlationId":"4a9204c7-4190-4a98-843b-02e825e80774"}

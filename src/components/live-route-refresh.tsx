@@ -125,7 +125,7 @@ export function LiveRouteRefresh({
         pendingHiddenRefreshRef.current = true;
         return;
       }
-      const fingerprint = `${event.sourceTable}:${event.sourceEvent}:${event.type}:${event.orderId ?? "no-order"}:${event.tableId ?? "no-table"}`;
+      const fingerprint = `${event.sourceTable}:${event.sourceEvent}:${event.type}:${event.orderId ?? "no-order"}:${event.tableId ?? "no-table"}:${event.status ?? "no-status"}`;
       const profile = profileRef.current;
       const duplicateWindowMs = event.sourceEvent === "POLL" ? Math.min(300, profile.duplicateWindowMs) : profile.duplicateWindowMs;
       if (fingerprint === lastFingerprintRef.current && event.at - lastEventAtRef.current < duplicateWindowMs) {

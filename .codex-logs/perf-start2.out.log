@@ -1,0 +1,11 @@
+
+> pos-sistem@0.1.0 start
+> next start
+
+▲ Next.js 16.1.6
+- Local:         http://localhost:3000
+- Network:       http://192.168.1.101:3000
+
+✓ Starting...
+✓ Ready in 649ms
+{"timestamp":"2026-03-22T00:22:45.819Z","level":"info","event":"health.check","correlationId":"362f6b8a-b648-4a31-9f72-19ddfcc8eea6","status":200}

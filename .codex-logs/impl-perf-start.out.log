@@ -1,0 +1,17 @@
+
+> pos-sistem@0.1.0 start
+> next start
+
+▲ Next.js 16.1.6
+- Local:         http://localhost:3000
+- Network:       http://192.168.1.101:3000
+
+✓ Starting...
+✓ Ready in 1071ms
+{"timestamp":"2026-03-22T12:01:10.568Z","level":"info","event":"health.check","correlationId":"6f03bf87-a444-4cba-93cc-9a7448ee441d","status":200}
+{"timestamp":"2026-03-22T12:01:11.108Z","level":"info","event":"health.check","correlationId":"c2168120-c37d-4382-909f-2c6749f80010","status":200}
+{"timestamp":"2026-03-22T12:01:11.122Z","level":"info","event":"health.check","correlationId":"df1211d9-1e6e-4d40-b57e-54323b25dd85","status":200}
+{"timestamp":"2026-03-22T12:01:11.129Z","level":"info","event":"health.check","correlationId":"d93f2544-9a17-4a8f-aa6e-337f9558cecc","status":200}
+{"timestamp":"2026-03-22T12:01:11.135Z","level":"info","event":"health.check","correlationId":"854343e7-28eb-45d2-9fe7-fa29885bf61b","status":200}
+{"timestamp":"2026-03-22T12:01:11.140Z","level":"info","event":"health.check","correlationId":"7e99bf51-1734-49b0-871c-d84cbc86cd62","status":200}
+{"timestamp":"2026-03-22T12:01:11.146Z","level":"info","event":"health.check","correlationId":"c97409f8-e973-48dc-9212-22f3b192498e","status":200}

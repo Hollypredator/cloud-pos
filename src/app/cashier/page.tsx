@@ -23,6 +23,7 @@ import { LiveOpsBridge } from "@/components/live-ops-bridge";
 import { LiveRouteRefresh } from "@/components/live-route-refresh";
 import { OptimisticVisibility } from "@/components/optimistic-visibility";
 import { OptimisticMoney } from "@/components/optimistic-money";
+import { OptimisticOrderStatusBadge } from "@/components/optimistic-order-status-badge";
 import { QuerySnapshotSeed } from "@/components/query-snapshot-seed";
 import { ReceiptPreviewLauncher } from "@/components/receipt-preview-launcher";
 import { getAppBaseUrl } from "@/lib/app-url";
@@ -89,16 +90,6 @@ function statusTone(status: string) {
   if (status === "served") return "bg-[#fff2ee] text-[#ff5a34]";
   if (status === "preparing") return "bg-sky-100 text-sky-700";
   return "bg-slate-100 text-slate-700";
-}
-
-function statusLabel(status: OrderStatus) {
-  if (status === "pending") return "Bekliyor";
-  if (status === "preparing") return "Hazirlaniyor";
-  if (status === "ready") return "Hazir";
-  if (status === "served") return "Teslim edildi";
-  if (status === "cancelled") return "Iptal";
-  if (status === "paid") return "Kapandi";
-  return status;
 }
 
 function resolveNextPickupStatus(status: OrderStatus): OrderStatus | null {
@@ -460,8 +451,8 @@ export default async function CashierPage({
         minimal={isTabletMode}
         actions={
           <>
-            <LiveOpsBridge tables={["orders"]} fallbackIntervalMs={1800} />
-            <LiveRouteRefresh tables={["orders"]} />
+            <LiveOpsBridge tables={["orders", "order_items", "payments"]} fallbackIntervalMs={1200} />
+            <LiveRouteRefresh tables={["orders", "order_items", "payments"]} debounceMs={220} minIntervalMs={900} />
             <Link href="/pickup-board" className="w-full rounded-2xl border border-slate-200 bg-white px-5 py-3 text-center text-sm font-semibold text-slate-800 sm:w-auto">
               Pickup Board
             </Link>
@@ -544,9 +535,11 @@ export default async function CashierPage({
                           <p className="mt-2 text-xs text-slate-500">{summarizeOrderItems(order)}</p>
                         </div>
                         <div className="text-right">
-                          <span className={`inline-flex rounded-full px-3 py-1 text-xs font-semibold uppercase ${statusTone(order.status)}`}>
-                            {statusLabel(order.status)}
-                          </span>
+                          <OptimisticOrderStatusBadge
+                            orderId={order.id}
+                            baseStatus={order.status}
+                            className="inline-flex rounded-full px-3 py-1 text-xs font-semibold uppercase"
+                          />
                           <p className="mt-2 text-lg font-semibold text-emerald-700">{Number(order.final_price ?? order.total_price).toFixed(2)} TL</p>
                         </div>
                       </div>
@@ -599,9 +592,11 @@ export default async function CashierPage({
                   <article key={`history-${order.id}`} className="rounded-2xl border border-slate-200 bg-white px-4 py-3">
                     <div className="flex items-center justify-between gap-2">
                       <p className="text-sm font-semibold text-slate-900">#{orderRef(order)} - {order.customer_name ?? "Misafir"}</p>
-                      <span className={`rounded-full px-2 py-1 text-[11px] font-semibold uppercase ${statusTone(order.status)}`}>
-                        {statusLabel(order.status)}
-                      </span>
+                      <OptimisticOrderStatusBadge
+                        orderId={order.id}
+                        baseStatus={order.status}
+                        className="rounded-full px-2 py-1 text-[11px] font-semibold uppercase"
+                      />
                     </div>
                     <div className="mt-1 flex items-center justify-between text-xs text-slate-500">
                       <span>{new Date(order.created_at).toLocaleString(localeCode)}</span>
@@ -623,9 +618,11 @@ export default async function CashierPage({
                   <p className="text-sm font-semibold text-slate-900">{selectedOrder.customer_name ?? "Misafir"}</p>
                   <p className="text-xs text-slate-500">{new Date(selectedOrder.created_at).toLocaleString(localeCode)}</p>
                 </div>
-                <span className={`rounded-full px-3 py-1 text-xs font-semibold uppercase ${statusTone(selectedOrder.status)}`}>
-                  {statusLabel(selectedOrder.status)}
-                </span>
+                <OptimisticOrderStatusBadge
+                  orderId={selectedOrder.id}
+                  baseStatus={selectedOrder.status}
+                  className="rounded-full px-3 py-1 text-xs font-semibold uppercase"
+                />
               </div>
 
               <div className="space-y-2">
@@ -660,8 +657,8 @@ export default async function CashierPage({
       minimal={isTabletMode}
       actions={
         <>
-          <LiveOpsBridge tables={["orders", "tables", "payments", "cash_register_sessions"]} fallbackIntervalMs={1800} />
-          <LiveRouteRefresh tables={["orders", "payments", "cash_register_sessions"]} />
+          <LiveOpsBridge tables={["orders", "order_items", "tables", "payments", "cash_register_sessions"]} fallbackIntervalMs={1400} />
+          <LiveRouteRefresh tables={["orders", "order_items", "payments", "cash_register_sessions"]} debounceMs={240} minIntervalMs={1200} />
           <Link href="/cashier/session" className="w-full rounded-2xl border border-slate-200 bg-white px-5 py-3 text-center text-sm font-semibold text-slate-800 sm:w-auto">
             Gun Islemleri
           </Link>

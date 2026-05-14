@@ -22,6 +22,8 @@ type EnqueuePosCommandInput = {
 
 const POS_DEVICE_ID_STORAGE_KEY = "cloudpos.pos_device_id";
 let flushInFlight: Promise<void> | null = null;
+let activeQueryClient: QueryClient | undefined;
+let onResolvedCallbacks: Array<() => void> = [];
 
 function asObject(input: unknown): Record<string, unknown> | null {
   return input && typeof input === "object" && !Array.isArray(input) ? (input as Record<string, unknown>) : null;
@@ -112,7 +114,26 @@ async function invalidateQueriesForScope(scope: PosQueueScope, queryClient?: Que
   }
 }
 
-async function flushInternal(options?: FlushQueueOptions) {
+function queueOnResolvedCallback(callback?: () => void) {
+  if (!callback) {
+    return;
+  }
+  onResolvedCallbacks.push(callback);
+}
+
+function drainOnResolvedCallbacks() {
+  const callbacks = onResolvedCallbacks;
+  onResolvedCallbacks = [];
+  for (const callback of callbacks) {
+    try {
+      callback();
+    } catch {
+      // noop
+    }
+  }
+}
+
+async function flushInternal() {
   if (typeof navigator !== "undefined" && navigator.onLine === false) {
     return;
   }
@@ -149,7 +170,7 @@ async function flushInternal(options?: FlushQueueOptions) {
         message: result.message,
         data: result.data,
       });
-      await invalidateQueriesForScope(next.scope, options?.queryClient);
+      await invalidateQueriesForScope(next.scope, activeQueryClient);
       resolvedAny = true;
     } catch (error) {
       const message = error instanceof Error ? error.message : "Komut gonderimi başarısız.";
@@ -162,7 +183,9 @@ async function flushInternal(options?: FlushQueueOptions) {
 
   store.getState().touchFlush();
   if (resolvedAny) {
-    options?.onResolved?.();
+    drainOnResolvedCallbacks();
+  } else {
+    onResolvedCallbacks = [];
   }
 }
 
@@ -185,11 +208,17 @@ export function enqueuePosCommand(input: EnqueuePosCommandInput) {
 }
 
 export function flushPosCommandQueue(options?: FlushQueueOptions) {
+  if (options?.queryClient) {
+    activeQueryClient = options.queryClient;
+  }
+  queueOnResolvedCallback(options?.onResolved);
+
   if (flushInFlight) {
     return flushInFlight;
   }
-  flushInFlight = flushInternal(options).finally(() => {
+  flushInFlight = flushInternal().finally(() => {
     flushInFlight = null;
+    activeQueryClient = undefined;
   });
   return flushInFlight;
 }

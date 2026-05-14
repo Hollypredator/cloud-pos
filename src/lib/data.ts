@@ -5022,7 +5022,7 @@ export async function updateOrderStatus(orderId: string, nextStatus: OrderStatus
   }
 
   const scope = await getDefaultBusinessScope();
-  let findQuery = supabase.from("orders").select("id, table_id, status, lock_version").eq("id", orderId);
+  let findQuery = supabase.from("orders").select("id, table_id, status, station_statuses, lock_version").eq("id", orderId);
   if (!scope.useLegacySchema && scope.businessId) {
     findQuery = findQuery.eq("business_id", scope.businessId);
   }
@@ -5040,9 +5040,30 @@ export async function updateOrderStatus(orderId: string, nextStatus: OrderStatus
   }
 
   const expectedLockVersion = Number((orderRow as { lock_version?: number | null }).lock_version ?? 0);
+  const currentStationStatuses = parseOrderStationStatuses((orderRow as { station_statuses?: unknown }).station_statuses) ?? {};
+  const shouldPromoteStationsToServed = nextStatus === "ready" || nextStatus === "served" || nextStatus === "partially_paid" || nextStatus === "paid";
+  const normalizedStationStatuses = shouldPromoteStationsToServed
+    ? ({
+        kitchen: currentStationStatuses.kitchen ? "served" : undefined,
+        bar: currentStationStatuses.bar ? "served" : undefined,
+        dessert: currentStationStatuses.dessert ? "served" : undefined,
+      } satisfies Partial<Record<PrepStation, OrderStationStatus>>)
+    : undefined;
+  const updatePayload: {
+    status: OrderStatus;
+    lock_version: number;
+    station_statuses?: Partial<Record<PrepStation, OrderStationStatus>>;
+  } = {
+    status: nextStatus,
+    lock_version: expectedLockVersion + 1,
+  };
+  if (normalizedStationStatuses) {
+    updatePayload.station_statuses = normalizedStationStatuses;
+  }
+
   let updateQuery = supabase
     .from("orders")
-    .update({ status: nextStatus, lock_version: expectedLockVersion + 1 })
+    .update(updatePayload)
     .eq("id", orderId)
     .eq("lock_version", expectedLockVersion)
     .select("id");
@@ -5054,7 +5075,7 @@ export async function updateOrderStatus(orderId: string, nextStatus: OrderStatus
   }
   const { data: updatedRows, error } = await updateQuery;
   if (error && isMissingLockVersionColumnError(error.message)) {
-    let fallbackUpdateQuery = supabase.from("orders").update({ status: nextStatus }).eq("id", orderId);
+    let fallbackUpdateQuery = supabase.from("orders").update(updatePayload).eq("id", orderId);
     if (!scope.useLegacySchema && scope.businessId) {
       fallbackUpdateQuery = fallbackUpdateQuery.eq("business_id", scope.businessId);
     }

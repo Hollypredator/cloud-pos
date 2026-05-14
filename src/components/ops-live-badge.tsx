@@ -11,6 +11,15 @@ const LiveOpsBridge = dynamic(() => import("@/components/live-ops-bridge").then(
   ),
 });
 
+const LiveRouteRefresh = dynamic(() => import("@/components/live-route-refresh").then((mod) => mod.LiveRouteRefresh), {
+  ssr: false,
+});
+
 export function OpsLiveBadge() {
-  return <LiveOpsBridge tables={["orders", "tables", "products"]} />;
+  return (
+    <>
+      <LiveOpsBridge tables={["orders", "tables", "products", "table_requests", "payments"]} fallbackIntervalMs={1400} />
+      <LiveRouteRefresh tables={["orders", "tables", "products", "table_requests", "payments"]} debounceMs={260} minIntervalMs={1500} />
+    </>
+  );
 }

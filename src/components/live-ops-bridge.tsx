@@ -247,13 +247,16 @@ export function LiveOpsBridge({ tables, enableSound = false, fallbackIntervalMs 
           "postgres_changes",
           { event: "*", schema: "public", table },
           (payload) => {
+            const row = (payload.new ?? payload.old ?? {}) as Record<string, unknown>;
             const rowId =
               String(
                 (payload.new as { id?: string } | undefined)?.id ??
                 (payload.old as { id?: string } | undefined)?.id ??
                 "",
               ) || "no-id";
-            const fingerprint = `${table}:${payload.eventType}:${rowId}`;
+            const status = typeof row.status === "string" ? row.status : "no-status";
+            const lockVersion = Number.isFinite(Number(row.lock_version)) ? String(Number(row.lock_version)) : "no-lock";
+            const fingerprint = `${table}:${payload.eventType}:${rowId}:${status}:${lockVersion}`;
             const now = Date.now();
             if (
               fingerprint === lastRealtimeFingerprintRef.current &&
