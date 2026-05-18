@@ -1481,7 +1481,7 @@ export default async function AdminProductsPage({
   const { tab: tabParam, categoryId: categoryIdParam, productId: productIdParam, q: qParam, feedback, tone } = await searchParams;
   const allowedTabs: string[] = isSelfServiceCoffee
     ? ["catalog", "menu", "categories"]
-    : ["catalog", "menu", "categories", "bulk", "features", "import", "recipe"];
+    : ["catalog", "menu", "categories", "bulk", "features", "import", "recipe", "ingredients"];
   const activeTab = (allowedTabs.includes(tabParam ?? "") ? (tabParam ?? "catalog") : "catalog") as
     | "catalog"
     | "menu"
@@ -1489,7 +1489,8 @@ export default async function AdminProductsPage({
     | "bulk"
     | "features"
     | "import"
-    | "recipe";
+    | "recipe"
+    | "ingredients";
   const { settings: applicationSettings } = await getApplicationSettings();
   const productManagementResult = await measureAsync("product_management", () => getProductManagementData({ tab: activeTab }));
   const {
@@ -1661,6 +1662,7 @@ export default async function AdminProductsPage({
                   { label: "Ana Kategoriler", active: activeTab === "categories", href: "/admin/products?tab=categories" },
                   { label: "Toplu Islemler", active: activeTab === "bulk", href: "/admin/products?tab=bulk" },
                   { label: "Recipe Studio", active: activeTab === "recipe", href: "/admin/products?tab=recipe" },
+                  { label: "Malzeme Kutuphanesi", active: activeTab === "ingredients", href: "/admin/products?tab=ingredients" },
                   { label: "Market Import", active: activeTab === "import", href: "/admin/products?tab=import" },
                   { label: "Ürün Ozellikleri", active: activeTab === "features", href: "/admin/products?tab=features" },
                 ]
@@ -2163,33 +2165,7 @@ export default async function AdminProductsPage({
               )}
             </div>
 
-            <div className="grid gap-5 xl:grid-cols-2">
-              <ContentCard title="Malzeme Kutuphanesi">
-                <form action={addIngredientAction} className="grid gap-3 md:grid-cols-[minmax(0,1fr)_160px_auto]">
-                  <input name="name" required placeholder="Yeni malzeme" className="rounded-2xl border border-slate-200 bg-slate-50 px-4 py-3 text-sm" />
-                  <input name="unit" required placeholder="Birim" className="rounded-2xl border border-slate-200 bg-slate-50 px-4 py-3 text-sm" />
-                  <button type="submit" className="rounded-2xl bg-[#ff5a34] px-4 py-3 text-sm font-semibold text-white">
-                    Ekle
-                  </button>
-                </form>
-                <div className="mt-4 space-y-2">
-                  {ingredients.map((ingredient) => (
-                    <div key={ingredient.id} className="flex flex-col items-start justify-between gap-3 rounded-2xl border border-slate-200 bg-slate-50 px-4 py-3 sm:flex-row sm:items-center">
-                      <div className="min-w-0">
-                        <p className="font-semibold text-slate-900">{ingredient.name}</p>
-                        <p className="text-sm text-slate-500">{ingredient.unit}</p>
-                      </div>
-                      <form action={deleteIngredientAction} className="w-full sm:w-auto">
-                        <input type="hidden" name="ingredientId" value={ingredient.id} />
-                        <button type="submit" className="w-full rounded-xl border border-rose-200 bg-rose-50 px-3 py-2 text-xs font-semibold text-rose-700 sm:w-auto">
-                          Sil
-                        </button>
-                      </form>
-                    </div>
-                  ))}
-                </div>
-              </ContentCard>
-
+            <div className="grid gap-5 xl:grid-cols-1">
               <ContentCard title="Katalog Durumu">
                 <div className="grid gap-3">
                   <div className="rounded-2xl border border-slate-200 bg-slate-50 px-4 py-4">
@@ -2617,39 +2593,7 @@ export default async function AdminProductsPage({
         ) : null}
 
         {activeTab === "features" ? (
-          <div className="mt-6 grid gap-5 xl:grid-cols-2">
-            <ContentCard title="Malzeme Kutuphanesi">
-              <form action={addIngredientAction} className="grid gap-3 md:grid-cols-[minmax(0,1fr)_120px_100px_auto]">
-                <input name="name" required placeholder="Yeni malzeme" className="rounded-2xl border border-slate-200 bg-slate-50 px-4 py-3 text-sm" />
-                <input name="unit" required placeholder="Birim" className="rounded-2xl border border-slate-200 bg-slate-50 px-4 py-3 text-sm" />
-                <input name="cost" type="number" step="0.01" required placeholder="Maliyet" className="rounded-2xl border border-slate-200 bg-slate-50 px-4 py-3 text-sm" />
-                <button type="submit" className="rounded-2xl bg-[#ff5a34] px-4 py-3 text-sm font-semibold text-white">Ekle</button>
-              </form>
-              <div className="mt-4 space-y-3">
-                {ingredients.map((ingredient) => (
-                  <div key={ingredient.id} className="rounded-2xl border border-slate-200 bg-slate-50 p-4">
-                    <form action={updateIngredientAction} className="flex flex-wrap items-center gap-3">
-                      <input type="hidden" name="ingredientId" value={ingredient.id} />
-                      <div className="min-w-0 flex-1">
-                        <input name="name" defaultValue={ingredient.name} className="w-full bg-transparent font-semibold text-slate-900 focus:outline-none" />
-                        <div className="mt-1 flex gap-2">
-                           <input name="unit" defaultValue={ingredient.unit} className="w-16 bg-transparent text-xs text-slate-500 focus:outline-none" />
-                           <span className="text-xs text-slate-300">|</span>
-                           <div className="flex items-center gap-1">
-                             <input name="cost" type="number" step="0.01" defaultValue={Number(ingredient.cost ?? 0).toFixed(2)} className="w-20 bg-transparent text-xs font-medium text-emerald-600 focus:outline-none" />
-                             <span className="text-[10px] text-slate-400">TL</span>
-                           </div>
-                        </div>
-                      </div>
-                      <div className="flex items-center gap-2">
-                        <button type="submit" className="rounded-xl bg-slate-200 px-3 py-2 text-xs font-semibold text-slate-700 hover:bg-slate-300">Güncelle</button>
-                        <button formAction={deleteIngredientAction} type="submit" className="rounded-xl border border-rose-200 bg-rose-50 px-3 py-2 text-xs font-semibold text-rose-700 hover:bg-rose-100">Sil</button>
-                      </div>
-                    </form>
-                  </div>
-                ))}
-              </div>
-            </ContentCard>
+          <div className="mt-6">
             <ContentCard title="Ürün Ozellikleri">
               <div className="space-y-3">
                 {products.map((product) => (
@@ -2658,6 +2602,50 @@ export default async function AdminProductsPage({
                     <p className="mt-1 text-sm text-slate-500">{(groupsByProduct.get(product.id) ?? []).length} modifier grubu - {(ingredientsByProduct.get(product.id) ?? []).length} malzeme</p>
                   </div>
                 ))}
+              </div>
+            </ContentCard>
+          </div>
+        ) : null}
+        {activeTab === "ingredients" ? (
+          <div className="mt-6 grid gap-5 xl:grid-cols-[1fr_340px]">
+            <ContentCard title="Malzeme Kutuphanesi">
+              <form action={addIngredientAction} className="grid gap-3 rounded-2xl border border-slate-200 bg-slate-50 p-4 md:grid-cols-[minmax(0,1fr)_120px_120px_auto]">
+                <input name="name" required placeholder="Yeni malzeme (orn: Mozzarella)" className="rounded-2xl border border-slate-200 bg-white px-4 py-3 text-sm" />
+                <input name="unit" required placeholder="Birim" className="rounded-2xl border border-slate-200 bg-white px-4 py-3 text-sm" />
+                <input name="cost" type="number" step="0.01" required placeholder="Maliyet" className="rounded-2xl border border-slate-200 bg-white px-4 py-3 text-sm" />
+                <button type="submit" className="rounded-2xl bg-[#ff5a34] px-4 py-3 text-sm font-semibold text-white">Ekle</button>
+              </form>
+              <div className="mt-4 space-y-3">
+                {ingredients.map((ingredient) => (
+                  <div key={ingredient.id} className="rounded-2xl border border-slate-200 bg-white p-4">
+                    <form action={updateIngredientAction} className="grid gap-3 md:grid-cols-[minmax(0,1fr)_120px_140px_auto_auto] md:items-center">
+                      <input type="hidden" name="ingredientId" value={ingredient.id} />
+                      <input name="name" defaultValue={ingredient.name} className="rounded-xl border border-slate-200 bg-slate-50 px-3 py-2 text-sm font-medium text-slate-900" />
+                      <input name="unit" defaultValue={ingredient.unit} className="rounded-xl border border-slate-200 bg-slate-50 px-3 py-2 text-sm text-slate-700" />
+                      <input name="cost" type="number" step="0.01" defaultValue={Number(ingredient.cost ?? 0).toFixed(2)} className="rounded-xl border border-slate-200 bg-slate-50 px-3 py-2 text-sm text-slate-700" />
+                      <button type="submit" className="rounded-xl border border-slate-200 bg-slate-50 px-3 py-2 text-xs font-semibold text-slate-700">Guncelle</button>
+                      <button formAction={deleteIngredientAction} type="submit" className="rounded-xl border border-rose-200 bg-rose-50 px-3 py-2 text-xs font-semibold text-rose-700">Sil</button>
+                    </form>
+                  </div>
+                ))}
+              </div>
+            </ContentCard>
+
+            <ContentCard title="Malzeme Ozeti">
+              <div className="space-y-3">
+                <div className="rounded-2xl border border-slate-200 bg-slate-50 px-4 py-4">
+                  <p className="text-sm text-slate-500">Toplam malzeme</p>
+                  <p className="mt-2 text-2xl font-semibold tracking-tight text-slate-900 sm:text-3xl">{ingredients.length}</p>
+                </div>
+                <div className="rounded-2xl border border-slate-200 bg-slate-50 px-4 py-4">
+                  <p className="text-sm text-slate-500">Recetede kullanilan urun</p>
+                  <p className="mt-2 text-2xl font-semibold tracking-tight text-slate-900 sm:text-3xl">
+                    {products.filter((product) => (ingredientsByProduct.get(product.id) ?? []).length > 0).length}
+                  </p>
+                </div>
+                <div className="rounded-2xl border border-slate-200 bg-slate-50 px-4 py-4 text-sm text-slate-600">
+                  Bu sekme yalnizca malzeme kartlarini yonetmek icindir. Recete baglama ve urun bazli maliyet akisi icin Recipe Studio tabini kullanin.
+                </div>
               </div>
             </ContentCard>
           </div>
