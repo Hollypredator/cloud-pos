@@ -9,9 +9,9 @@ import { getPublicCopy } from "@/lib/i18n";
 export default async function LoginPage({
   searchParams,
 }: {
-  searchParams: Promise<{ next?: string; error?: string }>;
+  searchParams: Promise<{ next?: string; error?: string; force?: string }>;
 }) {
-  const { next, error } = await searchParams;
+  const { next, error, force } = await searchParams;
   const locale = await getCurrentLocale();
   const copy = getPublicCopy(locale);
   const { user, usingDemoData } = await getCurrentUserWithRole();
@@ -41,7 +41,7 @@ export default async function LoginPage({
     );
   }
 
-  if (user) {
+  if (user && force !== "1") {
     redirect("/ops");
   }
 

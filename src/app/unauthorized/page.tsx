@@ -20,7 +20,7 @@ export default function UnauthorizedPage() {
               Ana Panele Don
             </Link>
             <Link
-              href="/login"
+              href="/login?force=1"
               className="inline-flex rounded-2xl border border-slate-300 bg-white px-5 py-3 text-sm font-semibold text-slate-700"
             >
               Baska Hesapla Giriş Yap
