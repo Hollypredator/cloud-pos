@@ -13041,6 +13041,43 @@ export async function updateSupportTenantBusinessType(input: {
   return { ok: true };
 }
 
+export async function updateSupportTenantPlan(input: {
+  businessId: string;
+  plan: BusinessPlan;
+}) {
+  const supabase = getSupabaseServerClient();
+  const authClient = supabase ? null : await getSupabaseAuthServerClient();
+  const client = supabase ?? authClient;
+  if (!client) {
+    return { ok: false, error: "Demo modda paket guncellenemez." };
+  }
+
+  const normalizedPlan: BusinessPlan = input.plan === "starter" || input.plan === "custom" ? input.plan : "growth";
+  const { error } = await client
+    .from("businesses")
+    .update({ plan: normalizedPlan })
+    .eq("id", input.businessId);
+
+  if (error) {
+    if (error.message.toLowerCase().includes("plan")) {
+      return { ok: false, error: "plan kolonu bulunamadi. Lutfen business plan migrationlarini kontrol edin." };
+    }
+    return { ok: false, error: error.message };
+  }
+
+  await writeSupportAuditLog({
+    action: "tenant.plan.updated",
+    entityType: "business",
+    entityId: input.businessId,
+    businessId: input.businessId,
+    details: {
+      plan: normalizedPlan,
+    },
+  });
+
+  return { ok: true };
+}
+
 export async function listSupportIncidents(status?: SupportIncidentStatus) {
   const supabase = getSupabaseServerClient();
   if (!supabase) {

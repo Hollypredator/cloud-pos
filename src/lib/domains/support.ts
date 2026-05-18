@@ -37,6 +37,7 @@ export {
   setSupportIncidentStatus,
   updateSupportTenantProfile,
   updateSupportTenantBusinessType,
+  updateSupportTenantPlan,
   upsertPlatformAccessUser,
   upsertStudioAccessUser,
   upsertSupportAccessUser,

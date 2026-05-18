@@ -6,6 +6,7 @@ import { requireSupportAccess } from "@/lib/auth";
 import {
   getSupportTenantDetail,
   updateSupportTenantBusinessType,
+  updateSupportTenantPlan,
   updateSupportTenantProfile,
   upsertSupportFeatureFlagOverride,
 } from "@/lib/domains/support";
@@ -67,6 +68,25 @@ async function updateBusinessTypeAction(formData: FormData) {
   revalidatePath(`/support/tenants/${businessId}`);
   revalidatePath("/support/tenants");
   redirect(feedbackHref(businessId, "success", "Isletme tipi guncellendi."));
+}
+
+async function updateBusinessPlanAction(formData: FormData) {
+  "use server";
+  const businessId = String(formData.get("businessId") ?? "");
+  const plan = String(formData.get("plan") ?? "growth");
+  await requireSupportAccess(`/support/tenants/${businessId}`, ["support_admin", "billing_agent"]);
+  const result = await updateSupportTenantPlan({
+    businessId,
+    plan: plan === "starter" || plan === "custom" ? plan : "growth",
+  });
+  if (!result.ok) {
+    redirect(feedbackHref(businessId, "error", result.error ?? "Paket guncellenemedi."));
+  }
+  revalidatePath(`/support/tenants/${businessId}`);
+  revalidatePath("/support/tenants");
+  revalidatePath("/support/billing");
+  revalidatePath("/support/health");
+  redirect(feedbackHref(businessId, "success", "Isletme paketi guncellendi."));
 }
 
 export default async function SupportTenantDetailPage({
@@ -186,6 +206,28 @@ export default async function SupportTenantDetailPage({
         </form>
 
         <div className="space-y-4">
+          <article className="rounded-2xl bg-white p-6 shadow-sm">
+            <p className="text-sm font-semibold text-slate-900">Isletme Paketi</p>
+            <form action={updateBusinessPlanAction} className="mt-4 space-y-3">
+              <input type="hidden" name="businessId" value={businessId} />
+              <select
+                name="plan"
+                defaultValue={tenant.plan}
+                className="w-full rounded-xl border border-slate-300 px-3 py-2 text-sm"
+              >
+                <option value="starter">Starter</option>
+                <option value="growth">Growth</option>
+                <option value="custom">Custom</option>
+              </select>
+              <button
+                type="submit"
+                className="rounded-xl border border-slate-300 px-4 py-2 text-sm font-semibold text-slate-700"
+              >
+                Isletme Paketini Guncelle
+              </button>
+            </form>
+          </article>
+
           <article className="rounded-2xl bg-white p-6 shadow-sm">
             <p className="text-sm font-semibold text-slate-900">Isletme Tipi</p>
             <form action={updateBusinessTypeAction} className="mt-4 space-y-3">
