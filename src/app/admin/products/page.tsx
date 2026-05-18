@@ -1492,7 +1492,8 @@ export default async function AdminProductsPage({
     | "recipe"
     | "ingredients";
   const { settings: applicationSettings } = await getApplicationSettings();
-  const productManagementResult = await measureAsync("product_management", () => getProductManagementData({ tab: activeTab }));
+  const dataTab = activeTab === "ingredients" ? "recipe" : activeTab;
+  const productManagementResult = await measureAsync("product_management", () => getProductManagementData({ tab: dataTab }));
   const {
     categories,
     products,
