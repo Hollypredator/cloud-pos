@@ -4,7 +4,10 @@ import { getCorrelationId, logApiEvent, withCorrelationId } from "@/lib/observab
 type QrFunnelStep =
   | "scan"
   | "cart_add"
+  | "cart_view"
+  | "cart_remove"
   | "checkout_open"
+  | "checkout_abandon"
   | "checkout_confirm_view"
   | "checkout_confirm_ack"
   | "order_submit"
@@ -38,7 +41,10 @@ export async function POST(request: Request) {
       ![
         "scan",
         "cart_add",
+        "cart_view",
+        "cart_remove",
         "checkout_open",
+        "checkout_abandon",
         "checkout_confirm_view",
         "checkout_confirm_ack",
         "order_submit",

@@ -467,7 +467,6 @@ export default async function OpsPage({
         </div>
       }
     >
-      {renderMobileMarkup ? (
         <MobileTaskList>
         <MobileTaskCard
           title={translateUiText("Canli Operasyon", locale)}
@@ -514,8 +513,7 @@ export default async function OpsPage({
             {isSelfServiceCoffee ? translateUiText("Siparis Yonetimi", locale) : translateUiText("Tahsilat", locale)}
           </Link>
         </div>
-        </MobileTaskList>
-      ) : null}
+      </MobileTaskList>
 
       <section className="app-mobile-hide grid gap-4 md:grid-cols-2 xl:grid-cols-4">
         <SummaryCard label={translateUiText("Açık Sipariş", locale)} value={String(metrics.openOrders)} hint={translateUiText("Pending, hazirlaniyor ve kasada bekleyen toplam sipariş", locale)} tone="accent" />

@@ -282,7 +282,7 @@ export function AppShell({
     if (!showShell) {
       return;
     }
-    const media = window.matchMedia("(hover: none) and (pointer: coarse)");
+    const media = window.matchMedia("(max-width: 767px)");
     const apply = () => setIsCoarsePointer(media.matches);
     apply();
     media.addEventListener("change", apply);

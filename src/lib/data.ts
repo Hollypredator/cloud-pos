@@ -7435,6 +7435,114 @@ export async function updateProduct(input: {
   });
 }
 
+export async function bulkAdjustStocks(input: {
+  reason: string;
+  items: Array<{ productId: string; newStock: number }>;
+}) {
+  const supabase = await getTenantDataClient();
+  if (!supabase) {
+    return { ok: false as const, error: "Demo modda toplu stok duzeltme pasif." };
+  }
+
+  const scope = await getDefaultBusinessScope();
+  if (!scope.useLegacySchema && !scope.businessId) {
+    return { ok: false as const, error: "Aktif isletme bulunamadi." };
+  }
+
+  const reason = input.reason.trim();
+  if (!reason) {
+    return { ok: false as const, error: "Stok duzeltme sebebi zorunludur." };
+  }
+
+  const normalizedMap = new Map<string, number>();
+  for (const item of input.items ?? []) {
+    const productId = String(item.productId ?? "").trim();
+    const newStock = Number(item.newStock);
+    if (!productId || !Number.isFinite(newStock)) {
+      continue;
+    }
+    normalizedMap.set(productId, Math.max(0, Math.round(newStock)));
+  }
+  if (normalizedMap.size === 0) {
+    return { ok: false as const, error: "Gecerli stok degisikligi bulunamadi." };
+  }
+
+  const productIds = [...normalizedMap.keys()];
+  const { data: rows, error: readError } = await supabase
+    .from("products")
+    .select("id, name, stock_count, business_id")
+    .in("id", productIds);
+  if (readError) {
+    return { ok: false as const, error: readError.message };
+  }
+
+  const productRows = (rows ?? []) as Array<{ id: string; name: string; stock_count: number; business_id?: string | null }>;
+  const allowedRows = !scope.useLegacySchema && scope.businessId
+    ? productRows.filter((row) => !row.business_id || row.business_id === scope.businessId)
+    : productRows;
+  const allowedMap = new Map(allowedRows.map((row) => [row.id, row]));
+
+  const failed: Array<{ productId: string; reason: string }> = [];
+  const changed: Array<{ productId: string; from: number; to: number }> = [];
+  let unchangedCount = 0;
+
+  for (const [productId, targetStock] of normalizedMap.entries()) {
+    const product = allowedMap.get(productId);
+    if (!product) {
+      failed.push({ productId, reason: "Urun bulunamadi veya bu isletme kapsaminda degil." });
+      continue;
+    }
+
+    const currentStock = Number(product.stock_count ?? 0);
+    if (targetStock === currentStock) {
+      unchangedCount += 1;
+      continue;
+    }
+
+    const { error: updateError } = await supabase
+      .from("products")
+      .update({ stock_count: targetStock })
+      .eq("id", productId);
+    if (updateError) {
+      failed.push({ productId, reason: updateError.message });
+      continue;
+    }
+
+    changed.push({ productId, from: currentStock, to: targetStock });
+  }
+
+  const summaryEntityId = `stock-bulk-${Date.now()}`;
+  await logAuditEvent({
+    entityType: "stock_bulk_adjustment",
+    entityId: summaryEntityId,
+    action: "bulk_adjust",
+    details: {
+      reason,
+      totalRequested: normalizedMap.size,
+      changedCount: changed.length,
+      unchangedCount,
+      failedCount: failed.length,
+      changed,
+      failed,
+    },
+  });
+
+  revalidateProductManagementCaches();
+  revalidateOperationsCaches();
+
+  return {
+    ok: true as const,
+    summary: {
+      totalRequested: normalizedMap.size,
+      changedCount: changed.length,
+      unchangedCount,
+      failedCount: failed.length,
+      changed,
+      failed,
+    },
+  };
+}
+
 export async function deleteProduct(productId: string) {
   return deleteProductImpl(productId, {
     getDefaultBusinessScope,

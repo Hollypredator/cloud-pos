@@ -971,7 +971,7 @@ export function AdminOrderEntry({
     const isModalThreePane = layoutMode === "modal_3pane";
     const useThreePaneLayout = isTerminal || isModalThreePane;
     const tableFirstSectionClassName = isTerminal
-      ? "fixed inset-0 z-50 bg-[#f1f5f9] p-4"
+      ? "fixed top-[calc(68px+var(--safe-area-top))] bottom-[calc(64px+var(--safe-area-bottom))] md:top-0 md:bottom-0 inset-x-0 z-30 md:z-50 bg-[#f1f5f9] p-3 sm:p-4"
       : "space-y-4 min-w-0";
 
     return (
@@ -1054,9 +1054,9 @@ export function AdminOrderEntry({
           </article>
         ) : useThreePaneLayout ? (
           /* Specialized Terminal 3-Pane UI */
-          <div className={`flex min-h-0 flex-col gap-4 overflow-hidden ${isTerminal ? "h-full" : ""}`}>
+          <div className={`relative flex min-h-0 flex-col gap-4 overflow-hidden ${isTerminal ? "h-full" : ""}`}>
              {/* Header */}
-             <header className="flex items-center justify-between rounded-2xl bg-white p-4 shadow-sm">
+             <header className="flex items-center justify-between rounded-2xl bg-white p-4 shadow-sm shrink-0">
                 <div className="flex items-center gap-4">
                    <button 
                       type="button" 
@@ -1066,29 +1066,30 @@ export function AdminOrderEntry({
                       <svg xmlns="http://www.w3.org/2000/svg" width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round"><path d="m15 18-6-6 6-6"/></svg>
                    </button>
                    <div>
-                      <h1 className="text-xl font-bold text-slate-900">
+                      <h1 className="text-lg sm:text-xl font-bold text-slate-900 line-clamp-1">
                          {channel === "dine_in" ? (selectedTable?.name || `Masa ${selectedTable?.table_number}`) : channelLabel(channel)}
                       </h1>
-                      <p className="text-xs font-semibold text-slate-500 uppercase tracking-widest">{businessSlug}</p>
+                      <p className="text-[10px] sm:text-xs font-semibold text-slate-500 uppercase tracking-widest">{businessSlug}</p>
                    </div>
                 </div>
-                <div className="flex items-center gap-3">
+                <div className="flex items-center gap-2 sm:gap-3">
                    {isTerminal ? (
                      <>
                        <button
                           type="button"
                           onClick={() => window.print()}
-                          className="inline-flex h-12 items-center gap-2 rounded-xl border border-slate-200 bg-white px-5 text-sm font-bold text-slate-700 shadow-sm"
+                          className="hidden sm:inline-flex h-12 items-center gap-2 rounded-xl border border-slate-200 bg-white px-5 text-sm font-bold text-slate-700 shadow-sm hover:bg-slate-50"
                        >
                           <svg xmlns="http://www.w3.org/2000/svg" width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round"><path d="M6 9V2h12v7"/><path d="M6 18H4a2 2 0 0 1-2-2v-5a2 2 0 0 1 2-2h16a2 2 0 0 1 2 2v5a2 2 0 0 1-2 2h-2"/><rect width="12" height="8" x="6" y="14"/></svg>
-                          Fis Yazdir
+                          <span>Fis Yazdir</span>
                        </button>
                        <Link
                           href="/cashier"
-                          className="inline-flex h-12 items-center gap-2 rounded-xl bg-slate-900 px-5 text-sm font-bold text-white shadow-lg shadow-slate-900/20"
+                          className="inline-flex h-12 items-center gap-2 rounded-xl bg-slate-900 px-4 sm:px-5 text-sm font-bold text-white shadow-lg shadow-slate-900/20 hover:bg-slate-800"
                        >
                           <svg xmlns="http://www.w3.org/2000/svg" width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round"><rect width="20" height="12" x="2" y="6" rx="2"/><circle cx="12" cy="12" r="2"/><path d="M6 12h.01M18 12h.01"/></svg>
-                          Kasiyer Paneli
+                          <span className="hidden sm:inline">Kasiyer Paneli</span>
+                          <span className="sm:hidden">Kasa</span>
                        </Link>
                      </>
                    ) : (
@@ -1100,9 +1101,17 @@ export function AdminOrderEntry({
              </header>
 
              {/* Main Content Area */}
-             <div className={`flex-1 min-h-0 grid gap-4 overflow-hidden ${isTerminal ? "grid-cols-[220px_1fr_380px]" : "lg:grid-cols-[minmax(220px,0.85fr)_minmax(0,1.25fr)_minmax(280px,0.9fr)]"}`}>
+             <div className={`flex-1 min-h-0 grid gap-4 overflow-hidden ${
+                isTerminal 
+                ? "grid-cols-1 md:grid-cols-[220px_1fr_380px]" 
+                : "grid-cols-1 lg:grid-cols-[minmax(220px,0.85fr)_minmax(0,1.25fr)_minmax(280px,0.9fr)]"
+             }`}>
                 {/* Categories Column */}
-                <aside className={`min-w-0 overflow-y-auto rounded-2xl p-3 shadow-sm border ${isTerminal ? "bg-white/60 border-white backdrop-blur-md" : "bg-white border-slate-100"}`}>
+                <aside className={`min-w-0 overflow-y-auto rounded-2xl p-3 shadow-sm border ${
+                   isTerminal 
+                   ? "hidden md:block bg-white/60 border-white backdrop-blur-md" 
+                   : "hidden lg:block bg-white border-slate-100"
+                }`}>
                    <div className={isTerminal ? "space-y-2" : "flex flex-wrap gap-2"}>
                       {orderedCategories.map((category, idx) => {
                          const isActive = category.id === activeCategoryId;
@@ -1140,7 +1149,38 @@ export function AdminOrderEntry({
 
                 {/* Products Column */}
                 <section className="min-w-0 flex flex-col gap-4 overflow-hidden">
-                   <div className="rounded-2xl bg-white p-3 shadow-sm border border-slate-100">
+                   {/* Mobile Category Horizontal Scroll */}
+                   <div className={`shrink-0 overflow-x-auto pb-1 -mx-1 px-1 ${isTerminal ? "md:hidden" : "lg:hidden"}`}>
+                      <div className="flex gap-2 min-w-max">
+                         {orderedCategories.map((category, idx) => {
+                            const isActive = category.id === activeCategoryId;
+                            const colors = [
+                               "from-orange-500 to-amber-500",
+                               "from-blue-500 to-indigo-500",
+                               "from-emerald-500 to-teal-500",
+                               "from-rose-500 to-pink-500",
+                               "from-purple-500 to-violet-500"
+                            ];
+                            const colorClass = colors[idx % colors.length];
+                            return (
+                               <button
+                                  key={`mob-cat-${category.id}`}
+                                  type="button"
+                                  onClick={() => setSelectedCategoryId(category.id)}
+                                  className={`min-h-[40px] whitespace-nowrap px-4 py-2 text-xs font-bold rounded-xl transition-all relative overflow-hidden ${
+                                     isActive 
+                                     ? `bg-gradient-to-br ${colorClass} text-white shadow-md ring-2 ring-offset-1 ring-slate-100` 
+                                     : "bg-white text-slate-700 hover:bg-slate-50 border border-slate-200"
+                                  }`}
+                               >
+                                  {category.name}
+                               </button>
+                            );
+                         })}
+                      </div>
+                   </div>
+
+                   <div className="rounded-2xl bg-white p-3 shadow-sm border border-slate-100 shrink-0">
                       <div className="relative">
                          <svg className="absolute left-4 top-1/2 -translate-y-1/2 text-slate-400" xmlns="http://www.w3.org/2000/svg" width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round"><circle cx="11" cy="11" r="8"/><path d="m21 21-4.3-4.3"/></svg>
                          <input
@@ -1154,27 +1194,29 @@ export function AdminOrderEntry({
                       </div>
                    </div>
                    
-                   <div className="flex-1 overflow-y-auto rounded-2xl bg-white p-4 shadow-sm border border-slate-100">
+                   <div className={`flex-1 overflow-y-auto rounded-2xl bg-white p-4 shadow-sm border border-slate-100 ${
+                      cartEntries.length > 0 ? "pb-24 md:pb-4" : ""
+                   }`}>
                       {filteredVisibleProducts.length === 0 ? (
                          <div className="flex flex-col items-center justify-center h-full text-slate-400">
                             <svg xmlns="http://www.w3.org/2000/svg" width="48" height="48" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="1" strokeLinecap="round" strokeLinejoin="round" className="mb-4"><path d="M14.5 2H6a2 2 0 0 0-2 2v16a2 2 0 0 0 2 2h12a2 2 0 0 0 2-2V7.5L14.5 2z"/><polyline points="14 2 14 8 20 8"/></svg>
                             <p className="text-sm font-medium">Bu kategoride urun bulunamadi.</p>
                          </div>
                       ) : (
-                         <div className="grid gap-3 sm:grid-cols-2 xl:grid-cols-3">
+                         <div className="grid gap-3 grid-cols-2 sm:grid-cols-2 xl:grid-cols-3">
                             {filteredVisibleProducts.map((product) => (
                                <button
                                   key={`term-prod-${product.id}`}
                                   type="button"
                                   onClick={() => openModifierPicker(product)}
                                   className="group flex flex-col items-start rounded-2xl border border-slate-100 bg-white p-4 text-left transition-all hover:border-emerald-200 hover:shadow-md active:scale-95"
-                               >
+                                >
                                   <div className="w-full">
-                                     <h3 className="font-bold text-slate-900 group-hover:text-emerald-700 transition-colors line-clamp-2 min-h-[40px]">{product.name}</h3>
-                                     <p className="mt-2 text-lg font-black text-slate-900">{Number(product.price).toFixed(2)} <span className="text-xs font-medium text-slate-500">TL</span></p>
+                                     <h3 className="font-bold text-slate-900 group-hover:text-emerald-700 transition-colors line-clamp-2 min-h-[40px] text-xs sm:text-sm">{product.name}</h3>
+                                     <p className="mt-2 text-base sm:text-lg font-black text-slate-900">{Number(product.price).toFixed(2)} <span className="text-[10px] sm:text-xs font-medium text-slate-500">TL</span></p>
                                   </div>
                                   <div className="mt-4 flex w-full items-center justify-between">
-                                     <span className="rounded-lg bg-slate-50 px-2 py-1 text-[10px] font-bold text-slate-500 uppercase tracking-tight">
+                                     <span className="rounded-lg bg-slate-50 px-2 py-1 text-[9px] sm:text-[10px] font-bold text-slate-500 uppercase tracking-tight">
                                         {(groupsByProduct.get(product.id) ?? []).length > 0 ? "Opsiyonlu" : "Normal"}
                                      </span>
                                      <div className="h-8 w-8 rounded-full bg-slate-900 text-white flex items-center justify-center opacity-0 group-hover:opacity-100 transition-opacity">
@@ -1189,7 +1231,9 @@ export function AdminOrderEntry({
                 </section>
 
                 {/* Cart Column (The Receipt) */}
-                <aside className="min-w-0 flex flex-col rounded-2xl bg-white shadow-xl border border-slate-100 overflow-hidden">
+                <aside className={`min-w-0 flex flex-col rounded-2xl bg-white shadow-xl border border-slate-100 overflow-hidden ${
+                   isTerminal ? "hidden md:flex" : "hidden lg:flex"
+                }`}>
                    <div className="bg-slate-900 p-4 text-white">
                       <div className="flex items-center justify-between">
                          <span className="text-xs font-bold uppercase tracking-widest opacity-60">Siparis Detayi</span>
@@ -1257,6 +1301,154 @@ export function AdminOrderEntry({
                    </div>
                 </aside>
              </div>
+
+             {/* Mobile Floating Cart Summary Bar */}
+             {cartEntries.length > 0 && (
+                <div className={`absolute bottom-0 inset-x-0 z-[90] bg-white border-t border-slate-200 p-4 shadow-[0_-8px_24px_rgba(0,0,0,0.06)] flex items-center justify-between ${
+                   isTerminal ? "md:hidden" : "lg:hidden"
+                }`}>
+                   <button 
+                      type="button"
+                      onClick={() => setMobileCartOpen(true)}
+                      className="flex items-center gap-3 text-left focus:outline-none"
+                   >
+                      <div className="relative h-12 w-12 rounded-xl bg-slate-900 text-white flex items-center justify-center">
+                         <svg xmlns="http://www.w3.org/2000/svg" width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.5" strokeLinecap="round" strokeLinejoin="round"><circle cx="8" cy="21" r="1"/><circle cx="19" cy="21" r="1"/><path d="M2.05 2.05h2l2.66 12.42a2 2 0 0 0 2 1.58h9.78a2 2 0 0 0 1.95-1.57l1.65-7.43H5.12"/></svg>
+                         <span className="absolute -top-1.5 -right-1.5 h-5 w-5 rounded-full bg-rose-500 text-[10px] font-black text-white flex items-center justify-center ring-2 ring-white">
+                            {cartCount}
+                         </span>
+                      </div>
+                      <div>
+                         <span className="text-[10px] font-bold text-slate-400 uppercase tracking-wider block">Sepet Toplami</span>
+                         <span className="text-base font-black text-slate-900">{total.toFixed(2)} TL</span>
+                      </div>
+                   </button>
+                   <div className="flex gap-2">
+                      <button
+                         type="button"
+                         onClick={() => setMobileCartOpen(true)}
+                         className="h-12 px-4 rounded-xl bg-slate-900 text-white font-bold text-sm shadow-md active:scale-95 transition-transform"
+                      >
+                         Sepeti Ac
+                      </button>
+                      <button
+                         type="button"
+                         disabled={submitting}
+                         onClick={submitOrder}
+                         className="h-12 px-4 rounded-xl bg-emerald-600 text-white font-bold text-sm shadow-md active:scale-95 transition-transform disabled:opacity-50"
+                      >
+                         {submitting ? "..." : "Tamamla"}
+                      </button>
+                   </div>
+                </div>
+             )}
+
+             {/* Mobile Cart Overlay Drawer */}
+             {mobileCartOpen && (
+                <div className={`absolute inset-0 z-[150] bg-slate-950/40 backdrop-blur-xs animate-in fade-in duration-200 ${
+                   isTerminal ? "md:hidden" : "lg:hidden"
+                }`}>
+                   <div className="absolute inset-x-0 bottom-0 top-16 rounded-t-[32px] bg-[#f8fafc] shadow-2xl flex flex-col overflow-hidden animate-in slide-in-from-bottom duration-300">
+                      <header className="px-6 py-4 bg-slate-900 text-white flex items-center justify-between shrink-0">
+                         <div>
+                            <span className="text-xs font-bold uppercase tracking-widest opacity-60">Siparis Detayi</span>
+                            <div className="mt-1 flex items-baseline gap-1">
+                               <span className="text-2xl font-black">{total.toFixed(2)}</span>
+                               <span className="text-sm font-bold opacity-60">TL</span>
+                            </div>
+                         </div>
+                         <button 
+                            type="button" 
+                            onClick={() => setMobileCartOpen(false)}
+                            className="inline-flex h-10 w-10 items-center justify-center rounded-xl bg-white/10 text-white hover:bg-white/20 active:scale-95 transition-transform"
+                         >
+                            <svg xmlns="http://www.w3.org/2000/svg" width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round"><path d="M18 6 6 18"/><path d="m6 6 12 12"/></svg>
+                         </button>
+                      </header>
+
+                      {/* Cart List */}
+                      <div className="flex-1 overflow-y-auto p-6 bg-[url('https://www.transparenttextures.com/patterns/paper.png')]">
+                         {cartEntries.length === 0 ? (
+                            <div className="flex flex-col items-center justify-center h-full text-slate-400 opacity-50 italic">
+                               <p>Henuz urun eklenmedi</p>
+                            </div>
+                         ) : (
+                            <div className="space-y-4">
+                               {cartEntries.map((entry) => {
+                                  const modifierTotal = entry.modifiers.reduce((sum, modifier) => sum + Number(modifier.price_delta), 0);
+                                  const itemTotal = (Number(entry.product.price) + modifierTotal) * entry.quantity;
+                                  return (
+                                     <div key={`mobile-drawer-cart-${entry.key}`} className="border-b border-slate-200 border-dashed pb-4">
+                                        <div className="flex justify-between items-start gap-2">
+                                           <div className="flex-1">
+                                              <h4 className="font-bold text-slate-900 text-sm leading-tight">{entry.product.name}</h4>
+                                              <div className="mt-1 flex items-center gap-2 text-xs text-slate-500">
+                                                 <span className="font-bold text-slate-900">x{entry.quantity}</span>
+                                                 <span>@ {(Number(entry.product.price) + modifierTotal).toFixed(2)} TL</span>
+                                              </div>
+                                           </div>
+                                           <span className="font-bold text-slate-900 text-sm">{itemTotal.toFixed(2)}</span>
+                                        </div>
+                                        {entry.modifiers.length > 0 && (
+                                           <div className="mt-1 pl-2 border-l-2 border-slate-200 space-y-0.5">
+                                              {entry.modifiers.map(m => (
+                                                 <p key={m.option_id} className="text-[10px] text-slate-500">+ {m.option_name}</p>
+                                              ))}
+                                           </div>
+                                        )}
+                                        <div className="mt-3 flex items-center gap-2">
+                                           <button 
+                                              type="button"
+                                              onClick={() => removeProduct(entry.key)} 
+                                              className="h-9 w-9 rounded-lg bg-slate-200/80 flex items-center justify-center text-slate-700 font-bold active:scale-90 transition-transform"
+                                           >
+                                              -
+                                           </button>
+                                           <button 
+                                              type="button"
+                                              onClick={() => increaseProduct(entry.key)} 
+                                              className="h-9 w-9 rounded-lg bg-slate-200/80 flex items-center justify-center text-slate-700 font-bold active:scale-90 transition-transform"
+                                           >
+                                              +
+                                           </button>
+                                        </div>
+                                     </div>
+                                  );
+                               })}
+                            </div>
+                         )}
+                      </div>
+
+                      {/* Checkout Button */}
+                      <div className="p-6 bg-white border-t border-slate-200 space-y-4 shrink-0 pb-6">
+                         <div className="flex justify-between items-center text-slate-900 font-bold">
+                            <span>TOPLAM</span>
+                            <span className="text-xl">{total.toFixed(2)} TL</span>
+                         </div>
+                         <div className="grid grid-cols-2 gap-3">
+                            <button
+                               type="button"
+                               onClick={clearCart}
+                               className="h-14 rounded-2xl border border-slate-200 text-slate-600 font-bold active:scale-95 transition-transform"
+                            >
+                               TEMİZLE
+                            </button>
+                            <button
+                               type="button"
+                               disabled={submitting || cartEntries.length === 0}
+                               onClick={async () => {
+                                  await submitOrder();
+                                }}
+                               className="h-14 rounded-2xl bg-emerald-600 text-white font-bold text-lg shadow-lg active:scale-95 transition-transform disabled:opacity-50"
+                            >
+                               {submitting ? "İşleniyor..." : "SIPARISI TAMAMLA"}
+                            </button>
+
+                         </div>
+                      </div>
+                   </div>
+                </div>
+             )}
 
              {/* Modals for modifiers */}
              {activeProduct && (groupsByProduct.get(activeProduct.id) ?? []).length > 0 && (

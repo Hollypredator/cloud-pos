@@ -21,6 +21,17 @@ type QrApiFailure = {
   code?: string;
   resultStatus?: string;
 };
+type QrFunnelStep =
+  | "scan"
+  | "cart_add"
+  | "cart_view"
+  | "cart_remove"
+  | "checkout_open"
+  | "checkout_abandon"
+  | "checkout_confirm_view"
+  | "checkout_confirm_ack"
+  | "order_submit"
+  | "order_ack";
 
 type QrConfirmationPayload = {
   confirmedAtClient: string;
@@ -60,6 +71,16 @@ type SubmitPayloadItem = {
   }>;
 };
 
+type RecentOrderSnapshot = {
+  customerName: string;
+  paymentMethod: SelfServicePaymentMethod;
+  items: Array<{
+    productId: string;
+    quantity: number;
+    modifierOptionIds: string[];
+  }>;
+};
+
 function createModifierSignature(selectedModifiers: Record<string, ProductModifierOption>) {
   return Object.values(selectedModifiers)
     .map((modifier) => `${modifier.group_id}:${modifier.id}`)
@@ -73,6 +94,9 @@ function createCartStorageKey(businessSlug?: string, qrCodeIdentifier?: string) 
 
 function createOrderHistoryStorageKey(businessSlug?: string, qrCodeIdentifier?: string) {
   return `qr-order-history:v1:${(businessSlug ?? "default").trim().toLowerCase()}:${(qrCodeIdentifier ?? "unknown").trim().toLowerCase()}`;
+}
+function createRecentOrderStorageKey(businessSlug?: string, qrCodeIdentifier?: string) {
+  return `qr-recent-order:v1:${(businessSlug ?? "default").trim().toLowerCase()}:${(qrCodeIdentifier ?? "unknown").trim().toLowerCase()}`;
 }
 
 function parseStoredOrderIds(raw: string) {
@@ -146,18 +170,32 @@ function getHumanErrorMessage(input?: QrApiFailure) {
     return "Siparis gonderilemedi. Lutfen tekrar deneyin.";
   }
   if (input.code === "QR_TOKEN_EXPIRED") {
-    return "QR oturumu suresi doldu. Token yenilenirken bir hata olustu, lutfen tekrar deneyin.";
+    return "QR oturumu suresi doldu. Lutfen 2-3 saniye icinde tekrar deneyin.";
   }
   if (input.code === "QR_TOKEN_MISSING" || input.code === "QR_TOKEN_INVALID" || input.code === "QR_TOKEN_MISMATCH") {
     return "QR erisim dogrulanamadi. Lutfen QR kodu yeniden okutun.";
   }
   if (input.code === "TABLE_NOT_FOUND") {
-    return "Bu masa bulunamadi. Lutfen QR kodu yeniden okutun.";
+    return "Masa kaydi bulunamadi. QR kodunu yeniden okutup tekrar deneyin.";
   }
   if (input.resultStatus === "CONFLICT") {
-    return "Ayni siparis istegi zaten alinmis. Siparis durumunu kontrol edin.";
+    return "Ayni siparis daha once alinmis gorunuyor. Durum panelinden kontrol edin.";
   }
-  return input.message ?? "Siparis gonderilemedi. Lutfen tekrar deneyin.";
+  return input.message ?? "Siparis gonderilemedi. Internet baglantinizi kontrol edip tekrar deneyin.";
+}
+
+async function waitMs(ms: number) {
+  await new Promise((resolve) => setTimeout(resolve, ms));
+}
+
+async function fetchWithTimeout(input: RequestInfo | URL, init: RequestInit, timeoutMs = 12000) {
+  const controller = new AbortController();
+  const timer = setTimeout(() => controller.abort(), timeoutMs);
+  try {
+    return await fetch(input, { ...init, signal: controller.signal });
+  } finally {
+    clearTimeout(timer);
+  }
 }
 
 function parseStoredCart(
@@ -203,6 +241,30 @@ function parseStoredCart(
   }
 }
 
+function parseRecentOrderSnapshot(raw: string): RecentOrderSnapshot | null {
+  try {
+    const parsed = JSON.parse(raw) as RecentOrderSnapshot;
+    if (!parsed || !Array.isArray(parsed.items)) {
+      return null;
+    }
+    return {
+      customerName: typeof parsed.customerName === "string" ? parsed.customerName : "",
+      paymentMethod: parsed.paymentMethod === "card" ? "card" : "cash",
+      items: parsed.items
+        .map((item) => ({
+          productId: typeof item.productId === "string" ? item.productId : "",
+          quantity: Math.max(1, Number(item.quantity || 1)),
+          modifierOptionIds: Array.isArray(item.modifierOptionIds)
+            ? item.modifierOptionIds.filter((id) => typeof id === "string")
+            : [],
+        }))
+        .filter((item) => item.productId.length > 0),
+    };
+  } catch {
+    return null;
+  }
+}
+
 export function QrOrderingClient({
   categories,
   products,
@@ -235,6 +297,9 @@ export function QrOrderingClient({
   const [isCartOpen, setIsCartOpen] = useState(false);
   const [checkoutStep, setCheckoutStep] = useState<"review" | "confirm">("review");
   const [customerName, setCustomerName] = useState("");
+  const [paymentMethod, setPaymentMethod] = useState<SelfServicePaymentMethod>("cash");
+  const [productSearchTerm, setProductSearchTerm] = useState("");
+  const [recentOrderSnapshot, setRecentOrderSnapshot] = useState<RecentOrderSnapshot | null>(null);
   const [confirmationChecked, setConfirmationChecked] = useState(false);
   const [isSubmitting, setIsSubmitting] = useState(false);
   const [submitError, setSubmitError] = useState<string | null>(null);
@@ -260,11 +325,22 @@ export function QrOrderingClient({
   const lastSuccessfulSubmitKeyRef = useRef<string | null>(null);
   const scanTrackedRef = useRef(false);
   const checkoutTrackedRef = useRef(false);
+  const cartOpenRef = useRef(false);
 
   const productsById = useMemo(() => new Map(products.map((item) => [item.id, item])), [products]);
   const modifierOptionsById = useMemo(() => new Map(modifierOptions.map((item) => [item.id, item])), [modifierOptions]);
   const cartStorageKey = useMemo(() => createCartStorageKey(businessSlug, qrCodeIdentifier), [businessSlug, qrCodeIdentifier]);
   const orderHistoryStorageKey = useMemo(() => createOrderHistoryStorageKey(businessSlug, qrCodeIdentifier), [businessSlug, qrCodeIdentifier]);
+  const recentOrderStorageKey = useMemo(() => createRecentOrderStorageKey(businessSlug, qrCodeIdentifier), [businessSlug, qrCodeIdentifier]);
+
+  const cartTotal = cartItems.reduce((acc, item) => {
+    let unit = Number(item.product.price);
+    for (const mod of Object.values(item.selectedModifiers)) {
+      unit += Number(mod.price_delta);
+    }
+    return acc + unit * item.quantity;
+  }, 0);
+  const cartItemCount = cartItems.reduce((acc, item) => acc + item.quantity, 0);
 
   const activeCategoryId = orderedCategories.some((category) => category.id === selectedCategoryId)
     ? selectedCategoryId
@@ -307,15 +383,29 @@ export function QrOrderingClient({
     return map;
   }, [modifierOptions]);
 
-  const visibleProducts = grouped.get(activeCategoryId) ?? [];
+  const visibleProductsRaw = useMemo(() => grouped.get(activeCategoryId) ?? [], [grouped, activeCategoryId]);
+  const normalizedSearch = productSearchTerm.trim().toLocaleLowerCase("tr-TR");
+  const visibleProducts = normalizedSearch
+    ? visibleProductsRaw.filter((item) => {
+        const name = item.name.toLocaleLowerCase("tr-TR");
+        const description = (item.description ?? "").toLocaleLowerCase("tr-TR");
+        return name.includes(normalizedSearch) || description.includes(normalizedSearch);
+      })
+    : visibleProductsRaw;
   const selectedProduct = selectedProductId ? visibleProducts.find((item) => item.id === selectedProductId) ?? null : null;
   const selectedProductGroups = selectedProduct ? groupsByProduct.get(selectedProduct.id) ?? [] : [];
+  const topPickProductIds = useMemo(() => products.slice(0, 8).map((item) => item.id), [products]);
+  const topPickProducts = useMemo(
+    () => visibleProductsRaw.filter((item) => topPickProductIds.includes(item.id)).slice(0, 8),
+    [topPickProductIds, visibleProductsRaw],
+  );
+
   const trackFunnel = useCallback(async (
-    step: "scan" | "cart_add" | "checkout_open" | "checkout_confirm_view" | "checkout_confirm_ack" | "order_submit" | "order_ack",
+    step: QrFunnelStep,
     extras?: { cartItems?: number; cartTotal?: number; orderId?: string | null },
   ) => {
     try {
-      await fetch("/api/qr/funnel", {
+      await fetchWithTimeout("/api/qr/funnel", {
         method: "POST",
         headers: { "Content-Type": "application/json" },
         body: JSON.stringify({
@@ -327,7 +417,7 @@ export function QrOrderingClient({
           orderId: extras?.orderId ?? undefined,
         }),
         keepalive: true,
-      });
+      }, 6000);
     } catch {
       // no-op
     }
@@ -359,8 +449,12 @@ export function QrOrderingClient({
     } else {
       setCustomerOrderIds([]);
     }
+    const rawRecentOrder = window.localStorage.getItem(recentOrderStorageKey);
+    if (rawRecentOrder) {
+      setRecentOrderSnapshot(parseRecentOrderSnapshot(rawRecentOrder));
+    }
     setIsCartHydrated(true);
-  }, [cartStorageKey, orderHistoryStorageKey, productsById, modifierOptionsById]);
+  }, [cartStorageKey, orderHistoryStorageKey, productsById, modifierOptionsById, recentOrderStorageKey]);
 
   useEffect(() => {
     if (!isCartHydrated || typeof window === "undefined") {
@@ -391,6 +485,17 @@ export function QrOrderingClient({
   }, [customerOrderIds, isCartHydrated, orderHistoryStorageKey]);
 
   useEffect(() => {
+    if (!isCartHydrated || typeof window === "undefined") {
+      return;
+    }
+    if (!recentOrderSnapshot) {
+      window.localStorage.removeItem(recentOrderStorageKey);
+      return;
+    }
+    window.localStorage.setItem(recentOrderStorageKey, JSON.stringify(recentOrderSnapshot));
+  }, [isCartHydrated, recentOrderSnapshot, recentOrderStorageKey]);
+
+  useEffect(() => {
     if (!isCartOpen) {
       checkoutTrackedRef.current = false;
       return;
@@ -400,7 +505,16 @@ export function QrOrderingClient({
     }
     checkoutTrackedRef.current = true;
     void trackFunnel("checkout_open");
-  }, [isCartOpen, trackFunnel]);
+    void trackFunnel("cart_view", { cartItems: cartItemCount, cartTotal });
+  }, [cartItemCount, cartTotal, isCartOpen, trackFunnel]);
+
+  useEffect(() => {
+    const wasOpen = cartOpenRef.current;
+    if (wasOpen && !isCartOpen && cartItems.length > 0 && !isSubmitting) {
+      void trackFunnel("checkout_abandon", { cartItems: cartItemCount, cartTotal });
+    }
+    cartOpenRef.current = isCartOpen;
+  }, [cartItemCount, cartItems.length, cartTotal, isCartOpen, isSubmitting, trackFunnel]);
 
   useEffect(() => {
     if (!isCartOpen) {
@@ -542,14 +656,7 @@ export function QrOrderingClient({
     void trackFunnel("cart_add", { cartItems: cartItems.length + quantity, cartTotal: cartTotal + Number(selectedProduct.price) * quantity });
   };
 
-  const cartTotal = cartItems.reduce((acc, item) => {
-    let unit = Number(item.product.price);
-    for (const mod of Object.values(item.selectedModifiers)) {
-      unit += Number(mod.price_delta);
-    }
-    return acc + unit * item.quantity;
-  }, 0);
-  const cartItemCount = cartItems.reduce((acc, item) => acc + item.quantity, 0);
+
   const formatPrice = (value: number) => `${Number(value).toFixed(2)} TL`;
   const formatSeconds = (value: number) => `${Math.max(0, value)} sn`;
   const currentClock = new Date().toLocaleTimeString("tr-TR", { hour: "2-digit", minute: "2-digit" });
@@ -568,25 +675,95 @@ export function QrOrderingClient({
     if (label.includes("sandvic") || label.includes("sandviç")) return "🥪";
     return "🍽️";
   };
+  const getPrepTimeLabel = (product: Product) => {
+    const label = `${product.name} ${product.description ?? ""}`.toLocaleLowerCase("tr-TR");
+    if (label.includes("frapp") || label.includes("sandvic") || label.includes("sandvi")) return "6-8 dk";
+    if (label.includes("tatli") || label.includes("cake") || label.includes("cookie")) return "3-5 dk";
+    return "2-4 dk";
+  };
+
+  const suggestUpsellProducts = useCallback((limit = 2) => {
+    if (cartItems.length === 0) {
+      return [] as Product[];
+    }
+    const inCartIds = new Set(cartItems.map((item) => item.product.id));
+    const hasCoffee = cartItems.some((item) => {
+      const name = item.product.name.toLocaleLowerCase("tr-TR");
+      return name.includes("kahve") || name.includes("espresso") || name.includes("latte");
+    });
+    const candidates = products.filter((product) => !inCartIds.has(product.id));
+    const dessertFirst = candidates.filter((product) => {
+      const name = product.name.toLocaleLowerCase("tr-TR");
+      return name.includes("cookie") || name.includes("croissant") || name.includes("cake") || name.includes("tiramisu");
+    });
+    const addonFirst = candidates.filter((product) => {
+      const name = product.name.toLocaleLowerCase("tr-TR");
+      return name.includes("shot") || name.includes("syrup") || name.includes("add-on");
+    });
+    const selected = hasCoffee ? [...addonFirst, ...dessertFirst] : [...dessertFirst, ...addonFirst];
+    return selected.slice(0, limit);
+  }, [cartItems, products]);
+
+  const reOrderLast = () => {
+    if (!recentOrderSnapshot) {
+      return;
+    }
+    const restored: CartItem[] = [];
+    for (const item of recentOrderSnapshot.items) {
+      const product = productsById.get(item.productId);
+      if (!product) {
+        continue;
+      }
+      const selectedModMap: Record<string, ProductModifierOption> = {};
+      for (const optionId of item.modifierOptionIds) {
+        const option = modifierOptionsById.get(optionId);
+        if (option) {
+          selectedModMap[option.group_id] = option;
+        }
+      }
+      restored.push({
+        id: crypto.randomUUID(),
+        product,
+        quantity: Math.max(1, item.quantity),
+        selectedModifiers: selectedModMap,
+      });
+    }
+    if (restored.length === 0) {
+      return;
+    }
+    setCartItems(restored);
+    setCustomerName(recentOrderSnapshot.customerName);
+    setPaymentMethod(recentOrderSnapshot.paymentMethod);
+    setSubmitError(null);
+  };
 
   async function refreshQrToken(): Promise<string | undefined> {
     if (!qrCodeIdentifier) {
       return undefined;
     }
-    const response = await fetch("/api/qr/token/refresh", {
-      method: "POST",
-      headers: { "Content-Type": "application/json" },
-      body: JSON.stringify({
-        qrCodeIdentifier,
-        businessSlug,
-      }),
-    });
-    const data = (await response.json()) as { ok?: boolean; qrAccessToken?: string; message?: string };
-    if (!response.ok || !data.ok || !data.qrAccessToken) {
-      throw new Error(data.message ?? "QR token yenilenemedi.");
+    let lastError = "QR token yenilenemedi.";
+    for (let attempt = 0; attempt < 3; attempt += 1) {
+      try {
+        const response = await fetchWithTimeout("/api/qr/token/refresh", {
+          method: "POST",
+          headers: { "Content-Type": "application/json" },
+          body: JSON.stringify({
+            qrCodeIdentifier,
+            businessSlug,
+          }),
+        }, 8000);
+        const data = (await response.json()) as { ok?: boolean; qrAccessToken?: string; message?: string };
+        if (response.ok && data.ok && data.qrAccessToken) {
+          setActiveQrAccessToken(data.qrAccessToken);
+          return data.qrAccessToken;
+        }
+        lastError = data.message ?? lastError;
+      } catch (error) {
+        lastError = error instanceof Error ? error.message : lastError;
+      }
+      await waitMs(250 * (attempt + 1));
     }
-    setActiveQrAccessToken(data.qrAccessToken);
-    return data.qrAccessToken;
+    throw new Error(lastError);
   }
 
   async function callCreateOrder(input: {
@@ -597,7 +774,7 @@ export function QrOrderingClient({
     customerName?: string;
     paymentMethod: SelfServicePaymentMethod;
   }) {
-    return fetch("/api/orders", {
+    return fetchWithTimeout("/api/orders", {
       method: "POST",
       headers: {
         "Content-Type": "application/json",
@@ -614,7 +791,7 @@ export function QrOrderingClient({
         totalPrice: cartTotal,
         qrConfirmation: input.qrConfirmation,
       }),
-    });
+    }, 12000);
   }
 
   const submitOrder = async (paymentMethod: SelfServicePaymentMethod) => {
@@ -750,12 +927,25 @@ export function QrOrderingClient({
       setOrderConfirmation(data.confirmation ?? null);
       setLastOrderSummary(payloadItems);
       setLastOrderTotal(cartTotal);
+      setRecentOrderSnapshot({
+        customerName: customerName.trim(),
+        paymentMethod,
+        items: cartItems.map((item) => ({
+          productId: item.product.id,
+          quantity: item.quantity,
+          modifierOptionIds: Object.values(item.selectedModifiers).map((option) => option.id),
+        })),
+      });
       setCartItems([]);
       setIsCartOpen(false);
       setOrderSuccess(true);
       void trackFunnel("order_ack", { orderId: typeof data.orderId === "string" ? data.orderId : null });
     } catch (error) {
-      setSubmitError(error instanceof Error ? error.message : "Baglanti hatasi olustu.");
+      if (error instanceof Error && error.name === "AbortError") {
+        setSubmitError("Baglanti zaman asimina ugradi. Internetinizi kontrol edip tekrar deneyin.");
+      } else {
+        setSubmitError(error instanceof Error ? error.message : "Baglanti hatasi olustu.");
+      }
     } finally {
       inFlightSubmitKeyRef.current = null;
       setIsSubmitting(false);
@@ -933,6 +1123,28 @@ export function QrOrderingClient({
           </section>
 
           <section className="overflow-hidden px-5 py-4">
+            <div className="mb-3 grid gap-3 md:grid-cols-[1fr_auto]">
+              <input
+                type="search"
+                placeholder="Urun veya icerik ara..."
+                value={productSearchTerm}
+                onChange={(event) => setProductSearchTerm(event.target.value)}
+                className="w-full rounded-2xl border border-white/10 bg-white/10 px-4 py-3 text-sm text-white placeholder:text-slate-300"
+              />
+              <button
+                type="button"
+                onClick={() => {
+                  if (topPickProducts.length === 0) {
+                    return;
+                  }
+                  setSelectedCategoryId(topPickProducts[0].category_id);
+                  setProductSearchTerm("");
+                }}
+                className="rounded-2xl border border-rose-300/40 bg-rose-500/15 px-4 py-3 text-sm font-semibold text-rose-100"
+              >
+                Sik Siparis Edilenler
+              </button>
+            </div>
             <div className="mb-4 overflow-x-auto">
               <div className="flex min-w-max items-center gap-3">
                 {orderedCategories.map((category) => {
@@ -997,6 +1209,12 @@ export function QrOrderingClient({
                         <div className="w-full">
                           <div className="mb-2 text-center text-5xl">{getProductEmoji(product.name)}</div>
                           <p className="text-center text-[1.35rem] font-bold leading-tight">{product.name}</p>
+                          <div className="mt-2 flex items-center justify-center gap-2 text-[11px]">
+                            <span className="rounded-full border border-amber-300/40 bg-amber-400/10 px-2 py-1 text-amber-200">Hazirlik: {getPrepTimeLabel(product)}</span>
+                            {topPickProductIds.includes(product.id) ? (
+                              <span className="rounded-full border border-rose-300/40 bg-rose-500/20 px-2 py-1 text-rose-100">En Cok Tercih</span>
+                            ) : null}
+                          </div>
                           <p className="mt-2 text-center text-[1.9rem] font-black text-rose-400">{formatPrice(product.price)}</p>
                         </div>
                         <button
@@ -1090,13 +1308,24 @@ export function QrOrderingClient({
                 <p className="text-3xl font-black">Siparisim</p>
                 <p className="text-sm text-slate-300">Toplam Urun: <span className="font-bold text-rose-400">{cartItemCount}</span></p>
               </div>
-              <button
-                type="button"
-                onClick={() => setCartItems([])}
-                className="rounded-xl bg-white/10 px-3 py-2 text-sm font-semibold text-slate-100 hover:bg-white/20"
-              >
-                Temizle
-              </button>
+              <div className="flex items-center gap-2">
+                {recentOrderSnapshot ? (
+                  <button
+                    type="button"
+                    onClick={reOrderLast}
+                    className="rounded-xl bg-emerald-500/20 px-3 py-2 text-xs font-semibold text-emerald-100 hover:bg-emerald-500/30"
+                  >
+                    Son Siparisi Tekrarla
+                  </button>
+                ) : null}
+                <button
+                  type="button"
+                  onClick={() => setCartItems([])}
+                  className="rounded-xl bg-white/10 px-3 py-2 text-sm font-semibold text-slate-100 hover:bg-white/20"
+                >
+                  Temizle
+                </button>
+              </div>
             </div>
 
             <div className="max-h-[calc(100vh-380px)] space-y-2 overflow-y-auto pr-1">
@@ -1116,6 +1345,7 @@ export function QrOrderingClient({
                           onClick={() => {
                             if (item.quantity <= 1) {
                               setCartItems((prev) => prev.filter((row) => row.id !== item.id));
+                              void trackFunnel("cart_remove", { cartItems: Math.max(0, cartItemCount - 1), cartTotal });
                               return;
                             }
                             updateCartItemQuantity(item.id, item.quantity - 1);
@@ -1138,6 +1368,24 @@ export function QrOrderingClient({
                 ))
               )}
             </div>
+
+            {cartItems.length > 0 ? (
+              <div className="mt-3 rounded-xl border border-emerald-300/25 bg-emerald-500/10 p-3">
+                <p className="text-xs font-semibold uppercase tracking-[0.14em] text-emerald-100">Sana Ozel Oneri</p>
+                <div className="mt-2 flex flex-wrap gap-2">
+                  {suggestUpsellProducts(2).map((product) => (
+                    <button
+                      key={`upsell-${product.id}`}
+                      type="button"
+                      onClick={() => quickAddProduct(product)}
+                      className="rounded-full border border-emerald-200/40 bg-emerald-500/20 px-3 py-1.5 text-xs font-semibold text-emerald-50"
+                    >
+                      + {product.name}
+                    </button>
+                  ))}
+                </div>
+              </div>
+            ) : null}
 
             <div className="mt-4 border-t border-white/10 pt-4">
               <div className="mb-2 flex items-center justify-between text-sm text-slate-300">
@@ -1175,26 +1423,32 @@ export function QrOrderingClient({
                 </p>
               ) : null}
               {activeQrAccessToken || qrCodeIdentifier ? (
-                <div className="grid grid-cols-2 gap-3">
+                <div className="space-y-3">
+                  <div className="grid grid-cols-2 gap-2 rounded-xl border border-white/10 bg-white/5 p-2">
+                    <button
+                      type="button"
+                      onClick={() => setPaymentMethod("cash")}
+                      className={`rounded-lg px-3 py-2 text-sm font-semibold ${paymentMethod === "cash" ? "bg-rose-500 text-white" : "bg-transparent text-slate-200"}`}
+                    >
+                      Nakit
+                    </button>
+                    <button
+                      type="button"
+                      onClick={() => setPaymentMethod("card")}
+                      className={`rounded-lg px-3 py-2 text-sm font-semibold ${paymentMethod === "card" ? "bg-indigo-500 text-white" : "bg-transparent text-slate-200"}`}
+                    >
+                      Kart
+                    </button>
+                  </div>
                   <button
                     type="button"
                     onClick={() => {
-                      void submitOrder("cash");
+                      void submitOrder(paymentMethod);
                     }}
                     disabled={isSubmitting}
-                    className="rounded-2xl bg-[linear-gradient(135deg,#ff5f7a_0%,#ff385c_100%)] px-4 py-3 text-xl font-bold text-white disabled:opacity-50"
+                    className="w-full rounded-2xl bg-[linear-gradient(135deg,#ff5f7a_0%,#ff385c_100%)] px-4 py-3 text-lg font-bold text-white disabled:opacity-50"
                   >
-                    {isSubmitting ? "Gonderiliyor..." : "Nakit"}
-                  </button>
-                  <button
-                    type="button"
-                    onClick={() => {
-                      void submitOrder("card");
-                    }}
-                    disabled={isSubmitting}
-                    className="rounded-2xl bg-[linear-gradient(135deg,#8b5cf6_0%,#6d28d9_100%)] px-4 py-3 text-xl font-bold text-white disabled:opacity-50"
-                  >
-                    {isSubmitting ? "Gonderiliyor..." : "Kart"}
+                    {isSubmitting ? "Siparis Gonderiliyor..." : `Siparisi ${paymentMethod === "cash" ? "Nakit" : "Kart"} Olarak Gonder`}
                   </button>
                 </div>
               ) : (
@@ -1506,7 +1760,10 @@ export function QrOrderingClient({
                           </button>
                         </div>
                       <button
-                        onClick={() => setCartItems((prev) => prev.filter((i) => i.id !== item.id))}
+                        onClick={() => {
+                          setCartItems((prev) => prev.filter((i) => i.id !== item.id));
+                          void trackFunnel("cart_remove", { cartItems: Math.max(0, cartItemCount - item.quantity), cartTotal });
+                        }}
                         className="text-sm font-medium text-red-400"
                       >
                         Sepetten Cikar
@@ -1599,3 +1856,4 @@ export function QrOrderingClient({
     </div>
   );
 }
+

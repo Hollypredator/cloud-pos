@@ -684,17 +684,14 @@ export default async function CashierPage({
 
       <QuerySnapshotSeed queryKey={posQueryKeys.cashierSnapshot} data={cashierSnapshotSeed} />
 
-      {!renderMobileMarkup ? (
-        <section className="app-mobile-hide grid gap-4 xl:grid-cols-4">
-          <SummaryCard label="Bekleyen Adisyon" value={String(servedOrders.length)} hint="Acilikta bekleyen tüm hesaplar" tone="accent" className="bg-[linear-gradient(130deg,rgba(255,106,61,0.14),rgba(255,255,255,0.9)_65%)]" />
-          <SummaryCard label="Bekleyen Bakiye" value={`${servedTotals.remaining.toFixed(2)} TL`} hint="Tahsil edilmemis toplam tutar" tone="danger" className="bg-[linear-gradient(130deg,rgba(251,113,133,0.12),rgba(255,255,255,0.9)_65%)]" />
-          <SummaryCard label="Bugün Tahsil" value={`${paidTotals.paid.toFixed(2)} TL`} hint={`${paidOrders.length} kapanan adisyon`} tone="success" className="bg-[linear-gradient(130deg,rgba(16,185,129,0.12),rgba(255,255,255,0.9)_65%)]" />
-          <SummaryCard label="Açık Ciro" value={`${servedTotals.final.toFixed(2)} TL`} hint="Acilikta kalan adisyon hacmi" className="bg-[linear-gradient(130deg,rgba(59,130,246,0.1),rgba(255,255,255,0.9)_65%)]" />
-        </section>
-      ) : null}
+      <section className="app-mobile-hide grid gap-4 xl:grid-cols-4">
+        <SummaryCard label="Bekleyen Adisyon" value={String(servedOrders.length)} hint="Acilikta bekleyen tüm hesaplar" tone="accent" className="bg-[linear-gradient(130deg,rgba(255,106,61,0.14),rgba(255,255,255,0.9)_65%)]" />
+        <SummaryCard label="Bekleyen Bakiye" value={`${servedTotals.remaining.toFixed(2)} TL`} hint="Tahsil edilmemis toplam tutar" tone="danger" className="bg-[linear-gradient(130deg,rgba(251,113,133,0.12),rgba(255,255,255,0.9)_65%)]" />
+        <SummaryCard label="Bugün Tahsil" value={`${paidTotals.paid.toFixed(2)} TL`} hint={`${paidOrders.length} kapanan adisyon`} tone="success" className="bg-[linear-gradient(130deg,rgba(16,185,129,0.12),rgba(255,255,255,0.9)_65%)]" />
+        <SummaryCard label="Açık Ciro" value={`${servedTotals.final.toFixed(2)} TL`} hint="Acilikta kalan adisyon hacmi" className="bg-[linear-gradient(130deg,rgba(59,130,246,0.1),rgba(255,255,255,0.9)_65%)]" />
+      </section>
 
-      {renderMobileMarkup ? (
-        <section className="app-mobile-only space-y-3">
+      <section className="app-mobile-only space-y-3">
         <article className="mobile-task-card">
           <p className="text-[11px] font-bold uppercase tracking-[0.16em] text-slate-500">Tahsilat Kuyrugu</p>
           <h2 className="mt-2 text-xl font-semibold tracking-tight text-slate-900">Listeyi sec, tam ekranda tamamla</h2>
@@ -739,58 +736,54 @@ export default async function CashierPage({
             })}
           </div>
         )}
-        </section>
-      ) : null}
+      </section>
 
 
 
-      {!renderMobileMarkup ? (
-        <ContentCard title="Masa ve Adisyon Secimi" className="app-mobile-hide bg-[linear-gradient(140deg,rgba(255,255,255,0.96),rgba(255,255,255,0.84))]">
-          {servedOrders.length === 0 ? (
-            <EmptyPanel title="Secilecek Adisyon Yok" description="Açık adisyon bulunmuyor." />
-          ) : (
-            <div className="grid gap-3 md:grid-cols-2 xl:grid-cols-4">
-              {servedOrders.map((order) => {
-                const remaining = Number(order.remaining_balance ?? order.final_price ?? order.total_price);
-                const active = selectedOrder?.id === order.id;
-                return (
-                  <OptimisticVisibility key={order.id} orderId={order.id}>
-                  <Link
-                    href={`/cashier?order=${order.id}`}
-                    className={`panel-hover rounded-[24px] border p-4 ${
-                      active
-                        ? "border-[#ff8b73] bg-[linear-gradient(135deg,rgba(255,106,61,0.10)_0%,rgba(255,255,255,0.92)_60%)] shadow-[0_18px_32px_rgba(255,106,61,0.14)]"
-                        : "border-slate-200 bg-slate-50"
-                    }`}
-                  >
-                    <div className="flex flex-col items-start justify-between gap-3 sm:flex-row">
-                      <div>
-                        <p className="text-xs font-bold uppercase tracking-[0.16em] text-slate-500">{orderSourceLabel(order)}</p>
-                        <p className="font-display mt-2 text-xl font-semibold tracking-tight text-slate-900">
-                          {order.channel === "dine_in" ? formatOrderTableLabel(order) : order.customer_name ?? "Adisyon"}
-                        </p>
-                      </div>
-                      <span className={`inline-flex w-full justify-center rounded-full px-3 py-1 text-xs font-semibold uppercase sm:w-auto ${statusTone(order.status)}`}>{order.status}</span>
+      <ContentCard title="Masa ve Adisyon Secimi" className="app-mobile-hide bg-[linear-gradient(140deg,rgba(255,255,255,0.96),rgba(255,255,255,0.84))]">
+        {servedOrders.length === 0 ? (
+          <EmptyPanel title="Secilecek Adisyon Yok" description="Açık adisyon bulunmuyor." />
+        ) : (
+          <div className="grid gap-3 md:grid-cols-2 xl:grid-cols-4">
+            {servedOrders.map((order) => {
+              const remaining = Number(order.remaining_balance ?? order.final_price ?? order.total_price);
+              const active = selectedOrder?.id === order.id;
+              return (
+                <OptimisticVisibility key={order.id} orderId={order.id}>
+                <Link
+                  href={`/cashier?order=${order.id}`}
+                  className={`panel-hover rounded-[24px] border p-4 ${
+                    active
+                      ? "border-[#ff8b73] bg-[linear-gradient(135deg,rgba(255,106,61,0.10)_0%,rgba(255,255,255,0.92)_60%)] shadow-[0_18px_32px_rgba(255,106,61,0.14)]"
+                      : "border-slate-200 bg-slate-50"
+                  }`}
+                >
+                  <div className="flex flex-col items-start justify-between gap-3 sm:flex-row">
+                    <div>
+                      <p className="text-xs font-bold uppercase tracking-[0.16em] text-slate-500">{orderSourceLabel(order)}</p>
+                      <p className="font-display mt-2 text-xl font-semibold tracking-tight text-slate-900">
+                        {order.channel === "dine_in" ? formatOrderTableLabel(order) : order.customer_name ?? "Adisyon"}
+                      </p>
                     </div>
-                    <div className="mt-4 flex flex-col items-start gap-3 sm:flex-row sm:items-end sm:justify-between">
-                      <div>
-                        <p className="text-xs uppercase tracking-[0.16em] text-slate-500">Kalan</p>
-                        <p className="font-display font-numeric mt-1 text-2xl font-semibold text-emerald-700">
-                          <OptimisticMoney orderId={order.id} baseAmount={remaining} field="remaining" />
-                        </p>
-                      </div>
-                        <span className="inline-flex w-full justify-center rounded-2xl bg-white px-3 py-2 text-xs font-semibold text-slate-700 sm:w-auto">Popup Ac</span>
+                    <span className={`inline-flex w-full justify-center rounded-full px-3 py-1 text-xs font-semibold uppercase sm:w-auto ${statusTone(order.status)}`}>{order.status}</span>
+                  </div>
+                  <div className="mt-4 flex flex-col items-start gap-3 sm:flex-row sm:items-end sm:justify-between">
+                    <div>
+                      <p className="text-xs uppercase tracking-[0.16em] text-slate-500">Kalan</p>
+                      <p className="font-display font-numeric mt-1 text-2xl font-semibold text-emerald-700">
+                        <OptimisticMoney orderId={order.id} baseAmount={remaining} field="remaining" />
+                      </p>
                     </div>
-                  </Link>
-                  </OptimisticVisibility>
-                );
-              })}
-            </div>
-          )}
-        </ContentCard>
-      ) : null}
+                      <span className="inline-flex w-full justify-center rounded-2xl bg-white px-3 py-2 text-xs font-semibold text-slate-700 sm:w-auto">Popup Ac</span>
+                  </div>
+                </Link>
+                </OptimisticVisibility>
+              );
+            })}
+          </div>
+        )}
+      </ContentCard>
 
-      {!renderMobileMarkup ? (
         <section className="app-mobile-hide grid gap-5 xl:grid-cols-[1.3fr_0.7fr]">
         <ContentCard title="Ödeme Bekleyen Adisyonlar" className="bg-[linear-gradient(160deg,rgba(255,255,255,0.96),rgba(248,250,252,0.88))]">
           {servedOrders.length === 0 ? (
@@ -925,7 +918,6 @@ export default async function CashierPage({
           )}
         </ContentCard>
         </section>
-      ) : null}
 
       {selectedOrder ? (
         <OptimisticVisibility orderId={selectedOrder.id}>
@@ -940,13 +932,11 @@ export default async function CashierPage({
                     : `Sipariş #${orderRef(selectedOrder)}`}
                 </h2>
                 <p className="mt-1 text-sm text-slate-500">Popup tahsilat akışı. Ekrandan ayrilmadan ödeme, split ve iptal yap.</p>
-                {renderMobileMarkup ? (
-                  <div className="app-mobile-only mt-3 flex gap-2 text-[11px] font-semibold uppercase tracking-[0.12em]">
-                    <span className="rounded-full bg-slate-900 px-3 py-1 text-white">1 Liste</span>
-                    <span className="rounded-full bg-amber-100 px-3 py-1 text-amber-800">2 Ödeme</span>
-                    <span className="rounded-full bg-emerald-100 px-3 py-1 text-emerald-800">3 Kapat</span>
-                  </div>
-                ) : null}
+                <div className="app-mobile-only mt-3 flex gap-2 text-[11px] font-semibold uppercase tracking-[0.12em]">
+                  <span className="rounded-full bg-slate-900 px-3 py-1 text-white">1 Liste</span>
+                  <span className="rounded-full bg-amber-100 px-3 py-1 text-amber-800">2 Ödeme</span>
+                  <span className="rounded-full bg-emerald-100 px-3 py-1 text-emerald-800">3 Kapat</span>
+                </div>
               </div>
               <Link href="/cashier" className="w-full rounded-2xl border border-slate-200 bg-white px-4 py-3 text-center text-sm font-semibold text-slate-700 sm:w-auto">
                 Kapat
@@ -973,19 +963,17 @@ export default async function CashierPage({
 
               return (
                 <div className="space-y-4">
-                  {renderMobileMarkup ? (
-                    <div className="app-mobile-only mobile-wizard-nav">
-                      <a href="#wizard-finance" className="mobile-wizard-step">
-                        1 Finans
-                      </a>
-                      <a href="#wizard-payment" className="mobile-wizard-step">
-                        2 Ödeme
-                      </a>
-                      <a href="#wizard-close" className="mobile-wizard-step">
-                        3 Kapat
-                      </a>
-                    </div>
-                  ) : null}
+                  <div className="app-mobile-only mobile-wizard-nav">
+                    <a href="#wizard-finance" className="mobile-wizard-step">
+                      1 Finans
+                    </a>
+                    <a href="#wizard-payment" className="mobile-wizard-step">
+                      2 Ödeme
+                    </a>
+                    <a href="#wizard-close" className="mobile-wizard-step">
+                      3 Kapat
+                    </a>
+                  </div>
 
                   <section id="wizard-finance" className="scroll-mt-[130px] grid gap-4 xl:grid-cols-[0.95fr_1.05fr]">
                     <div className="space-y-4">

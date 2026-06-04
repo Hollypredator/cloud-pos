@@ -32,6 +32,24 @@ function getPageSlice<T>(items: T[], page: number, capacity: number) {
   return items.slice(start, start + capacity);
 }
 
+function getOrderAgeMinutes(order: Order) {
+  const createdAt = new Date(order.created_at).getTime();
+  if (Number.isNaN(createdAt)) {
+    return 0;
+  }
+  return Math.max(0, Math.floor((Date.now() - createdAt) / 60000));
+}
+
+function getWaitBand(ageMinutes: number) {
+  if (ageMinutes >= 10) {
+    return { label: "Kirmizi", className: "border-rose-400/50 bg-rose-500/15 text-rose-200" };
+  }
+  if (ageMinutes >= 6) {
+    return { label: "Sari", className: "border-amber-300/50 bg-amber-500/15 text-amber-100" };
+  }
+  return { label: "Yesil", className: "border-emerald-300/40 bg-emerald-500/15 text-emerald-100" };
+}
+
 export function PickupBoardClient({
   initialPreparing,
   initialReady,
@@ -61,11 +79,15 @@ export function PickupBoardClient({
   const preparingLayout = useMemo(() => buildBoardLayout(), []);
   const readyLayout = useMemo(() => buildBoardLayout(), []);
 
-  const preparingTotalPages = Math.max(1, Math.ceil(preparing.length / preparingLayout.capacity));
+  const prioritizedPreparing = useMemo(
+    () => [...preparing].sort((a, b) => getOrderAgeMinutes(b) - getOrderAgeMinutes(a)),
+    [preparing],
+  );
+  const preparingTotalPages = Math.max(1, Math.ceil(prioritizedPreparing.length / preparingLayout.capacity));
   const readyTotalPages = Math.max(1, Math.ceil(ready.length / readyLayout.capacity));
   const preparingPageItems = useMemo(
-    () => getPageSlice(preparing, preparingPage, preparingLayout.capacity),
-    [preparing, preparingPage, preparingLayout.capacity],
+    () => getPageSlice(prioritizedPreparing, preparingPage, preparingLayout.capacity),
+    [preparingLayout.capacity, preparingPage, prioritizedPreparing],
   );
   const readyPageItems = useMemo(
     () => getPageSlice(ready, readyPage, readyLayout.capacity),
@@ -173,21 +195,31 @@ export function PickupBoardClient({
               gridTemplateRows: `repeat(${preparingLayout.rows}, minmax(0, 1fr))`,
             }}
           >
-            {preparingPageItems.map((order) => (
-              <div
-                key={order.id}
-                className={`${preparingCardClass} h-full border border-white/5 bg-white/5 shadow-[0_6px_16px_rgba(0,0,0,0.2)]`}
-              >
-                <div className={`mb-1 truncate font-black text-white ${preparingNumberClass}`}>
-                  {resolveOrderNumber(order)}
+            {preparingPageItems.map((order) => {
+              const ageMinutes = getOrderAgeMinutes(order);
+              const band = getWaitBand(ageMinutes);
+              return (
+                <div
+                  key={order.id}
+                  className={`${preparingCardClass} h-full border border-white/5 bg-white/5 shadow-[0_6px_16px_rgba(0,0,0,0.2)]`}
+                >
+                  <div className="mb-1 flex items-center justify-between gap-2">
+                    <div className={`truncate font-black text-white ${preparingNumberClass}`}>
+                      {resolveOrderNumber(order)}
+                    </div>
+                    <span className={`rounded-full border px-2 py-1 text-[10px] font-bold uppercase ${band.className}`}>
+                      {band.label}
+                    </span>
+                  </div>
+                  <div className={`truncate font-semibold text-slate-200 ${preparingLabelClass}`}>
+                    {resolveOrderLabel(order, "Siparis Hazirlaniyor")}
+                  </div>
+                  <div className="mt-1 text-[11px] text-slate-400">{ageMinutes} dk bekliyor</div>
                 </div>
-                <div className={`truncate font-semibold text-slate-200 ${preparingLabelClass}`}>
-                  {resolveOrderLabel(order, "Siparis Hazirlaniyor")}
-                </div>
-              </div>
-            ))}
+              );
+            })}
           </div>
-          {preparing.length === 0 ? <div className="mt-12 text-2xl font-medium text-slate-600">Henuz yeni siparis yok...</div> : null}
+          {prioritizedPreparing.length === 0 ? <div className="mt-12 text-2xl font-medium text-slate-600">Henuz yeni siparis yok...</div> : null}
         </div>
 
         {preparingTotalPages > 1 ? (

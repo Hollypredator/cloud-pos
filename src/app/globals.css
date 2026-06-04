@@ -292,6 +292,21 @@ body {
   display: none !important;
 }
 
+@media (max-width: 767px) {
+  .app-mobile-only {
+    display: block !important;
+  }
+  .app-mobile-only.app-mobile-flex {
+    display: flex !important;
+  }
+  .app-mobile-only.app-mobile-grid {
+    display: grid !important;
+  }
+  .app-mobile-hide {
+    display: none !important;
+  }
+}
+
 .mobile-app-mode .app-mobile-only {
   display: block !important;
 }

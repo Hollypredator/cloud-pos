@@ -84,6 +84,10 @@ function normalizeProductDepartment(value: FormDataEntryValue | null): ProductDe
   return "general";
 }
 
+function isUuidLike(value: string) {
+  return /^[0-9a-f]{8}-[0-9a-f]{4}-[1-5][0-9a-f]{3}-[89ab][0-9a-f]{3}-[0-9a-f]{12}$/i.test(value);
+}
+
 const restaurantDemoCatalogSeed = {
   categories: [
     { name: "Kahveler", sortOrder: 1, prepStation: "bar" as const },
@@ -880,6 +884,10 @@ async function updateProductAction(formData: FormData) {
     !Number.isFinite(stockCount)
   ) {
     redirect(await resolveProductsFeedbackPath("error", "Ürün guncelleme bilgileri geçersiz."));
+  }
+
+  if (!isUuidLike(productId)) {
+    redirect(await resolveProductsFeedbackPath("error", "Bu ürün demo kaydı. Canlı veri olmadan aktif/pasif değiştirilemez."));
   }
 
   const imageResult = await resolveProductImageUrl({ formData, currentImageUrl });
@@ -1877,11 +1885,45 @@ export default async function AdminProductsPage({
                 </div>
               ) : (
                 <div className="mt-4 grid gap-4 lg:grid-cols-2 2xl:grid-cols-3">
-                  {visibleProducts.map((product) => (
-                    <article key={product.id} className="min-w-0 rounded-[22px] border border-slate-200 bg-white p-4">
-                      <details>
-                        <summary className="cursor-pointer list-none">
-                          <div className="flex flex-col items-start justify-between gap-3 sm:flex-row">
+                {visibleProducts.map((product) => (
+                  <article key={product.id} className="relative min-w-0 rounded-[22px] border border-slate-200 bg-white p-4">
+                    <form action={updateProductAction} className="absolute right-4 top-4 z-10">
+                      <input type="hidden" name="productId" value={product.id} />
+                      <input type="hidden" name="profileScope" value={activeProfileScope} />
+                      <input type="hidden" name="categoryId" value={product.category_id} />
+                      <input type="hidden" name="name" value={product.name} />
+                      <input type="hidden" name="price" value={String(product.price)} />
+                      <input type="hidden" name="stockCount" value={String(product.stock_count)} />
+                      <input type="hidden" name="barcode" value={product.barcode ?? ""} />
+                      <input type="hidden" name="pluCode" value={product.plu_code ?? ""} />
+                      <input type="hidden" name="productKind" value={product.product_kind ?? "standard"} />
+                      <input type="hidden" name="unit" value={product.unit ?? "adet"} />
+                      <input type="hidden" name="department" value={product.department ?? "general"} />
+                      <input type="hidden" name="description" value={product.description ?? ""} />
+                      <input type="hidden" name="currentImageUrl" value={product.image_url ?? ""} />
+                      <input type="hidden" name="cost" value={String(product.cost ?? 0)} />
+                      <input type="hidden" name="isAvailable" value={product.is_available ? "off" : "on"} />
+                      <button
+                        type="submit"
+                        className={`relative inline-flex h-7 w-14 items-center rounded-full border transition ${
+                          product.is_available
+                            ? "border-emerald-400 bg-emerald-500 hover:bg-emerald-400"
+                            : "border-slate-300 bg-slate-200 hover:bg-slate-300"
+                        }`}
+                        aria-label={product.is_available ? `${product.name} pasif yap` : `${product.name} aktif yap`}
+                        title={product.is_available ? "Kapat" : "Ac"}
+                      >
+                        <span
+                          className={`inline-block h-5 w-5 transform rounded-full bg-white shadow transition ${
+                            product.is_available ? "translate-x-8" : "translate-x-1"
+                          }`}
+                        />
+                        <span className="sr-only">{product.is_available ? "Aktif" : "Pasif"}</span>
+                      </button>
+                    </form>
+                    <details>
+                      <summary className="cursor-pointer list-none">
+                        <div className="flex flex-col items-start justify-between gap-3 sm:flex-row">
                             <div className="min-w-0">
                               <p className="text-xs font-bold uppercase tracking-[0.14em] text-slate-500">
                                 {orderedCategories.find((category) => category.id === product.category_id)?.name ?? "Kategori"}
@@ -2229,7 +2271,36 @@ export default async function AdminProductsPage({
               </div>
               <div className="mt-4 grid gap-4 lg:grid-cols-2 2xl:grid-cols-3">
                 {visibleProducts.map((product) => (
-                  <article key={product.id} className="min-w-0 rounded-[22px] border border-slate-200 bg-white p-4">
+                  <article key={product.id} className="relative min-w-0 rounded-[22px] border border-slate-200 bg-white p-4">
+                    <form action={updateProductAction} className="absolute right-3 top-3 z-10">
+                      <input type="hidden" name="productId" value={product.id} />
+                      <input type="hidden" name="profileScope" value={activeProfileScope} />
+                      <input type="hidden" name="categoryId" value={product.category_id} />
+                      <input type="hidden" name="name" value={product.name} />
+                      <input type="hidden" name="price" value={String(product.price)} />
+                      <input type="hidden" name="stockCount" value={String(product.stock_count)} />
+                      <input type="hidden" name="barcode" value={product.barcode ?? ""} />
+                      <input type="hidden" name="pluCode" value={product.plu_code ?? ""} />
+                      <input type="hidden" name="productKind" value={product.product_kind ?? "standard"} />
+                      <input type="hidden" name="unit" value={product.unit ?? "adet"} />
+                      <input type="hidden" name="department" value={product.department ?? "general"} />
+                      <input type="hidden" name="description" value={product.description ?? ""} />
+                      <input type="hidden" name="currentImageUrl" value={product.image_url ?? ""} />
+                      <input type="hidden" name="cost" value={String(product.cost ?? 0)} />
+                      <input type="hidden" name="isAvailable" value={product.is_available ? "off" : "on"} />
+                      <button
+                        type="submit"
+                        className={`rounded-full border px-3 py-1 text-xs font-semibold shadow-sm transition ${
+                          product.is_available
+                            ? "border-emerald-200 bg-emerald-50 text-emerald-700 hover:bg-emerald-100"
+                            : "border-slate-200 bg-slate-100 text-slate-700 hover:bg-slate-200"
+                        }`}
+                        aria-label={product.is_available ? `${product.name} pasif yap` : `${product.name} aktif yap`}
+                        title={product.is_available ? "Hizli Pasif Yap" : "Hizli Aktif Yap"}
+                      >
+                        {product.is_available ? "Aktif" : "Pasif"}
+                      </button>
+                    </form>
                     <div className="flex items-start gap-3">
                       {product.image_url ? (
                         <img src={product.image_url} alt={product.name} className="h-16 w-16 rounded-xl object-cover" />

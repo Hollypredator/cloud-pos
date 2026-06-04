@@ -39,6 +39,27 @@ export default async function AdminOrdersPage({
 
   const availableProducts = products.filter((product) => product.is_available).length;
 
+  const orderEntry = (
+    <AdminOrderEntry
+      businessSlug={businessSlug}
+      categories={categories}
+      products={products}
+      modifierGroups={modifierGroups}
+      modifierOptions={modifierOptions}
+      tables={tables}
+      initialTableId={preselectedTableId}
+      entryMode={isSelfServiceCoffee ? "classic" : "table_first"}
+      layoutMode={entryLayoutMode}
+      initialView={operatingCapabilities.hide_table_ui ? "composer" : preselectedTableId ? "composer" : "table_picker"}
+      operatingProfile={operatingProfile}
+      operatingCapabilities={operatingCapabilities}
+    />
+  );
+
+  if (isSelfServiceCoffee) {
+    return <main className="coffee-pos-mode h-screen w-screen overflow-hidden bg-slate-950">{orderEntry}</main>;
+  }
+
   return (
     <BackofficePage
       title={translateUiText("Siparis Girisi", locale)}
@@ -115,20 +136,7 @@ export default async function AdminOrdersPage({
         </>
       ) : null}
 
-      <AdminOrderEntry
-        businessSlug={businessSlug}
-        categories={categories}
-        products={products}
-        modifierGroups={modifierGroups}
-        modifierOptions={modifierOptions}
-        tables={tables}
-        initialTableId={preselectedTableId}
-        entryMode={isSelfServiceCoffee ? "classic" : "table_first"}
-        layoutMode={entryLayoutMode}
-        initialView={operatingCapabilities.hide_table_ui ? "composer" : preselectedTableId ? "composer" : "table_picker"}
-        operatingProfile={operatingProfile}
-        operatingCapabilities={operatingCapabilities}
-      />
+      {orderEntry}
     </BackofficePage>
   );
 }
