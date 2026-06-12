@@ -1,4 +1,4 @@
-const OPS_CACHE_VERSION = "v5";
+const OPS_CACHE_VERSION = "v9";
 const OPS_NAV_CACHE = `ops-nav-${OPS_CACHE_VERSION}`;
 const OPS_API_CACHE = `ops-api-${OPS_CACHE_VERSION}`;
 const OPS_ASSET_CACHE = `ops-asset-${OPS_CACHE_VERSION}`;
@@ -187,6 +187,10 @@ self.addEventListener("fetch", (event) => {
 });
 
 self.addEventListener("message", (event) => {
+  if (event.data?.type === "OPS_SKIP_WAITING") {
+    event.waitUntil(self.skipWaiting());
+  }
+
   if (event.data?.type === "OPS_CLEAR_CACHES") {
     event.waitUntil(clearOpsCaches());
   }

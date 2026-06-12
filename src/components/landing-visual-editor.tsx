@@ -212,21 +212,21 @@ export function LandingVisualEditor({
 
   function inferAltText(filename: string) {
     const base = filename.replace(/\.[a-z0-9]+$/i, "").replace(/[-_]+/g, " ").trim();
-    return base || "Hero gorseli";
+    return base || "Hero görseli";
   }
 
   async function uploadHeroImage(file: File, index: number, sectionId: string) {
     if (!file.type.startsWith("image/")) {
-      setHeroUploadState({ tone: "error", message: "Lütfen görsel dosyasi birakin.", sectionId });
+      setHeroUploadState({ tone: "error", message: "Lütfen görsel dosyası bırakın.", sectionId });
       return;
     }
 
     if (file.size > 10 * 1024 * 1024) {
-      setHeroUploadState({ tone: "error", message: "Dosya boyutu 10MB altinda olmali.", sectionId });
+      setHeroUploadState({ tone: "error", message: "Dosya boyutu 10MB altında olmalı.", sectionId });
       return;
     }
 
-    setHeroUploadState({ tone: "loading", message: "Görsel yukleniyor...", sectionId });
+    setHeroUploadState({ tone: "loading", message: "Görsel yükleniyor...", sectionId });
     const formData = new FormData();
     formData.set("file", file);
     formData.set("title", inferAltText(file.name));
@@ -244,7 +244,7 @@ export function LandingVisualEditor({
         | null;
 
       if (!response.ok || !payload?.ok || !payload.fileUrl) {
-        throw new Error((payload && "error" in payload && payload.error) || "Görsel yuklenemedi.");
+        throw new Error((payload && "error" in payload && payload.error) || "Görsel yüklenemedi.");
       }
 
       updateSection(index, (current) => ({
@@ -255,9 +255,9 @@ export function LandingVisualEditor({
           (current as Extract<LandingSection, { type: "hero" }>).heroImageAlt?.trim() || payload.altText || inferAltText(file.name),
       } as LandingSection));
 
-      setHeroUploadState({ tone: "success", message: "Görsel yuklendi ve hero alanina eklendi.", sectionId });
+      setHeroUploadState({ tone: "success", message: "Görsel yüklendi ve hero alanına eklendi.", sectionId });
     } catch (error) {
-      const message = error instanceof Error ? error.message : "Görsel yuklenemedi.";
+      const message = error instanceof Error ? error.message : "Görsel yüklenemedi.";
       setHeroUploadState({ tone: "error", message, sectionId });
     }
   }
@@ -271,8 +271,8 @@ export function LandingVisualEditor({
         <p className="text-[11px] font-semibold uppercase tracking-[0.24em] text-slate-500">Layout</p>
         <div className="mt-4 grid gap-4">
           <div className="grid gap-4 md:grid-cols-2">
-            <NumberInput label="Üst bosluk" value={section.style.paddingTop} onChange={(value) => updateSectionStyle(index, "paddingTop", value)} />
-            <NumberInput label="Alt bosluk" value={section.style.paddingBottom} onChange={(value) => updateSectionStyle(index, "paddingBottom", value)} />
+            <NumberInput label="Üst boşluk" value={section.style.paddingTop} onChange={(value) => updateSectionStyle(index, "paddingTop", value)} />
+            <NumberInput label="Alt boşluk" value={section.style.paddingBottom} onChange={(value) => updateSectionStyle(index, "paddingBottom", value)} />
           </div>
           <div className="grid gap-4 md:grid-cols-2">
             <NumberInput label="Yatay padding" value={section.style.paddingX} max={80} onChange={(value) => updateSectionStyle(index, "paddingX", value)} />
@@ -285,15 +285,15 @@ export function LandingVisualEditor({
               options={[
                 { label: "Dar", value: "narrow" },
                 { label: "Standart", value: "default" },
-                { label: "Genis", value: "wide" },
+                { label: "Geniş", value: "wide" },
               ]}
               onChange={(value) => updateSectionStyle(index, "containerWidth", value)}
             />
             <SelectInput
-              label="Yuzey"
+              label="Yüzey"
               value={section.style.surface}
               options={[
-                { label: "Seffaf", value: "transparent" },
+                { label: "Şeffaf", value: "transparent" },
                 { label: "Beyaz", value: "white" },
                 { label: "Glass", value: "glass" },
                 { label: "Koyu", value: "dark" },
@@ -308,25 +308,25 @@ export function LandingVisualEditor({
               options={[
                 { label: "Yok", value: "none" },
                 { label: "Hafif", value: "light" },
-                { label: "Guclu", value: "strong" },
+                { label: "Güçlü", value: "strong" },
               ]}
               onChange={(value) => updateSectionStyle(index, "border", value)}
             />
             <SelectInput
-              label="Golgelendirme"
+              label="Gölgelendirme"
               value={section.style.shadow}
               options={[
                 { label: "Yok", value: "none" },
                 { label: "Hafif", value: "soft" },
                 { label: "Orta", value: "medium" },
-                { label: "Guclu", value: "strong" },
+                { label: "Güçlü", value: "strong" },
               ]}
               onChange={(value) => updateSectionStyle(index, "shadow", value)}
             />
           </div>
           <div className="grid gap-4 md:grid-cols-2">
             <SelectInput
-              label="Metin Hizasi"
+              label="Metin Hizası"
               value={section.style.textAlign}
               options={[
                 { label: "Sol", value: "left" },
@@ -344,24 +344,24 @@ export function LandingVisualEditor({
         <div className="space-y-4">
           {styleEditor}
           <TextInput label="Badge" value={section.badge} onChange={(value) => updateSection(index, (current) => ({ ...current, badge: value } as LandingSection))} />
-          <TextInput label="Baslik" value={section.title} onChange={(value) => updateSection(index, (current) => ({ ...current, title: value } as LandingSection))} />
-          <TextArea label="Aciklama" value={section.body} rows={5} onChange={(value) => updateSection(index, (current) => ({ ...current, body: value } as LandingSection))} />
+          <TextInput label="Başlık" value={section.title} onChange={(value) => updateSection(index, (current) => ({ ...current, title: value } as LandingSection))} />
+          <TextArea label="Açıklama" value={section.body} rows={5} onChange={(value) => updateSection(index, (current) => ({ ...current, body: value } as LandingSection))} />
           <div className="grid gap-4 md:grid-cols-2">
             <TextInput label="Ana CTA" value={section.primaryCtaLabel} onChange={(value) => updateSection(index, (current) => ({ ...current, primaryCtaLabel: value } as LandingSection))} />
-            <TextInput label="Ikinci CTA" value={section.secondaryCtaLabel} onChange={(value) => updateSection(index, (current) => ({ ...current, secondaryCtaLabel: value } as LandingSection))} />
+            <TextInput label="İkinci CTA" value={section.secondaryCtaLabel} onChange={(value) => updateSection(index, (current) => ({ ...current, secondaryCtaLabel: value } as LandingSection))} />
           </div>
           <div className="grid gap-4 md:grid-cols-2">
             <TextInput label="Ana CTA Link" value={section.primaryCtaHref} onChange={(value) => updateSection(index, (current) => ({ ...current, primaryCtaHref: value } as LandingSection))} />
-            <TextInput label="Ikinci CTA Link" value={section.secondaryCtaHref} onChange={(value) => updateSection(index, (current) => ({ ...current, secondaryCtaHref: value } as LandingSection))} />
+            <TextInput label="İkinci CTA Link" value={section.secondaryCtaHref} onChange={(value) => updateSection(index, (current) => ({ ...current, secondaryCtaHref: value } as LandingSection))} />
           </div>
           <div className="rounded-2xl border border-slate-200 bg-slate-50 p-4">
-            <p className="text-[11px] font-semibold uppercase tracking-[0.24em] text-slate-500">Hero Gorseli</p>
+            <p className="text-[11px] font-semibold uppercase tracking-[0.24em] text-slate-500">Hero Görseli</p>
             <div className="mt-4 grid gap-4">
               <SelectInput
-                label="Sag alan modu"
+                label="Sağ alan modu"
                 value={section.heroVisualMode}
                 options={[
-                  { label: "Taslak gorunum", value: "mockup" },
+                  { label: "Taslak görünüm", value: "mockup" },
                   { label: "Görsel kullan", value: "image" },
                 ]}
                 onChange={(value) =>
@@ -385,7 +385,7 @@ export function LandingVisualEditor({
                 label="Görsel yerleştirme"
                 value={section.heroImageFit}
                 options={[
-                  { label: "Sigdir (contain)", value: "contain" },
+                  { label: "Sığdır (contain)", value: "contain" },
                   { label: "Kapla (cover)", value: "cover" },
                 ]}
                 onChange={(value) =>
@@ -407,9 +407,9 @@ export function LandingVisualEditor({
                 className="rounded-xl border border-dashed border-slate-300 bg-white px-4 py-4 text-sm text-slate-600"
               >
                 <p className="font-semibold text-slate-800">Drag & drop ile görsel bırak</p>
-                <p className="mt-1 text-xs text-slate-500">veya dosya secerek yükle (max 10MB).</p>
+                <p className="mt-1 text-xs text-slate-500">veya dosya seçerek yükle (max 10MB).</p>
                 <label className="mt-3 inline-flex cursor-pointer rounded-lg border border-slate-300 bg-slate-50 px-3 py-2 text-xs font-semibold text-slate-700">
-                  Dosya Sec
+                  Dosya Seç
                   <input
                     type="file"
                     accept="image/*"
@@ -450,9 +450,9 @@ export function LandingVisualEditor({
           <TextInput label="Eyebrow" value={section.eyebrow} onChange={(value) => updateSection(index, (current) => ({ ...current, eyebrow: value } as LandingSection))} />
           {section.items.map((item, itemIndex) => (
             <div key={itemIndex} className="rounded-2xl border border-slate-200 bg-slate-50 p-4">
-              <TextInput label="Baslik" value={item.title} onChange={(value) => updateSection(index, (current) => ({ ...current, items: updateArrayItem((current as Extract<LandingSection, { type: "feature_grid" }>).items, itemIndex, (entry) => ({ ...entry, title: value })) } as LandingSection))} />
+              <TextInput label="Başlık" value={item.title} onChange={(value) => updateSection(index, (current) => ({ ...current, items: updateArrayItem((current as Extract<LandingSection, { type: "feature_grid" }>).items, itemIndex, (entry) => ({ ...entry, title: value })) } as LandingSection))} />
               <div className="mt-3">
-                <TextArea label="Aciklama" value={item.body} onChange={(value) => updateSection(index, (current) => ({ ...current, items: updateArrayItem((current as Extract<LandingSection, { type: "feature_grid" }>).items, itemIndex, (entry) => ({ ...entry, body: value })) } as LandingSection))} />
+                <TextArea label="Açıklama" value={item.body} onChange={(value) => updateSection(index, (current) => ({ ...current, items: updateArrayItem((current as Extract<LandingSection, { type: "feature_grid" }>).items, itemIndex, (entry) => ({ ...entry, body: value })) } as LandingSection))} />
               </div>
               <div className="mt-3">
                 <button type="button" onClick={() => updateSection(index, (current) => ({ ...current, items: (current as Extract<LandingSection, { type: "feature_grid" }>).items.filter((_, i) => i !== itemIndex) } as LandingSection))} className="rounded-lg border border-rose-200 bg-rose-50 px-3 py-2 text-xs font-semibold text-rose-700">
@@ -475,19 +475,19 @@ export function LandingVisualEditor({
           <TextInput label="Eyebrow" value={section.eyebrow} onChange={(value) => updateSection(index, (current) => ({ ...current, eyebrow: value } as LandingSection))} />
           {section.items.map((item, itemIndex) => (
             <div key={itemIndex} className="rounded-2xl border border-slate-200 bg-slate-50 p-4">
-              <TextInput label="Baslik" value={item.title} onChange={(value) => updateSection(index, (current) => ({ ...current, items: updateArrayItem((current as Extract<LandingSection, { type: "process_steps" }>).items, itemIndex, (entry) => ({ ...entry, title: value })) } as LandingSection))} />
+              <TextInput label="Başlık" value={item.title} onChange={(value) => updateSection(index, (current) => ({ ...current, items: updateArrayItem((current as Extract<LandingSection, { type: "process_steps" }>).items, itemIndex, (entry) => ({ ...entry, title: value })) } as LandingSection))} />
               <div className="mt-3">
-                <TextArea label="Aciklama" value={item.body} onChange={(value) => updateSection(index, (current) => ({ ...current, items: updateArrayItem((current as Extract<LandingSection, { type: "process_steps" }>).items, itemIndex, (entry) => ({ ...entry, body: value })) } as LandingSection))} />
+                <TextArea label="Açıklama" value={item.body} onChange={(value) => updateSection(index, (current) => ({ ...current, items: updateArrayItem((current as Extract<LandingSection, { type: "process_steps" }>).items, itemIndex, (entry) => ({ ...entry, body: value })) } as LandingSection))} />
               </div>
               <div className="mt-3">
                 <button type="button" onClick={() => updateSection(index, (current) => ({ ...current, items: (current as Extract<LandingSection, { type: "process_steps" }>).items.filter((_, i) => i !== itemIndex) } as LandingSection))} className="rounded-lg border border-rose-200 bg-rose-50 px-3 py-2 text-xs font-semibold text-rose-700">
-                  Adimi Sil
+                  Adımı Sil
                 </button>
               </div>
             </div>
           ))}
           <button type="button" onClick={() => updateSection(index, (current) => ({ ...current, items: [...(current as Extract<LandingSection, { type: "process_steps" }>).items, { title: "", body: "" }] } as LandingSection))} className="rounded-lg bg-slate-900 px-4 py-2 text-sm font-semibold text-white">
-            Adim Ekle
+            Adım Ekle
           </button>
         </div>
       );
@@ -526,8 +526,8 @@ export function LandingVisualEditor({
         <div className="space-y-4">
           {styleEditor}
           <TextInput label="Eyebrow" value={section.eyebrow} onChange={(value) => updateSection(index, (current) => ({ ...current, eyebrow: value } as LandingSection))} />
-          <TextInput label="Baslik" value={section.title} onChange={(value) => updateSection(index, (current) => ({ ...current, title: value } as LandingSection))} />
-          <TextArea label="Aciklama" value={section.body} rows={5} onChange={(value) => updateSection(index, (current) => ({ ...current, body: value } as LandingSection))} />
+          <TextInput label="Başlık" value={section.title} onChange={(value) => updateSection(index, (current) => ({ ...current, title: value } as LandingSection))} />
+          <TextArea label="Açıklama" value={section.body} rows={5} onChange={(value) => updateSection(index, (current) => ({ ...current, body: value } as LandingSection))} />
           {section.references.map((item, itemIndex) => (
             <div key={itemIndex} className="rounded-2xl border border-slate-200 bg-slate-50 p-4">
               <TextInput
@@ -542,7 +542,7 @@ export function LandingVisualEditor({
               />
               <div className="mt-3">
                 <button type="button" onClick={() => updateSection(index, (current) => ({ ...current, references: (current as Extract<LandingSection, { type: "credibility" }>).references.filter((_, i) => i !== itemIndex) } as LandingSection))} className="rounded-lg border border-rose-200 bg-rose-50 px-3 py-2 text-xs font-semibold text-rose-700">
-                  Referansi Sil
+                  Referansı Sil
                 </button>
               </div>
             </div>
@@ -583,8 +583,8 @@ export function LandingVisualEditor({
       <div className="space-y-4">
         {styleEditor}
         <TextInput label="Eyebrow" value={section.eyebrow} onChange={(value) => updateSection(index, (current) => ({ ...current, eyebrow: value } as LandingSection))} />
-        <TextInput label="Baslik" value={section.title} onChange={(value) => updateSection(index, (current) => ({ ...current, title: value } as LandingSection))} />
-        <TextArea label="Aciklama" value={section.body} rows={5} onChange={(value) => updateSection(index, (current) => ({ ...current, body: value } as LandingSection))} />
+        <TextInput label="Başlık" value={section.title} onChange={(value) => updateSection(index, (current) => ({ ...current, title: value } as LandingSection))} />
+        <TextArea label="Açıklama" value={section.body} rows={5} onChange={(value) => updateSection(index, (current) => ({ ...current, body: value } as LandingSection))} />
       </div>
     );
   }
@@ -615,7 +615,7 @@ export function LandingVisualEditor({
         <div className="flex flex-wrap items-center justify-between gap-3 border-b border-slate-200 bg-white/90 px-5 py-4 backdrop-blur">
           <div>
             <p className="text-xs font-semibold uppercase tracking-[0.24em] text-slate-500">Visual Builder</p>
-            <h2 className="mt-1 text-lg font-semibold text-slate-900">Ana sayfayi gorerek duzenle</h2>
+            <h2 className="mt-1 text-lg font-semibold text-slate-900">Ana sayfayı görerek düzenle</h2>
           </div>
           <div className="flex flex-wrap gap-2">
             {(["hero", "feature_grid", "process_steps", "pricing_grid", "credibility", "contact_cta", "faq_grid"] as SectionType[]).map((type) => (
@@ -651,16 +651,16 @@ export function LandingVisualEditor({
         <aside className="sticky top-6 h-fit rounded-[2rem] border border-slate-200 bg-white p-5 shadow-[0_20px_60px_rgba(15,23,42,0.10)]">
           <p className="text-xs font-semibold uppercase tracking-[0.24em] text-slate-500">Properties</p>
           <h2 className="mt-2 text-xl font-semibold text-slate-900">
-            {selectedSection ? `${selectedSection.type} ayarlari` : "Blok sec"}
+            {selectedSection ? `${selectedSection.type} ayarları` : "Blok seç"}
           </h2>
-          <p className="mt-2 text-sm leading-6 text-slate-600">
-            Soldaki landing canvas uzerinden blok sec. Alanlari degistirdikce sayfa aninda guncellenir.
+          <p className="mt-2 text-sm leadıng-6 text-slate-600">
+            Soldaki landing canvas üzerinden blok seç. Alanları değiştirdikçe sayfa anında güncellenir.
           </p>
 
           <div className="mt-5 rounded-2xl border border-slate-200 bg-slate-50 p-4">
             <p className="text-[11px] font-semibold uppercase tracking-[0.24em] text-slate-500">Global</p>
             <div className="mt-4 grid gap-4">
-              <TextInput label="Sayfa basligi" value={pageTitle} onChange={setPageTitle} />
+              <TextInput label="Sayfa başlığı" value={pageTitle} onChange={setPageTitle} />
               <TextInput label="Üst login butonu" value={topLoginLabel} onChange={setTopLoginLabel} />
               <TextInput label="Üst demo butonu" value={topDemoLabel} onChange={setTopDemoLabel} />
               <TextInput label="Telefon / WhatsApp" value={businessPhone} onChange={setBusinessPhone} />
@@ -675,14 +675,14 @@ export function LandingVisualEditor({
                   onClick={() => moveSection(sections.findIndex((item) => item.id === selectedSection.id), -1)}
                   className="rounded-lg border border-slate-300 px-3 py-2 text-xs font-semibold text-slate-700"
                 >
-                  Yukari
+                  Yukarı
                 </button>
                 <button
                   type="button"
                   onClick={() => moveSection(sections.findIndex((item) => item.id === selectedSection.id), 1)}
                   className="rounded-lg border border-slate-300 px-3 py-2 text-xs font-semibold text-slate-700"
                 >
-                  Asagi
+                  Aşağı
                 </button>
                 <button
                   type="button"
@@ -705,7 +705,7 @@ export function LandingVisualEditor({
 
           <div className="mt-6">
             <button type="submit" className="w-full rounded-xl bg-slate-950 px-5 py-3 text-sm font-semibold text-white">
-              Degisiklikleri Kaydet
+              Değişiklikleri Kaydet
             </button>
           </div>
         </aside>

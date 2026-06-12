@@ -3,6 +3,20 @@
 import Link from "next/link";
 import { useEffect, useEffectEvent, useMemo, useState } from "react";
 import { usePathname, useRouter, useSearchParams } from "next/navigation";
+import {
+  Banknote,
+  ChefHat,
+  ClipboardList,
+  Home,
+  LayoutGrid,
+  MoreHorizontal,
+  PackageCheck,
+  Plus,
+  ReceiptText,
+  Settings,
+  Table2,
+  UtensilsCrossed,
+} from "lucide-react";
 import { LogoutButton } from "@/components/logout-button";
 import { PwaRuntime } from "@/components/pwa-runtime";
 import { hasFeature, type FeatureKey } from "@/lib/features";
@@ -12,31 +26,45 @@ import type { AppRole } from "@/lib/types";
 type MobileAction = {
   href: string;
   label: string;
-  icon: string;
+  icon: keyof typeof mobileIcons;
   roles: AppRole[];
   group: "order" | "ops" | "management";
   feature?: FeatureKey;
 };
 
+const mobileIcons = {
+  banknote: Banknote,
+  chefHat: ChefHat,
+  clipboardList: ClipboardList,
+  home: Home,
+  layoutGrid: LayoutGrid,
+  more: MoreHorizontal,
+  packageCheck: PackageCheck,
+  plus: Plus,
+  receipt: ReceiptText,
+  settings: Settings,
+  table: Table2,
+  utensils: UtensilsCrossed,
+};
+
 function resolveMobileActions(activeBusinessType: AppShellPayload["activeBusinessType"]): MobileAction[] {
   if (activeBusinessType === "self_service_coffee") {
     return [
-      { href: "/m/tables?flow=new-order", label: "Siparis Ac", icon: "SP", roles: ["owner", "admin", "cashier", "waiter"], group: "order" },
-      { href: "/m/cashier", label: "Siparis Yonetimi", icon: "SY", roles: ["admin", "cashier", "waiter"], group: "order" },
-      { href: "/m/kitchen", label: "Mutfak", icon: "MK", roles: ["admin", "kitchen"], group: "ops", feature: "kitchen_display" },
-      { href: "/cashier/session", label: "Gun Islemleri", icon: "GI", roles: ["admin", "cashier"], group: "management" },
+      { href: "/m/tables?flow=new-order", label: "Sipariş Ac", icon: "plus", roles: ["owner", "admin", "cashier", "waiter"], group: "order" },
+      { href: "/m/cashier", label: "Sipariş Yönetimi", icon: "receipt", roles: ["admin", "cashier", "waiter"], group: "order" },
+      { href: "/m/kitchen", label: "Mutfak", icon: "chefHat", roles: ["admin", "kitchen"], group: "ops", feature: "kitchen_display" },
+      { href: "/m/cashier/session", label: "Gün İşlemleri", icon: "settings", roles: ["admin", "cashier"], group: "management" },
     ];
   }
 
   return [
-    { href: "/m/tables", label: "Masa Akisi", icon: "MS", roles: ["admin", "cashier"], group: "order" },
-    { href: "/m/tables?flow=new-order", label: "Siparis Ac", icon: "SP", roles: ["owner", "admin", "cashier"], group: "order" },
-    { href: "/m/cashier", label: "Adisyon", icon: "AD", roles: ["admin", "cashier", "waiter"], group: "order" },
-    { href: "/m/kitchen", label: "Mutfak", icon: "MK", roles: ["admin", "kitchen"], group: "ops", feature: "kitchen_display" },
-    { href: "/m/delivery", label: "Teslimat", icon: "DL", roles: ["admin", "cashier"], group: "ops", feature: "delivery_dispatch" },
-    { href: "/m/service-requests", label: "Talepler", icon: "TR", roles: ["admin", "cashier"], group: "ops" },
-    { href: "/cashier/session", label: "Gun Islemleri", icon: "GI", roles: ["admin", "cashier"], group: "management" },
-    { href: "/admin/tables", label: "Masa Yonetimi", icon: "MY", roles: ["owner", "admin"], group: "management" },
+    { href: "/m/tables", label: "Masa Akisi", icon: "table", roles: ["admin", "cashier"], group: "order" },
+    { href: "/m/tables?flow=new-order", label: "Sipariş Ac", icon: "plus", roles: ["owner", "admin", "cashier"], group: "order" },
+    { href: "/m/cashier", label: "Adisyon", icon: "receipt", roles: ["admin", "cashier", "waiter"], group: "order" },
+    { href: "/m/kitchen", label: "Mutfak", icon: "chefHat", roles: ["admin", "kitchen"], group: "ops", feature: "kitchen_display" },
+    { href: "/m/delivery", label: "Teslimat", icon: "packageCheck", roles: ["admin", "cashier"], group: "ops", feature: "delivery_dispatch" },
+    { href: "/m/service-requests", label: "Talepler", icon: "clipboardList", roles: ["admin", "cashier"], group: "ops" },
+    { href: "/m/cashier/session", label: "Gün İşlemleri", icon: "settings", roles: ["admin", "cashier"], group: "management" },
   ];
 }
 
@@ -45,7 +73,7 @@ function resolveMobileTitle(pathname: string | null, activeBusinessType: AppShel
   if (pathname === "/m/ops" || pathname.startsWith("/m/ops/")) return "Operasyon";
   if (pathname === "/m/tables" || pathname.startsWith("/m/tables/")) return "Masa Takip";
   if (pathname === "/m/cashier" || pathname.startsWith("/m/cashier/")) {
-    return activeBusinessType === "self_service_coffee" ? "Siparis Yonetimi" : "Adisyon";
+    return activeBusinessType === "self_service_coffee" ? "Sipariş Yönetimi" : "Adisyon";
   }
   if (pathname === "/m/kitchen" || pathname.startsWith("/m/kitchen/")) return "Mutfak";
   if (pathname === "/m/delivery" || pathname.startsWith("/m/delivery/")) return "Teslimat";
@@ -80,6 +108,14 @@ function actionGroupLabel(group: MobileAction["group"]) {
 function buildQueryString(searchParams: ReturnType<typeof useSearchParams>) {
   const query = searchParams?.toString() ?? "";
   return query ? `?${query}` : "";
+}
+
+function isActiveHref(pathname: string | null, href: string) {
+  if (!pathname) {
+    return false;
+  }
+  const targetPath = href.split("?")[0];
+  return pathname === targetPath || pathname.startsWith(`${targetPath}/`);
 }
 
 function resolveLargeScreenHref(pathname: string | null, searchParams: ReturnType<typeof useSearchParams>) {
@@ -124,8 +160,9 @@ export function MobileOpsShell({
   const [shellData, setShellData] = useState<AppShellPayload | null>(initialData);
   const [isOffline, setIsOffline] = useState(false);
   const [actionsOpen, setActionsOpen] = useState(false);
-  const [isCoarsePointer, setIsCoarsePointer] = useState(false);
-  const [isNarrowViewport, setIsNarrowViewport] = useState(false);
+  const [isCoarsePointer, setIsCoarsePointer] = useState(true);
+  const [isNarrowViewport, setIsNarrowViewport] = useState(true);
+  const [viewportReady, setViewportReady] = useState(false);
 
   const activeBusinessType = shellData?.activeBusinessType ?? "restaurant_cafe";
   const mobileTitle = resolveMobileTitle(pathname, activeBusinessType);
@@ -157,10 +194,31 @@ export function MobileOpsShell({
       const group = groupKey as MobileAction["group"];
       return {
         key: group,
-        title: group === "order" && activeBusinessType === "self_service_coffee" ? "Siparis Yonetimi" : actionGroupLabel(group),
+        title: group === "order" && activeBusinessType === "self_service_coffee" ? "Sipariş Yönetimi" : actionGroupLabel(group),
         actions: actions.filter((item) => item.group === group),
       };
     });
+  }, [activeBusinessType, currentPlan, role, shellData?.effectiveCapabilities, usingDemoData]);
+
+  const primaryTabs = useMemo(() => {
+    const sourceActions = resolveMobileActions(activeBusinessType);
+    const actions = sourceActions.filter(
+      (action) =>
+        canAccessAction(role, usingDemoData, action.roles) &&
+        isFeatureEnabled(currentPlan, shellData?.effectiveCapabilities, action.feature),
+    );
+    const preferredHrefs =
+      activeBusinessType === "self_service_coffee"
+        ? ["/m/tables?flow=new-order", "/m/cashier", "/m/kitchen"]
+        : ["/m/tables", "/m/cashier", "/m/kitchen"];
+
+    return [
+      { href: "/m/ops", label: "Operasyon", icon: "home" as const },
+      ...preferredHrefs
+        .map((href) => actions.find((action) => action.href === href))
+        .filter((action): action is MobileAction => Boolean(action))
+        .slice(0, 3),
+    ];
   }, [activeBusinessType, currentPlan, role, shellData?.effectiveCapabilities, usingDemoData]);
 
   useEffect(() => {
@@ -198,29 +256,35 @@ export function MobileOpsShell({
   }, [isOffline, pwaEnabled]);
 
   useEffect(() => {
-    const media = window.matchMedia("(hover: none) and (pointer: coarse)");
-    const apply = () => setIsCoarsePointer(media.matches);
+    const pointerMedia = window.matchMedia("(hover: none) and (pointer: coarse)");
+    const viewportMedia = window.matchMedia("(max-width: 1024px)");
+    const apply = () => {
+      setIsCoarsePointer(pointerMedia.matches);
+      setIsNarrowViewport(viewportMedia.matches);
+      setViewportReady(true);
+    };
     apply();
-    media.addEventListener("change", apply);
-    return () => media.removeEventListener("change", apply);
+    pointerMedia.addEventListener("change", apply);
+    viewportMedia.addEventListener("change", apply);
+    return () => {
+      pointerMedia.removeEventListener("change", apply);
+      viewportMedia.removeEventListener("change", apply);
+    };
   }, []);
 
   useEffect(() => {
-    const media = window.matchMedia("(max-width: 1024px)");
-    const apply = () => setIsNarrowViewport(media.matches);
-    apply();
-    media.addEventListener("change", apply);
-    return () => media.removeEventListener("change", apply);
-  }, []);
-
-  useEffect(() => {
+    if (!viewportReady) {
+      return;
+    }
     const shouldStayInMobileApp = isCoarsePointer || isNarrowViewport;
     if (shouldStayInMobileApp) {
       return;
     }
     const largeScreenHref = resolveLargeScreenHref(pathname, searchParams);
     router.replace(largeScreenHref);
-  }, [isCoarsePointer, isNarrowViewport, pathname, router, searchParams]);
+  }, [isCoarsePointer, isNarrowViewport, pathname, router, searchParams, viewportReady]);
+
+  const renderedPrimaryTabs = primaryTabs.slice(0, 4);
 
   return (
     <>
@@ -248,30 +312,47 @@ export function MobileOpsShell({
           </div>
           {isOffline ? (
             <div className="border-t border-amber-200 bg-amber-50 px-4 py-2 text-xs font-medium text-amber-900">
-              Baglanti gerekli. Offline modda yalnızca okunabilir kullanım açık.
+              Bağlantı gerekli. Offline modda yalnızca okunabilir kullanım açık.
             </div>
           ) : null}
         </header>
 
-        <main className="mx-auto w-full max-w-[980px] px-3 pb-[calc(104px+var(--safe-area-bottom))] pt-[calc(74px+var(--safe-area-top))]">
+        <main className="mx-auto w-full max-w-[980px] px-3 pb-[calc(112px+var(--safe-area-bottom))] pt-[calc(74px+var(--safe-area-top))]">
           {children}
         </main>
 
         <nav className="no-print fixed inset-x-0 bottom-0 z-40 border-t border-slate-200 bg-white/96 backdrop-blur">
-          <div className="mx-auto grid w-full max-w-[980px] grid-cols-[1fr_auto] gap-2 px-3 pb-[calc(var(--safe-area-bottom)+8px)] pt-2">
-            <Link
-              href="/m/ops"
-              scroll={false}
-              className="inline-flex min-h-[48px] items-center justify-center rounded-2xl bg-slate-950 px-4 py-3 text-sm font-semibold text-white"
-            >
-              Home
-            </Link>
+          <div
+            className="mx-auto grid w-full max-w-[980px] gap-1 px-2 pb-[calc(var(--safe-area-bottom)+8px)] pt-2"
+            style={{ gridTemplateColumns: `repeat(${renderedPrimaryTabs.length}, minmax(0, 1fr)) auto` }}
+          >
+            {renderedPrimaryTabs.map((tab) => {
+              const Icon = mobileIcons[tab.icon];
+              const active = isActiveHref(pathname, tab.href);
+              return (
+                <Link
+                  key={tab.href}
+                  href={tab.href}
+                  scroll={false}
+                  aria-current={active ? "page" : undefined}
+                  className={`inline-flex min-h-[56px] min-w-0 flex-col items-center justify-center gap-1 rounded-2xl px-2 py-2 text-[11px] font-semibold ${
+                    active ? "bg-slate-950 text-white" : "text-slate-600"
+                  }`}
+                >
+                  <Icon aria-hidden="true" className="h-5 w-5 shrink-0" strokeWidth={2.2} />
+                  <span className="max-w-full truncate">{tab.label}</span>
+                </Link>
+              );
+            })}
             <button
               type="button"
               onClick={() => setActionsOpen((prev) => !prev)}
-              className="inline-flex min-h-[48px] items-center justify-center rounded-2xl border border-slate-200 bg-slate-50 px-5 py-3 text-sm font-semibold text-slate-800"
+              aria-label="Diger is akışlari"
+              aria-expanded={actionsOpen}
+              className="inline-flex min-h-[56px] w-[58px] flex-col items-center justify-center gap-1 rounded-2xl border border-slate-200 bg-slate-50 px-2 py-2 text-[11px] font-semibold text-slate-700"
             >
-              Actions
+              <MoreHorizontal aria-hidden="true" className="h-5 w-5" strokeWidth={2.2} />
+              Diger
             </button>
           </div>
         </nav>
@@ -300,20 +381,23 @@ export function MobileOpsShell({
                     <section key={group.key} className="rounded-[20px] border border-slate-200 bg-slate-50 px-3 py-3">
                       <p className="text-[11px] font-semibold uppercase tracking-[0.14em] text-slate-500">{group.title}</p>
                       <div className="mt-2 grid gap-2">
-                        {group.actions.map((action) => (
-                          <Link
-                            key={action.href}
-                            href={action.href}
-                            scroll={false}
-                            onClick={() => setActionsOpen(false)}
-                            className="flex min-h-[54px] items-center gap-3 rounded-2xl border border-slate-200 bg-white px-4 py-3 text-sm font-semibold text-slate-900"
-                          >
-                            <span className="inline-flex h-9 w-9 items-center justify-center rounded-xl bg-slate-900 text-xs font-bold text-white">
-                              {action.icon}
-                            </span>
-                            <span>{action.label}</span>
-                          </Link>
-                        ))}
+                        {group.actions.map((action) => {
+                          const Icon = mobileIcons[action.icon];
+                          return (
+                            <Link
+                              key={action.href}
+                              href={action.href}
+                              scroll={false}
+                              onClick={() => setActionsOpen(false)}
+                              className="flex min-h-[54px] items-center gap-3 rounded-2xl border border-slate-200 bg-white px-4 py-3 text-sm font-semibold text-slate-900"
+                            >
+                              <span className="inline-flex h-9 w-9 items-center justify-center rounded-xl bg-slate-900 text-white">
+                                <Icon aria-hidden="true" className="h-[18px] w-[18px]" strokeWidth={2.2} />
+                              </span>
+                              <span>{action.label}</span>
+                            </Link>
+                          );
+                        })}
                       </div>
                     </section>
                   ))}
@@ -325,7 +409,7 @@ export function MobileOpsShell({
                     onClick={() => setActionsOpen(false)}
                     className="inline-flex min-h-[46px] items-center justify-center rounded-2xl border border-slate-200 bg-white px-4 py-3 text-sm font-semibold text-slate-800"
                   >
-                    Home
+                    Operasyon
                   </Link>
                   {shellData?.hasUser ? (
                     <div className="flex justify-center">

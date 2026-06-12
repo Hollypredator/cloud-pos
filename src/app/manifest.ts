@@ -6,7 +6,7 @@ export default function manifest(): MetadataRoute.Manifest {
     name: "Cloud POS",
     short_name: "CloudPOS",
     description: "Web tabanli POS, QR menü ve restoran operasyon sistemi",
-    start_url: "/ops",
+    start_url: "/m/ops",
     scope: "/",
     display: "standalone",
     background_color: "#f1f5f9",
@@ -16,17 +16,17 @@ export default function manifest(): MetadataRoute.Manifest {
       {
         name: "Operasyon Merkezi",
         short_name: "Ops",
-        url: "/ops",
+        url: "/m/ops",
       },
       {
         name: "Masa Takip",
         short_name: "Masalar",
-        url: "/tables",
+        url: "/m/tables",
       },
       {
         name: "Kasa",
         short_name: "Kasa",
-        url: "/cashier",
+        url: "/m/cashier",
       },
     ],
     icons: [

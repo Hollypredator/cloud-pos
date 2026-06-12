@@ -8,20 +8,25 @@ const guardPatterns = [
   /requirePlatformPermission\(/,
   /requireSupportRole\(/,
   /verifyQrAccessToken\(/,
+  /getSyncActorContext\(/,
+  /getTableByQr\(/,
   /checkSecret\(/,
 ];
 const auditPatterns = [
   /logAuditEvent\(/,
   /writeSupportAuditLog\(/,
+  /logApiEvent\(/,
+  /recordCommandAttempt\(/,
   /setAlertDispatch\(/,
   /createOrder\(/,
   /createTableRequest\(/,
 ];
-const publicWriteRoutes = new Set(["src/app/api/locale/route.ts"]);
+const publicWriteRoutes = new Set(["src/app/api/locale/route.ts", "src/app/api/qr/funnel/route.ts"]);
 const noAuditRequiredRoutes = new Set([
   "src/app/api/branch/active/route.ts",
   "src/app/api/business/active/route.ts",
   "src/app/api/locale/route.ts",
+  "src/app/api/station/active/route.ts",
 ]);
 
 function walkRoutes(dir) {

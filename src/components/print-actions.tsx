@@ -37,7 +37,7 @@ export function PrintActions({ baseHref }: PrintActionsProps) {
               : "border border-slate-200 bg-white text-slate-700 hover:bg-slate-50"
           }`}
         >
-          80mm Fis
+          80mm Fiş
         </Link>
         <Link
           href={`${baseHref}?layout=thermal58${hideLogo ? "&logo=0" : ""}`}
@@ -47,7 +47,7 @@ export function PrintActions({ baseHref }: PrintActionsProps) {
               : "border border-slate-200 bg-white text-slate-700 hover:bg-slate-50"
           }`}
         >
-          58mm Dar Fis
+          58mm Dar Fiş
         </Link>
         <Link
           href={`${baseHref}?layout=${layout}${hideLogo ? "" : "&logo=0"}`}

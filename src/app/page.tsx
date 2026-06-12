@@ -1,4 +1,4 @@
-import { LandingPageRenderer } from "@/components/landing-page-renderer";
+import { ProductLandingPage } from "@/components/product-landing-page";
 import { getGeneralSettings, getSitePageContent } from "@/lib/data";
 import { getCurrentLocale } from "@/lib/i18n-server";
 
@@ -8,11 +8,11 @@ export default async function LandingPage({
   searchParams: Promise<{ lead?: string }>;
 }) {
   const { lead } = await searchParams;
-  const [locale, { content }, { settings }] = await Promise.all([
+  const [locale, , { settings }] = await Promise.all([
     getCurrentLocale(),
     getSitePageContent("home"),
     getGeneralSettings(),
   ]);
 
-  return <LandingPageRenderer content={content} settings={settings} leadStatus={lead} locale={locale} />;
+  return <ProductLandingPage settings={settings} leadStatus={lead} locale={locale} />;
 }

@@ -96,7 +96,7 @@ export function CategorySortManager({
             </form>
             <div className="mt-4 flex items-center justify-between gap-3">
               <p className="text-xs font-medium uppercase tracking-[0.14em] text-slate-400">
-                {isPending ? "Sira guncelleniyor..." : "Sürükle bırak ile yer degistir"}
+                {isPending ? "Sira güncelleniyor..." : "Sürükle bırak ile yer degistir"}
               </p>
               <form action={onDelete}>
                 <input type="hidden" name="categoryId" value={category.id} />

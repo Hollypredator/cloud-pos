@@ -1,24 +1,7 @@
 import type { NextConfig } from "next";
+import { getSecurityHeaders } from "./src/lib/security-headers";
 
 const isProduction = process.env.NODE_ENV === "production";
-const scriptSrc = ["'self'", "'unsafe-inline'", "https:"];
-if (!isProduction) {
-  scriptSrc.push("'unsafe-eval'");
-}
-
-const contentSecurityPolicy = [
-  "default-src 'self'",
-  "base-uri 'self'",
-  "frame-ancestors 'none'",
-  "object-src 'none'",
-  "img-src 'self' data: https:",
-  "font-src 'self' https: data:",
-  "style-src 'self' 'unsafe-inline' https:",
-  `script-src ${scriptSrc.join(" ")}`,
-  "connect-src 'self' https:",
-  "form-action 'self'",
-  "upgrade-insecure-requests",
-].join("; ");
 
 const nextConfig: NextConfig = {
   distDir: process.env.NEXT_DIST_DIR || ".next",
@@ -50,16 +33,20 @@ const nextConfig: NextConfig = {
   async headers() {
     return [
       {
-        source: "/(.*)",
+        source: "/sw.js",
         headers: [
-          { key: "X-Frame-Options", value: "DENY" },
-          { key: "X-Content-Type-Options", value: "nosniff" },
-          { key: "Referrer-Policy", value: "strict-origin-when-cross-origin" },
-          { key: "X-XSS-Protection", value: "1; mode=block" },
-          { key: "Permissions-Policy", value: "camera=(), microphone=(), geolocation=()" },
-          { key: "Content-Security-Policy", value: contentSecurityPolicy },
-          { key: "Strict-Transport-Security", value: "max-age=31536000; includeSubDomains; preload" },
+          { key: "Cache-Control", value: "no-store, max-age=0" },
         ],
+      },
+      {
+        source: "/manifest.webmanifest",
+        headers: [
+          { key: "Cache-Control", value: "no-store, max-age=0" },
+        ],
+      },
+      {
+        source: "/(.*)",
+        headers: getSecurityHeaders({ includeHsts: true, isProduction }).map(([key, value]) => ({ key, value })),
       },
     ];
   },

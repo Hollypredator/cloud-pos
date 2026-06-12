@@ -53,12 +53,12 @@ async function createTenantAction(formData: FormData) {
   });
 
   if (!result.ok) {
-    redirect(feedbackHref("error", result.error ?? "Tenant olusturulamadi."));
+    redirect(feedbackHref("error", result.error ?? "Tenant oluşturulamadı."));
   }
 
   revalidatePath("/support/tenants");
-  const passwordNote = result.temporaryPassword ? ` Gecici sifre: ${result.temporaryPassword}` : "";
-  redirect(feedbackHref("success", `Tenant olusturuldu.${passwordNote}`));
+  const passwordNote = result.temporaryPassword ? ` Geçici sifre: ${result.temporaryPassword}` : "";
+  redirect(feedbackHref("success", `Tenant oluşturuldu.${passwordNote}`));
 }
 
 export default async function SupportTenantCreatePage({
@@ -75,7 +75,7 @@ export default async function SupportTenantCreatePage({
       <header className="flex flex-wrap items-center justify-between gap-3">
         <div>
           <p className="text-sm text-slate-500">{translateUiText("Tenant Provisioning", locale)}</p>
-          <h1 className="text-3xl font-semibold text-slate-900">{translateUiText("Yeni tenant olustur", locale)}</h1>
+          <h1 className="text-3xl font-semibold text-slate-900">{translateUiText("Yeni tenant oluştur", locale)}</h1>
         </div>
         <Link
           href="/support/tenants"
@@ -103,13 +103,13 @@ export default async function SupportTenantCreatePage({
           <input
             name="businessName"
             required
-            placeholder="Isletme adi"
+            placeholder="İşletme adı"
             className="rounded-xl border border-slate-300 px-4 py-3 text-sm"
           />
           <input
             name="businessSlug"
             required
-            placeholder="isletme-slug"
+            placeholder="işletme-slug"
             className="rounded-xl border border-slate-300 px-4 py-3 text-sm"
           />
           <select name="plan" defaultValue="growth" className="rounded-xl border border-slate-300 px-4 py-3 text-sm md:col-span-2">
@@ -123,13 +123,13 @@ export default async function SupportTenantCreatePage({
           </select>
         </div>
 
-        <h2 className="text-lg font-semibold text-slate-900">Ilk sube</h2>
+        <h2 className="text-lg font-semibold text-slate-900">İlk şube</h2>
         <div className="grid gap-3 md:grid-cols-2">
           <input
             name="branchName"
             required
-            defaultValue="Merkez Sube"
-            placeholder="Sube adi"
+            defaultValue="Merkez Şube"
+            placeholder="Şube adı"
             className="rounded-xl border border-slate-300 px-4 py-3 text-sm"
           />
           <input
@@ -139,7 +139,7 @@ export default async function SupportTenantCreatePage({
           />
         </div>
 
-        <h2 className="text-lg font-semibold text-slate-900">Owner hesabi</h2>
+        <h2 className="text-lg font-semibold text-slate-900">Owner hesabı</h2>
         <div className="grid gap-3 md:grid-cols-2">
           <input
             type="email"
@@ -156,7 +156,7 @@ export default async function SupportTenantCreatePage({
           <input
             type="text"
             name="ownerPassword"
-            placeholder="Opsiyonel gecici sifre (bossa otomatik uretilir)"
+            placeholder="Opsiyönel gecici sifre (boşsa otomatik uretilir)"
             className="rounded-xl border border-slate-300 px-4 py-3 text-sm md:col-span-2"
           />
         </div>

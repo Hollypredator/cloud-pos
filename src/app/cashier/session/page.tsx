@@ -1,16 +1,26 @@
 import { revalidatePath } from "next/cache";
+import { headers } from "next/headers";
 import { redirect } from "next/navigation";
 import { LiveOpsBridge } from "@/components/live-ops-bridge";
 import { CashierSessionSettingsForm, type SessionSettingsFormActionState } from "@/components/cashier-session-settings-form";
 import { BackofficePage, ContentCard, FeatureLockedState, NoticeBanner, SidebarPanel, SummaryCard, WorkflowGuide } from "@/components/backoffice-ui";
 import { requireRole } from "@/lib/auth";
+import { isLikelyMobileUserAgent } from "@/lib/device";
 import { getCurrentCashSession, getPaymentOverview } from "@/lib/domains/finance";
 import { executeWebOpsCommand } from "@/lib/ops/server-action";
 import { getApplicationSettings, updateApplicationSettings } from "@/lib/data";
 import { getFeatureAccess } from "@/lib/plan-access";
 
-function feedbackHref(tone: "success" | "error", message: string) {
-  return `/cashier/session?tone=${encodeURIComponent(tone)}&feedback=${encodeURIComponent(message)}`;
+function resolveCashierSessionReturnPath(value: FormDataEntryValue | null | undefined) {
+  const returnPath = typeof value === "string" ? value.trim() : "";
+  if (returnPath === "/m/cashier/session" || returnPath === "/cashier/session") {
+    return returnPath;
+  }
+  return "/cashier/session";
+}
+
+function feedbackHref(tone: "success" | "error", message: string, returnPath = "/cashier/session") {
+  return `${returnPath}?tone=${encodeURIComponent(tone)}&feedback=${encodeURIComponent(message)}`;
 }
 
 async function openSessionAction(formData: FormData) {
@@ -19,8 +29,9 @@ async function openSessionAction(formData: FormData) {
 
   const openingCash = Number(formData.get("openingCash"));
   const note = formData.get("note");
+  const returnPath = resolveCashierSessionReturnPath(formData.get("returnPath"));
   if (!Number.isFinite(openingCash) || openingCash < 0) {
-    redirect(feedbackHref("error", "Acilis nakdi gecerli bir sifir veya pozitif tutar olmali."));
+    redirect(feedbackHref("error", "Acilis nakdi gecerli bir sifir veya pozitif tutar olmali.", returnPath));
   }
 
   try {
@@ -32,15 +43,15 @@ async function openSessionAction(formData: FormData) {
       },
     });
     if (result.status !== "ACK") {
-      redirect(feedbackHref("error", result.message ?? "Gun basi işlemi tamamlanamadi."));
+      redirect(feedbackHref("error", result.message ?? "Gun basi islemi tamamlanamadi.", returnPath));
     }
     revalidatePath("/cashier/session");
-    redirect(feedbackHref("success", "Gun basi basariyla açıldı."));
+    revalidatePath("/m/cashier/session");
+    redirect(feedbackHref("success", "Gun basi basariyla acildi.", returnPath));
   } catch {
-    redirect(feedbackHref("error", "Gun basi işlemi tamamlanamadi."));
+    redirect(feedbackHref("error", "Gun basi islemi tamamlanamadi.", returnPath));
   }
 }
-
 async function closeSessionAction(formData: FormData) {
   "use server";
   await requireRole(["admin", "cashier"], "/cashier/session");
@@ -48,11 +59,12 @@ async function closeSessionAction(formData: FormData) {
   const sessionId = formData.get("sessionId");
   const closingCash = Number(formData.get("closingCash"));
   const note = formData.get("note");
+  const returnPath = resolveCashierSessionReturnPath(formData.get("returnPath"));
   if (typeof sessionId !== "string") {
-    redirect(feedbackHref("error", "Kapatilacak oturum bulunamadi."));
+    redirect(feedbackHref("error", "Kapatilacak oturum bulunamadi.", returnPath));
   }
   if (!Number.isFinite(closingCash) || closingCash < 0) {
-    redirect(feedbackHref("error", "Sayilan nakit gecerli bir sifir veya pozitif tutar olmali."));
+    redirect(feedbackHref("error", "Sayilan nakit gecerli bir sifir veya pozitif tutar olmali.", returnPath));
   }
 
   try {
@@ -65,9 +77,10 @@ async function closeSessionAction(formData: FormData) {
       },
     });
     if (result.status !== "ACK") {
-      redirect(feedbackHref("error", result.message ?? "Gun sonu işlemi tamamlanamadi."));
+      redirect(feedbackHref("error", result.message ?? "Gun sonu islemi tamamlanamadi.", returnPath));
     }
     revalidatePath("/cashier/session");
+    revalidatePath("/m/cashier/session");
     const varianceValue = typeof result.data?.variance === "number" ? result.data.variance : null;
     const expectedCash = typeof result.data?.expectedCash === "number" ? result.data.expectedCash : 0;
     const varianceMessage =
@@ -76,14 +89,13 @@ async function closeSessionAction(formData: FormData) {
         : "";
     const mismatchMessage =
       result.data?.mismatchAlertSent === true
-        ? " Mutabakat farki esigi asildigi için operasyon alarmi oluşturuldu."
+        ? " Mutabakat farki esigi asildigi icin operasyon alarmi olusturuldu."
         : "";
-    redirect(feedbackHref("success", `Gun sonu işlemi tamamlandı.${varianceMessage}${mismatchMessage}`));
+    redirect(feedbackHref("success", `Gun sonu islemi tamamlandi.${varianceMessage}${mismatchMessage}`, returnPath));
   } catch {
-    redirect(feedbackHref("error", "Gun sonu işlemi tamamlanamadi."));
+    redirect(feedbackHref("error", "Gun sonu islemi tamamlanamadi.", returnPath));
   }
 }
-
 async function updateSessionSettingsAction(
   _state: SessionSettingsFormActionState,
   formData: FormData,
@@ -117,6 +129,7 @@ async function updateSessionSettingsAction(
   }
 
   revalidatePath("/cashier/session");
+  revalidatePath("/m/cashier/session");
   return {
     tone: "success",
     message: "Gun islemleri ayarlari kaydedildi.",
@@ -129,6 +142,9 @@ export default async function CashierSessionPage({
   searchParams: Promise<{ feedback?: string; tone?: "success" | "error" }>;
 }) {
   await requireRole(["admin", "cashier"], "/cashier/session");
+  const headerStore = await headers();
+  const renderMobileMarkup = isLikelyMobileUserAgent(headerStore.get("user-agent"));
+  const sessionPath = renderMobileMarkup ? "/m/cashier/session" : "/cashier/session";
   const featureAccess = await getFeatureAccess("shift_management");
   if (!featureAccess.enabled) {
     return (
@@ -162,6 +178,7 @@ export default async function CashierSessionPage({
             </div>
             {!session ? (
               <form action={openSessionAction} className="space-y-3">
+                <input type="hidden" name="returnPath" value={sessionPath} />
                 <input name="openingCash" type="number" min="0" step="0.01" defaultValue={0} className="w-full rounded-2xl border border-slate-200 bg-slate-50 px-4 py-3 text-sm" />
                 <input name="note" placeholder="Acilis notu" className="w-full rounded-2xl border border-slate-200 bg-slate-50 px-4 py-3 text-sm" />
                 <button type="submit" className="w-full rounded-2xl bg-gradient-to-r from-[#ff5a34] to-[#f04b4b] px-4 py-3 text-sm font-semibold text-white">
@@ -171,6 +188,7 @@ export default async function CashierSessionPage({
             ) : (
               <form action={closeSessionAction} className="space-y-3">
                 <input type="hidden" name="sessionId" value={session.id} />
+                <input type="hidden" name="returnPath" value={sessionPath} />
                 <input name="closingCash" type="number" min="0" step="0.01" placeholder="Sayilan nakit" className="w-full rounded-2xl border border-slate-200 bg-slate-50 px-4 py-3 text-sm" />
                 <input name="note" placeholder="Kapanis notu" className="w-full rounded-2xl border border-slate-200 bg-slate-50 px-4 py-3 text-sm" />
                 <button type="submit" className="w-full rounded-2xl bg-gradient-to-r from-[#ff5a34] to-[#f04b4b] px-4 py-3 text-sm font-semibold text-white">

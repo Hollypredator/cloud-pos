@@ -3,6 +3,7 @@ import Link from "next/link";
 import { redirect } from "next/navigation";
 import { AdminOrderEntry } from "@/components/admin-order-entry";
 import { LiveOpsBridge } from "@/components/live-ops-bridge";
+import { MobileAuthRedirect } from "@/components/mobile-auth-redirect";
 import { PendingSubmitButton } from "@/components/pending-submit-button";
 import { getCurrentUserWithRole, hasRoleAccess, requireRole } from "@/lib/auth";
 import { getMenu } from "@/lib/domains/orders";
@@ -15,6 +16,7 @@ import {
 } from "@/lib/domains/tables";
 import { executeWebOpsCommand } from "@/lib/ops/server-action";
 import { getBusinessScopeContext } from "@/lib/server/app-context";
+import { shouldUseMobileClientAuthRedirect } from "@/lib/server/mobile-auth-guard";
 import type { TableStatus } from "@/lib/types";
 
 const statusStyles: Record<TableStatus, string> = {
@@ -158,6 +160,10 @@ export default async function MobileTablesPage({
 }: {
   searchParams: Promise<TablesSearchParams>;
 }) {
+  if (await shouldUseMobileClientAuthRedirect()) {
+    return <MobileAuthRedirect />;
+  }
+
   await requireRole(["admin", "cashier", "kitchen"], "/m/tables");
   const {
     status: rawFilter,
@@ -212,7 +218,7 @@ export default async function MobileTablesPage({
   const openOrderFlow = activeFlow === "new-order" && canOpenOrders;
   const selectedTableId = requestedTableId && sortedTables.some((table) => table.id === requestedTableId)
     ? requestedTableId
-    : filteredTables[0]?.id ?? sortedTables[0]?.id;
+    : null;
   const selectedTable = selectedTableId ? sortedTables.find((table) => table.id === selectedTableId) ?? null : null;
 
   const orderEntryData = openOrderFlow
@@ -279,6 +285,14 @@ export default async function MobileTablesPage({
         </div>
         <p className="m-muted mt-2">Açık adisyon: {openOrderCount} - Açık servis talebi: {openRequestCountLabel}</p>
       </section>
+
+      {openOrderFlow && !selectedTable ? (
+        <section className="m-card mt-3 border-orange-200 bg-orange-50">
+          <p className="m-label text-orange-700">Siparis akisi</p>
+          <p className="mt-2 text-base font-semibold text-slate-900">Once masa secin.</p>
+          <p className="mt-1 text-sm text-slate-600">Siparis acmak icin asagidaki masa kartlarindan birini kullanin.</p>
+        </section>
+      ) : null}
 
       <section className="m-stack mt-3">
         {filteredTables.length === 0 ? (
@@ -390,7 +404,7 @@ export default async function MobileTablesPage({
         )}
       </section>
 
-      {openOrderFlow && orderEntryData ? (
+      {openOrderFlow && selectedTable && orderEntryData ? (
         <div className="m-flow-overlay">
           <div className="m-flow-shell">
             <header className="m-flow-header">
@@ -413,10 +427,10 @@ export default async function MobileTablesPage({
                 modifierGroups={orderEntryData.modifierGroups}
                 modifierOptions={orderEntryData.modifierOptions}
                 tables={sortedTables}
-                initialTableId={selectedTableId}
+                initialTableId={selectedTableId ?? undefined}
                 mobilePresentation="stack"
                 entryMode="table_first"
-                layoutMode="tablet_3pane"
+                layoutMode="mobile_stack"
                 initialView="composer"
               />
             </div>

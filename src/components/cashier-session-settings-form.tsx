@@ -35,7 +35,7 @@ export function CashierSessionSettingsForm({
     <form action={formAction} className="space-y-4 rounded-2xl border border-slate-200 bg-slate-50 px-4 py-4">
       <label className="flex items-center justify-between gap-4 rounded-2xl border border-slate-200 bg-white px-4 py-4">
         <div>
-          <p className="text-lg font-semibold text-slate-900">Otomatik Gun Sonu</p>
+          <p className="text-lg font-semibold text-slate-900">Otomatik Gün Sonu</p>
           <p className="text-sm text-slate-500">Belirtilen saatte gun sonunu otomatik tetikle</p>
         </div>
         <span className="relative inline-flex cursor-pointer items-center">
@@ -47,7 +47,7 @@ export function CashierSessionSettingsForm({
       <input type="hidden" name="autoSessionCloseEnabled_present" value="1" />
 
       <label className="block rounded-2xl border border-slate-200 bg-white px-4 py-4">
-        <p className="text-lg font-semibold text-slate-900">Gun Sonu Saati</p>
+        <p className="text-lg font-semibold text-slate-900">Gün Sonu Saati</p>
         <input
           type="time"
           name="autoSessionCloseTime"
@@ -59,7 +59,7 @@ export function CashierSessionSettingsForm({
       <label className="flex items-center justify-between gap-4">
         <div>
           <p className="text-lg font-semibold text-slate-900">Açık Adisyon Kontrolu</p>
-          <p className="text-sm text-slate-500">Gun sonu oncesi açık hesaplari zorunlu kapat</p>
+          <p className="text-sm text-slate-500">Gün sonu oncesi açık hesaplari zorunlu kapat</p>
         </div>
         <span className="relative inline-flex cursor-pointer items-center">
           <input

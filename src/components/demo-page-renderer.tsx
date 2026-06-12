@@ -1,9 +1,19 @@
 "use client";
 
 import Link from "next/link";
+import {
+  ArrowRight,
+  BarChart3,
+  ChefHat,
+  ClipboardList,
+  CreditCard,
+  MonitorSmartphone,
+  PackageSearch,
+  QrCode,
+  Store,
+} from "lucide-react";
 import { LanguageSwitcher } from "@/components/language-switcher";
-import { PublicTopNav } from "@/components/public-top-nav";
-import type { DemoPageContent, DemoSectionStyle } from "@/lib/demo";
+import type { DemoPageContent } from "@/lib/demo";
 import { getPublicCopy, type AppLocale } from "@/lib/i18n";
 
 type DemoRendererEditorOptions = {
@@ -12,145 +22,60 @@ type DemoRendererEditorOptions = {
   previewMode?: boolean;
 };
 
-type DemoSectionId =
-  | "hero"
-  | "metrics"
-  | "presentation"
-  | "accounts"
-  | "orders"
-  | "tables"
-  | "stock"
-  | "packages"
-  | "closing";
-
-const metrics = {
-  openOrders: 12,
-  pending: 4,
-  preparing: 5,
-  todayRevenue: 18450,
-  occupiedTables: 9,
-  emptyTables: 7,
-};
-
-const recentOrders = [
-  { id: "DM-1024", table: 4, status: "pending", total: 780, time: "14:12" },
-  { id: "DM-1023", table: 2, status: "preparing", total: 540, time: "14:09" },
-  { id: "DM-1022", table: 7, status: "served", total: 920, time: "14:03" },
-  { id: "DM-1021", table: 1, status: "paid", total: 360, time: "13:58" },
+const demoSteps = [
+  {
+    icon: Store,
+    title: "Operasyon merkezini inceleyin",
+    body: "Canlı sipariş, masa, mutfak, kasa ve stok durumunu yönetim ekranında görün.",
+  },
+  {
+    icon: QrCode,
+    title: "Self servis akışını değerlendirin",
+    body: "QR ve müşteri teması için ürünün sunduğu altyapıyı ürün türünda konumlandırın.",
+  },
+  {
+    icon: ChefHat,
+    title: "Mutfak ve kasa akışını görün",
+    body: "Sipariş hazırlama, servis, adısyon ve tahsilat ekranlarının birbiriyle nasıl bağlandığını izleyin.",
+  },
+  {
+    icon: MonitorSmartphone,
+    title: "Mobil PWA deneyimini kontrol edin",
+    body: "Masa seçimi, sipariş ekleme ve operasyon takibi telefon ekranında nasıl ilerliyor görün.",
+  },
 ];
 
-const lowStock = [
-  { name: "Cheesecake", count: 3 },
-  { name: "Cold Brew", count: 4 },
-  { name: "Croissant", count: 5 },
+const demoModules = [
+  { icon: ClipboardList, title: "Sipariş", body: "Masa ve self servis senaryolarını tek sipariş omurgasında toplayın." },
+  { icon: ChefHat, title: "Mutfak", body: "Hazırlanıyor, kritik, geciken ve servise hazır işleri ayırın." },
+  { icon: CreditCard, title: "Kasa", body: "Açık adısyon, ödeme, gün işlemleri ve tahsilat akışını yönetin." },
+  { icon: PackageSearch, title: "Stok", body: "Ürün, kategori, maliyet ve kritik stok alanlarını takip edin." },
+  { icon: BarChart3, title: "Rapor", body: "Ciro, sipariş, şube ve operasyon metriklerini tek panelden okuyun." },
 ];
 
-function statusBadge(status: string) {
-  if (status === "pending") return "bg-amber-100 text-amber-800";
-  if (status === "preparing") return "bg-sky-100 text-sky-800";
-  if (status === "served") return "bg-emerald-100 text-emerald-800";
-  if (status === "paid") return "bg-slate-100 text-slate-700";
-  return "bg-slate-100 text-slate-700";
-}
-
-function getSurfaceClass(style: DemoSectionStyle) {
-  if (style.surface === "white") return "bg-white shadow-[0_20px_60px_rgba(15,23,42,0.08)]";
-  if (style.surface === "glass")
-    return "border border-white/70 bg-white/60 shadow-[0_20px_60px_rgba(15,23,42,0.08)] backdrop-blur";
-  if (style.surface === "dark") return "bg-slate-950 text-white shadow-[0_20px_60px_rgba(15,23,42,0.20)]";
-  return "";
-}
-
-function wrapEditableSection(
-  id: DemoSectionId,
-  label: string,
-  content: React.ReactNode,
-  style: DemoSectionStyle,
-  editor?: DemoRendererEditorOptions,
-) {
-  const isActive = editor?.activeSectionId === id;
-  const chromePadding = style.surface === "transparent" ? 0 : 8;
-  const sectionBody = (
-    <div
-      className={`overflow-hidden ${getSurfaceClass(style)}`}
-      style={{
-        paddingTop: style.paddingTop + chromePadding,
-        paddingBottom: style.paddingBottom + chromePadding,
-        paddingLeft: style.contentPadding + chromePadding,
-        paddingRight: style.contentPadding + chromePadding,
-        borderRadius: style.radius,
-      }}
-    >
-      {content}
-    </div>
-  );
-
-  if (!editor?.onSelectSection) {
-    return <div key={id}>{sectionBody}</div>;
-  }
-
-  return (
-    <div
-      key={id}
-      role="button"
-      tabIndex={0}
-      onClick={() => editor.onSelectSection?.(id)}
-      onKeyDown={(event) => {
-        if (event.key === "Enter" || event.key === " ") {
-          event.preventDefault();
-          editor.onSelectSection?.(id);
-        }
-      }}
-      className={`group relative rounded-[2rem] transition ${
-        isActive
-          ? "ring-4 ring-sky-500/45 ring-offset-4 ring-offset-transparent"
-          : "hover:ring-2 hover:ring-sky-400/35 hover:ring-offset-2 hover:ring-offset-transparent"
-      }`}
-    >
-      <div className="pointer-events-none absolute left-4 top-4 z-10 rounded-full bg-slate-950 px-3 py-1 text-[11px] font-semibold uppercase tracking-[0.24em] text-white shadow-lg">
-        {label}
-      </div>
-      {sectionBody}
-    </div>
-  );
-}
-
-function renderHeaderActions(content: DemoPageContent, locale: AppLocale, previewMode?: boolean) {
-  const copy = getPublicCopy(locale);
-  if (previewMode) {
-    return (
-      <>
-        <span className="rounded-2xl border border-white/20 px-4 py-2 text-sm font-semibold text-white">
-          {copy.nav.home}
-        </span>
-        <span className="rounded-2xl border border-white/20 px-4 py-2 text-sm font-semibold text-white">
-          {copy.nav.blog}
-        </span>
-        <span className="rounded-2xl border border-white/20 px-4 py-2 text-sm font-semibold text-white">
-          {content.opsCtaLabel}
-        </span>
-        <span className="rounded-2xl bg-white px-4 py-2 text-sm font-semibold text-slate-950">
-          {content.loginCtaLabel}
-        </span>
-      </>
-    );
-  }
-
-  return (
-    <>
-      <PublicTopNav
-        items={[
-          { href: "/", label: copy.nav.home },
-          { href: "/blog", label: copy.nav.blog },
-          { href: "/login?next=%2Fops", label: content.opsCtaLabel },
-          { href: "/login", label: content.loginCtaLabel },
-        ]}
-        tone="dark"
-        locale={locale}
-      />
-    </>
-  );
-}
+const demoScreens = [
+  {
+    title: "Operasyon paneli",
+    body: "Cloud POS’un ana yönetim ekranı.",
+    image: "/landing-assets/operasyon-paneli-desktop.png",
+    alt: "Cloud POS operasyon paneli gerçek ekran görüntüsü",
+    className: "lg:col-span-2",
+  },
+  {
+    title: "Mobil operasyon",
+    body: "Telefon ekranında canlı operasyon takibi.",
+    image: "/landing-assets/operasyon-paneli-mobil.png",
+    alt: "Cloud POS mobil operasyon gerçek ekran görüntüsü",
+    className: "",
+  },
+  {
+    title: "Mobil sipariş",
+    body: "Kategori, ürün arama ve hızlı ekleme akışı.",
+    image: "/landing-assets/mobil-pos-sipariş.png",
+    alt: "Cloud POS mobil POS sipariş gerçek ekran görüntüsü",
+    className: "",
+  },
+];
 
 export function DemoPageRenderer({
   content,
@@ -162,296 +87,140 @@ export function DemoPageRenderer({
   locale?: AppLocale;
 }) {
   const copy = getPublicCopy(locale);
-  const hasFlowColumn = content.showPresentationFlow;
-  const hasAccountsColumn = content.showStaffAccounts;
-  const presentationGridClass =
-    hasFlowColumn && hasAccountsColumn ? "grid gap-6 xl:grid-cols-[1.1fr_0.9fr]" : "grid gap-6";
-
-  const hasOrdersColumn = content.showRecentOrders;
-  const hasSideColumn = content.showTableStatus || content.showLowStock;
-  const operationsGridClass =
-    hasOrdersColumn && hasSideColumn ? "grid gap-6 xl:grid-cols-[1.2fr_1fr]" : "grid gap-6";
 
   return (
-    <div className="min-h-screen bg-[linear-gradient(180deg,#eef3f7_0%,#f7f2e8_100%)] px-4 py-8 md:px-10">
-      <main className="mx-auto flex w-full max-w-7xl flex-col gap-6">
-        {wrapEditableSection(
-          "hero",
-          "hero",
-          <header className="rounded-[2rem] bg-[linear-gradient(120deg,#020617_0%,#172554_48%,#334155_100%)] p-8 text-white shadow-[0_30px_80px_rgba(15,23,42,0.18)]">
-            <div className="flex flex-wrap items-start justify-between gap-4">
-              <div>
-                <p className="text-sm uppercase tracking-[0.28em] text-cyan-200/80">{content.heroEyebrow}</p>
-                <h1 className="mt-3 text-4xl font-semibold tracking-tight">{content.heroTitle}</h1>
-                <p className="mt-3 max-w-3xl text-sm leading-7 text-slate-300 sm:text-base">{content.heroBody}</p>
-              </div>
-              <div className="flex flex-wrap items-center gap-3">
-                <span className="inline-flex rounded-full bg-amber-200 px-3 py-1 text-xs font-semibold text-amber-900">
-                  {content.previewBadge}
-                </span>
-                <LanguageSwitcher locale={locale} label={copy.localeSwitcher.label} compact />
-                {renderHeaderActions(content, locale, editor?.previewMode)}
-              </div>
+    <main className="min-h-screen bg-[#f7f8fb] text-slate-950">
+      <header className="sticky top-0 z-40 border-b border-slate-200/80 bg-white/90 backdrop-blur-xl">
+        <div className="mx-auto flex max-w-7xl items-center gap-4 px-4 py-4 sm:px-6 lg:px-8">
+          <Link href="/" className="flex items-center gap-3">
+            <span className="flex h-10 w-10 items-center justify-center rounded-2xl bg-gradient-to-br from-orange-500 via-rose-500 to-indigo-600 text-sm font-bold text-white shadow-lg shadow-orange-500/20">
+              CP
+            </span>
+            <div>
+              <p className="text-sm font-bold tracking-tight text-slate-950">Cloud POS Demo</p>
+              <p className="hidden text-xs font-semibold text-slate-500 sm:block">Gerçek ürün ekranlarıyla ürün turu</p>
             </div>
-          </header>,
-          content.sectionStyles.hero,
-          editor,
-        )}
+          </Link>
+          <nav className="ml-8 hidden items-center gap-6 text-sm font-bold text-slate-600 lg:flex">
+            <a href="#akış" className="transition hover:text-orange-600">Akış</a>
+            <a href="#ekranlar" className="transition hover:text-orange-600">Ekranlar</a>
+            <a href="#moduller" className="transition hover:text-orange-600">Modüller</a>
+          </nav>
+          <div className="ml-auto flex items-center gap-2">
+            <LanguageSwitcher locale={locale} label={copy.localeSwitcher.label} compact />
+            <Link href="/" className="hidden rounded-2xl border border-slate-200 bg-white px-4 py-2 text-sm font-bold text-slate-800 shadow-sm transition hover:border-orange-300 hover:text-orange-700 sm:inline-flex">
+              Ana sayfa
+            </Link>
+            <Link href="/login" className="rounded-2xl bg-slate-950 px-4 py-2 text-sm font-bold text-white shadow-lg shadow-slate-950/10 transition hover:bg-slate-800">
+              Operasyon Paneli Giriş
+            </Link>
+          </div>
+        </div>
+      </header>
 
-        {content.showMetrics
-          ? wrapEditableSection(
-              "metrics",
-              "metric cards",
-              <section className="grid gap-4 sm:grid-cols-2 xl:grid-cols-4">
-                <article className="rounded-2xl bg-white p-5 shadow-sm">
-                  <p className="text-xs uppercase tracking-wide text-slate-500">Açık Sipariş</p>
-                  <p className="mt-2 text-3xl font-semibold text-slate-900">{metrics.openOrders}</p>
-                </article>
-                <article className="rounded-2xl bg-white p-5 shadow-sm">
-                  <p className="text-xs uppercase tracking-wide text-slate-500">Pending</p>
-                  <p className="mt-2 text-3xl font-semibold text-amber-700">{metrics.pending}</p>
-                </article>
-                <article className="rounded-2xl bg-white p-5 shadow-sm">
-                  <p className="text-xs uppercase tracking-wide text-slate-500">Preparing</p>
-                  <p className="mt-2 text-3xl font-semibold text-sky-700">{metrics.preparing}</p>
-                </article>
-                <article className="rounded-2xl bg-white p-5 shadow-sm">
-                  <p className="text-xs uppercase tracking-wide text-slate-500">Bugün Ciro</p>
-                  <p className="mt-2 text-3xl font-semibold text-emerald-700">{metrics.todayRevenue.toFixed(2)} TL</p>
-                </article>
-              </section>,
-              content.sectionStyles.metrics,
-              editor,
-            )
-          : null}
+      <section className="relative overflow-hidden">
+        <div className="absolute inset-0 -z-10 bg-[radıal-gradient(circle_at_18%_20%,rgba(249,115,22,0.18),transparent_28%),radıal-gradient(circle_at_82%_18%,rgba(79,70,229,0.14),transparent_30%),radıal-gradient(circle_at_80%_78%,rgba(16,185,129,0.13),transparent_26%)]" />
+        <div className="mx-auto grid max-w-7xl gap-12 px-4 py-14 sm:px-6 sm:py-20 lg:grid-cols-[0.9fr_1.1fr] lg:px-8">
+          <div className="flex flex-col justify-center">
+            <p className="inline-flex w-fit rounded-full border border-orange-200 bg-orange-50 px-4 py-2 text-xs font-bold uppercase tracking-[0.18em] text-orange-700">
+              {content.previewBadge || "Canlı ürün demosu"}
+            </p>
+            <h1 className="mt-6 max-w-3xl text-5xl font-bold tracking-tight text-slate-950 sm:text-6xl">
+              Cloud POS’u gerçek ekranlarıyla deneyimleyin.
+            </h1>
+            <p className="mt-6 max-w-2xl text-lg leadıng-9 text-slate-600">
+              Self servis / QR akışı, kafe-restoran POS modülü, mutfak, kasa, stok, raporlama ve mobil PWA deneyimini tek ürün türünda görün.
+            </p>
+            <div className="mt-8 flex flex-col gap-3 sm:flex-row">
+              <Link href="/login" className="inline-flex items-center justify-center gap-2 rounded-2xl bg-slate-950 px-6 py-3.5 text-sm font-bold text-white shadow-xl shadow-slate-950/15 transition hover:bg-slate-800">
+                Operasyon Paneli Giriş
+                <ArrowRight size={18} />
+              </Link>
+              <Link href="/" className="inline-flex items-center justify-center rounded-2xl border border-slate-200 bg-white px-6 py-3.5 text-sm font-bold text-slate-950 shadow-sm transition hover:border-orange-300 hover:text-orange-700">
+                Ürün sayfasına dön
+              </Link>
+            </div>
+          </div>
+          <div className="rounded-[2rem] border border-white bg-white p-3 shadow-2xl shadow-slate-950/15">
+            <img
+              src="/landing-assets/operasyon-paneli-desktop.png"
+              alt="Cloud POS operasyon paneli gerçek ekran görüntüsü"
+              className="aspect-[16/10] w-full rounded-[1.35rem] object-cover object-left-top"
+            />
+          </div>
+        </div>
+      </section>
 
-        {content.showPresentationFlow || content.showStaffAccounts ? (
-          <section className={presentationGridClass}>
-            {content.showPresentationFlow
-              ? wrapEditableSection(
-                  "presentation",
-                  "sunum akis",
-                  <article className="rounded-2xl bg-white p-6 shadow-sm">
-                    <div className="flex items-center justify-between gap-3">
-                      <div>
-                        <p className="text-xs uppercase tracking-[0.24em] text-slate-500">{content.flowEyebrow}</p>
-                        <h2 className="mt-2 text-2xl font-semibold text-slate-900">{content.flowTitle}</h2>
-                      </div>
-                      {editor?.previewMode ? (
-                        <span className="text-sm font-medium text-slate-700 underline">Canli girise gec</span>
-                      ) : (
-                        <Link href="/login" className="text-sm font-medium text-slate-700 underline">
-                          Canli girise gec
-                        </Link>
-                      )}
-                    </div>
-                    <div className="mt-6 grid gap-4">
-                      {content.presentationFlow.map((item) => (
-                        <article key={item.title} className="rounded-2xl border border-slate-200 bg-slate-50 p-4">
-                          <p className="text-sm font-semibold text-slate-900">{item.title}</p>
-                          <p className="mt-2 text-sm leading-7 text-slate-600">{item.body}</p>
-                        </article>
-                      ))}
-                    </div>
-                  </article>,
-                  content.sectionStyles.presentation,
-                  editor,
-                )
-              : null}
-
-            {content.showStaffAccounts
-              ? wrapEditableSection(
-                  "accounts",
-                  "demo hesaplari",
-                  <article className="rounded-2xl bg-white p-6 shadow-sm">
-                    <p className="text-xs uppercase tracking-[0.24em] text-slate-500">{content.accountsEyebrow}</p>
-                    <h2 className="mt-2 text-2xl font-semibold text-slate-900">{content.accountsTitle}</h2>
-                    <p className="mt-2 text-sm leading-7 text-slate-600">{content.accountsBody}</p>
-                    <div className="mt-5 space-y-3">
-                      {content.staffAccounts.map((account) => (
-                        <article key={account.email} className="rounded-2xl border border-slate-200 bg-slate-50 p-4">
-                          <div className="flex items-start justify-between gap-3">
-                            <div>
-                              <p className="text-sm font-semibold text-slate-900">{account.fullName}</p>
-                              <p className="mt-1 text-xs uppercase tracking-[0.24em] text-slate-500">{account.role}</p>
-                            </div>
-                            <span className="rounded-full bg-slate-900 px-3 py-1 text-xs font-semibold text-white">
-                              {account.password}
-                            </span>
-                          </div>
-                          <p className="mt-3 text-sm text-slate-600">{account.email}</p>
-                          <p className="mt-2 text-sm leading-6 text-slate-600">{account.summary}</p>
-                        </article>
-                      ))}
-                    </div>
-                  </article>,
-                  content.sectionStyles.accounts,
-                  editor,
-                )
-              : null}
-          </section>
-        ) : null}
-
-        {content.showRecentOrders || content.showTableStatus || content.showLowStock ? (
-          <section className={operationsGridClass}>
-            {content.showRecentOrders
-              ? wrapEditableSection(
-                  "orders",
-                  "sipariş tablosu",
-                  <article className="rounded-2xl bg-white p-5 shadow-sm">
-                    <div className="mb-4 flex items-center justify-between">
-                      <h2 className="text-xl font-semibold text-slate-900">{content.recentOrdersTitle}</h2>
-                      {editor?.previewMode ? (
-                        <span className="text-sm font-medium text-slate-700 underline">{content.recentOrdersCtaLabel}</span>
-                      ) : (
-                        <Link href="/login" className="text-sm font-medium text-slate-700 underline">
-                          {content.recentOrdersCtaLabel}
-                        </Link>
-                      )}
-                    </div>
-                    <div className="overflow-x-auto">
-                      <table className="w-full min-w-[620px] text-left text-sm">
-                        <thead>
-                          <tr className="border-b border-slate-200 text-slate-500">
-                            <th className="py-2">Sipariş</th>
-                            <th className="py-2">Masa</th>
-                            <th className="py-2">Durum</th>
-                            <th className="py-2">Tutar</th>
-                            <th className="py-2">Saat</th>
-                          </tr>
-                        </thead>
-                        <tbody>
-                          {recentOrders.map((order) => (
-                            <tr key={order.id} className="border-b border-slate-100">
-                              <td className="py-2 font-medium text-slate-900">{order.id}</td>
-                              <td className="py-2 text-slate-700">{order.table}</td>
-                              <td className="py-2">
-                                <span
-                                  className={`inline-flex rounded-full px-2 py-1 text-xs font-semibold uppercase ${statusBadge(order.status)}`}
-                                >
-                                  {order.status}
-                                </span>
-                              </td>
-                              <td className="py-2 text-slate-700">{order.total.toFixed(2)} TL</td>
-                              <td className="py-2 text-slate-700">{order.time}</td>
-                            </tr>
-                          ))}
-                        </tbody>
-                      </table>
-                    </div>
-                  </article>,
-                  content.sectionStyles.orders,
-                  editor,
-                )
-              : null}
-
-            {content.showTableStatus || content.showLowStock ? (
-              <div className="space-y-6">
-                {content.showTableStatus
-                  ? wrapEditableSection(
-                      "tables",
-                      "masa durumu",
-                      <article className="rounded-2xl bg-white p-5 shadow-sm">
-                        <h2 className="text-xl font-semibold text-slate-900">{content.tableStatusTitle}</h2>
-                        <div className="mt-4 grid grid-cols-2 gap-3">
-                          <div className="rounded-xl bg-amber-50 p-3">
-                            <p className="text-xs uppercase text-amber-700">Dolu</p>
-                            <p className="mt-1 text-2xl font-semibold text-amber-800">{metrics.occupiedTables}</p>
-                          </div>
-                          <div className="rounded-xl bg-emerald-50 p-3">
-                            <p className="text-xs uppercase text-emerald-700">Bos</p>
-                            <p className="mt-1 text-2xl font-semibold text-emerald-800">{metrics.emptyTables}</p>
-                          </div>
-                        </div>
-                      </article>,
-                      content.sectionStyles.tables,
-                      editor,
-                    )
-                  : null}
-
-                {content.showLowStock
-                  ? wrapEditableSection(
-                      "stock",
-                      "kritik stok",
-                      <article className="rounded-2xl bg-white p-5 shadow-sm">
-                        <div className="mb-3 flex items-center justify-between">
-                          <h2 className="text-xl font-semibold text-slate-900">{content.lowStockTitle}</h2>
-                          <span className="text-sm font-medium text-slate-500">{content.lowStockLabel}</span>
-                        </div>
-                        <ul className="space-y-2">
-                          {lowStock.map((product) => (
-                            <li key={product.name} className="flex items-center justify-between rounded-lg bg-slate-50 px-3 py-2">
-                              <span className="text-sm text-slate-700">{product.name}</span>
-                              <span className="text-sm font-semibold text-rose-700">{product.count}</span>
-                            </li>
-                          ))}
-                        </ul>
-                      </article>,
-                      content.sectionStyles.stock,
-                      editor,
-                    )
-                  : null}
-              </div>
-            ) : null}
-          </section>
-        ) : null}
-
-        {content.showPackages
-          ? wrapEditableSection(
-              "packages",
-              "paketler",
-              <section className="grid gap-4 lg:grid-cols-3">
-                {content.packages.map((item) => (
-                  <article key={item.name} className="rounded-2xl border border-slate-200 bg-white p-6 shadow-sm">
-                    <p className="text-xs uppercase tracking-[0.24em] text-slate-500">{item.name}</p>
-                    <p className="mt-3 text-3xl font-semibold tracking-tight text-slate-900">{item.price}</p>
-                    <p className="mt-3 text-sm leading-7 text-slate-600">{item.summary}</p>
-                  </article>
-                ))}
-              </section>,
-              content.sectionStyles.packages,
-              editor,
-            )
-          : null}
-
-        {content.showClosingCta
-          ? wrapEditableSection(
-              "closing",
-              "kapanış cta",
-              <section className="rounded-[2rem] bg-[linear-gradient(135deg,#0f172a_0%,#1d4ed8_55%,#22c55e_100%)] p-8 text-white shadow-[0_30px_80px_rgba(15,23,42,0.18)]">
-                <div className="flex flex-wrap items-center justify-between gap-6">
-                  <div className="max-w-3xl">
-                    <h2 className="text-3xl font-semibold tracking-tight">{content.closingCtaTitle}</h2>
-                    <p className="mt-3 text-sm leading-7 text-white/80 sm:text-base">{content.closingCtaBody}</p>
+      <section id="akış" className="border-y border-slate-200 bg-white py-16 sm:py-20">
+        <div className="mx-auto max-w-7xl px-4 sm:px-6 lg:px-8">
+          <div className="max-w-3xl">
+            <p className="text-xs font-bold uppercase tracking-[0.22em] text-orange-600">Demo akışı</p>
+            <h2 className="mt-4 text-3xl font-bold tracking-tight text-slate-950 sm:text-5xl">Ürünü modül modül inceleyin.</h2>
+            <p className="mt-4 text-base leadıng-8 text-slate-600">Demo sayfası artık sadece örnek veri değil, ürünün hangi problemi çözdüğünü anlatan kısa bir tur.</p>
+          </div>
+          <div className="mt-10 grid gap-4 sm:grid-cols-2 lg:grid-cols-4">
+            {demoSteps.map((step) => {
+              const Icon = step.icon;
+              return (
+                <article key={step.title} className="rounded-3xl border border-slate-200 bg-[#fbfcff] p-5 shadow-sm">
+                  <div className="flex h-12 w-12 items-center justify-center rounded-2xl bg-orange-100 text-orange-700">
+                    <Icon size={22} />
                   </div>
-                  <div className="flex flex-wrap gap-3">
-                    {editor?.previewMode ? (
-                      <>
-                        <span className="rounded-2xl bg-white px-5 py-3 text-sm font-semibold text-slate-950">
-                          {content.closingCtaPrimaryLabel}
-                        </span>
-                        <span className="rounded-2xl border border-white/30 px-5 py-3 text-sm font-semibold text-white">
-                          {content.closingCtaSecondaryLabel}
-                        </span>
-                      </>
-                    ) : (
-                      <>
-                        <Link href="/login" className="rounded-2xl bg-white px-5 py-3 text-sm font-semibold text-slate-950">
-                          {content.closingCtaPrimaryLabel}
-                        </Link>
-                        <Link href="/demo" className="rounded-2xl border border-white/30 px-5 py-3 text-sm font-semibold text-white">
-                          {content.closingCtaSecondaryLabel}
-                        </Link>
-                      </>
-                    )}
+                  <h3 className="mt-5 text-lg font-bold tracking-tight text-slate-950">{step.title}</h3>
+                  <p className="mt-3 text-sm leadıng-7 text-slate-600">{step.body}</p>
+                </article>
+              );
+            })}
+          </div>
+        </div>
+      </section>
+
+      <section id="ekranlar" className="py-16 sm:py-20">
+        <div className="mx-auto max-w-7xl px-4 sm:px-6 lg:px-8">
+          <div className="max-w-3xl">
+            <p className="text-xs font-bold uppercase tracking-[0.22em] text-orange-600">Gerçek ekranlar</p>
+            <h2 className="mt-4 text-3xl font-bold tracking-tight text-slate-950 sm:text-5xl">Demo, gerçek ürün arayüzlerini gösterir.</h2>
+            <p className="mt-4 text-base leadıng-8 text-slate-600">Sahte dashboard yok. Görseller mevcut ürün ekranlarından alınmış QA görselleridir.</p>
+          </div>
+          <div className="mt-10 grid gap-5 lg:grid-cols-2">
+            {demoScreens.map((screen) => (
+              <article key={screen.title} className={screen.className}>
+                <div className="overflow-hidden rounded-[2rem] border border-slate-200 bg-white p-3 shadow-xl shadow-slate-950/8">
+                  <div className="px-2 pb-3">
+                    <h3 className="text-xl font-bold tracking-tight text-slate-950">{screen.title}</h3>
+                    <p className="mt-1 text-sm font-semibold text-slate-500">{screen.body}</p>
                   </div>
+                  <img src={screen.image} alt={screen.alt} className="aspect-[16/10] w-full rounded-[1.35rem] border border-slate-100 object-cover object-left-top" />
                 </div>
-              </section>,
-              content.sectionStyles.closing,
-              editor,
-            )
-          : null}
-      </main>
-    </div>
+              </article>
+            ))}
+          </div>
+        </div>
+      </section>
+
+      <section id="moduller" className="bg-slate-950 py-16 text-white sm:py-20">
+        <div className="mx-auto max-w-7xl px-4 sm:px-6 lg:px-8">
+          <div className="grid gap-10 lg:grid-cols-[0.85fr_1.15fr]">
+            <div>
+              <p className="text-xs font-bold uppercase tracking-[0.22em] text-orange-300">Modül kapsamı</p>
+              <h2 className="mt-4 text-3xl font-bold tracking-tight sm:text-5xl">Demo turu, satıştan operasyona tüm ürünü anlatır.</h2>
+              <p className="mt-4 text-base leadıng-8 text-slate-300">Self servis ve restoran operasyonu aynı platform içinde nasıl birleşiyor, demo sayfasında net görünür.</p>
+            </div>
+            <div className="grid gap-3 sm:grid-cols-2">
+              {demoModules.map((module) => {
+                const Icon = module.icon;
+                return (
+                  <article key={module.title} className="rounded-2xl border border-white/10 bg-white/5 p-5">
+                    <Icon size={22} className="text-orange-300" />
+                    <h3 className="mt-4 text-lg font-bold">{module.title}</h3>
+                    <p className="mt-2 text-sm leadıng-7 text-slate-300">{module.body}</p>
+                  </article>
+                );
+              })}
+            </div>
+          </div>
+        </div>
+      </section>
+    </main>
   );
 }

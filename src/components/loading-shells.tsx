@@ -31,9 +31,15 @@ export function PublicPageLoadingShell() {
 
 export function LoginLoadingShell() {
   return (
-    <div className="min-h-screen bg-[linear-gradient(145deg,#f5f1e8_0%,#e4edf4_40%,#fafaf8_100%)] px-4 py-10">
-      <div className="mx-auto max-w-xl">
-        <div className="animate-pulse rounded-[1.5rem] border border-white/70 bg-white/90 p-5 shadow-[0_25px_70px_rgba(15,23,42,0.12)] sm:rounded-[2rem] sm:p-8">
+    <div className="min-h-screen bg-[#f7f8fb] px-4 py-10">
+      <div className="mx-auto grid min-h-[calc(100vh-5rem)] max-w-7xl items-center gap-10 lg:grid-cols-[1.05fr_0.95fr]">
+        <div className="hidden space-y-5 lg:block">
+          <SkeletonBlock className="h-5 w-40" />
+          <SkeletonBlock className="h-20 w-3/4" />
+          <SkeletonBlock className="h-7 w-2/3" />
+          <SkeletonBlock className="h-56 w-full rounded-[2rem]" />
+        </div>
+        <div className="animate-pulse rounded-[2rem] border border-slate-200 bg-white p-5 shadow-2xl shadow-slate-950/12 sm:p-8">
           <div className="space-y-3">
             <SkeletonBlock className="h-4 w-28" />
             <SkeletonBlock className="h-10 w-56" />

@@ -63,11 +63,11 @@ async function updateBusinessTypeAction(formData: FormData) {
     businessType: businessType === "self_service_coffee" ? "self_service_coffee" : "restaurant_cafe",
   });
   if (!result.ok) {
-    redirect(feedbackHref(businessId, "error", result.error ?? "Isletme tipi guncellenemedi."));
+    redirect(feedbackHref(businessId, "error", result.error ?? "İşletme tipi güncellenemedi."));
   }
   revalidatePath(`/support/tenants/${businessId}`);
   revalidatePath("/support/tenants");
-  redirect(feedbackHref(businessId, "success", "Isletme tipi guncellendi."));
+  redirect(feedbackHref(businessId, "success", "İşletme tipi güncellendi."));
 }
 
 async function updateBusinessPlanAction(formData: FormData) {
@@ -80,13 +80,13 @@ async function updateBusinessPlanAction(formData: FormData) {
     plan: plan === "starter" || plan === "custom" ? plan : "growth",
   });
   if (!result.ok) {
-    redirect(feedbackHref(businessId, "error", result.error ?? "Paket guncellenemedi."));
+    redirect(feedbackHref(businessId, "error", result.error ?? "Paket güncellenemedi."));
   }
   revalidatePath(`/support/tenants/${businessId}`);
   revalidatePath("/support/tenants");
   revalidatePath("/support/billing");
   revalidatePath("/support/health");
-  redirect(feedbackHref(businessId, "success", "Isletme paketi guncellendi."));
+  redirect(feedbackHref(businessId, "success", "İşletme paketi güncellendi."));
 }
 
 export default async function SupportTenantDetailPage({
@@ -138,7 +138,7 @@ export default async function SupportTenantDetailPage({
 
       <section className="grid gap-4 md:grid-cols-2 xl:grid-cols-7">
         <div className="rounded-2xl bg-white p-6 shadow-sm"><p className="text-xs uppercase tracking-[0.24em] text-slate-500">{translateUiText("Paket", locale)}</p><p className="mt-3 text-2xl font-semibold text-slate-900">{getPlanLabel(tenant.plan)}</p></div>
-        <div className="rounded-2xl bg-white p-6 shadow-sm"><p className="text-xs uppercase tracking-[0.24em] text-slate-500">Isletme Tipi</p><p className="mt-3 text-2xl font-semibold text-slate-900">{tenant.business_type === "self_service_coffee" ? "Self-Service" : "Restaurant"}</p></div>
+        <div className="rounded-2xl bg-white p-6 shadow-sm"><p className="text-xs uppercase tracking-[0.24em] text-slate-500">İşletme Tipi</p><p className="mt-3 text-2xl font-semibold text-slate-900">{tenant.business_type === "self_service_coffee" ? "Self-Service" : "Restaurant"}</p></div>
         <div className="rounded-2xl bg-white p-6 shadow-sm"><p className="text-xs uppercase tracking-[0.24em] text-slate-500">{translateUiText("Şube", locale)}</p><p className="mt-3 text-2xl font-semibold text-slate-900">{tenant.branch_count}</p></div>
         <div className="rounded-2xl bg-white p-6 shadow-sm"><p className="text-xs uppercase tracking-[0.24em] text-slate-500">{translateUiText("Açık Ticket", locale)}</p><p className="mt-3 text-2xl font-semibold text-slate-900">{tenant.open_ticket_count}</p></div>
         <div className="rounded-2xl bg-white p-6 shadow-sm"><p className="text-xs uppercase tracking-[0.24em] text-slate-500">{translateUiText("Durum", locale)}</p><p className="mt-3 text-2xl font-semibold text-slate-900">{tenant.is_active ? translateUiText("Aktif", locale) : translateUiText("Pasif", locale)}</p></div>
@@ -207,7 +207,7 @@ export default async function SupportTenantDetailPage({
 
         <div className="space-y-4">
           <article className="rounded-2xl bg-white p-6 shadow-sm">
-            <p className="text-sm font-semibold text-slate-900">Isletme Paketi</p>
+            <p className="text-sm font-semibold text-slate-900">İşletme Paketi</p>
             <form action={updateBusinessPlanAction} className="mt-4 space-y-3">
               <input type="hidden" name="businessId" value={businessId} />
               <select
@@ -223,13 +223,13 @@ export default async function SupportTenantDetailPage({
                 type="submit"
                 className="rounded-xl border border-slate-300 px-4 py-2 text-sm font-semibold text-slate-700"
               >
-                Isletme Paketini Guncelle
+                İşletme Paketini Güncelle
               </button>
             </form>
           </article>
 
           <article className="rounded-2xl bg-white p-6 shadow-sm">
-            <p className="text-sm font-semibold text-slate-900">Isletme Tipi</p>
+            <p className="text-sm font-semibold text-slate-900">İşletme Tipi</p>
             <form action={updateBusinessTypeAction} className="mt-4 space-y-3">
               <input type="hidden" name="businessId" value={businessId} />
               <select
@@ -244,7 +244,7 @@ export default async function SupportTenantDetailPage({
                 type="submit"
                 className="rounded-xl border border-slate-300 px-4 py-2 text-sm font-semibold text-slate-700"
               >
-                Isletme Tipini Guncelle
+                İşletme Tipini Güncelle
               </button>
             </form>
           </article>
@@ -266,19 +266,19 @@ export default async function SupportTenantDetailPage({
                 <div key={staff.id} className="flex items-center justify-between gap-3 text-sm">
                   <span className="font-medium text-slate-900">{staff.full_name || "İsimsiz"}</span>
                   <span className="text-xs text-slate-500">
-                    {staff.last_seen_at ? new Date(staff.last_seen_at).toLocaleString("tr-TR") : "Giriş yapmadi"}
+                    {staff.last_seen_at ? new Date(staff.last_seen_at).toLocaleString("tr-TR") : "Giriş yapmadı"}
                   </span>
                 </div>
               ))}
               {!(tenant.staff_activity ?? []).length && (
-                <p className="text-xs text-slate-400">Kullanıcı bulunamadi.</p>
+                <p className="text-xs text-slate-400">Kullanıcı bulunamadı.</p>
               )}
             </div>
           </article>
           <article className="rounded-2xl bg-white p-6 shadow-sm">
             <p className="text-sm font-semibold text-slate-900">Branch Profile Dagilimi</p>
             <div className="mt-4 space-y-2 text-sm text-slate-600">
-              <p>Restaurant sube: {branchProfileSummary.restaurant}</p>
+              <p>Restaurant şube: {branchProfileSummary.restaurant}</p>
             </div>
             {tenantBranches.length ? (
               <div className="mt-4 space-y-2">
@@ -350,7 +350,7 @@ export default async function SupportTenantDetailPage({
             <div className="flex items-center justify-between gap-3">
               <p className="text-sm font-semibold text-slate-900">{translateUiText("Son Ticketlar", locale)}</p>
               <Link href={`/support/tickets?q=${encodeURIComponent(tenant.name)}`} className="text-xs font-semibold text-slate-500 hover:text-slate-900">
-                {translateUiText("Tumunu gör", locale)}
+                {translateUiText("Tümunu gör", locale)}
               </Link>
             </div>
             <div className="mt-4 space-y-3">
@@ -381,7 +381,7 @@ export default async function SupportTenantDetailPage({
           </article>
 
           <article className="rounded-2xl bg-white p-6 shadow-sm">
-            <p className="text-sm font-semibold text-slate-900">{translateUiText("Son Support Islemleri", locale)}</p>
+            <p className="text-sm font-semibold text-slate-900">{translateUiText("Son Support İşlemleri", locale)}</p>
             <div className="mt-4 space-y-3">
               {(tenant.recent_audit_logs ?? []).map((log: { id: string; action: string; actor_name?: string | null; created_at: string }) => (
                 <div key={log.id} className="rounded-xl border border-slate-200 bg-slate-50 px-4 py-3">

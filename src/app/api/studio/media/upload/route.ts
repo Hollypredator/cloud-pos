@@ -2,6 +2,7 @@ import { NextResponse } from "next/server";
 import { getCurrentUserWithRole } from "@/lib/auth";
 import { createMediaAsset, uploadMediaFile } from "@/lib/data";
 import { getPlatformAccessByEmail, getStudioAccessByEmail, hasPlatformPermission } from "@/lib/domains/support";
+import { getCorrelationId, logApiEvent, withCorrelationId } from "@/lib/observability";
 import { getDirectPlatformOwnerEmails } from "@/lib/platform-owner";
 import type { MediaAsset } from "@/lib/types";
 
@@ -41,24 +42,36 @@ async function hasStudioWriteAccess() {
 }
 
 export async function POST(request: Request) {
+  const correlationId = getCorrelationId(request);
+  const json = (body: unknown, init?: ResponseInit) =>
+    withCorrelationId(NextResponse.json(body, init), correlationId);
   const access = await hasStudioWriteAccess();
   if (!access.ok) {
-    return NextResponse.json({ ok: false, error: access.message }, { status: access.status });
+    logApiEvent("warn", "studio.media.upload.forbidden", { correlationId, status: access.status });
+    return json({ ok: false, error: access.message }, { status: access.status });
   }
 
   const formData = await request.formData();
   const file = formData.get("file");
   if (!(file instanceof File) || file.size <= 0) {
-    return NextResponse.json({ ok: false, error: "Gecerli dosya gerekli." }, { status: 400 });
+    logApiEvent("warn", "studio.media.upload.invalid_file", { correlationId });
+    return json({ ok: false, error: "Gecerli dosya gerekli." }, { status: 400 });
   }
 
   const uploadResult = await uploadMediaFile(file);
   if (!uploadResult.ok) {
-    return NextResponse.json({ ok: false, error: uploadResult.error }, { status: 400 });
+    logApiEvent("warn", "studio.media.upload.storage_rejected", { correlationId, error: uploadResult.error });
+    return json({ ok: false, error: uploadResult.error }, { status: 400 });
   }
   const fileUrl = uploadResult.fileUrl;
+  const mediaUploadLogContext = {
+    correlationId,
+    storageBucket: uploadResult.storageBucket ?? null,
+    storagePath: uploadResult.storagePath ?? null,
+  };
   if (!fileUrl) {
-    return NextResponse.json({ ok: false, error: "Dosya URL oluşturulamadı." }, { status: 500 });
+    logApiEvent("error", "studio.media.upload.missing_url", mediaUploadLogContext);
+    return json({ ok: false, error: "Dosya URL oluşturulamadı." }, { status: 500 });
   }
 
   const titleInput = String(formData.get("title") ?? "").trim();
@@ -76,10 +89,19 @@ export async function POST(request: Request) {
   });
 
   if (!createResult.ok) {
-    return NextResponse.json({ ok: false, error: createResult.error ?? "Medya kaydı oluşturulamadı." }, { status: 500 });
+    logApiEvent("error", "studio.media.upload.create_failed", {
+      ...mediaUploadLogContext,
+      error: createResult.error ?? "unknown",
+    });
+    return json({ ok: false, error: createResult.error ?? "Medya kaydı oluşturulamadı." }, { status: 500 });
   }
 
-  return NextResponse.json({
+  logApiEvent("info", "studio.media.upload.success", {
+    ...mediaUploadLogContext,
+    kind,
+  });
+
+  return json({
     ok: true,
     fileUrl,
     storageBucket: uploadResult.storageBucket ?? null,

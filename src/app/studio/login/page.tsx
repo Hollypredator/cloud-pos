@@ -16,8 +16,8 @@ export default async function StudioLoginPage({
       <div className="min-h-screen bg-slate-950 px-4 py-10 text-white">
         <div className="mx-auto max-w-3xl rounded-[2rem] border border-white/10 bg-white/5 p-8">
           <p className="text-xs uppercase tracking-[0.28em] text-slate-400">Studio Access</p>
-          <h1 className="mt-4 text-4xl font-semibold">Supabase baglantisi olmadan studio acilmaz</h1>
-          <p className="mt-4 text-sm leading-7 text-slate-300">Backoffice yalnızca canli auth ve ayarlar verisiyle çalışır.</p>
+          <h1 className="mt-4 text-4xl font-semibold">Supabase bağlantısı olmadan studio açılmaz</h1>
+          <p className="mt-4 text-sm leadıng-7 text-slate-300">Backoffice yalnızca canlı auth ve ayarlar verisiyle çalışır.</p>
         </div>
       </div>
     );
@@ -37,14 +37,14 @@ export default async function StudioLoginPage({
             <p className="inline-flex rounded-full border border-white/15 bg-white/10 px-3 py-1 text-[11px] font-semibold uppercase tracking-[0.28em] text-slate-200">
               Studio
             </p>
-            <h1 className="mt-6 max-w-xl text-5xl font-semibold tracking-tight">Sirket sitesi ve growth backoffice</h1>
-            <p className="mt-5 max-w-xl text-sm leading-7 text-slate-300">
-              Bu alan tenant musterilere değil, ürün sahibine açık. Landing, SEO, medya, blog, SMTP ve lead takibi burada yönetilir.
+            <h1 className="mt-6 max-w-xl text-5xl font-semibold tracking-tight">Şirket sitesi ve growth backoffice</h1>
+            <p className="mt-5 max-w-xl text-sm leadıng-7 text-slate-300">
+              Bu alan tenant müşterilere değil, ürün sahibine açık. Landing, SEO, medya, blog, SMTP ve lead takibi burada yönetilir.
             </p>
             <div className="mt-8 grid gap-4 sm:grid-cols-3">
               <div className="rounded-2xl border border-white/10 bg-black/10 p-4">
                 <p className="text-xs uppercase tracking-[0.24em] text-slate-400">CMS</p>
-                <p className="mt-2 text-sm text-slate-200">Landing ve icerik bloklari</p>
+                <p className="mt-2 text-sm text-slate-200">Landing ve içerik blokları</p>
               </div>
               <div className="rounded-2xl border border-white/10 bg-black/10 p-4">
                 <p className="text-xs uppercase tracking-[0.24em] text-slate-400">CRM</p>
@@ -52,7 +52,7 @@ export default async function StudioLoginPage({
               </div>
               <div className="rounded-2xl border border-white/10 bg-black/10 p-4">
                 <p className="text-xs uppercase tracking-[0.24em] text-slate-400">SEO</p>
-                <p className="mt-2 text-sm text-slate-200">Meta, OG ve blog yayinlari</p>
+                <p className="mt-2 text-sm text-slate-200">Meta, OG ve blog yayınları</p>
               </div>
             </div>
           </section>
@@ -61,10 +61,10 @@ export default async function StudioLoginPage({
             <div className="flex items-center justify-between gap-3">
               <div>
                 <p className="text-sm uppercase tracking-[0.24em] text-slate-500">Studio Login</p>
-                <h2 className="mt-3 text-3xl font-semibold tracking-tight">Backoffice hesabinizla girin</h2>
+                <h2 className="mt-3 text-3xl font-semibold tracking-tight">Backoffice hesabınızla girin</h2>
               </div>
               <Link href="/" className="rounded-xl border border-slate-300 px-3 py-2 text-sm font-medium text-slate-700">
-                Siteye Don
+                Siteye Dön
               </Link>
             </div>
             <form action="/auth/login" method="post" className="mt-8 space-y-4">
@@ -74,11 +74,11 @@ export default async function StudioLoginPage({
                 <input id="studio-email" type="email" name="email" required className="w-full rounded-2xl border border-slate-200 px-4 py-3 text-sm" />
               </div>
               <div className="space-y-2">
-                <label htmlFor="studio-password" className="text-sm font-medium text-slate-700">Sifre</label>
+                <label htmlFor="studio-password" className="text-sm font-medium text-slate-700">Şifre</label>
                 <input id="studio-password" type="password" name="password" required className="w-full rounded-2xl border border-slate-200 px-4 py-3 text-sm" />
               </div>
               <button type="submit" className="w-full rounded-2xl bg-slate-950 px-4 py-3 text-sm font-semibold text-white">
-                Studio Girisi
+                Studio Girişi
               </button>
               {error ? (
                 <p className="rounded-2xl border border-rose-200 bg-rose-50 px-4 py-3 text-sm text-rose-700">{error}</p>

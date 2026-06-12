@@ -72,7 +72,7 @@ export default async function SupportTicketsPage({
         <input
           name="q"
           defaultValue={filters.q ?? ""}
-          placeholder={translateUiText("Konu, aciklama veya tenant ara", locale)}
+          placeholder={translateUiText("Konu, açıklama veya tenant ara", locale)}
           className="rounded-xl border border-slate-300 px-4 py-3 text-sm"
         />
         <select name="status" defaultValue={statusFilter || "all"} className="rounded-xl border border-slate-300 px-4 py-3 text-sm">
@@ -154,7 +154,7 @@ export default async function SupportTicketsPage({
         ))}
         {filteredTickets.length === 0 ? (
           <div className="rounded-2xl border border-dashed border-slate-300 bg-white px-6 py-10 text-sm text-slate-500">
-            {translateUiText("Filtreye uygun ticket bulunamadi.", locale)}
+            {translateUiText("Filtreye uygun ticket bulunamadı.", locale)}
           </div>
         ) : null}
       </section>

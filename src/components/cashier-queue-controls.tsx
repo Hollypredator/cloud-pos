@@ -49,9 +49,9 @@ export function CashierPaymentQueuePanel({
 
   useTrackedCommandResult(trackedCommandId, (status, message) => {
     if (status === "ACK") {
-      toast.success("Odeme kaydedildi.");
+      toast.success("Ödeme kaydedildi.");
     } else {
-      toast.error(message ?? "Odeme alinamadi.");
+      toast.error(message ?? "Ödeme alınamadı.");
     }
     setTrackedCommandId(null);
   });
@@ -88,7 +88,7 @@ export function CashierPaymentQueuePanel({
           },
         });
         setTrackedCommandId(queued.commandId);
-        toast.success("Odeme kuyruga alindi.");
+        toast.success("Ödeme kuyruga alındı.");
         void flushPosCommandQueue();
       }}
     />
@@ -121,9 +121,9 @@ export function CashierFinancialsQueueForm({
 
   useTrackedCommandResult(trackedCommandId, (status, message) => {
     if (status === "ACK") {
-      toast.success("Finans guncellendi.");
+      toast.success("Finans güncellendi.");
     } else {
-      toast.error(message ?? "Finans guncellenemedi.");
+      toast.error(message ?? "Finans güncellenemedi.");
     }
     setTrackedCommandId(null);
   });
@@ -156,7 +156,7 @@ export function CashierFinancialsQueueForm({
       },
     });
     setTrackedCommandId(queued.commandId);
-    toast.success("Finans komutu kuyruga alindi.");
+    toast.success("Finans komutu kuyruga alındı.");
     void flushPosCommandQueue();
   }
 
@@ -186,7 +186,7 @@ export function CashierFinancialsQueueForm({
         disabled={pending}
         className="rounded-2xl border border-slate-200 bg-slate-50 px-4 py-3 text-sm font-semibold text-slate-800 disabled:cursor-not-allowed disabled:opacity-70"
       >
-        {pending ? "Isleniyor..." : "Finans Güncelle"}
+        {pending ? "İşleniyor..." : "Finans Güncelle"}
       </button>
     </form>
   );
@@ -216,9 +216,9 @@ export function CashierCancelOrderQueueForm({
 
   useTrackedCommandResult(trackedCommandId, (status, message) => {
     if (status === "ACK") {
-      toast.success("Siparis iptal edildi.");
+      toast.success("Sipariş iptal edildi.");
     } else {
-      toast.error(message ?? "Siparis iptal edilemedi.");
+      toast.error(message ?? "Sipariş iptal edilemedi.");
     }
     setTrackedCommandId(null);
   });
@@ -248,17 +248,17 @@ export function CashierCancelOrderQueueForm({
       },
     });
     setTrackedCommandId(queued.commandId);
-    toast.success("Iptal komutu kuyruga alindi.");
+    toast.success("İptal komutu kuyruga alındı.");
     void flushPosCommandQueue();
   }
 
   return (
     <form id={id} onSubmit={handleSubmit} className={className}>
       <input type="hidden" name="orderId" value={orderId} />
-      <p className="text-xs font-bold uppercase tracking-[0.16em] text-rose-700">Adisyon Iptal</p>
+      <p className="text-xs font-bold uppercase tracking-[0.16em] text-rose-700">Adisyon İptal</p>
       <input
         name="note"
-        placeholder="Iptal nedeni"
+        placeholder="İptal nedeni"
         className="rounded-2xl border border-rose-200 bg-white px-4 py-3 text-sm"
       />
       <button
@@ -266,7 +266,7 @@ export function CashierCancelOrderQueueForm({
         disabled={pending}
         className="rounded-2xl border border-rose-300 px-4 py-3 text-sm font-semibold text-rose-700 disabled:cursor-not-allowed disabled:opacity-70"
       >
-        {pending ? "Isleniyor..." : "Iptal"}
+        {pending ? "İşleniyor..." : "İptal"}
       </button>
     </form>
   );
@@ -298,9 +298,9 @@ export function CashierOrderItemCancelQueueButton({
 
   useTrackedCommandResult(trackedCommandId, (status, message) => {
     if (status === "ACK") {
-      toast.success("Urun islemi kaydedildi.");
+      toast.success("Ürün işlemi kaydedildi.");
     } else {
-      toast.error(message ?? "Urun iptal edilemedi.");
+      toast.error(message ?? "Ürün iptal edilemedi.");
     }
     setTrackedCommandId(null);
   });
@@ -319,12 +319,12 @@ export function CashierOrderItemCancelQueueButton({
       },
     });
     setTrackedCommandId(queued.commandId);
-    toast.success("Urun komutu kuyruga alindi.");
+    toast.success("Ürün komutu kuyruga alındı.");
     void flushPosCommandQueue();
   }
 
   return (
-    <button type="button" title="Urunu dus veya iptal et" onClick={handleClick} disabled={pending} className={className}>
+    <button type="button" title="Ürünu dus veya iptal et" onClick={handleClick} disabled={pending} className={className}>
       <svg className="h-4 w-4" fill="none" viewBox="0 0 24 24" stroke="currentColor">
         <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2.5} d="M20 12H4" />
       </svg>
@@ -356,9 +356,9 @@ export function CashierRefundQueueForm({
 
   useTrackedCommandResult(trackedCommandId, (status, message) => {
     if (status === "ACK") {
-      toast.success("Iade islemi kaydedildi.");
+      toast.success("İade işlemi kaydedildi.");
     } else {
-      toast.error(message ?? "Iade tamamlanamadi.");
+      toast.error(message ?? "İade tamamlanamadı.");
     }
     setTrackedCommandId(null);
   });
@@ -396,7 +396,7 @@ export function CashierRefundQueueForm({
       },
     });
     setTrackedCommandId(queued.commandId);
-    toast.success("Iade komutu kuyruga alindi.");
+    toast.success("İade komutu kuyruga alındı.");
     void flushPosCommandQueue();
   }
 
@@ -418,7 +418,7 @@ export function CashierRefundQueueForm({
       />
       <input
         name="note"
-        placeholder="Iade notu"
+        placeholder="İade notu"
         className="rounded-2xl border border-slate-300 px-4 py-3 text-sm"
       />
       <button
@@ -426,7 +426,7 @@ export function CashierRefundQueueForm({
         disabled={pending}
         className="rounded-2xl border border-rose-300 px-4 py-3 text-sm font-semibold text-rose-700 disabled:cursor-not-allowed disabled:opacity-70"
       >
-        {pending ? "Isleniyor..." : "Iade Baslat"}
+        {pending ? "İşleniyor..." : "İade Baslat"}
       </button>
     </form>
   );
@@ -456,9 +456,9 @@ export function CashierAdvancePickupStatusQueueButton({
 
   useTrackedCommandResult(trackedCommandId, (status, message) => {
     if (status === "ACK") {
-      toast.success("Siparis durumu guncellendi.");
+      toast.success("Sipariş durumu güncellendi.");
     } else {
-      toast.error(message ?? "Durum guncellenemedi.");
+      toast.error(message ?? "Durum güncellenemedi.");
     }
     setTrackedCommandId(null);
   });
@@ -485,7 +485,7 @@ export function CashierAdvancePickupStatusQueueButton({
       },
     });
     setTrackedCommandId(queued.commandId);
-    toast.success("Durum komutu kuyruga alindi.");
+    toast.success("Durum komutu kuyruga alındı.");
     void flushPosCommandQueue();
   }
 
@@ -496,7 +496,7 @@ export function CashierAdvancePickupStatusQueueButton({
       disabled={pending}
       className={className}
     >
-      {pending ? "Guncelleniyor..." : label}
+      {pending ? "Güncelleniyor..." : label}
     </button>
   );
 }

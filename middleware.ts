@@ -1,5 +1,6 @@
 import { NextResponse, type NextRequest } from "next/server";
 import { withCorrelationId } from "@/lib/observability";
+import { getSecurityHeaders } from "@/lib/security-headers";
 
 type RateLimitRule = {
   prefix: string;
@@ -14,37 +15,38 @@ type RateLimitMeta = {
 
 const RATE_LIMIT_RULES: RateLimitRule[] = [
   { prefix: "/auth/login", windowMs: 60_000, max: 15 },
-  { prefix: "/api/orders", windowMs: 60_000, max: 40 },
   { prefix: "/api/orders/latest", windowMs: 60_000, max: 80 },
   { prefix: "/api/orders/history", windowMs: 60_000, max: 80 },
+  { prefix: "/api/orders", windowMs: 60_000, max: 40 },
+  { prefix: "/api/ops/command", windowMs: 60_000, max: 90 },
+  { prefix: "/api/sync/push", windowMs: 60_000, max: 60 },
+  { prefix: "/api/sync/pull", windowMs: 60_000, max: 120 },
+  { prefix: "/api/qr/token/refresh", windowMs: 60_000, max: 30 },
   { prefix: "/api/table-requests", windowMs: 60_000, max: 30 },
   { prefix: "/api/alerts/dispatch", windowMs: 60_000, max: 12 },
+  { prefix: "/api/cashier/session/auto-close", windowMs: 60_000, max: 12 },
   { prefix: "/api/metrics/ops", windowMs: 60_000, max: 60 },
   { prefix: "/api/reports/sales.csv", windowMs: 60_000, max: 20 },
   { prefix: "/api/health", windowMs: 60_000, max: 120 },
 ];
 const MAX_RATE_LIMIT_WINDOW_MS = Math.max(...RATE_LIMIT_RULES.map((rule) => rule.windowMs));
 const RATE_LIMIT_SWEEP_INTERVAL = 200;
+const MOBILE_USER_AGENT_PATTERN =
+  /\b(android|webos|iphone|ipad|ipod|blackberry|iemobile|opera mini|mobile|tablet|silk|kindle)\b/i;
+const MOBILE_OPERATION_REDIRECTS = new Map([
+  ["/ops", "/m/ops"],
+  ["/tables", "/m/tables"],
+  ["/cashier", "/m/cashier"],
+  ["/kitchen", "/m/kitchen"],
+  ["/delivery", "/m/delivery"],
+  ["/service-requests", "/m/service-requests"],
+]);
+const MOBILE_PROTECTED_PREFIXES = ["/m/ops", "/m/tables", "/m/cashier", "/m/kitchen", "/m/delivery", "/m/service-requests"];
 
 function applySecurityHeaders(response: NextResponse) {
-  response.headers.set("X-Frame-Options", "DENY");
-  response.headers.set("X-Content-Type-Options", "nosniff");
-  response.headers.set("Referrer-Policy", "strict-origin-when-cross-origin");
-  response.headers.set("Permissions-Policy", "camera=(), microphone=(), geolocation=()");
-  response.headers.set("X-DNS-Prefetch-Control", "off");
-  response.headers.set("Cross-Origin-Resource-Policy", "same-origin");
-  response.headers.set("Cross-Origin-Opener-Policy", "same-origin");
-  response.headers.set("Content-Security-Policy", [
-    "default-src 'self'",
-    "base-uri 'self'",
-    "object-src 'none'",
-    "frame-ancestors 'none'",
-    "img-src 'self' data: blob: https:",
-    "font-src 'self' data: https:",
-    "style-src 'self' 'unsafe-inline'",
-    "script-src 'self' 'unsafe-inline' 'unsafe-eval' https:",
-    "connect-src 'self' https: http: wss: ws:",
-  ].join("; "));
+  for (const [key, value] of getSecurityHeaders()) {
+    response.headers.set(key, value);
+  }
   return response;
 }
 
@@ -90,7 +92,10 @@ function getClientIp(request: NextRequest) {
 
 function checkRateLimit(request: NextRequest, correlationId: string) {
   const pathname = request.nextUrl.pathname;
-  const matchedRule = RATE_LIMIT_RULES.find((rule) => pathname === rule.prefix || pathname.startsWith(`${rule.prefix}/`));
+  const matchedRule = RATE_LIMIT_RULES
+    .slice()
+    .sort((left, right) => right.prefix.length - left.prefix.length)
+    .find((rule) => pathname === rule.prefix || pathname.startsWith(`${rule.prefix}/`));
   if (!matchedRule) {
     return null;
   }
@@ -159,18 +164,45 @@ function withHostRouting(request: NextRequest, correlationId: string) {
 function withLegacyMobilePathRedirect(request: NextRequest, correlationId: string) {
   const { pathname, search } = request.nextUrl;
   if (pathname === "/m") {
-    return withSecurityAndCorrelation(NextResponse.redirect(new URL(`/ops${search}`, request.url)), correlationId);
+    return withSecurityAndCorrelation(NextResponse.redirect(new URL(`/m/ops${search}`, request.url)), correlationId);
   }
-  if (!pathname.startsWith("/m/")) {
+  return null;
+}
+
+function withMobileOperationRedirect(request: NextRequest, correlationId: string) {
+  const { pathname, search } = request.nextUrl;
+  const targetPath = MOBILE_OPERATION_REDIRECTS.get(pathname);
+  if (!targetPath) {
     return null;
   }
 
-  const targetPath = pathname.slice(2);
-  const normalizedPath = targetPath && targetPath !== "/" ? targetPath : "/ops";
-  return withSecurityAndCorrelation(
-    NextResponse.redirect(new URL(`${normalizedPath}${search}`, request.url)),
-    correlationId,
+  if (!MOBILE_USER_AGENT_PATTERN.test(request.headers.get("user-agent") ?? "")) {
+    return null;
+  }
+
+  return withSecurityAndCorrelation(NextResponse.redirect(new URL(`${targetPath}${search}`, request.url)), correlationId);
+}
+
+function isServiceRoleConfigured() {
+  return Boolean(process.env.NEXT_PUBLIC_SUPABASE_URL && process.env.SUPABASE_SERVICE_ROLE_KEY);
+}
+
+function hasAuthCookie(request: NextRequest) {
+  return request.cookies.getAll().some((cookie) => cookie.name.includes("auth-token"));
+}
+
+function withMobileAuthRedirect(request: NextRequest, correlationId: string) {
+  const { pathname, search } = request.nextUrl;
+  const isProtectedMobilePath = MOBILE_PROTECTED_PREFIXES.some(
+    (prefix) => pathname === prefix || pathname.startsWith(`${prefix}/`),
   );
+  if (!isProtectedMobilePath || hasAuthCookie(request) || !isServiceRoleConfigured()) {
+    return null;
+  }
+
+  const redirectUrl = new URL("/login", request.url);
+  redirectUrl.searchParams.set("next", `${pathname}${search}`);
+  return withSecurityAndCorrelation(NextResponse.redirect(redirectUrl), correlationId);
 }
 
 export async function middleware(request: NextRequest) {
@@ -192,6 +224,14 @@ export async function middleware(request: NextRequest) {
   const legacyMobilePathResponse = withLegacyMobilePathRedirect(request, correlationId);
   if (legacyMobilePathResponse) {
     return legacyMobilePathResponse;
+  }
+  const mobileAuthRedirectResponse = withMobileAuthRedirect(request, correlationId);
+  if (mobileAuthRedirectResponse) {
+    return mobileAuthRedirectResponse;
+  }
+  const mobileOperationRedirectResponse = withMobileOperationRedirect(request, correlationId);
+  if (mobileOperationRedirectResponse) {
+    return mobileOperationRedirectResponse;
   }
   const response = withSecurityAndCorrelation(
     NextResponse.next({

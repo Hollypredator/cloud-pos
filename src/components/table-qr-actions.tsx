@@ -73,7 +73,7 @@ export function TableQrActions({
                   view === "qr" ? "bg-[#ff5a34] text-white" : "border border-slate-200 bg-slate-50 text-slate-700"
                 }`}
               >
-                QR Gorseli
+                QR Görseli
               </button>
             </div>
 

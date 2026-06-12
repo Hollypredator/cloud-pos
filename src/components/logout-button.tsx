@@ -1,9 +1,20 @@
 "use client";
 
 import { useRouter } from "next/navigation";
+import { LogOut } from "lucide-react";
 import { getSupabaseAuthBrowserClient } from "@/lib/supabase/auth-browser";
 
-export function LogoutButton({ redirectPath = "/login" }: { redirectPath?: string }) {
+export function LogoutButton({
+  redirectPath = "/login",
+  className,
+  label = "Çıkış",
+  showIcon = false,
+}: {
+  redirectPath?: string;
+  className?: string;
+  label?: string;
+  showIcon?: boolean;
+}) {
   const router = useRouter();
 
   async function onLogout() {
@@ -43,9 +54,13 @@ export function LogoutButton({ redirectPath = "/login" }: { redirectPath?: strin
     <button
       type="button"
       onClick={onLogout}
-      className="rounded-lg border border-slate-300 px-3 py-2 text-sm font-medium text-slate-700"
+      className={
+        className ??
+        "inline-flex items-center justify-center gap-2 rounded-lg border border-slate-300 px-3 py-2 text-sm font-medium text-slate-700"
+      }
     >
-      Cikis
+      {showIcon ? <LogOut aria-hidden="true" className="h-4 w-4" strokeWidth={2.2} /> : null}
+      {label}
     </button>
   );
 }

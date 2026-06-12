@@ -182,7 +182,7 @@ export function AdminStockWorkbench({
 
   function markCounted(productId: string) {
     if (!sessionStarted) {
-      setMessage({ type: "error", text: translateUiText("Sayima baslamak icin once sebep secin.", locale) });
+      setMessage({ type: "error", text: translateUiText("Sayima baslamak icin once sebep seçin.", locale) });
       return;
     }
     const base = baseStockMap.get(productId) ?? 0;
@@ -212,7 +212,7 @@ export function AdminStockWorkbench({
     setSaveStatuses((prev) => ({ ...prev, [productId]: "saving" }));
     enqueueSave(productId, previousStock);
     setUndoAction(null);
-    setMessage({ type: "success", text: translateUiText("Son islem geri alindi.", locale) });
+    setMessage({ type: "success", text: translateUiText("Son işlem geri alındı.", locale) });
   }
 
   function applyBarcode() {
@@ -229,7 +229,7 @@ export function AdminStockWorkbench({
       return barcode === code || plu === code;
     });
     if (!found) {
-      setMessage({ type: "error", text: translateUiText("Barkod/PLU ile urun bulunamadi.", locale) });
+      setMessage({ type: "error", text: translateUiText("Barkod/PLU ile ürün bulunamadı.", locale) });
       barcodeInputRef.current?.focus();
       return;
     }
@@ -290,7 +290,7 @@ export function AdminStockWorkbench({
       {!sessionStarted ? (
         <section className="rounded-2xl border-2 border-slate-200 bg-white p-4 shadow-sm">
           <h2 className="text-lg font-semibold text-slate-900">{translateUiText("Sayimi Baslat", locale)}</h2>
-          <p className="mt-1 text-sm text-slate-600">{translateUiText("Oturum sebebini sec, sonra tek tusla urunleri say.", locale)}</p>
+          <p className="mt-1 text-sm text-slate-600">{translateUiText("Oturum sebebini seç, sonra tek tusla ürünleri say.", locale)}</p>
           <div className="mt-3 grid gap-2 md:grid-cols-[260px_minmax(0,1fr)_auto] md:items-center">
             <select
               value={sessionReasonPreset}
@@ -314,7 +314,7 @@ export function AdminStockWorkbench({
               onClick={() => {
                 const resolved = resolvedReasonValue();
                 if (!resolved.trim()) {
-                  setMessage({ type: "error", text: translateUiText("Sebep secmeden sayim baslatilamaz.", locale) });
+                  setMessage({ type: "error", text: translateUiText("Sebep seçmeden sayim baslatilamaz.", locale) });
                   return;
                 }
                 setSessionReason(resolved);
@@ -431,7 +431,7 @@ export function AdminStockWorkbench({
           })}
           {filteredProducts.length === 0 ? (
             <p className="rounded-xl border border-dashed border-slate-300 px-3 py-6 text-center text-sm text-slate-500">
-              {translateUiText("Urun bulunamadi.", locale)}
+              {translateUiText("Ürün bulunamadı.", locale)}
             </p>
           ) : null}
         </div>
@@ -440,7 +440,7 @@ export function AdminStockWorkbench({
       {undoAction ? (
         <section className="sticky bottom-2 z-20 rounded-xl border border-slate-200 bg-white/95 px-3 py-3 shadow-lg backdrop-blur">
           <div className="flex flex-wrap items-center justify-between gap-2">
-            <p className="text-sm text-slate-700">{translateUiText("Son islem kaydedildi. Yanlissa geri alabilirsiniz.", locale)}</p>
+            <p className="text-sm text-slate-700">{translateUiText("Son işlem kaydedildi. Yanlissa geri alabilirsiniz.", locale)}</p>
             <button type="button" onClick={undoLastAction} className="rounded-lg border border-slate-200 bg-white px-3 py-2 text-sm font-semibold text-slate-700">
               {translateUiText("Geri Al", locale)}
             </button>
@@ -459,9 +459,9 @@ export function AdminStockWorkbench({
           <thead>
             <tr className="border-b border-slate-200 text-slate-500">
               <th className="py-2">{translateUiText("Tarih", locale)}</th>
-              <th className="py-2">{translateUiText("Urun", locale)}</th>
-              <th className="py-2">{translateUiText("Degisim", locale)}</th>
-              <th className="py-2">{translateUiText("Onceki", locale)}</th>
+              <th className="py-2">{translateUiText("Ürün", locale)}</th>
+              <th className="py-2">{translateUiText("Değişim", locale)}</th>
+              <th className="py-2">{translateUiText("Önceki", locale)}</th>
               <th className="py-2">{translateUiText("Yeni", locale)}</th>
               <th className="py-2">{translateUiText("Neden", locale)}</th>
             </tr>
@@ -482,7 +482,7 @@ export function AdminStockWorkbench({
             {movements.length === 0 ? (
               <tr>
                 <td colSpan={6} className="py-6 text-center text-slate-500">
-                  {translateUiText("Kayit bulunamadi.", locale)}
+                  {translateUiText("Kayıt bulunamadı.", locale)}
                 </td>
               </tr>
             ) : null}

@@ -47,7 +47,7 @@ export function StaffLoginForm({ next, error, labels }: StaffLoginFormProps) {
     submitTimeoutRef.current = setTimeout(() => {
       controller.abort();
       setSubmitting(false);
-      setLocalError("Giriş isteği zaman asimina ugradi. Lütfen tekrar deneyin.");
+      setLocalError("Giriş isteği zaman aşımına uğradı. Lütfen tekrar deneyin.");
     }, 20_000);
 
     try {
@@ -67,7 +67,7 @@ export function StaffLoginForm({ next, error, labels }: StaffLoginFormProps) {
       });
 
       if (!response.ok) {
-        setLocalError("Giriş isteği tamamlanamadi. Lütfen tekrar deneyin.");
+        setLocalError("Giriş isteği tamamlanamadı. Lütfen tekrar deneyin.");
         return;
       }
 
@@ -89,9 +89,9 @@ export function StaffLoginForm({ next, error, labels }: StaffLoginFormProps) {
       window.location.assign(redirectTo);
     } catch (requestError) {
       if ((requestError as { name?: string } | null)?.name === "AbortError") {
-        setLocalError("Giriş isteği zaman asimina ugradi. Lütfen tekrar deneyin.");
+        setLocalError("Giriş isteği zaman aşımına uğradı. Lütfen tekrar deneyin.");
       } else {
-        setLocalError("Giriş isteği tamamlanamadi. Lütfen tekrar deneyin.");
+        setLocalError("Giriş isteği tamamlanamadı. Lütfen tekrar deneyin.");
       }
     } finally {
       if (submitTimeoutRef.current) {
@@ -107,7 +107,7 @@ export function StaffLoginForm({ next, error, labels }: StaffLoginFormProps) {
     <form action="/auth/login" method="post" className="space-y-4" onSubmit={onSubmit}>
       <input type="hidden" name="next" value={next ?? "/ops"} />
       <div className="space-y-2">
-        <label htmlFor="email" className="text-sm font-medium text-slate-700">
+        <label htmlFor="email" className="text-sm font-bold text-slate-700">
           {labels.email}
         </label>
         <input
@@ -117,11 +117,11 @@ export function StaffLoginForm({ next, error, labels }: StaffLoginFormProps) {
           required
           disabled={submitting}
           placeholder={labels.emailPlaceholder}
-          className="w-full rounded-2xl border border-slate-200 bg-white px-4 py-3 text-sm text-slate-900 outline-none transition placeholder:text-slate-400 focus:border-slate-900 disabled:cursor-not-allowed disabled:bg-slate-100"
+          className="w-full rounded-2xl border border-slate-200 bg-white px-4 py-3.5 text-sm font-semibold text-slate-900 outline-none transition placeholder:text-slate-400 focus:border-orange-400 focus:ring-4 focus:ring-orange-100 disabled:cursor-not-allowed disabled:bg-slate-100"
         />
       </div>
       <div className="space-y-2">
-        <label htmlFor="password" className="text-sm font-medium text-slate-700">
+        <label htmlFor="password" className="text-sm font-bold text-slate-700">
           {labels.password}
         </label>
         <input
@@ -131,22 +131,22 @@ export function StaffLoginForm({ next, error, labels }: StaffLoginFormProps) {
           required
           disabled={submitting}
           placeholder="********"
-          className="w-full rounded-2xl border border-slate-200 bg-white px-4 py-3 text-sm text-slate-900 outline-none transition placeholder:text-slate-400 focus:border-slate-900 disabled:cursor-not-allowed disabled:bg-slate-100"
+          className="w-full rounded-2xl border border-slate-200 bg-white px-4 py-3.5 text-sm font-semibold text-slate-900 outline-none transition placeholder:text-slate-400 focus:border-orange-400 focus:ring-4 focus:ring-orange-100 disabled:cursor-not-allowed disabled:bg-slate-100"
         />
       </div>
       <button
         type="submit"
         disabled={submitting}
         aria-busy={submitting}
-        className="w-full rounded-2xl bg-slate-950 px-4 py-3 text-sm font-semibold text-white transition hover:bg-slate-800 disabled:cursor-not-allowed disabled:opacity-70"
+        className="w-full rounded-2xl bg-slate-950 px-4 py-3.5 text-sm font-bold text-white shadow-xl shadow-slate-950/12 transition hover:bg-slate-800 disabled:cursor-not-allowed disabled:opacity-70"
       >
         {submitting ? labels.pendingCta : labels.loginCta}
       </button>
       {localError ? (
-        <p className="rounded-2xl border border-rose-200 bg-rose-50 px-4 py-3 text-sm text-rose-700">{localError}</p>
+        <p className="rounded-2xl border border-rose-200 bg-rose-50 px-4 py-3 text-sm font-semibold text-rose-700">{localError}</p>
       ) : null}
       {error ? (
-        <p className="rounded-2xl border border-rose-200 bg-rose-50 px-4 py-3 text-sm text-rose-700">{error}</p>
+        <p className="rounded-2xl border border-rose-200 bg-rose-50 px-4 py-3 text-sm font-semibold text-rose-700">{error}</p>
       ) : null}
     </form>
   );

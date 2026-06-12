@@ -35,8 +35,14 @@ function getRouteBucket(pathname: string): WebPerfRouteBucket {
   if (
     pathname === "/cashier" ||
     pathname.startsWith("/cashier/") ||
+    pathname === "/m/cashier" ||
+    pathname.startsWith("/m/cashier/") ||
     pathname === "/kitchen" ||
-    pathname.startsWith("/kitchen/")
+    pathname.startsWith("/kitchen/") ||
+    pathname === "/m/kitchen" ||
+    pathname.startsWith("/m/kitchen/") ||
+    pathname === "/admin/orders" ||
+    pathname.startsWith("/admin/orders/")
   ) {
     return "critical";
   }
@@ -44,10 +50,16 @@ function getRouteBucket(pathname: string): WebPerfRouteBucket {
   if (
     pathname === "/tables" ||
     pathname.startsWith("/tables/") ||
+    pathname === "/m/tables" ||
+    pathname.startsWith("/m/tables/") ||
     pathname === "/service-requests" ||
     pathname.startsWith("/service-requests/") ||
+    pathname === "/m/service-requests" ||
+    pathname.startsWith("/m/service-requests/") ||
     pathname === "/delivery" ||
-    pathname.startsWith("/delivery/")
+    pathname.startsWith("/delivery/") ||
+    pathname === "/m/delivery" ||
+    pathname.startsWith("/m/delivery/")
   ) {
     return "interactive";
   }
@@ -56,23 +68,31 @@ function getRouteBucket(pathname: string): WebPerfRouteBucket {
 }
 
 function isFerrariEnabled(pathname: string) {
-  if (pathname === "/cashier" || pathname.startsWith("/cashier/")) {
+  if (pathname === "/cashier" || pathname.startsWith("/cashier/") || pathname === "/m/cashier" || pathname.startsWith("/m/cashier/")) {
     return readFlag("WEB_PERF_FERRARI_CASHIER", true);
   }
-  if (pathname === "/kitchen" || pathname.startsWith("/kitchen/")) {
+  if (pathname === "/kitchen" || pathname.startsWith("/kitchen/") || pathname === "/m/kitchen" || pathname.startsWith("/m/kitchen/")) {
     return readFlag("WEB_PERF_FERRARI_KITCHEN", true);
+  }
+  if (pathname === "/admin/orders" || pathname.startsWith("/admin/orders/")) {
+    return true;
   }
   if (pathname === "/ops" || pathname.startsWith("/ops/")) {
     return readFlag("WEB_PERF_FERRARI_OPS", false);
   }
-  if (pathname === "/tables" || pathname.startsWith("/tables/")) {
-    return readFlag("WEB_PERF_FERRARI_TABLES", false);
+  if (pathname === "/tables" || pathname.startsWith("/tables/") || pathname === "/m/tables" || pathname.startsWith("/m/tables/")) {
+    return readFlag("WEB_PERF_FERRARI_TABLES", true);
   }
-  if (pathname === "/service-requests" || pathname.startsWith("/service-requests/")) {
-    return readFlag("WEB_PERF_FERRARI_SERVICE", false);
+  if (
+    pathname === "/service-requests" ||
+    pathname.startsWith("/service-requests/") ||
+    pathname === "/m/service-requests" ||
+    pathname.startsWith("/m/service-requests/")
+  ) {
+    return readFlag("WEB_PERF_FERRARI_SERVICE", true);
   }
-  if (pathname === "/delivery" || pathname.startsWith("/delivery/")) {
-    return readFlag("WEB_PERF_FERRARI_DELIVERY", false);
+  if (pathname === "/delivery" || pathname.startsWith("/delivery/") || pathname === "/m/delivery" || pathname.startsWith("/m/delivery/")) {
+    return readFlag("WEB_PERF_FERRARI_DELIVERY", true);
   }
   return false;
 }
@@ -83,12 +103,12 @@ function createStandardProfile(bucket: WebPerfRouteBucket, route: string): WebPe
       mode: "standard",
       bucket,
       route,
-      refreshDebounceMs: 650,
-      refreshMinIntervalMs: 3200,
+      refreshDebounceMs: 720,
+      refreshMinIntervalMs: 3600,
       duplicateWindowMs: 1400,
-      interactionGuardMs: 1800,
-      bridgeDebounceMs: 300,
-      bridgeMinIntervalMs: 1200,
+      interactionGuardMs: 2400,
+      bridgeDebounceMs: 360,
+      bridgeMinIntervalMs: 1450,
       connectionStateMinHoldMs: 1200,
     };
   }
@@ -98,12 +118,12 @@ function createStandardProfile(bucket: WebPerfRouteBucket, route: string): WebPe
       mode: "standard",
       bucket,
       route,
-      refreshDebounceMs: 750,
-      refreshMinIntervalMs: 3600,
+      refreshDebounceMs: 900,
+      refreshMinIntervalMs: 4200,
       duplicateWindowMs: 1500,
-      interactionGuardMs: 1800,
-      bridgeDebounceMs: 360,
-      bridgeMinIntervalMs: 1400,
+      interactionGuardMs: 2400,
+      bridgeDebounceMs: 460,
+      bridgeMinIntervalMs: 1800,
       connectionStateMinHoldMs: 1200,
     };
   }
@@ -112,12 +132,12 @@ function createStandardProfile(bucket: WebPerfRouteBucket, route: string): WebPe
     mode: "standard",
     bucket,
     route,
-    refreshDebounceMs: 1100,
-    refreshMinIntervalMs: 4500,
-    duplicateWindowMs: 1800,
-    interactionGuardMs: 1800,
-    bridgeDebounceMs: 700,
-    bridgeMinIntervalMs: 3500,
+    refreshDebounceMs: 1400,
+    refreshMinIntervalMs: 6500,
+    duplicateWindowMs: 2200,
+    interactionGuardMs: 2600,
+    bridgeDebounceMs: 900,
+    bridgeMinIntervalMs: 5200,
     connectionStateMinHoldMs: 1400,
   };
 }
@@ -128,12 +148,12 @@ function createFerrariProfile(bucket: WebPerfRouteBucket, route: string): WebPer
       mode: "ferrari_safe",
       bucket,
       route,
-      refreshDebounceMs: 550,
-      refreshMinIntervalMs: 1300,
-      duplicateWindowMs: 900,
-      interactionGuardMs: 1200,
-      bridgeDebounceMs: 180,
-      bridgeMinIntervalMs: 420,
+      refreshDebounceMs: 520,
+      refreshMinIntervalMs: 1500,
+      duplicateWindowMs: 1000,
+      interactionGuardMs: 1700,
+      bridgeDebounceMs: 220,
+      bridgeMinIntervalMs: 560,
       connectionStateMinHoldMs: 1200,
     };
   }
@@ -143,12 +163,12 @@ function createFerrariProfile(bucket: WebPerfRouteBucket, route: string): WebPer
       mode: "ferrari_safe",
       bucket,
       route,
-      refreshDebounceMs: 850,
-      refreshMinIntervalMs: 1700,
-      duplicateWindowMs: 1200,
-      interactionGuardMs: 1200,
-      bridgeDebounceMs: 240,
-      bridgeMinIntervalMs: 600,
+      refreshDebounceMs: 920,
+      refreshMinIntervalMs: 2200,
+      duplicateWindowMs: 1400,
+      interactionGuardMs: 1800,
+      bridgeDebounceMs: 320,
+      bridgeMinIntervalMs: 850,
       connectionStateMinHoldMs: 1200,
     };
   }
@@ -157,12 +177,12 @@ function createFerrariProfile(bucket: WebPerfRouteBucket, route: string): WebPer
     mode: "ferrari_safe",
     bucket,
     route,
-    refreshDebounceMs: 1200,
-    refreshMinIntervalMs: 2500,
-    duplicateWindowMs: 1700,
-    interactionGuardMs: 1200,
-    bridgeDebounceMs: 420,
-    bridgeMinIntervalMs: 900,
+    refreshDebounceMs: 1500,
+    refreshMinIntervalMs: 4200,
+    duplicateWindowMs: 2200,
+    interactionGuardMs: 2200,
+    bridgeDebounceMs: 640,
+    bridgeMinIntervalMs: 2200,
     connectionStateMinHoldMs: 1500,
   };
 }

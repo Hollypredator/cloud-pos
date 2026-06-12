@@ -155,7 +155,7 @@ export function SidebarCustomizer({
               <span className="inline-flex h-10 w-10 items-center justify-center rounded-xl bg-white/15 text-xs font-bold">OP</span>
               <div>
                 <p className="text-sm font-semibold">Aktif Menü Ogesi</p>
-                <p className="text-xs text-white/75">Sececegin renk burada gorunecek</p>
+                <p className="text-xs text-white/75">Seçecegin renk burada gorunecek</p>
               </div>
             </div>
           </div>
@@ -177,7 +177,7 @@ export function SidebarCustomizer({
               </div>
             </div>
             <div className="rounded-[22px] border border-slate-200 bg-white p-4">
-              <p className="text-sm font-semibold text-slate-900">Yonetici presetleri</p>
+              <p className="text-sm font-semibold text-slate-900">Yönetici presetleri</p>
               <div className="mt-3 flex flex-wrap gap-2">
                 <button type="button" onClick={() => applyPreset("admin", "service_first")} className="rounded-xl border border-slate-200 px-3 py-2 text-sm font-semibold text-slate-700">
                   Servis Önce
@@ -195,14 +195,14 @@ export function SidebarCustomizer({
         <div className="rounded-[24px] border border-slate-200 bg-slate-50 p-5">
           <div className="mb-4">
             <p className="text-lg font-semibold text-slate-900">Patron Sidebar Sirasi</p>
-            <p className="mt-1 text-sm text-slate-500">Tüm subeleri goren kullanicilar için menuyu surukleyip sirala.</p>
+            <p className="mt-1 text-sm text-slate-500">Tüm şubeleri goren kullanicilar için menuyu surukleyip sirala.</p>
           </div>
           <NavOrderList role="owner" items={ownerOrder} onReorder={handleReorder} />
         </div>
 
         <div className="rounded-[24px] border border-slate-200 bg-slate-50 p-5">
           <div className="mb-4">
-            <p className="text-lg font-semibold text-slate-900">Yonetici Sidebar Sirasi</p>
+            <p className="text-lg font-semibold text-slate-900">Yönetici Sidebar Sirasi</p>
             <p className="mt-1 text-sm text-slate-500">Şube yöneticileri için daha operasyon odaklı akışı belirle.</p>
           </div>
           <NavOrderList role="admin" items={adminOrder} onReorder={handleReorder} />

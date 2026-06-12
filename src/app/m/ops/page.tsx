@@ -1,12 +1,14 @@
 import Link from "next/link";
 import { LiveOpsBridge } from "@/components/live-ops-bridge";
 import { LiveRouteRefresh } from "@/components/live-route-refresh";
+import { MobileAuthRedirect } from "@/components/mobile-auth-redirect";
 import { requireRole } from "@/lib/auth";
 import { getOpsPageSnapshot } from "@/lib/data";
 import { resolveOperatingProfile } from "@/lib/operating-profile";
 import { formatOrderSourceLabel } from "@/lib/order-label";
 import { logServerPerf, measureAsync } from "@/lib/perf";
 import { getBusinessScopeContext } from "@/lib/server/app-context";
+import { shouldUseMobileClientAuthRedirect } from "@/lib/server/mobile-auth-guard";
 
 function formatMoney(value: number) {
   return `${value.toFixed(2)} TL`;
@@ -43,6 +45,10 @@ function toneClass(value: number, critical = false) {
 }
 
 export default async function MobileOpsPage() {
+  if (await shouldUseMobileClientAuthRedirect()) {
+    return <MobileAuthRedirect />;
+  }
+
   await requireRole(["admin", "cashier", "kitchen"], "/m/ops");
   const businessScope = await getBusinessScopeContext();
   const isSelfServiceCoffee = resolveOperatingProfile(businessScope?.activeBusinessType) === "coffee_self_service";

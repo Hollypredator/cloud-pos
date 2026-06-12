@@ -79,6 +79,11 @@ export function LiveRouteRefresh({
     scheduledRefreshAtRef.current = targetAt;
     timeoutRef.current = setTimeout(() => {
       scheduledRefreshAtRef.current = 0;
+      timeoutRef.current = null;
+      if (typeof document !== "undefined" && document.hidden) {
+        pendingHiddenRefreshRef.current = true;
+        return;
+      }
       lastRefreshAtRef.current = Date.now();
       router.refresh();
     }, waitMs);
@@ -117,6 +122,11 @@ export function LiveRouteRefresh({
   }, []);
 
   useEffect(() => {
+    if (timeoutRef.current) {
+      clearTimeout(timeoutRef.current);
+      timeoutRef.current = null;
+    }
+    scheduledRefreshAtRef.current = 0;
     const unsubscribe = addLivePosEventListener((event) => {
       if (!isRelevant(event, tables)) {
         return;

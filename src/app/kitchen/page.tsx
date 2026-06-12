@@ -2,13 +2,16 @@
 import { resolveOperatingProfile } from "@/lib/operating-profile";
 import Link from "next/link";
 import { revalidatePath } from "next/cache";
+import { headers } from "next/headers";
 import { BackofficePage, ContentCard, EmptyPanel, FeatureLockedState, SummaryCard, WorkflowGuide } from "@/components/backoffice-ui";
+import { ClientRouteRedirect } from "@/components/client-route-redirect";
 import { LiveOpsBridge } from "@/components/live-ops-bridge";
 import { LiveRouteRefresh } from "@/components/live-route-refresh";
 import { PendingSubmitButton } from "@/components/pending-submit-button";
 import { SwipeableOrderCard } from "@/components/swipeable-order-card";
 import { requireRole } from "@/lib/auth";
 import { getKitchenPageSnapshot } from "@/lib/data";
+import { isLikelyMobileUserAgent } from "@/lib/device";
 import { getCurrentLocale } from "@/lib/i18n-server";
 import { executeWebOpsCommand } from "@/lib/ops/server-action";
 import { logServerPerf, measureAsync } from "@/lib/perf";
@@ -224,6 +227,17 @@ export default async function KitchenPage({
 }: {
   searchParams: Promise<{ station?: string; mode?: string }>;
 }) {
+  const requestHeaders = await headers();
+  if (isLikelyMobileUserAgent(requestHeaders.get("user-agent"))) {
+    const { station: stationParam } = await searchParams;
+    const params = new URLSearchParams();
+    if (stationParam) {
+      params.set("station", stationParam);
+    }
+    const query = params.toString();
+    return <ClientRouteRedirect href={query ? `/m/kitchen?${query}` : "/m/kitchen"} />;
+  }
+
   await requireRole(["admin", "kitchen"], "/kitchen");
   const locale = await getCurrentLocale();
   const localeCode = locale === "en" ? "en-US" : locale === "fr" ? "fr-FR" : "tr-TR";

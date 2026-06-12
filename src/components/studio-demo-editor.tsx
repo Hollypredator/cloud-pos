@@ -85,7 +85,7 @@ function SectionShell({
         <div>
           <p className="text-xs font-semibold uppercase tracking-[0.24em] text-slate-500">{eyebrow}</p>
           <h2 className="mt-2 text-xl font-semibold text-slate-900">{title}</h2>
-          <p className="mt-2 max-w-2xl text-sm leading-7 text-slate-600">{description}</p>
+          <p className="mt-2 max-w-2xl text-sm leadıng-7 text-slate-600">{description}</p>
         </div>
         <button
           type="button"
@@ -160,7 +160,7 @@ export function StudioDemoEditor({
     !showRecentOrders
       ? {
           key: "orders",
-          label: "Son Siparisler",
+          label: "Son Siparişler",
           onAdd: () => setShowRecentOrders(true),
         }
       : null,
@@ -226,7 +226,7 @@ export function StudioDemoEditor({
             <div>
               <p className="text-xs font-semibold uppercase tracking-[0.24em] text-slate-500">Bolum Ekle</p>
               <h2 className="mt-2 text-xl font-semibold text-slate-900">Gizlenen bolumleri geri getir</h2>
-              <p className="mt-2 max-w-2xl text-sm leading-7 text-slate-600">
+              <p className="mt-2 max-w-2xl text-sm leadıng-7 text-slate-600">
                 Kaldirdigin demo bolumlerini buradan yeniden ekleyebilirsin.
               </p>
             </div>
@@ -250,8 +250,8 @@ export function StudioDemoEditor({
         <p className="text-xs font-semibold uppercase tracking-[0.24em] text-slate-500">Hero</p>
         <div className="mt-4 grid gap-4">
           <TextInput label="Eyebrow" value={heroEyebrow} onChange={setHeroEyebrow} />
-          <TextInput label="Baslik" value={heroTitle} onChange={setHeroTitle} />
-          <TextArea label="Aciklama" value={heroBody} rows={4} onChange={setHeroBody} />
+          <TextInput label="Başlık" value={heroTitle} onChange={setHeroTitle} />
+          <TextArea label="Açıklama" value={heroBody} rows={4} onChange={setHeroBody} />
           <div className="grid gap-4 md:grid-cols-3">
             <TextInput label="Badge" value={previewBadge} onChange={setPreviewBadge} />
             <TextInput label="Ops CTA" value={opsCtaLabel} onChange={setOpsCtaLabel} />
@@ -261,7 +261,7 @@ export function StudioDemoEditor({
       </section>
 
       <section className="rounded-[2rem] border border-slate-200 bg-white p-6 shadow-sm">
-        <p className="text-xs font-semibold uppercase tracking-[0.24em] text-slate-500">Bolum Basliklari</p>
+        <p className="text-xs font-semibold uppercase tracking-[0.24em] text-slate-500">Bolum Başlıklari</p>
         <div className="mt-4 grid gap-4 md:grid-cols-2">
           <TextInput label="Flow eyebrow" value={flowEyebrow} onChange={setFlowEyebrow} />
           <TextInput label="Flow title" value={flowTitle} onChange={setFlowTitle} />
@@ -283,7 +283,7 @@ export function StudioDemoEditor({
       {showPresentationFlow ? (
         <SectionShell
           eyebrow="Sunum Akışı"
-          title="Adimlari yonet"
+          title="Adimlari yönet"
           description="Bu bolumu tamamen kaldirip daha sonra tekrar ekleyebilirsin."
           onRemove={() => setShowPresentationFlow(false)}
         >
@@ -301,7 +301,7 @@ export function StudioDemoEditor({
             <div key={`${index}-${item.title}`} className="rounded-2xl border border-slate-200 bg-slate-50 p-4">
               <div className="grid gap-4">
                 <TextInput
-                  label={`Adim ${index + 1} Baslik`}
+                  label={`Adim ${index + 1} Başlık`}
                   value={item.title}
                   onChange={(value) =>
                     setPresentationFlow((current) =>
@@ -310,7 +310,7 @@ export function StudioDemoEditor({
                   }
                 />
                 <TextArea
-                  label="Aciklama"
+                  label="Açıklama"
                   value={item.body}
                   onChange={(value) =>
                     setPresentationFlow((current) =>
@@ -337,7 +337,7 @@ export function StudioDemoEditor({
       {showStaffAccounts ? (
         <SectionShell
           eyebrow="Demo Hesaplari"
-          title="Kartlari yonet"
+          title="Kartlari yönet"
           description="Rol bazli hesap kartlarini tamamen kaldirabilir veya geri ekleyebilirsin."
           onRemove={() => setShowStaffAccounts(false)}
         >
@@ -378,7 +378,7 @@ export function StudioDemoEditor({
                   }
                 />
                 <TextInput
-                  label="Sifre"
+                  label="Şifre"
                   value={account.password}
                   onChange={(value) =>
                     setStaffAccounts((current) =>
@@ -475,7 +475,7 @@ export function StudioDemoEditor({
       {showPackages ? (
         <SectionShell
           eyebrow="Demo Paketleri"
-          title="Kartlari yonet"
+          title="Kartlari yönet"
           description="Paket kartlarini kaldirip daha sonra tekrar ekleyebilirsin."
           onRemove={() => setShowPackages(false)}
         >

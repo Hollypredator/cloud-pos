@@ -56,7 +56,7 @@ async function sendSmtpTestAction(formData: FormData) {
   const recipient = readString(formData, "testRecipient");
   const result = await sendSmtpTestEmail(recipient);
   if (!result.ok) {
-    redirect(`/studio/settings?mail=error&detail=${encodeURIComponent(result.error ?? "Mail gonderimi başarısız.")}`);
+    redirect(`/studio/settings?mail=error&detail=${encodeURIComponent(result.error ?? "Mail gönderimi başarısız.")}`);
   }
   redirect("/studio/settings?mail=success");
 }
@@ -139,7 +139,7 @@ export default async function AdminSettingsPage({
 
         {usingDemoData ? (
           <p className="rounded-lg bg-amber-100 px-3 py-2 text-sm text-amber-900">
-            Ayarlar tablosu okunamadi. Varsayilan ayarlar gosteriliyor.
+            Ayarlar tablosu okunamadı. Varsayilan ayarlar gosteriliyor.
           </p>
         ) : null}
 
@@ -150,7 +150,7 @@ export default async function AdminSettingsPage({
         ) : null}
         {mailStatus === "error" ? (
           <p className="rounded-lg bg-rose-100 px-3 py-2 text-sm text-rose-900">
-            Test maili gonderilemedi: {mailDetail || "Bilinmeyen hata."}
+            Test maili gönderilemedi: {mailDetail || "Bilinmeyen hata."}
           </p>
         ) : null}
 
@@ -158,8 +158,8 @@ export default async function AdminSettingsPage({
           <article className="rounded-2xl bg-slate-900 p-6 text-white shadow-sm">
             <p className="text-xs uppercase tracking-[0.28em] text-slate-400">WordPress Benzeri Yapı</p>
             <h2 className="mt-3 text-3xl font-semibold">Marka ve iletişim ayarlarini koddan ayir</h2>
-            <p className="mt-3 text-sm leading-7 text-slate-300">
-              Bu ekran logo, telefon, e-posta, footer notu ve SMTP gonderici ayarlarini panelden yonetmek için var.
+            <p className="mt-3 text-sm leadıng-7 text-slate-300">
+              Bu ekran logo, telefon, e-posta, footer notu ve SMTP gönderici ayarlarini panelden yönetmek için var.
             </p>
           </article>
 
@@ -174,7 +174,7 @@ export default async function AdminSettingsPage({
                 {smtpReady ? "Hazır" : "Eksik"}
               </span>
               <p className="text-sm text-slate-600">
-                {smtpReady ? "Lead bildirimleri ve test e-postasi gonderilebilir." : "Host, kullanıcı veya sifre eksik."}
+                {smtpReady ? "Lead bildirimleri ve test e-postasi gönderilebilir." : "Host, kullanıcı veya sifre eksik."}
               </p>
             </div>
           </article>
@@ -184,7 +184,7 @@ export default async function AdminSettingsPage({
           <form action={updateGeneralSettingsAction} className="rounded-2xl bg-white p-6 shadow-sm">
             <h2 className="text-xl font-semibold text-slate-900">Genel Ayarlar</h2>
             <div className="mt-5 grid gap-4 md:grid-cols-2">
-              <Field label="Site adi" name="siteName" defaultValue={generalSettings.siteName} />
+              <Field label="Site adı" name="siteName" defaultValue={generalSettings.siteName} />
               <Field label="Site slogani" name="siteTagline" defaultValue={generalSettings.siteTagline} />
               <Field label="Telefon" name="contactPhone" defaultValue={generalSettings.contactPhone} />
               <Field label="WhatsApp numarasi" name="whatsappPhone" defaultValue={generalSettings.whatsappPhone} />
@@ -216,8 +216,8 @@ export default async function AdminSettingsPage({
                     TLS/SSL secure bağlantı
                   </label>
                 </div>
-                <Field label="Kullanıcı adi" name="username" defaultValue={smtpSettings.username} />
-                <Field label="Sifre" name="password" defaultValue={smtpSettings.password} type="password" />
+                <Field label="Kullanıcı adı" name="username" defaultValue={smtpSettings.username} />
+                <Field label="Şifre" name="password" defaultValue={smtpSettings.password} type="password" />
                 <Field label="From e-posta" name="fromEmail" defaultValue={smtpSettings.fromEmail} type="email" />
                 <Field label="From ad" name="fromName" defaultValue={smtpSettings.fromName} />
                 <Field label="Reply-to e-posta" name="replyToEmail" defaultValue={smtpSettings.replyToEmail} type="email" />
@@ -237,8 +237,8 @@ export default async function AdminSettingsPage({
 
             <form action={sendSmtpTestAction} className="rounded-2xl bg-white p-6 shadow-sm">
               <h2 className="text-xl font-semibold text-slate-900">Test E-postasi</h2>
-              <p className="mt-3 text-sm leading-7 text-slate-600">
-                Ayarlari kaydettikten sonra test mesajini doğrudan bu panelden gonder.
+              <p className="mt-3 text-sm leadıng-7 text-slate-600">
+                Ayarlari kaydettikten sonra test mesajini doğrudan bu panelden gönder.
               </p>
               <div className="mt-5 grid gap-4">
                 <Field

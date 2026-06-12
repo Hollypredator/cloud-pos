@@ -244,7 +244,7 @@ export function DemoVisualEditor({
         }
       : null,
     !showRecentOrders
-      ? { key: "orders" as DemoSectionId, label: "Son Siparisler", onAdd: () => { setShowRecentOrders(true); setSelectedId("orders"); } }
+      ? { key: "orders" as DemoSectionId, label: "Son Siparişler", onAdd: () => { setShowRecentOrders(true); setSelectedId("orders"); } }
       : null,
     !showTableStatus
       ? { key: "tables" as DemoSectionId, label: "Masa Durumu", onAdd: () => { setShowTableStatus(true); setSelectedId("tables"); } }
@@ -290,8 +290,8 @@ export function DemoVisualEditor({
       <p className="text-[11px] font-semibold uppercase tracking-[0.24em] text-slate-500">Style</p>
       <div className="mt-4 grid gap-4">
         <div className="grid gap-4 md:grid-cols-2">
-          <NumberInput label="Üst bosluk" value={sectionStyles[selectedId].paddingTop} onChange={(value) => updateSectionStyle(selectedId, "paddingTop", value)} />
-          <NumberInput label="Alt bosluk" value={sectionStyles[selectedId].paddingBottom} onChange={(value) => updateSectionStyle(selectedId, "paddingBottom", value)} />
+          <NumberInput label="Üst boşluk" value={sectionStyles[selectedId].paddingTop} onChange={(value) => updateSectionStyle(selectedId, "paddingTop", value)} />
+          <NumberInput label="Alt boşluk" value={sectionStyles[selectedId].paddingBottom} onChange={(value) => updateSectionStyle(selectedId, "paddingBottom", value)} />
         </div>
         <div className="grid gap-4 md:grid-cols-2">
           <NumberInput label="Ic padding" value={sectionStyles[selectedId].contentPadding} onChange={(value) => updateSectionStyle(selectedId, "contentPadding", value)} />
@@ -318,8 +318,8 @@ export function DemoVisualEditor({
         <div className="space-y-4">
           {styleEditor}
           <TextInput label="Eyebrow" value={heroEyebrow} onChange={setHeroEyebrow} />
-          <TextInput label="Baslik" value={heroTitle} onChange={setHeroTitle} />
-          <TextArea label="Aciklama" value={heroBody} rows={5} onChange={setHeroBody} />
+          <TextInput label="Başlık" value={heroTitle} onChange={setHeroTitle} />
+          <TextArea label="Açıklama" value={heroBody} rows={5} onChange={setHeroBody} />
           <div className="grid gap-4">
             <TextInput label="Badge" value={previewBadge} onChange={setPreviewBadge} />
             <TextInput label="Ops CTA" value={opsCtaLabel} onChange={setOpsCtaLabel} />
@@ -342,7 +342,7 @@ export function DemoVisualEditor({
               Bolumu Kaldir
             </button>
           </div>
-          <div className="rounded-2xl border border-slate-200 bg-slate-50 p-4 text-sm leading-7 text-slate-600">
+          <div className="rounded-2xl border border-slate-200 bg-slate-50 p-4 text-sm leadıng-7 text-slate-600">
             Metrik kartlari simdilik sabit demo veriden geliyor. Bu bolumu kaldirip sonra yeniden ekleyebilirsin.
           </div>
         </div>
@@ -364,17 +364,17 @@ export function DemoVisualEditor({
             </button>
           </div>
           <TextInput label="Eyebrow" value={flowEyebrow} onChange={setFlowEyebrow} />
-          <TextInput label="Baslik" value={flowTitle} onChange={setFlowTitle} />
+          <TextInput label="Başlık" value={flowTitle} onChange={setFlowTitle} />
           {presentationFlow.map((item, index) => (
             <div key={`${index}-${item.title}`} className="rounded-2xl border border-slate-200 bg-slate-50 p-4">
               <TextInput
-                label={`Adim ${index + 1} Baslik`}
+                label={`Adim ${index + 1} Başlık`}
                 value={item.title}
                 onChange={(value) => setPresentationFlow((current) => updateArrayItem(current, index, (entry) => ({ ...entry, title: value })))}
               />
               <div className="mt-3">
                 <TextArea
-                  label="Aciklama"
+                  label="Açıklama"
                   value={item.body}
                   onChange={(value) => setPresentationFlow((current) => updateArrayItem(current, index, (entry) => ({ ...entry, body: value })))}
                 />
@@ -408,14 +408,14 @@ export function DemoVisualEditor({
             </button>
           </div>
           <TextInput label="Eyebrow" value={accountsEyebrow} onChange={setAccountsEyebrow} />
-          <TextInput label="Baslik" value={accountsTitle} onChange={setAccountsTitle} />
-          <TextArea label="Aciklama" value={accountsBody} rows={4} onChange={setAccountsBody} />
+          <TextInput label="Başlık" value={accountsTitle} onChange={setAccountsTitle} />
+          <TextArea label="Açıklama" value={accountsBody} rows={4} onChange={setAccountsBody} />
           {staffAccounts.map((account, index) => (
             <div key={`${index}-${account.email}`} className="rounded-2xl border border-slate-200 bg-slate-50 p-4">
               <div className="grid gap-4">
                 <TextInput label="Ad Soyad" value={account.fullName} onChange={(value) => setStaffAccounts((current) => updateArrayItem(current, index, (entry) => ({ ...entry, fullName: value })))} />
                 <TextInput label="E-posta" value={account.email} onChange={(value) => setStaffAccounts((current) => updateArrayItem(current, index, (entry) => ({ ...entry, email: value })))} />
-                <TextInput label="Sifre" value={account.password} onChange={(value) => setStaffAccounts((current) => updateArrayItem(current, index, (entry) => ({ ...entry, password: value })))} />
+                <TextInput label="Şifre" value={account.password} onChange={(value) => setStaffAccounts((current) => updateArrayItem(current, index, (entry) => ({ ...entry, password: value })))} />
                 <label className="block">
                   <span className="text-xs font-semibold uppercase tracking-[0.18em] text-slate-500">Rol</span>
                   <select
@@ -455,13 +455,13 @@ export function DemoVisualEditor({
           <div className="flex items-center justify-between gap-3">
             <div>
               <p className="text-xs font-semibold uppercase tracking-[0.18em] text-slate-500">Bolum</p>
-              <h3 className="mt-1 text-lg font-semibold text-slate-900">Son Siparisler</h3>
+              <h3 className="mt-1 text-lg font-semibold text-slate-900">Son Siparişler</h3>
             </div>
             <button type="button" onClick={() => setShowRecentOrders(false)} className="rounded-lg border border-rose-200 bg-rose-50 px-3 py-2 text-xs font-semibold text-rose-700">
               Bolumu Kaldir
             </button>
           </div>
-          <TextInput label="Baslik" value={recentOrdersTitle} onChange={setRecentOrdersTitle} />
+          <TextInput label="Başlık" value={recentOrdersTitle} onChange={setRecentOrdersTitle} />
           <TextInput label="CTA" value={recentOrdersCtaLabel} onChange={setRecentOrdersCtaLabel} />
         </div>
       );
@@ -481,7 +481,7 @@ export function DemoVisualEditor({
               Bolumu Kaldir
             </button>
           </div>
-          <TextInput label="Baslik" value={tableStatusTitle} onChange={setTableStatusTitle} />
+          <TextInput label="Başlık" value={tableStatusTitle} onChange={setTableStatusTitle} />
         </div>
       );
     }
@@ -500,7 +500,7 @@ export function DemoVisualEditor({
               Bolumu Kaldir
             </button>
           </div>
-          <TextInput label="Baslik" value={lowStockTitle} onChange={setLowStockTitle} />
+          <TextInput label="Başlık" value={lowStockTitle} onChange={setLowStockTitle} />
           <TextInput label="Etiket" value={lowStockLabel} onChange={setLowStockLabel} />
         </div>
       );
@@ -557,8 +557,8 @@ export function DemoVisualEditor({
               Bolumu Kaldir
             </button>
           </div>
-          <TextInput label="Baslik" value={closingCtaTitle} onChange={setClosingCtaTitle} />
-          <TextArea label="Aciklama" value={closingCtaBody} rows={5} onChange={setClosingCtaBody} />
+          <TextInput label="Başlık" value={closingCtaTitle} onChange={setClosingCtaTitle} />
+          <TextArea label="Açıklama" value={closingCtaBody} rows={5} onChange={setClosingCtaBody} />
           <div className="grid gap-4">
             <TextInput label="Ana CTA" value={closingCtaPrimaryLabel} onChange={setClosingCtaPrimaryLabel} />
             <TextInput label="Ikinci CTA" value={closingCtaSecondaryLabel} onChange={setClosingCtaSecondaryLabel} />
@@ -669,8 +669,8 @@ export function DemoVisualEditor({
       <aside className="sticky top-6 h-fit rounded-[2rem] border border-slate-200 bg-white p-5 shadow-[0_20px_60px_rgba(15,23,42,0.10)]">
         <p className="text-xs font-semibold uppercase tracking-[0.24em] text-slate-500">Properties</p>
         <h2 className="mt-2 text-xl font-semibold text-slate-900">{selectedId} ayarlari</h2>
-        <p className="mt-2 text-sm leading-6 text-slate-600">
-          Soldaki demo canvas uzerinden blok sec. Alanlari degistirdikce sayfa aninda guncellenir.
+        <p className="mt-2 text-sm leadıng-6 text-slate-600">
+          Soldaki demo canvas uzerinden blok seç. Alanlari degistirdikce sayfa aninda güncellenir.
         </p>
 
         <div className="mt-5 space-y-4">{selectedPanel}</div>

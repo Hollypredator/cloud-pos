@@ -14,7 +14,7 @@ function toSlug(input: string) {
     .replace(/^-|-$/g, "");
 }
 
-function estimateReadingTime(text: string) {
+function estimateReadıngTime(text: string) {
   const words = text.trim().split(/\s+/).filter(Boolean).length;
   return Math.max(1, Math.ceil(words / 200));
 }
@@ -51,7 +51,7 @@ async function deleteBlogPostAction(formData: FormData) {
 
   const id = String(formData.get("id") ?? "");
   if (!id) {
-    redirect("/studio/blog?error=Silinecek yazi bulunamadi.");
+    redirect("/studio/blog?error=Silinecek yazi bulunamadı.");
   }
 
   const result = await deleteBlogPost(id);
@@ -118,11 +118,11 @@ export default async function AdminBlogPage({
                       {post.status}
                     </span>
                     <span className={`text-xs ${selectedPost?.id === post.id ? "text-slate-300" : "text-slate-500"}`}>
-                      {estimateReadingTime(post.body)} dk
+                      {estimateReadıngTime(post.body)} dk
                     </span>
                   </div>
                   <h3 className="mt-3 text-lg font-semibold">{post.title}</h3>
-                  <p className={`mt-2 line-clamp-2 text-sm leading-6 ${selectedPost?.id === post.id ? "text-slate-300" : "text-slate-600"}`}>
+                  <p className={`mt-2 line-clamp-2 text-sm leadıng-6 ${selectedPost?.id === post.id ? "text-slate-300" : "text-slate-600"}`}>
                     {post.excerpt || post.body}
                   </p>
                 </Link>
@@ -204,7 +204,7 @@ export default async function AdminBlogPage({
 
                 <div className="mt-5 flex items-center justify-between gap-3">
                   <div className="text-sm text-slate-500">
-                    {selectedPost ? `Son guncelleme: ${new Date(selectedPost.updated_at).toLocaleString("tr-TR")}` : "Yeni yazi olusturuyorsun."}
+                    {selectedPost ? `Son güncelleme: ${new Date(selectedPost.updated_at).toLocaleString("tr-TR")}` : "Yeni yazi oluşturuyorsun."}
                   </div>
                   <button type="submit" className="rounded-xl bg-slate-900 px-5 py-3 text-sm font-semibold text-white">
                     Yaziyi Kaydet
@@ -220,8 +220,8 @@ export default async function AdminBlogPage({
                   <img src={selectedPost.cover_image_url} alt={selectedPost.title} className="mt-4 h-64 w-full rounded-[1.5rem] object-cover" />
                 ) : null}
                 <h3 className="mt-5 text-3xl font-semibold tracking-tight text-slate-900">{selectedPost.title}</h3>
-                {selectedPost.excerpt ? <p className="mt-3 text-lg leading-8 text-slate-600">{selectedPost.excerpt}</p> : null}
-                <div className="mt-6 whitespace-pre-wrap text-base leading-8 text-slate-700">{selectedPost.body}</div>
+                {selectedPost.excerpt ? <p className="mt-3 text-lg leadıng-8 text-slate-600">{selectedPost.excerpt}</p> : null}
+                <div className="mt-6 whitespace-pre-wrap text-base leadıng-8 text-slate-700">{selectedPost.body}</div>
               </article>
             ) : null}
           </section>

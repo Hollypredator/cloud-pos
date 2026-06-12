@@ -408,6 +408,9 @@ export default async function CashierPage({
   const auth = await requireRole(["admin", "cashier", "waiter"], "/cashier");
   const requestHeaders = await headers();
   const renderMobileMarkup = isLikelyMobileUserAgent(requestHeaders.get("user-agent"));
+  const cashierPath = renderMobileMarkup ? "/m/cashier" : "/cashier";
+  const cashierSessionPath = renderMobileMarkup ? "/m/cashier/session" : "/cashier/session";
+  const opsPath = renderMobileMarkup ? "/m/ops" : "/ops";
   const locale = await getCurrentLocale();
   const localeCode = locale === "en" ? "en-US" : locale === "fr" ? "fr-FR" : "tr-TR";
   const { order: selectedOrderId, feedback, tone, mode, historyStatus, historyFrom, historyTo } = await searchParams;
@@ -456,7 +459,7 @@ export default async function CashierPage({
             <Link href="/pickup-board" className="w-full rounded-2xl border border-slate-200 bg-white px-5 py-3 text-center text-sm font-semibold text-slate-800 sm:w-auto">
               Pickup Board
             </Link>
-            <Link href="/ops" className="w-full rounded-2xl border border-slate-200 bg-white px-5 py-3 text-center text-sm font-semibold text-slate-800 sm:w-auto">
+            <Link href={opsPath} className="w-full rounded-2xl border border-slate-200 bg-white px-5 py-3 text-center text-sm font-semibold text-slate-800 sm:w-auto">
               Panele Don
             </Link>
           </>
@@ -483,7 +486,7 @@ export default async function CashierPage({
         </section>
 
         <ContentCard title="Gecmis Filtreleri">
-          <form method="get" action="/cashier" className="grid gap-3 md:grid-cols-[1fr_1fr_1fr_auto_auto] md:items-end">
+            <form method="get" action={cashierPath} className="grid gap-3 md:grid-cols-[1fr_1fr_1fr_auto_auto] md:items-end">
             <label className="grid gap-1 text-xs font-semibold text-slate-600">
               Durum
               <select name="historyStatus" defaultValue={historyStatusFilter} className="rounded-xl border border-slate-300 bg-white px-3 py-2 text-sm text-slate-700">
@@ -510,7 +513,7 @@ export default async function CashierPage({
             <button type="submit" className="rounded-xl bg-slate-900 px-4 py-2 text-sm font-semibold text-white">
               Filtrele
             </button>
-            <Link href="/cashier" className="rounded-xl border border-slate-300 bg-white px-4 py-2 text-center text-sm font-semibold text-slate-700">
+            <Link href={cashierPath} className="rounded-xl border border-slate-300 bg-white px-4 py-2 text-center text-sm font-semibold text-slate-700">
               Temizle
             </Link>
           </form>
@@ -544,7 +547,7 @@ export default async function CashierPage({
                         </div>
                       </div>
                       <div className="mt-3 flex flex-wrap gap-2">
-                        <Link href={`/cashier?order=${order.id}`} className="rounded-2xl border border-slate-200 bg-white px-4 py-2 text-sm font-semibold text-slate-700">
+                        <Link href={`${cashierPath}?order=${order.id}`} className="rounded-2xl border border-slate-200 bg-white px-4 py-2 text-sm font-semibold text-slate-700">
                           Detay
                         </Link>
                         {nextActionLabel ? (
@@ -659,10 +662,10 @@ export default async function CashierPage({
         <>
           <LiveOpsBridge tables={["orders", "order_items", "tables", "payments", "cash_register_sessions"]} fallbackIntervalMs={1400} />
           <LiveRouteRefresh tables={["orders", "order_items", "payments", "cash_register_sessions"]} debounceMs={240} minIntervalMs={1200} />
-          <Link href="/cashier/session" className="w-full rounded-2xl border border-slate-200 bg-white px-5 py-3 text-center text-sm font-semibold text-slate-800 sm:w-auto">
+          <Link href={cashierSessionPath} className="w-full rounded-2xl border border-slate-200 bg-white px-5 py-3 text-center text-sm font-semibold text-slate-800 sm:w-auto">
             Gun Islemleri
           </Link>
-          <Link href="/ops" className="w-full rounded-2xl border border-slate-200 bg-white px-5 py-3 text-center text-sm font-semibold text-slate-800 sm:w-auto">
+          <Link href={opsPath} className="w-full rounded-2xl border border-slate-200 bg-white px-5 py-3 text-center text-sm font-semibold text-slate-800 sm:w-auto">
             Panele Don
           </Link>
         </>
@@ -724,7 +727,7 @@ export default async function CashierPage({
                         </p>
                       </div>
                       <Link
-                        href={`/cashier?order=${order.id}`}
+                        href={`${cashierPath}?order=${order.id}`}
                         className={`mobile-cta-primary inline-flex items-center justify-center px-4 py-3 text-sm ${active ? "opacity-90" : ""}`}
                       >
                         {active ? "Açık Detay" : "Tahsilata Gec"}
@@ -751,7 +754,7 @@ export default async function CashierPage({
               return (
                 <OptimisticVisibility key={order.id} orderId={order.id}>
                 <Link
-                  href={`/cashier?order=${order.id}`}
+                  href={`${cashierPath}?order=${order.id}`}
                   className={`panel-hover rounded-[24px] border p-4 ${
                     active
                       ? "border-[#ff8b73] bg-[linear-gradient(135deg,rgba(255,106,61,0.10)_0%,rgba(255,255,255,0.92)_60%)] shadow-[0_18px_32px_rgba(255,106,61,0.14)]"
@@ -816,7 +819,7 @@ export default async function CashierPage({
 
                     <div className="mt-4 flex flex-wrap items-stretch gap-2">
                       <Link
-                        href={`/cashier?order=${order.id}`}
+                        href={`${cashierPath}?order=${order.id}`}
                         className="w-full rounded-2xl bg-gradient-to-r from-[#ff6a3d] to-[#f2b44f] px-4 py-3 text-center text-sm font-semibold text-white shadow-[0_12px_24px_rgba(255,106,61,0.22)] sm:w-auto"
                       >
                         Buyut ve Tahsilata Gec
@@ -938,7 +941,7 @@ export default async function CashierPage({
                   <span className="rounded-full bg-emerald-100 px-3 py-1 text-emerald-800">3 Kapat</span>
                 </div>
               </div>
-              <Link href="/cashier" className="w-full rounded-2xl border border-slate-200 bg-white px-4 py-3 text-center text-sm font-semibold text-slate-700 sm:w-auto">
+              <Link href={cashierPath} className="w-full rounded-2xl border border-slate-200 bg-white px-4 py-3 text-center text-sm font-semibold text-slate-700 sm:w-auto">
                 Kapat
               </Link>
             </div>

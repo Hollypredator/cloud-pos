@@ -8,7 +8,18 @@ Improve Cloud POS product screens for PWA use and future App Store, Google Play,
  - Phase 2: PWA layout strategy - complete
  - Phase 3: Screen-by-screen redesign plan - in progress
  - Phase 4: Wireframe/mockup directions - in progress
-- Phase 5: Implementation planning after user approval - pending
+- Phase 5: Mobile route hardening - complete
+- Phase 6: Mobile cashier/adisyon redesign - complete
+- Phase 7: Mobile kitchen refinement - complete
+- Phase 8: Mobile first-load/order-flow regression fixes - complete
+- Phase 9: Mobile delivery/service-request refinement - complete
+- Phase 10: Desktop operations visual modernization - complete
+- Phase 11: Operations performance, UI consistency, and security hardening - complete
+- Phase 12: Turkish product-focused landing page redesign - complete
+- Phase 13: Public demo, studio, support visual alignment - complete
+- Phase 14: Login surface visual alignment - complete
+- Phase 15: Studio content visual builder correction - complete
+- Phase 16: General Turkish copy and mojibake cleanup - complete
 
 ## Design Thesis
 Cloud POS should feel like a native operations cockpit: calm surfaces, large touch targets, clear queues, and a small number of decisive actions per screen.
@@ -36,6 +47,12 @@ Cloud POS should feel like a native operations cockpit: calm surfaces, large tou
 7. Product/category management
 8. Revenue/expense dashboard
 
+## Current Session Focus
+- Fix pixelated-looking public typography by smoothing fonts and reducing overly heavy display weights.
+- Update `/demo`, `/studio`, and `/support` to match the colorful Turkish product landing direction.
+- Keep real product screenshots and operational CTAs visible where relevant.
+- Remove remaining mojibake and high-visibility ASCII Turkish spelling issues from public, studio, support, login, demo, and operational copy surfaces.
+
 ## Decisions
 - Keep the current professional light SaaS direction.
 - Reduce card-heavy stacking on phone; use compact status rows, trays, and action sheets.
@@ -43,8 +60,19 @@ Cloud POS should feel like a native operations cockpit: calm surfaces, large tou
 - Prioritize operational clarity over decorative visuals.
 - Mobile order entry uses a product-first screen with a bottom basket sheet instead of persistent side cart.
 - Tablet order entry keeps the three-pane model.
+- Landing page should introduce the product and its features, not only acquisition value.
+- Avoid fake testimonials, fake customer counts, fake screenshots, and exaggerated claims.
+- Use actual product screenshots, module coverage, mobile PWA visuals, and operational capabilities as trust signals.
 
 ## Errors Encountered
 | Error | Attempt | Resolution |
 |---|---|---|
 | In-app browser unavailable | Tried to open local app through Browser plugin | Continued with user-provided screenshots and local repo context |
+| Mobile route regression risk | Desktop cashier/session and admin links existed inside mobile navigation | Added a route hardening check and moved mobile-visible links under `/m/*` |
+| Auth-only mobile cashier visual QA | Clean Playwright session redirected to `/login?next=/m/cashier` | Verified route protection and no console errors; relied on static regression, typecheck, and build for page implementation |
+| Auth-only mobile kitchen visual QA | Clean Playwright session redirected to `/login?next=/m/kitchen` | Verified route protection, no console errors, route status, static regression, typecheck, and build |
+| Mobile kitchen first-load 404 | Nested `/m/kitchen` page redirected during server rendering and exposed not-found fallback HTML | Added mobile layout auth guard plus clean mobile Playwright check with no 404 |
+| Installed PWA showing old screen | Existing service worker cache could keep old mobile shell assets | Bumped ops service worker cache to `v7` and retained skip-waiting/controller reload handling |
+| Mobile `Siparis Ac` wrong screen | Flow opened order composer without a table and used tablet three-pane layout | Required selected table before composer, moved prompt above table list, and switched to `mobile_stack` |
+| Auth-only mobile delivery/service visual QA | Demo login stayed on `/login?next=/m/*` in local production server | Verified unauthenticated first-load redirects, no visible 404, route guards, typecheck, lint, and build |
+| CSP drift risk | Middleware and `next.config.ts` generated different security policies | Added a shared security header source and `security:headers` guard |

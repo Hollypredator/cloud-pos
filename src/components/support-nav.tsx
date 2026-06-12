@@ -2,30 +2,28 @@
 
 import Link from "next/link";
 import { usePathname } from "next/navigation";
-import { normalizeLocale, translateUiText } from "@/lib/i18n";
 
 const links = [
-  { href: "/support", label: "Genel Bakis" },
+  { href: "/support", label: "Genel Bakış" },
   { href: "/support/tenants", label: "Tenantlar" },
   { href: "/support/tickets", label: "Talepler" },
-  { href: "/support/incidents", label: "Incidents" },
+  { href: "/support/incidents", label: "Incidentler" },
   { href: "/support/billing", label: "Billing" },
   { href: "/support/plan-requests", label: "Paket Talepleri" },
   { href: "/support/onboarding", label: "Onboarding" },
-  { href: "/support/health", label: "Health" },
+  { href: "/support/health", label: "Sağlık" },
   { href: "/support/feature-flags", label: "Flags" },
   { href: "/support/team", label: "Ekip" },
-  { href: "/support/knowledge", label: "Knowledge" },
+  { href: "/support/knowledge", label: "Bilgi Bankası" },
   { href: "/support/audit", label: "Audit" },
   { href: "/support/access", label: "Erişim" },
 ];
 
 export function SupportNav() {
   const pathname = usePathname();
-  const locale = typeof document === "undefined" ? "tr" : normalizeLocale(document.documentElement.lang || "tr");
 
   return (
-    <nav className="flex flex-wrap gap-3">
+    <nav className="flex gap-2 overflow-x-auto pb-1">
       {links.map((link) => {
         const active = pathname === link.href;
         return (
@@ -33,11 +31,13 @@ export function SupportNav() {
             key={link.href}
             href={link.href}
             prefetch={false}
-            className={`rounded-xl px-4 py-2 text-sm font-semibold ${
-              active ? "bg-slate-900 text-white" : "border border-slate-200 bg-white text-slate-700"
+            className={`shrink-0 rounded-2xl px-4 py-2 text-sm font-bold transition ${
+              active
+                ? "bg-slate-950 text-white shadow-lg shadow-slate-950/10"
+                : "border border-slate-200 bg-white text-slate-700 hover:border-cyan-300 hover:text-cyan-700"
             }`}
           >
-            {translateUiText(link.label, locale)}
+            {link.label}
           </Link>
         );
       })}

@@ -1,5 +1,42 @@
 # Cloud POS PWA Redesign Progress
 
+## 2026-06-12 Phase 13
+- Started and completed public demo, studio, and support visual alignment.
+- Added global font smoothing and replaced the jagged display font stack with a smoother Segoe/Avenir/Inter/Arial stack.
+- Reduced overly heavy `font-black` usage in the product landing page to `font-bold` to soften pixelated-looking headings.
+- Rebuilt `/demo` with the same colorful Turkish product-tour direction and real product screenshots.
+- Replaced `/studio` redirect with a proper Studio overview page; updated Studio layout, navigation, and onboarding page styling.
+- Updated `/support` layout, navigation, and main dashboard to match the new product UI direction with clearer support cockpit hierarchy.
+- Verification passed: `npm run typecheck`, `npm run build`, and `npm run lint` (pre-existing `pickup-snapshot` warning only).
+- Playwright QA on `http://localhost:3123/` saved home/demo desktop and mobile screenshots under `.codex-logs/surface-refresh-*`.
+- QA confirmed `/` and `/demo` have no horizontal overflow, no broken images, no relevant failed resources, and `/login` operation panel CTAs.
+- Clean-session QA confirmed `/studio` and `/support` correctly redirect to their login routes while protected.
+
+## 2026-06-12 Phase 14
+- Updated `/login` to match the new colorful Turkish Cloud POS product design.
+- Preserved authentication behavior, `next` redirect handling, mobile default route handling, and `/auth/login` form action.
+- Added real operations panel screenshot to the desktop login surface and kept self-service / cafe-restaurant / mobile PWA positioning.
+- Updated `StaffLoginForm` styles and corrected Turkish error messages.
+- Updated `LoginLoadingShell` to avoid the older beige loading look.
+- Verification passed: `npm run typecheck`, `npm run build`, and `npm run lint` (pre-existing `pickup-snapshot` warning only).
+- Playwright QA on `http://localhost:3124/login?force=1` saved `.codex-logs/login-refresh-desktop.png` and `.codex-logs/login-refresh-mobile.png`.
+- QA confirmed no horizontal overflow, no broken images, no relevant failed resources, and form action remains `/auth/login`.
+
+## 2026-06-12 Phase 15
+- Fixed `/studio/content` visual builder mismatch for the home page.
+- Root cause: public `/` now renders `ProductLandingPage`, while Studio content still showed the old `LandingVisualEditor` / `LandingPageRenderer` preview for `home`.
+- Changed home content management to show a dedicated product landing management panel with a live iframe preview of `/`, current product-surface notes, and links to media/home.
+- Kept the old visual builder available for non-home public pages where the legacy CMS renderer still applies.
+- Verification passed: `npm run typecheck`, `npm run build`, and `npm run lint` (pre-existing `pickup-snapshot` warning only).
+- Clean-session Playwright smoke on `http://localhost:3125/studio/content` confirmed protected redirect to `/studio/login?next=%2Fstudio%2Fcontent` with no relevant failed resources.
+
+## 2026-06-12 Phase 16
+- Cleaned remaining Turkish copy problems across the refreshed public/studio/support/login/demo surfaces and common operational copy.
+- Fixed visible ASCII Turkish labels such as `Sifre`, `Giris`, `Baslik`, `Aciklama`, `Sayfayi Ac`, `Yukari`, `Asagi`, `Siparis`, `Odeme`, `Urun`, and common error-message forms like `bulunamadi`, `olmali`, and `guncellendi`.
+- Repaired mojibake in `src/lib/data.ts` and `src/app/ops/page.tsx`, then verified with a Node UTF-8 scan that no `Ã/Å/Ä` mojibake-like hits remain under `src`.
+- A broad mechanical spelling pass briefly changed code identifiers such as `section` and `loading`; typecheck caught it, and the affected identifiers were restored before completion.
+- Verification passed: `npm run typecheck`, `npm run build`, and `npm run lint` (pre-existing `pickup-snapshot` warning only).
+
 ## 2026-06-05
 - Started planning workflow for PWA/mobile responsive redesign.
 - Reviewed user-provided product screenshots against earlier competitor examples.
@@ -7,7 +44,89 @@
 - No application code changed.
 - User approved the planning direction.
 - Added initial wireframe document for mobile order entry, basket sheet, tablet order entry, mobile operation center, and store screenshot sequence.
+- Moved planning files into the correct POS project.
+- Started implementation on the real POS codebase.
+- First implementation pass targets mobile AdminOrderEntry: product-first mobile cards, horizontal category chips, and simpler cart dock.
+- Noted local Next docs path lookup failed in this POS project; used existing App Router/component structure instead.
+- Seeded demo auth users with `scripts/seed-access-users.mjs`.
+- Playwright reached `/m/tables?flow=new-order`; screenshot showed the active path uses the terminal mobile branch, so the second pass moved one-column product cards and visible add affordances into that branch.
+- Playwright also exposed an initial-render redirect bug: mobile routes could redirect to desktop `/tables` before media query state settled. `MobileOpsShell` now starts in mobile-safe viewport state and only redirects desktop after media effects resolve.
+- Fixed middleware legacy mobile redirect so current `/m/*` PWA routes are preserved instead of being rewritten to desktop routes.
+- `npm run lint`, `npm run typecheck`, and `npm run build` completed successfully. Lint still reports the pre-existing `pickup-snapshot` unused variable warning.
+- Playwright mobile QA confirmed `/m/tables?flow=new-order` stays on the mobile route, product cards render as a one-column touch layout, visible add buttons render, and the mobile cart bar appears after adding an item.
+- Implemented the approved POS Native mobile order-entry pass: product grid now uses two columns on phone widths, product cards are compact with name/price/add only, the `NORMAL` label is removed, mobile category chips use one accent color, and the cart bar is shorter.
+- Playwright fallback QA verified 360px, 390px, and 430px mobile widths with no horizontal overflow and no cart/nav overlap.
 
 ## Next
-- Review wireframe direction with the user.
-- After approval, create higher fidelity HTML/CSS mockups or start implementation planning.
+- Review the generated mobile QA screenshots with the user.
+- Continue with the next PWA redesign surface after approval: mobile operation center, table selection density, or checkout/adisyon flow.
+
+## 2026-06-08
+- Started an operational PWA design audit after the user reported old-screen regressions and asked to identify weak or incomplete areas.
+- Confirmed `/m/cashier`, `/m/kitchen`, `/m/delivery`, and `/m/service-requests` still re-export desktop pages, even though those desktop pages include some mobile-only sections.
+- Confirmed login still has a desktop `/ops` redirect path for already-authenticated users.
+- Logged the highest-risk findings in `findings.md`; no application code changed in this audit pass.
+- Implemented the first approved package: mobile route hardening.
+- Added `scripts/mobile-pwa-route-hardening-check.mjs` and `npm run pwa:routes`.
+- Changed authenticated login redirect to use the resolved mobile-aware next path.
+- Moved mobile visible "Gun Islemleri" navigation to `/m/cashier/session` and removed the mobile action sheet's direct `/admin/tables` escape.
+- Added `/m/cashier/session` and return-path support for cashier session open/close redirects.
+- Verification passed: `npm run pwa:routes`, `npm run typecheck`, `npm run lint` (pre-existing warning only), `npm run build`, Playwright mobile login hidden `next=/m/ops`, and `curl -I /m/cashier/session` returned 200.
+- Implemented the second approved package: `/m/cashier` no longer re-exports the desktop cashier page.
+- Added a dedicated queue-first mobile cashier page with summary counts, adisyon queue cards, selected adisyon detail, item list, and mobile payment panel.
+- Added `scripts/mobile-cashier-page-check.mjs` and `npm run pwa:cashier` to prevent the mobile cashier page from regressing back into a desktop export.
+- Verification passed: `npm run pwa:cashier`, `npm run pwa:routes`, `npm run typecheck`, `npm run lint` (pre-existing warning only), and `npm run build`.
+- Clean Playwright mobile session redirected `/m/cashier` to `/login?next=%2Fm%2Fcashier`, so authenticated visual QA remains for the next pass.
+- Implemented the third approved package: `/m/kitchen` no longer re-exports the desktop kitchen page.
+- Added a dedicated mobile kitchen page with station tabs, active/preparing/critical counters, station summary, delayed/critical badges, item cards, and one primary station status action.
+- Added `scripts/mobile-kitchen-page-check.mjs` and `npm run pwa:kitchen` to prevent the mobile kitchen route from regressing back into a desktop export.
+- Verification passed: `npm run pwa:kitchen`, `npm run pwa:cashier`, `npm run pwa:routes`, `npm run typecheck`, `npm run lint` (pre-existing warning only), and `npm run build`.
+- Clean Playwright mobile session redirected `/m/kitchen` to `/login?next=%2Fm%2Fkitchen`, route returned 200, and no console errors were reported.
+- Fixed the reported mobile regression package: unauthenticated `/m/*` pages are guarded in the mobile layout before nested server pages render, preventing the temporary 404/not-found fallback on first load.
+- Added `src/components/mobile-auth-redirect.tsx` for mobile auth redirects that preserve the requested route.
+- Bumped the service worker ops cache version to `v7` so old mobile shells are replaced on first reload/update.
+- Corrected the mobile `Siparis Ac` flow: it no longer opens an order entry without a selected table, the "Once masa secin" prompt appears before the table list, and the selected-table order entry uses the mobile stack layout.
+- Added `scripts/mobile-tables-order-flow-check.mjs` and `npm run pwa:tables` to lock the mobile table/order behavior.
+- Verification passed: `npm run pwa:routes`, `npm run pwa:tables`, `npm run pwa:kitchen`, `npm run typecheck`, `npm run lint` (pre-existing warning only), `npm run build`, and Playwright clean mobile checks for `/m/kitchen` and `/m/tables?flow=new-order` with no 404.
+- Follow-up fix after the same symptoms persisted on device: replaced server-component redirects on mobile first-load paths with client redirect placeholders to avoid Next RSC not-found fallback HTML becoming visible.
+- Added `src/components/client-route-redirect.tsx` and `src/lib/server/mobile-auth-guard.ts`.
+- Guarded `/m/ops`, `/m/kitchen`, `/m/tables`, and `/m/cashier` before `requireRole()` so unauthenticated first loads route to login without visible 404.
+- Guarded desktop `/kitchen` and `/ops` on mobile user agents so stale desktop links move to `/m/kitchen` or `/m/ops` without showing the old screen.
+- Verification passed: `npm run typecheck`, `npm run pwa:tables`, `npm run pwa:kitchen`, `npm run pwa:routes`, `npm run lint` (pre-existing warning only), `npm run build`, and Playwright visible mobile checks for `/m/kitchen`, `/kitchen`, `/ops`, and `/m/tables?flow=new-order` with no visible 404 or old ops screen.
+
+## 2026-06-12
+- Resumed design/PWA work for Cloud POS.
+- Confirmed `/m/delivery` and `/m/service-requests` still re-export desktop pages, making them the next highest-risk responsive/PWA surfaces.
+- Started Phase 9: dedicated mobile delivery and service-request pages plus regression checks.
+- Replaced `/m/delivery` with a dedicated mobile dispatch page using stage tabs, compact metrics, queue cards, courier assignment, delivery completion, and mobile-only redirects.
+- Replaced `/m/service-requests` with a dedicated mobile service queue page using open/resolved tabs, compact request cards, resolve actions, pagination, and mobile auth guard.
+- Added `scripts/mobile-delivery-service-page-check.mjs` and `npm run pwa:delivery-service`.
+- Verification passed: `npm run pwa:delivery-service`, `npm run typecheck`, `npm run pwa:routes`, `npm run pwa:cashier`, `npm run pwa:kitchen`, `npm run pwa:tables`, `npm run lint` (pre-existing `pickup-snapshot` warning only), and `npm run build`.
+- Production smoke on `http://localhost:3100` confirmed unauthenticated `/m/delivery` and `/m/service-requests` redirect to login without visible 404. Authenticated visual QA was blocked because demo login stayed on the login route in this local environment.
+- Started desktop operations visual modernization after reviewing the `/ops` screenshot.
+- Target decisions: neutral sidebar, less card chrome, tighter header/KPIs, lower visual weight for first-use guidance, and denser operational rows.
+- Implemented the desktop visual pass: neutral charcoal sidebar, flatter backoffice surface, tighter header/cards, compact content cards, and `/ops` sidebar reordered so live status leads while first-use guidance is secondary.
+- Fixed unauthenticated desktop `/ops` first-load client exception by replacing server redirects with `ClientRouteRedirect` for login/unauthorized guards.
+- Visual QA screenshots saved under `.codex-logs/ops-modern-auth-desktop-final.png` and `.codex-logs/ops-modern-auth-mobile.png`.
+- Verification passed: `npm run typecheck`, `npm run pwa:routes`, `npm run pwa:delivery-service`, `npm run lint` (pre-existing `pickup-snapshot` warning only), and `npm run build`.
+- Started and completed Phase 11: operations performance, UI consistency, and security hardening.
+- Added shared security header generation for middleware and Next config, with `SECURITY_CSP_STRICT_MODE` support.
+- Expanded rate-limit coverage for ops command, sync push/pull, QR token refresh, and cashier auto-close APIs.
+- Rebalanced web performance profiles for `/m/*`, `/admin/orders`, and critical cashier/kitchen routes; dashboard refreshes are calmer.
+- Reduced live route refresh churn by avoiding hidden-tab refreshes and clearing stale route timers.
+- Replaced AppShell mobile quick-action text abbreviations with Lucide icons and replaced heavy shell payload `JSON.stringify` comparisons with deterministic signatures.
+- Bumped the ops service worker cache to `v9`.
+- Added `scripts/security-headers-check.mjs`, `npm run security:headers`, and included it in `phase2:checks`.
+- Extended write-route guard checks to recognize sync/QR guard patterns and added audit logging to studio media upload.
+- Verification passed: `npm run typecheck`, `npm run lint` (pre-existing `pickup-snapshot` warning only), `npm run phase2:checks`, `npm run phase2:isolation`, `npm run security:headers`, `npm run pwa:routes`, and `npm run build`.
+- Perf SLA public targets passed on local `http://localhost:3110`; the full run failed only on authenticated `api.metrics_ops` because no `PERF_AUTH_COOKIE` was available and the endpoint correctly returned 401.
+- Started Phase 12: public landing page redesign.
+- User rejected the acquisition-only direction and requested a Turkish, more colorful, product-focused page using real product visuals.
+- Removed the acquisition landing component and replaced it with `src/components/product-landing-page.tsx`.
+- Updated `src/app/page.tsx` so `/` uses the new Turkish product landing page.
+- Copied real product screenshots into `public/landing-assets/`: desktop operations panel, mobile operations panel, mobile POS order entry, and mobile table/order flow.
+- Kept the `Operasyon Paneli Giriş` CTA visible in the header, hero, and final CTA.
+- Included explicit positioning for both self-service / QR flows and cafe-restaurant operations modules.
+- Verification passed: `npm run typecheck` and `npm run build`.
+- Playwright QA on `http://localhost:3122/` saved `.codex-logs/product-landing-desktop.png` and `.codex-logs/product-landing-mobile.png`.
+- Final QA confirmed Turkish hero copy, real image assets loading, no broken images, no desktop/mobile horizontal overflow, no relevant failed resources, and `/login` links for `Operasyon Paneli Giriş`.

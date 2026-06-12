@@ -320,12 +320,12 @@ function parseOrderStationStatuses(raw: unknown) {
 function normalizeStationLabel(value?: string | null) {
   return String(value ?? "")
     .toLocaleLowerCase("tr-TR")
-    .replaceAll("Ãƒâ€Ã‚Â±", "i")
-    .replaceAll("ÃƒÆ’Ã‚Â¶", "o")
-    .replaceAll("ÃƒÆ’Ã‚Â¼", "u")
-    .replaceAll("Ãƒâ€¦Ã…Â¸", "s")
-    .replaceAll("ÃƒÆ’Ã‚Â§", "c")
-    .replaceAll("Ãƒâ€Ã…Â¸", "g");
+    .replaceAll("ı", "i")
+    .replaceAll("ö", "o")
+    .replaceAll("ü", "u")
+    .replaceAll("ş", "s")
+    .replaceAll("ç", "c")
+    .replaceAll("ğ", "g");
 }
 
 function inferStationByCategoryName(name?: string | null): PrepStation {
@@ -366,7 +366,7 @@ function inferStationByItemName(name?: string | null): PrepStation {
     normalized.includes("sufle") ||
     normalized.includes("souffle") ||
     normalized.includes("pasta") ||
-    normalized.includes("cheesecake") ||
+    normalized.includes("cheeseçake") ||
     normalized.includes("brownie") ||
     normalized.includes("dondurma")
   ) {
@@ -501,35 +501,35 @@ function resolveOrderSettlementStatus(
 
 function mapPaymentMutationConflictToMessage(conflictReason: string, paymentType: "sale" | "refund") {
   if (conflictReason === "ORDER_NOT_FOUND") {
-    return "SipariÃ…Å¸ bulunamadi.";
+    return "Sipariş bulunamadı.";
   }
   if (conflictReason === "INVALID_AMOUNT") {
-    return paymentType === "sale" ? "Ãƒâ€“deme tutari sifirdan buyuk olmali." : "Iade tutari sifirdan buyuk olmali.";
+    return paymentType === "sale" ? "Ödeme tutarı sıfırdan büyük olmalı." : "İade tutarı sıfırdan büyük olmalı.";
   }
   if (conflictReason === "ORDER_CANCELLED") {
     return paymentType === "sale"
-      ? "Iptal edilmis siparise ÃƒÂ¶deme eklenemez."
-      : "Iptal edilmis siparise iade eklenemez.";
+      ? "İptal edilmiş siparişe ödeme eklenemez."
+      : "İptal edilmiş siparişe iade eklenemez.";
   }
   if (conflictReason === "ORDER_REFUNDED" && paymentType === "sale") {
-    return "Iade edilmis siparise ÃƒÂ¶deme eklenemez.";
+    return "İade edilmiş siparişe ödeme eklenemez.";
   }
   if (conflictReason === "OVERPAYMENT") {
-    return "Ãƒâ€“deme tutari kalan bakiyeden buyuk olamaz.";
+    return "Ödeme tutarı kalan bakiyeden büyük olamaz.";
   }
   if (conflictReason === "OVER_REFUND") {
-    return "Iade tutari iade edilebilir bakiyeden buyuk olamaz.";
+    return "İade tutarı iade edilebilir bakiyeden büyük olamaz.";
   }
   if (conflictReason === "NO_REFUNDABLE_BALANCE") {
-    return "Iade edilebilir tahsilat bulunamadi.";
+    return "İade edilebilir tahsilat bulunamadı.";
   }
   if (conflictReason === "STATUS_TRANSITION_BLOCKED") {
-    return "SipariÃ…Å¸ durum gecisi doÃ„Å¸rulanamadÃ„Â±.";
+    return "Sipariş durum gecisi doğrulanamadı.";
   }
   if (conflictReason === "CONCURRENT_UPDATE") {
-    return "SipariÃ…Å¸ baska bir terminalde gÃƒÂ¼ncellendi. LÃƒÂ¼tfen tekrar deneyin.";
+    return "Sipariş başka bir terminalde güncellendi. Lütfen tekrar deneyin.";
   }
-  return paymentType === "sale" ? "Ãƒâ€“deme iÃ…Å¸lemi tamamlanamadi." : "Iade iÃ…Å¸lemi tamamlanamadi.";
+  return paymentType === "sale" ? "Ödeme işlemi tamamlanamadı." : "İade işlemi tamamlanamadı.";
 }
 
 function parsePaymentMutationRpcRow(raw: unknown) {
@@ -802,7 +802,7 @@ const demoProducts: Product[] = [
     price: 170,
     stock_count: 4,
     image_url: null,
-    description: "Ev yapimi cheesecake",
+    description: "Ev yapimi cheeseçake",
     is_available: true,
   },
   {
@@ -855,7 +855,7 @@ const demoSelfServiceProducts: Product[] = [
   { id: "ss-prod-8", category_id: "ss-cat-1", name: "Caramel Macchiato", price: 185, stock_count: 999, image_url: null, description: "Vanilla, milk, espresso, caramel", is_available: true },
   { id: "ss-prod-9", category_id: "ss-cat-1", name: "White Chocolate Mocha", price: 190, stock_count: 999, image_url: null, description: "White mocha sauce + espresso", is_available: true },
   { id: "ss-prod-10", category_id: "ss-cat-1", name: "Filtre Kahve", price: 120, stock_count: 999, image_url: null, description: "Freshly brewed daily coffee", is_available: true },
-  { id: "ss-prod-11", category_id: "ss-cat-1", name: "Turk Kahvesi", price: 130, stock_count: 999, image_url: null, description: "Traditional cezve brew", is_available: true },
+  { id: "ss-prod-11", category_id: "ss-cat-1", name: "Turk Kahvesi", price: 130, stock_count: 999, image_url: null, description: "Tradıtional cezve brew", is_available: true },
   { id: "ss-prod-12", category_id: "ss-cat-1", name: "Chai Tea Latte", price: 170, stock_count: 999, image_url: null, description: "Spiced tea latte", is_available: true },
 
   { id: "ss-prod-13", category_id: "ss-cat-2", name: "Iced Americano", price: 145, stock_count: 999, image_url: null, description: "Espresso over ice", is_available: true },
@@ -877,7 +877,7 @@ const demoSelfServiceProducts: Product[] = [
 
   { id: "ss-prod-29", category_id: "ss-cat-3", name: "Butter Croissant", price: 115, stock_count: 999, image_url: null, description: "All-butter daily bake", is_available: true },
   { id: "ss-prod-30", category_id: "ss-cat-3", name: "Chocolate Croissant", price: 125, stock_count: 999, image_url: null, description: "Cocoa filled croissant", is_available: true },
-  { id: "ss-prod-31", category_id: "ss-cat-3", name: "San Sebastian", price: 210, stock_count: 999, image_url: null, description: "Burnt basque cheesecake", is_available: true },
+  { id: "ss-prod-31", category_id: "ss-cat-3", name: "San Sebastian", price: 210, stock_count: 999, image_url: null, description: "Burnt basque cheeseçake", is_available: true },
   { id: "ss-prod-32", category_id: "ss-cat-3", name: "Tiramisu", price: 205, stock_count: 999, image_url: null, description: "Espresso layered dessert", is_available: true },
   { id: "ss-prod-33", category_id: "ss-cat-3", name: "Red Velvet Slice", price: 195, stock_count: 999, image_url: null, description: "Cream cheese frosting cake", is_available: true },
   { id: "ss-prod-34", category_id: "ss-cat-3", name: "Bagel Sandwich", price: 185, stock_count: 999, image_url: null, description: "Bagel with smoked turkey", is_available: true },
@@ -994,7 +994,7 @@ const demoOrders: Order[] = [
     channel: "delivery",
     customer_name: "Ayse Demir",
     customer_phone: "+90 555 111 22 33",
-    delivery_address: "Ataturk Mah. Sedir Sok. No:12 Kadikoy",
+    delivery_address: "Ataturk Mah. Sedir Sok. No:12 Kadıkoy",
     delivery_note: "Zile basmadan arayin",
     courier_id: "demo-courier-1",
     courier_name: "Kurye Mehmet",
@@ -1107,7 +1107,7 @@ const demoOrders: Order[] = [
 const demoIngredients: Ingredient[] = [
   { id: "demo-ing-1", name: "Espresso", unit: "shot", cost: 6.5 },
   { id: "demo-ing-2", name: "Sut", unit: "ml", cost: 0.08 },
-  { id: "demo-ing-3", name: "Cheesecake Base", unit: "gram", cost: 0.22 },
+  { id: "demo-ing-3", name: "Cheeseçake Base", unit: "gram", cost: 0.22 },
   { id: "demo-ing-4", name: "Cold Brew Concentrate", unit: "ml", cost: 0.12 },
   { id: "demo-ing-5", name: "Butter Dough", unit: "gram", cost: 0.18 },
 ];
@@ -1191,7 +1191,7 @@ const demoBranches: Branch[] = [
   {
     id: "demo-branch-1",
     business_id: "demo-business-1",
-    name: "Merkez Ã…Âube",
+    name: "Merkez Şube",
     slug: "merkez",
     is_active: true,
     created_at: new Date().toISOString(),
@@ -1200,7 +1200,7 @@ const demoBranches: Branch[] = [
   {
     id: "demo-branch-2",
     business_id: "demo-business-1",
-    name: "Bahce Ã…Âube",
+    name: "Bahce Şube",
     slug: "bahce",
     is_active: true,
     created_at: new Date().toISOString(),
@@ -1553,19 +1553,19 @@ export async function listBranches() {
 export async function createBranch(input: { name: string; slug: string; branchProfile?: BranchProfile }) {
   const supabase = await getTenantDataClient();
   if (!supabase) {
-    return { ok: false, error: "Demo modda sube ekleme pasif." };
+    return { ok: false, error: "Demo modda şube ekleme pasif." };
   }
 
   const scope = await getDefaultBusinessScope();
   if (!scope.businessId) {
-    return { ok: false, error: "Aktif isletme bulunamadi." };
+    return { ok: false, error: "Aktif işletme bulunamadı." };
   }
 
   const name = input.name.trim();
   const slug = normalizeBusinessSlug(input.slug);
   const branchProfile = "restaurant";
   if (!name || !slug) {
-    return { ok: false, error: "Sube adi ve slug zorunludur." };
+    return { ok: false, error: "Şube adı ve slug zorunludur." };
   }
 
   let { data, error } = await supabase
@@ -1612,7 +1612,7 @@ export async function createBranch(input: { name: string; slug: string; branchPr
 export async function updateBranch(input: { branchId: string; name: string; slug: string; branchProfile?: BranchProfile }) {
   const supabase = await getTenantDataClient();
   if (!supabase) {
-    return { ok: false, error: "Demo modda sube guncelleme pasif." };
+    return { ok: false, error: "Demo modda şube güncelleme pasif." };
   }
 
   const scope = await getDefaultBusinessScope();
@@ -1620,7 +1620,7 @@ export async function updateBranch(input: { branchId: string; name: string; slug
   const slug = normalizeBusinessSlug(input.slug);
   const branchProfile = "restaurant";
   if (!name || !slug) {
-    return { ok: false, error: "Sube adi ve slug zorunludur." };
+    return { ok: false, error: "Şube adı ve slug zorunludur." };
   }
 
   let query = supabase
@@ -1667,12 +1667,12 @@ export async function updateBranch(input: { branchId: string; name: string; slug
 export async function setBranchActiveStatus(input: { branchId: string; isActive: boolean }) {
   const supabase = await getTenantDataClient();
   if (!supabase) {
-    return { ok: false, error: "Demo modda Ã…Å¸ube durum guncelleme pasif." };
+    return { ok: false, error: "Demo modda şube durum güncelleme pasif." };
   }
 
   const scope = await getDefaultBusinessScope();
   if (!scope.businessId) {
-    return { ok: false, error: "Aktif iÃ…Å¸letme bulunamadi." };
+    return { ok: false, error: "Aktif işletme bulunamadı." };
   }
 
   if (!input.isActive) {
@@ -1685,7 +1685,7 @@ export async function setBranchActiveStatus(input: { branchId: string; isActive:
       return { ok: false, error: countError.message };
     }
     if ((count ?? 0) <= 1) {
-      return { ok: false, error: "En az bir aktif Ã…Å¸ube kalmali." };
+      return { ok: false, error: "En az bir aktif şube kalmali." };
     }
   }
 
@@ -1711,12 +1711,12 @@ export async function setBranchActiveStatus(input: { branchId: string; isActive:
 export async function deleteBranch(branchId: string) {
   const supabase = await getTenantDataClient();
   if (!supabase) {
-    return { ok: false, error: "Demo modda Ã…Å¸ube silme pasif." };
+    return { ok: false, error: "Demo modda şube silme pasif." };
   }
 
   const scope = await getDefaultBusinessScope();
   if (!scope.businessId) {
-    return { ok: false, error: "Aktif iÃ…Å¸letme bulunamadi." };
+    return { ok: false, error: "Aktif işletme bulunamadı." };
   }
 
   const { count: branchCount, error: countError } = await supabase
@@ -1727,7 +1727,7 @@ export async function deleteBranch(branchId: string) {
     return { ok: false, error: countError.message };
   }
   if ((branchCount ?? 0) <= 1) {
-    return { ok: false, error: "Son Ã…Å¸ube silinemez." };
+    return { ok: false, error: "Son şube silinemez." };
   }
 
   const dependencyChecks = await Promise.all([
@@ -1741,7 +1741,7 @@ export async function deleteBranch(branchId: string) {
     return { ok: false, error: dependencyError.message };
   }
   if (linkedCount > 0) {
-    return { ok: false, error: "Bu subede masa, sipariÃ…Å¸ veya kurye kaydÃ„Â± oldugu iÃƒÂ§in silinemez." };
+    return { ok: false, error: "Bu şubede masa, sipariş veya kurye kaydı oldugu için silinemez." };
   }
 
   const { error } = await supabase
@@ -1821,12 +1821,12 @@ export async function listBusinesses() {
 export async function createBusiness(input: { name: string; slug: string; plan?: BusinessPlan }) {
   const supabase = getSupabaseServerClient();
   if (!supabase) {
-    return { ok: false, error: "Demo modda iÃ…Å¸letme oluÃ…Å¸turma pasif." };
+    return { ok: false, error: "Demo modda işletme oluşturma pasif." };
   }
 
   const slug = normalizeBusinessSlug(input.slug);
   if (!slug) {
-    return { ok: false, error: "Gecerli bir slug gerekli." };
+    return { ok: false, error: "Geçerli bir slug gerekli." };
   }
 
   const { data, error } = await supabase
@@ -1844,7 +1844,7 @@ export async function createBusiness(input: { name: string; slug: string; plan?:
     return { ok: false, error: error.message };
   }
   if (!data) {
-    return { ok: false, error: "Ã„Â°Ã…Å¸letme oluÃ…Å¸turulamadÃ„Â±." };
+    return { ok: false, error: "İşletme oluşturulamadı." };
   }
 
   await logAuditEvent({
@@ -1859,7 +1859,7 @@ export async function createBusiness(input: { name: string; slug: string; plan?:
 export async function setBusinessActiveStatus(input: { businessId: string; isActive: boolean }) {
   const supabase = getSupabaseServerClient();
   if (!supabase) {
-    return { ok: false, error: "Demo modda iÃ…Å¸letme guncelleme pasif." };
+    return { ok: false, error: "Demo modda işletme güncelleme pasif." };
   }
 
   const { data: activeRows } = await supabase
@@ -1868,7 +1868,7 @@ export async function setBusinessActiveStatus(input: { businessId: string; isAct
     .eq("is_active", true);
   const activeCount = (activeRows ?? []).length;
   if (!input.isActive && activeCount <= 1) {
-    return { ok: false, error: "En az bir aktif iÃ…Å¸letme kalmali." };
+    return { ok: false, error: "En az bir aktif işletme kalmali." };
   }
 
   const { error } = await supabase
@@ -1940,7 +1940,7 @@ export async function createSupportTenantProvision(input: {
 }) {
   const supabase = getSupabaseServerClient();
   if (!supabase) {
-    return { ok: false, error: "Demo modda tenant olusturma pasif." };
+    return { ok: false, error: "Demo modda tenant oluşturma pasif." };
   }
 
   const actor = await getCurrentSupportActor();
@@ -1948,12 +1948,12 @@ export async function createSupportTenantProvision(input: {
   const canManageTenantProvision =
     actor.role === "support_admin" || hasPlatformPermission(platformAccess, "support.access.manage");
   if (!canManageTenantProvision) {
-    return { ok: false, error: "Bu islem icin support admin yetkisi gerekli." };
+    return { ok: false, error: "Bu işlem icin support admin yetkisi gerekli." };
   }
 
   const businessName = input.businessName.trim();
   const businessSlug = normalizeTenantSlug(input.businessSlug);
-  const branchName = input.branchName?.trim() || "Merkez Sube";
+  const branchName = input.branchName?.trim() || "Merkez Şube";
   const baseBranchSlug = normalizeBranchSlug(input.branchSlug?.trim() || branchName);
   const tenantModel: TenantModel = "restaurant_only";
   const branchSeeds = [
@@ -1968,7 +1968,7 @@ export async function createSupportTenantProvision(input: {
   const ownerPassword = input.ownerPassword?.trim() || "";
 
   if (!businessName || !businessSlug || !ownerEmail || branchSeeds.length === 0) {
-    return { ok: false, error: "Isletme ve owner e-posta alanlari zorunludur." };
+    return { ok: false, error: "İşletme ve owner e-posta alanlari zorunludur." };
   }
 
   let createdBusinessId: string | null = null;
@@ -2000,7 +2000,7 @@ export async function createSupportTenantProvision(input: {
     .single();
 
   if (businessInsert.error || !businessInsert.data?.id) {
-    return { ok: false, error: businessInsert.error?.message ?? "Isletme olusturulamadi." };
+    return { ok: false, error: businessInsert.error?.message ?? "İşletme oluşturulamadı." };
   }
   createdBusinessId = businessInsert.data.id as string;
 
@@ -2057,13 +2057,13 @@ export async function createSupportTenantProvision(input: {
         continue;
       }
 
-      lastBranchError = branchInsert.error?.message ?? "Sube olusturulamadi.";
+      lastBranchError = branchInsert.error?.message ?? "Şube oluşturulamadı.";
       break;
     }
 
     if (!branchCreated) {
       await rollback();
-      return { ok: false, error: lastBranchError ?? "Sube olusturulamadi." };
+      return { ok: false, error: lastBranchError ?? "Şube oluşturulamadı." };
     }
   }
 
@@ -2087,7 +2087,7 @@ export async function createSupportTenantProvision(input: {
     });
     if (createUser.error || !createUser.data.user?.id) {
       await rollback();
-      return { ok: false, error: createUser.error?.message ?? "Owner kullanicisi olusturulamadi." };
+      return { ok: false, error: createUser.error?.message ?? "Owner kullanicisi oluşturulamadı." };
     }
     ownerUserId = createUser.data.user.id;
     createdUserId = ownerUserId;
@@ -2105,7 +2105,7 @@ export async function createSupportTenantProvision(input: {
     );
     if (hasOtherTenant) {
       await rollback();
-      return { ok: false, error: "Bu owner e-postasi baska tenantta kullaniliyor." };
+      return { ok: false, error: "Bu owner e-postasi başka tenantta kullaniliyor." };
     }
   }
 
@@ -2174,12 +2174,12 @@ export async function createSupportTenantProvision(input: {
 export async function updateActiveBusinessPlan(plan: BusinessPlan) {
   const supabase = await getTenantDataClient();
   if (!supabase) {
-    return { ok: false, error: "Demo modda plan guncelleme pasif." };
+    return { ok: false, error: "Demo modda plan güncelleme pasif." };
   }
 
   const scope = await getDefaultBusinessScope();
   if (!scope.businessId) {
-    return { ok: false, error: "Aktif iÃ…Å¸letme bulunamadi." };
+    return { ok: false, error: "Aktif işletme bulunamadı." };
   }
 
   const { error } = await supabase.from("businesses").update({ plan }).eq("id", scope.businessId);
@@ -2277,7 +2277,7 @@ export async function createCourier(input: { fullName: string; phone?: string; b
   const scope = await getDefaultBusinessScope();
   const businessId = input.businessId ?? scope.businessId;
   if (!businessId) {
-    return { ok: false, error: "Aktif iÃ…Å¸letme bulunamadi." };
+    return { ok: false, error: "Aktif işletme bulunamadı." };
   }
 
   const { data, error } = await supabase
@@ -2315,13 +2315,13 @@ export async function updateCourier(input: {
 }) {
   const supabase = await getTenantDataClient();
   if (!supabase) {
-    return { ok: false, error: "Demo modda kurye guncellenemez." };
+    return { ok: false, error: "Demo modda kurye güncellenemez." };
   }
 
   const scope = await getDefaultBusinessScope();
   const fullName = input.fullName.trim();
   if (!fullName) {
-    return { ok: false, error: "Kurye adi zorunludur." };
+    return { ok: false, error: "Kurye adı zorunludur." };
   }
 
   let query = supabase
@@ -2382,7 +2382,7 @@ export async function deleteCourier(courierId: string) {
 
   const activeAssignments = await activeAssignmentsQuery;
   if ((activeAssignments.count ?? 0) > 0) {
-    return { ok: false, error: "Aktif teslimati olan kurye silinemez. Ãƒâ€“nce siparisleri kapatin veya baska kuryeye atayin." };
+    return { ok: false, error: "Aktif teslimati olan kurye silinemez. Önce siparişleri kapatin veya başka kuryeye atayin." };
   }
 
   let deleteQuery = supabase.from("couriers").delete().eq("id", courierId);
@@ -2731,7 +2731,7 @@ export async function createTableRequest(input: {
 }) {
   const table = await getTableByQr(input.qrCodeIdentifier, input.businessSlug);
   if (!table) {
-    return { ok: false, error: "Masa bulunamadi." };
+    return { ok: false, error: "Masa bulunamadı." };
   }
 
   const supabase = getSupabaseServerClient();
@@ -2760,16 +2760,16 @@ export async function createTableRequest(input: {
   data = firstInsert.data as { id: string } | null;
   error = firstInsert.error as { message: string } | null;
   if (error?.message?.toLowerCase().includes("business_id")) {
-    const secondInsert = await supabase.from("table_requests").insert(fallbackPayload).select("id").single();
-    data = secondInsert.data as { id: string } | null;
-    error = secondInsert.error as { message: string } | null;
+    const seçondInsert = await supabase.from("table_requests").insert(fallbackPayload).select("id").single();
+    data = seçondInsert.data as { id: string } | null;
+    error = seçondInsert.error as { message: string } | null;
   }
 
   if (error) {
     return { ok: false, error: error.message };
   }
   if (!data) {
-    return { ok: false, error: "Talep oluÃ…Å¸turulamadÃ„Â±." };
+    return { ok: false, error: "Talep oluşturulamadı." };
   }
 
   await logAuditEvent({
@@ -2995,8 +2995,8 @@ async function validateOrderItemProfileScope(input: {
       ok: false as const,
       error:
         profileScope === "enterprise_market"
-          ? "Restoran urunleri market siparisine eklenemez."
-          : "Market urunleri restoran siparisine eklenemez.",
+          ? "Restoran ürünleri market siparişine eklenemez."
+          : "Market ürünleri restoran siparişine eklenemez.",
     };
   }
 
@@ -3113,7 +3113,7 @@ export async function createOrder(input: {
     businessId: effectiveBusinessId,
   });
   if (!branchProfile) {
-    return { ok: false, error: "Aktif sube profili cozulemedi." };
+    return { ok: false, error: "Aktif şube profili cozulemedi." };
   }
 
   const profileValidation = await validateOrderItemProfileScope({
@@ -3327,7 +3327,7 @@ export async function createOrder(input: {
       } else if (updateExistingError) {
         return { ok: false, error: updateExistingError.message };
       } else if (!updatedExistingRows || updatedExistingRows.length === 0) {
-        return { ok: false, error: "SipariÃ…Å¸ baska bir kullanÃ„Â±cÃ„Â± tarafindan gÃƒÂ¼ncellendi. LÃƒÂ¼tfen tekrar deneyin." };
+        return { ok: false, error: "Sipariş başka bir kullanıcı tarafindan güncellendi. Lütfen tekrar deneyin." };
       }
 
       orderId = mergeRow.id;
@@ -3341,16 +3341,16 @@ export async function createOrder(input: {
     orderData = firstInsert.data as { id: string } | null;
     orderError = firstInsert.error as { message: string } | null;
     if (orderError?.message?.toLowerCase().includes("business_id")) {
-      const secondInsert = await supabase.from("orders").insert(fallbackPayload).select("id").single();
-      orderData = secondInsert.data as { id: string } | null;
-      orderError = secondInsert.error as { message: string } | null;
+      const seçondInsert = await supabase.from("orders").insert(fallbackPayload).select("id").single();
+      orderData = seçondInsert.data as { id: string } | null;
+      orderError = seçondInsert.error as { message: string } | null;
     }
 
     if (orderError) {
       return { ok: false, error: orderError.message };
     }
     if (!orderData) {
-      return { ok: false, error: "SipariÃ…Å¸ oluÃ…Å¸turulamadÃ„Â±." };
+      return { ok: false, error: "Sipariş oluşturulamadı." };
     }
 
     orderId = orderData.id;
@@ -3359,7 +3359,7 @@ export async function createOrder(input: {
 
   const persistedOrderId = orderId;
   if (!persistedOrderId) {
-    return { ok: false, error: "SipariÃ…Å¸ oluÃ…Å¸turulamadÃ„Â±." };
+    return { ok: false, error: "Sipariş oluşturulamadı." };
   }
 
   const unitCostSnapshotByProductId = await getOrderItemUnitCostSnapshotMap({
@@ -5035,8 +5035,12 @@ export async function updateOrderStatus(orderId: string, nextStatus: OrderStatus
   }
 
   const currentStatus = (orderRow.status as OrderStatus | null) ?? "pending";
+  if (currentStatus === nextStatus) {
+    return { ok: true, usingDemoData: false, idempotent: true };
+  }
+
   if (!isAllowedOrderStatusTransition(currentStatus, nextStatus)) {
-    return { ok: false, error: `GeÃƒÂ§ersiz sipariÃ…Å¸ gecisi: ${currentStatus} -> ${nextStatus}` };
+    return { ok: false, error: `Geçersiz sipariş gecisi: ${currentStatus} -> ${nextStatus}` };
   }
 
   const expectedLockVersion = Number((orderRow as { lock_version?: number | null }).lock_version ?? 0);
@@ -5089,7 +5093,7 @@ export async function updateOrderStatus(orderId: string, nextStatus: OrderStatus
   } else if (error) {
     return { ok: false, error: error.message };
   } else if (!updatedRows || updatedRows.length === 0) {
-    return { ok: false, error: "SipariÃ…Å¸ baska bir kullanÃ„Â±cÃ„Â± tarafindan gÃƒÂ¼ncellendi. LÃƒÂ¼tfen tekrar deneyin." };
+    return { ok: false, error: "Sipariş başka bir kullanıcı tarafindan güncellendi. Lütfen tekrar deneyin." };
   }
 
   if (nextStatus === "paid") {
@@ -5148,7 +5152,7 @@ export async function updateOrderStationStatus(
 
   const currentStatus = (orderRow.status as OrderStatus | null) ?? "pending";
   if (currentStatus === "paid" || currentStatus === "cancelled" || currentStatus === "refunded") {
-    return { ok: false, error: "Kapali sipariste istasyon durumu degistirilemez." };
+    return { ok: false, error: "Kapali siparişte istasyon durumu degistirilemez." };
   }
 
   const stationStatuses: Partial<Record<PrepStation, OrderStationStatus>> = {
@@ -5160,7 +5164,7 @@ export async function updateOrderStationStatus(
       ? currentStatus
       : deriveOrderStatusFromStationStatuses(stationStatuses, currentStatus);
   if (!isAllowedOrderStatusTransition(currentStatus, aggregateStatus)) {
-    return { ok: false, error: `GeÃƒÂ§ersiz sipariÃ…Å¸ gecisi: ${currentStatus} -> ${aggregateStatus}` };
+    return { ok: false, error: `Geçersiz sipariş gecisi: ${currentStatus} -> ${aggregateStatus}` };
   }
   const expectedLockVersion = Number((orderRow as { lock_version?: number | null }).lock_version ?? 0);
 
@@ -5215,7 +5219,7 @@ export async function updateOrderStationStatus(
     return { ok: false, error: updateError.message };
   }
   if (!updatedRows || updatedRows.length === 0) {
-    return { ok: false, error: "SipariÃ…Å¸ baska bir kullanÃ„Â±cÃ„Â± tarafindan gÃƒÂ¼ncellendi. LÃƒÂ¼tfen tekrar deneyin." };
+    return { ok: false, error: "Sipariş başka bir kullanıcı tarafindan güncellendi. Lütfen tekrar deneyin." };
   }
 
   fireAndForgetAuditEvent({
@@ -5236,7 +5240,7 @@ export async function applyOrderFinancials(input: {
 }) {
   const supabase = getSupabaseServerClient() ?? (await getTenantDataClient());
   if (!supabase) {
-    return { ok: false, error: "Demo modda finansal guncelleme pasif." };
+    return { ok: false, error: "Demo modda finansal güncelleme pasif." };
   }
 
   const scope = await getDefaultBusinessScope();
@@ -5249,7 +5253,7 @@ export async function applyOrderFinancials(input: {
   }
   const { data: orderRow, error: findError } = await findQuery.maybeSingle();
   if (findError || !orderRow) {
-    return { ok: false, error: findError?.message ?? "SipariÃ…Å¸ bulunamadi." };
+    return { ok: false, error: findError?.message ?? "Sipariş bulunamadı." };
   }
 
   const subtotal = Number(orderRow.total_price);
@@ -5297,7 +5301,7 @@ export async function applyOrderFinancials(input: {
   } else if (error) {
     return { ok: false, error: error.message };
   } else if (!financialRows || financialRows.length === 0) {
-    return { ok: false, error: "SipariÃ…Å¸ baska bir kullanÃ„Â±cÃ„Â± tarafindan gÃƒÂ¼ncellendi. LÃƒÂ¼tfen tekrar deneyin." };
+    return { ok: false, error: "Sipariş başka bir kullanıcı tarafindan güncellendi. Lütfen tekrar deneyin." };
   }
 
   fireAndForgetAuditEvent({
@@ -5323,7 +5327,7 @@ export async function completeOrderPayment(input: {
 }) {
   const supabase = getSupabaseServerClient() ?? (await getTenantDataClient());
   if (!supabase) {
-    return { ok: false, error: "Demo modda ÃƒÂ¶deme iÃ…Å¸lemi pasif." };
+    return { ok: false, error: "Demo modda ödeme işlemi pasif." };
   }
 
   const scope = await getDefaultBusinessScope();
@@ -5339,17 +5343,17 @@ export async function completeOrderPayment(input: {
   }
   const { data: orderRow, error: findError } = await findQuery.maybeSingle();
   if (findError || !orderRow) {
-    return { ok: false, error: findError?.message ?? "SipariÃ…Å¸ bulunamadi." };
+    return { ok: false, error: findError?.message ?? "Sipariş bulunamadı." };
   }
   if (orderRow.status === "cancelled" || orderRow.status === "refunded" || orderRow.status === "partially_refunded") {
-    return { ok: false, error: "Iptal veya iade edilmis siparise ÃƒÂ¶deme eklenemez." };
+    return { ok: false, error: "İptal veya iade edilmiş siparişe ödeme eklenemez." };
   }
   const requestKey = typeof input.requestKey === "string" && input.requestKey.trim() ? input.requestKey.trim() : null;
   const requestedAmount = Number.isFinite(Number(input.amount))
     ? toMoney(Math.max(0, Number(input.amount)))
     : null;
   if (requestedAmount !== null && requestedAmount <= 0) {
-    return { ok: false, error: "Ãƒâ€“deme tutari sifirdan buyuk olmali." };
+    return { ok: false, error: "Ödeme tutarı sıfırdan büyük olmalı." };
   }
 
   const paymentMutationRpcResult = await supabase.rpc("apply_order_payment_mutation", {
@@ -5421,10 +5425,10 @@ export async function completeOrderPayment(input: {
   const remaining = toMoney(Math.max(0, targetAmount - alreadyPaid));
   const amount = toMoney(Math.max(0, Number(input.amount ?? remaining)));
   if (amount <= 0) {
-    return { ok: false, error: "Ãƒâ€“deme tutari sifirdan buyuk olmali." };
+    return { ok: false, error: "Ödeme tutarı sıfırdan büyük olmalı." };
   }
   if (toMoney(amount - remaining) > 0) {
-    return { ok: false, error: "Ãƒâ€“deme tutari kalan bakiyeden buyuk olamaz." };
+    return { ok: false, error: "Ödeme tutarı kalan bakiyeden büyük olamaz." };
   }
   if (requestKey) {
     let idempotencyLookup = supabase
@@ -5579,7 +5583,7 @@ export async function cancelOrder(orderId: string, note?: string, requestKey?: s
   }
   const { data: orderRow, error: findError } = await findQuery.maybeSingle();
   if (findError || !orderRow) {
-    return { ok: false, error: findError?.message ?? "SipariÃ…Å¸ bulunamadi." };
+    return { ok: false, error: findError?.message ?? "Sipariş bulunamadı." };
   }
   const normalizedRequestKey = typeof requestKey === "string" && requestKey.trim() ? requestKey.trim() : null;
   if (normalizedRequestKey) {
@@ -5603,12 +5607,12 @@ export async function cancelOrder(orderId: string, note?: string, requestKey?: s
     }
   }
   if (orderRow.status === "paid" || orderRow.status === "partially_paid" || orderRow.status === "partially_refunded") {
-    return { ok: false, error: "Ãƒâ€“deme alinmis sipariÃ…Å¸ iptal edilemez. Iade akisini kullanin." };
+    return { ok: false, error: "Ödeme alinmis sipariş iptal edilemez. İade akışıni kullanin." };
   }
   const paymentSummary = await getOrderPaymentSummaryMap(supabase, [orderId]);
   const netPaid = paymentSummary.get(orderId)?.net ?? 0;
   if (netPaid > 0) {
-    return { ok: false, error: "Bu sipariste tahsilat var. Iptal yerine iade yapin." };
+    return { ok: false, error: "Bu siparişte tahsilat var. İptal yerine iade yapin." };
   }
 
   const cancelResult = await retryMutation(async () => {
@@ -5677,7 +5681,7 @@ export async function cancelOrder(orderId: string, note?: string, requestKey?: s
 export async function cancelOrderItem(orderId: string, productId: string) {
   const supabase = getSupabaseServerClient() ?? (await getTenantDataClient());
   if (!supabase) {
-    return { ok: false, error: "Demo modda iÃ…Å¸lem pasif." };
+    return { ok: false, error: "Demo modda işlem pasif." };
   }
 
   const scope = await getDefaultBusinessScope();
@@ -5691,17 +5695,17 @@ export async function cancelOrderItem(orderId: string, productId: string) {
 
   const { data: orderRow, error: findError } = await findQuery.maybeSingle();
   if (findError || !orderRow) {
-    return { ok: false, error: findError?.message ?? "SipariÃ…Å¸ bulunamadi." };
+    return { ok: false, error: findError?.message ?? "Sipariş bulunamadı." };
   }
 
   if (orderRow.status === "paid" || orderRow.status === "cancelled" || orderRow.status === "refunded") {
-    return { ok: false, error: "Kapanmis veya iptal edilmis bir adisyondan ÃƒÂ¼rÃƒÂ¼n silinemez." };
+    return { ok: false, error: "Kapanmis veya iptal edilmiş bir adısyondan ürün silinemez." };
   }
 
   const items = Array.isArray(orderRow.items) ? (orderRow.items as OrderItem[]) : [];
   const targetIndex = items.findIndex((item) => item.product_id === productId);
   if (targetIndex === -1) {
-    return { ok: false, error: "ÃƒÅ“rÃƒÂ¼n adisyonda bulunamadi." };
+    return { ok: false, error: "Ürün adısyonda bulunamadı." };
   }
 
   const itemToEdit = items[targetIndex];
@@ -5759,14 +5763,14 @@ export async function cancelOrderItem(orderId: string, productId: string) {
   });
 
   if (updateResult.error) {
-    return { ok: false, error: "SipariÃ…Å¸ gÃƒÂ¼ncellenemedi." };
+    return { ok: false, error: "Sipariş güncellenemedi." };
   }
 
   fireAndForgetAuditEvent({
     entityType: "order",
     entityId: orderId,
     action: "update",
-    details: { note: "ÃƒÅ“rÃƒÂ¼n iptal edildi/dusuruldu", productId }
+    details: { note: "Ürün iptal edildi/dusuruldu", productId }
   });
 
   revalidateOrderFlowCaches();
@@ -5798,17 +5802,17 @@ export async function refundOrder(input: {
   }
   const { data: orderRow, error: findError } = await findQuery.maybeSingle();
   if (findError || !orderRow) {
-    return { ok: false, error: findError?.message ?? "SipariÃ…Å¸ bulunamadi." };
+    return { ok: false, error: findError?.message ?? "Sipariş bulunamadı." };
   }
   if (orderRow.status === "cancelled") {
-    return { ok: false, error: "Iptal edilmis siparise iade eklenemez." };
+    return { ok: false, error: "İptal edilmiş siparişe iade eklenemez." };
   }
   const requestKey = typeof input.requestKey === "string" && input.requestKey.trim() ? input.requestKey.trim() : null;
   const requestedAmount = Number.isFinite(Number(input.amount))
     ? toMoney(Math.max(0, Number(input.amount)))
     : null;
   if (requestedAmount !== null && requestedAmount <= 0) {
-    return { ok: false, error: "Iade tutari sifirdan buyuk olmali." };
+    return { ok: false, error: "İade tutarı sıfırdan büyük olmalı." };
   }
 
   const paymentMutationRpcResult = await supabase.rpc("apply_order_payment_mutation", {
@@ -5874,15 +5878,15 @@ export async function refundOrder(input: {
   const summary = paymentSummary.get(input.orderId) ?? { paid: 0, refunds: 0, net: 0, count: 0 };
   const refundableBalance = toMoney(Math.max(0, summary.paid - summary.refunds));
   if (refundableBalance <= 0) {
-    return { ok: false, error: "Iade edilebilir tahsilat bulunamadi." };
+    return { ok: false, error: "İade edilebilir tahsilat bulunamadı." };
   }
 
   const amount = toMoney(Math.max(0, Number(input.amount ?? refundableBalance)));
   if (amount <= 0) {
-    return { ok: false, error: "Iade tutari sifirdan buyuk olmali." };
+    return { ok: false, error: "İade tutarı sıfırdan büyük olmalı." };
   }
   if (toMoney(amount - refundableBalance) > 0) {
-    return { ok: false, error: "Iade tutari iade edilebilir bakiyeden buyuk olamaz." };
+    return { ok: false, error: "İade tutarı iade edilebilir bakiyeden büyük olamaz." };
   }
 
   const targetAmount = toMoney(Number(orderRow.final_price ?? orderRow.total_price));
@@ -6063,12 +6067,12 @@ export async function assignOrderCourier(input: {
       return { ok: false, error: existingError.message };
     }
     if (!existing) {
-      return { ok: false, error: "SipariÃ…Å¸ bulunamadi veya eriÃ…Å¸im izni yok." };
+      return { ok: false, error: "Sipariş bulunamadı veya erişim izni yok." };
     }
     if (existing.fulfillment_status === "out_for_delivery" && existing.courier_id === input.courierId) {
       return { ok: true, noop: true };
     }
-    return { ok: false, error: "SipariÃ…Å¸ mevcut durumunda kurye atamasi kabul etmiyor." };
+    return { ok: false, error: "Sipariş mevcut durumunda kurye atamasi kabul etmiyor." };
   }
 
   fireAndForgetAuditEvent({
@@ -6111,7 +6115,7 @@ export async function markDeliveryCompleted(orderId: string) {
     return { ok: false, error: currentOrderError.message };
   }
   if (!currentOrder) {
-    return { ok: false, error: "SipariÃ…Å¸ bulunamadi veya eriÃ…Å¸im izni yok." };
+    return { ok: false, error: "Sipariş bulunamadı veya erişim izni yok." };
   }
   if (currentOrder.fulfillment_status === "completed") {
     return { ok: true, noop: true };
@@ -6419,7 +6423,7 @@ export async function setTableSupervisor(input: {
 
   const scope = await getDefaultBusinessScope();
   if (!scope.useLegacySchema && !scope.businessId) {
-    return { ok: false, error: "Aktif iÃ…Å¸letme bulunamadi." };
+    return { ok: false, error: "Aktif işletme bulunamadı." };
   }
 
   let tableQuery = supabase
@@ -6435,7 +6439,7 @@ export async function setTableSupervisor(input: {
 
   const { data: tableRow, error: tableError } = await tableQuery.maybeSingle();
   if (tableError || !tableRow) {
-    return { ok: false, error: tableError?.message ?? "Masa bulunamadi." };
+    return { ok: false, error: tableError?.message ?? "Masa bulunamadı." };
   }
 
   const targetBusinessId = (tableRow as { business_id?: string | null }).business_id ?? scope.businessId ?? null;
@@ -6453,7 +6457,7 @@ export async function setTableSupervisor(input: {
     const { error } = await deleteQuery;
     if (error) {
       if (error.message.toLowerCase().includes("table_supervisors")) {
-        return { ok: false, error: "Sorumlu garson tablosu bulunamadi. Son migration'i ÃƒÂ§alÃ„Â±Ã…Å¸tÃ„Â±rÃ„Â±n." };
+        return { ok: false, error: "Sorumlu garson tablosu bulunamadı. Son migration'i çalıştırın." };
       }
       return { ok: false, error: error.message };
     }
@@ -6476,7 +6480,7 @@ export async function setTableSupervisor(input: {
     .maybeSingle();
 
   if (profileError || !profileRow) {
-    return { ok: false, error: profileError?.message ?? "Garson profili bulunamadi." };
+    return { ok: false, error: profileError?.message ?? "Garson profili bulunamadı." };
   }
   if ((profileRow as { role?: AppRole | null }).role !== "waiter") {
     return { ok: false, error: "Sadece garson rolundeki kullanicilar sorumlu olarak atanabilir." };
@@ -6495,7 +6499,7 @@ export async function setTableSupervisor(input: {
     return { ok: false, error: accessError.message };
   }
   if (!accessRows || accessRows.length === 0) {
-    return { ok: false, error: "Secilen garson aktif iÃ…Å¸letme kapsaminda deÃ„Å¸il." };
+    return { ok: false, error: "Seçilen garson aktif işletme kapsaminda değil." };
   }
 
   const { error } = await supabase
@@ -6513,7 +6517,7 @@ export async function setTableSupervisor(input: {
 
   if (error) {
     if (error.message.toLowerCase().includes("table_supervisors")) {
-      return { ok: false, error: "Sorumlu garson tablosu bulunamadi. Son migration'i ÃƒÂ§alÃ„Â±Ã…Å¸tÃ„Â±rÃ„Â±n." };
+      return { ok: false, error: "Sorumlu garson tablosu bulunamadı. Son migration'i çalıştırın." };
     }
     return { ok: false, error: error.message };
   }
@@ -6784,7 +6788,7 @@ function normalizeEnterpriseMarketImportPayload(jsonText: string) {
   if (!Array.isArray(raw)) {
     return {
       rows: [] as EnterpriseMarketImportRow[],
-      errors: ["Import verisi JSON array olmalidir."],
+      errors: ["Import verisi JSON array olmalıdir."],
       conflicts: [] as EnterpriseMarketImportIssue[],
     };
   }
@@ -6800,7 +6804,7 @@ function normalizeEnterpriseMarketImportPayload(jsonText: string) {
     const rowNumber = index + 1;
     const item = raw[index];
     if (!item || typeof item !== "object") {
-      errors.push(`Satir ${rowNumber}: kayit nesnesi gecersiz.`);
+      errors.push(`Satir ${rowNumber}: kayıt nesnesi gecersiz.`);
       continue;
     }
 
@@ -6822,11 +6826,11 @@ function normalizeEnterpriseMarketImportPayload(jsonText: string) {
     const price = normalizeMarketImportNumber(record.price, Number.NaN);
     const stockRaw = normalizeMarketImportNumber(record.stock_count, 0);
     if (!Number.isFinite(price) || price < 0) {
-      errors.push(`Satir ${rowNumber}: price sayisal ve sifirdan buyuk/esit olmali.`);
+      errors.push(`Satir ${rowNumber}: price sayisal ve sıfırdan büyük/esit olmalı.`);
       continue;
     }
     if (!Number.isFinite(stockRaw) || stockRaw < 0) {
-      errors.push(`Satir ${rowNumber}: stock_count sayisal ve sifirdan buyuk/esit olmali.`);
+      errors.push(`Satir ${rowNumber}: stock_count sayisal ve sıfırdan büyük/esit olmalı.`);
       continue;
     }
 
@@ -6837,7 +6841,7 @@ function normalizeEnterpriseMarketImportPayload(jsonText: string) {
       conflicts.push({
         row: rowNumber,
         field: "name",
-        message: `Ayni kategori+urun tekrarli (onceki satir: ${seenProductKeys.get(productKey)}).`,
+        message: `Ayni kategori+ürün tekrarli (onceki satir: ${seenProductKeys.get(productKey)}).`,
       });
     } else {
       seenProductKeys.set(productKey, rowNumber);
@@ -7010,12 +7014,12 @@ async function readEnterpriseMarketCatalogKeys(input: {
 export async function dryRunEnterpriseMarketImport(input: { jsonText: string; replaceScope?: boolean }) {
   const scope = await getDefaultBusinessScope();
   if (!scope.businessId) {
-    return { ok: false as const, error: "Aktif isletme bulunamadi." };
+    return { ok: false as const, error: "Aktif işletme bulunamadı." };
   }
 
   const parsed = normalizeEnterpriseMarketImportPayload(input.jsonText);
   if (parsed.rows.length === 0 && parsed.errors.length === 0) {
-    return { ok: false as const, error: "Import listesi bos." };
+    return { ok: false as const, error: "Import listesi boş." };
   }
 
   const supabase = getSupabaseServerClient() ?? (await getTenantDataClient());
@@ -7054,7 +7058,7 @@ export async function dryRunEnterpriseMarketImport(input: { jsonText: string; re
         conflicts.push({
           row: rowNumber,
           field: "barcode",
-          message: "Barkod farkli bir urun tarafinda kullaniliyor.",
+          message: "Barkod farkli bir ürün tarafinda kullaniliyor.",
         });
       }
     }
@@ -7064,7 +7068,7 @@ export async function dryRunEnterpriseMarketImport(input: { jsonText: string; re
         conflicts.push({
           row: rowNumber,
           field: "plu_code",
-          message: "PLU kodu farkli bir urun tarafinda kullaniliyor.",
+          message: "PLU kodu farkli bir ürün tarafinda kullaniliyor.",
         });
       }
     }
@@ -7092,7 +7096,7 @@ export async function dryRunEnterpriseMarketImport(input: { jsonText: string; re
 export async function commitEnterpriseMarketImport(input: { jsonText: string; replaceScope?: boolean }) {
   const scope = await getDefaultBusinessScope();
   if (!scope.businessId) {
-    return { ok: false as const, error: "Aktif isletme bulunamadi." };
+    return { ok: false as const, error: "Aktif işletme bulunamadı." };
   }
 
   const dryRun = await dryRunEnterpriseMarketImport({
@@ -7124,7 +7128,7 @@ export async function commitEnterpriseMarketImport(input: { jsonText: string; re
   });
   if (error) {
     if (error.message.toLowerCase().includes("import_enterprise_market_catalog")) {
-      return { ok: false as const, error: "Market import fonksiyonu bulunamadi. Ilgili migration calistirilmali." };
+      return { ok: false as const, error: "Market import fonksiyonu bulunamadı. Ilgili migration çalıştırilmali." };
     }
     return { ok: false as const, error: error.message };
   }
@@ -7446,7 +7450,7 @@ export async function bulkAdjustStocks(input: {
 
   const scope = await getDefaultBusinessScope();
   if (!scope.useLegacySchema && !scope.businessId) {
-    return { ok: false as const, error: "Aktif isletme bulunamadi." };
+    return { ok: false as const, error: "Aktif işletme bulunamadı." };
   }
 
   const reason = input.reason.trim();
@@ -7464,7 +7468,7 @@ export async function bulkAdjustStocks(input: {
     normalizedMap.set(productId, Math.max(0, Math.round(newStock)));
   }
   if (normalizedMap.size === 0) {
-    return { ok: false as const, error: "Gecerli stok degisikligi bulunamadi." };
+    return { ok: false as const, error: "Geçerli stok degisikligi bulunamadı." };
   }
 
   const productIds = [...normalizedMap.keys()];
@@ -7489,7 +7493,7 @@ export async function bulkAdjustStocks(input: {
   for (const [productId, targetStock] of normalizedMap.entries()) {
     const product = allowedMap.get(productId);
     if (!product) {
-      failed.push({ productId, reason: "Urun bulunamadi veya bu isletme kapsaminda degil." });
+      failed.push({ productId, reason: "Ürün bulunamadı veya bu işletme kapsaminda degil." });
       continue;
     }
 
@@ -7564,7 +7568,7 @@ export async function createIngredient(name: string, unit: string, cost: number)
   }
   const scope = await getDefaultBusinessScope();
   if (!scope.useLegacySchema && !scope.businessId) {
-    return { ok: false, error: "Aktif iÃ…Å¸letme bulunamadi." };
+    return { ok: false, error: "Aktif işletme bulunamadı." };
   }
 
   const payload = !scope.useLegacySchema && scope.businessId
@@ -7583,7 +7587,7 @@ export async function createIngredient(name: string, unit: string, cost: number)
 export async function updateIngredient(ingredientId: string, name: string, unit: string, cost: number) {
   const supabase = getSupabaseServerClient() ?? (await getTenantDataClient());
   if (!supabase) {
-    return { ok: false, error: "Demo modda malzeme guncelleme pasif." };
+    return { ok: false, error: "Demo modda malzeme güncelleme pasif." };
   }
   const scope = await getDefaultBusinessScope();
 
@@ -7630,7 +7634,7 @@ export async function attachIngredientToProduct(input: {
 }) {
   const supabase = getSupabaseServerClient() ?? (await getTenantDataClient());
   if (!supabase) {
-    return { ok: false, error: "Demo modda ÃƒÂ¼rÃƒÂ¼n malzemesi duzenleme pasif." };
+    return { ok: false, error: "Demo modda ürün malzemesi duzenleme pasif." };
   }
   const scope = await getDefaultBusinessScope();
   if (!scope.useLegacySchema && scope.businessId) {
@@ -7650,7 +7654,7 @@ export async function attachIngredientToProduct(input: {
     ]);
 
     if (!product || !ingredient) {
-      return { ok: false, error: "Malzeme veya ÃƒÂ¼rÃƒÂ¼n aktif iÃ…Å¸letmede bulunamadi." };
+      return { ok: false, error: "Malzeme veya ürün aktif işletmede bulunamadı." };
     }
   }
 
@@ -7670,7 +7674,7 @@ export async function attachIngredientToProduct(input: {
 export async function detachIngredientFromProduct(productId: string, ingredientId: string) {
   const supabase = getSupabaseServerClient() ?? (await getTenantDataClient());
   if (!supabase) {
-    return { ok: false, error: "Demo modda ÃƒÂ¼rÃƒÂ¼n malzemesi duzenleme pasif." };
+    return { ok: false, error: "Demo modda ürün malzemesi duzenleme pasif." };
   }
   const scope = await getDefaultBusinessScope();
   if (!scope.useLegacySchema && scope.businessId) {
@@ -7681,7 +7685,7 @@ export async function detachIngredientFromProduct(productId: string, ingredientI
       .eq("business_id", scope.businessId)
       .maybeSingle();
     if (!product) {
-      return { ok: false, error: "ÃƒÅ“rÃƒÂ¼n aktif iÃ…Å¸letmede bulunamadi." };
+      return { ok: false, error: "Ürün aktif işletmede bulunamadı." };
     }
   }
 
@@ -7892,12 +7896,12 @@ export async function listProfileRoleCounts() {
 export async function updateProfileRole(profileId: string, role: AppRole) {
   const authClient = await getSupabaseAuthServerClient();
   if (!authClient) {
-    return { ok: false, error: "Demo modda rol guncelleme pasif." };
+    return { ok: false, error: "Demo modda rol güncelleme pasif." };
   }
 
   const businessScope = await getDefaultBusinessScope();
   if (!businessScope.businessId) {
-    return { ok: false, error: "Aktif iÃ…Å¸letme bulunamadi." };
+    return { ok: false, error: "Aktif işletme bulunamadı." };
   }
 
   const { data: existingAccess, error: accessFindError } = await authClient
@@ -7911,7 +7915,7 @@ export async function updateProfileRole(profileId: string, role: AppRole) {
   }
 
   if (!existingAccess || existingAccess.length === 0) {
-    return { ok: false, error: "Bu personel aktif iÃ…Å¸letme kapsaminda bulunamadi." };
+    return { ok: false, error: "Bu personel aktif işletme kapsaminda bulunamadı." };
   }
 
   const { error: profileError } = await authClient.from("profiles").update({ role }).eq("id", profileId);
@@ -7951,7 +7955,7 @@ export async function updateProfileRole(profileId: string, role: AppRole) {
     }
 
     if (!branchId) {
-      return { ok: false, error: "Ã…Âube personeli iÃƒÂ§in ÃƒÂ¶nce en az bir aktif Ã…Å¸ube olusturulmalidir." };
+      return { ok: false, error: "Şube personeli için önce en az bir aktif şube oluşturulmalidir." };
     }
   }
 
@@ -8002,7 +8006,7 @@ export async function updateStaffAccount(input: {
   const authClient = await getSupabaseAuthServerClient();
   const serviceClient = getSupabaseServerClient();
   if (!authClient || !serviceClient) {
-    return { ok: false, error: "Demo modda personel guncelleme pasif." };
+    return { ok: false, error: "Demo modda personel güncelleme pasif." };
   }
 
   const fullName = input.fullName.trim();
@@ -8013,18 +8017,18 @@ export async function updateStaffAccount(input: {
   }
 
   if (password && password.length < 6) {
-    return { ok: false, error: "Sifre en az 6 karakter olmali." };
+    return { ok: false, error: "Şifre en az 6 karakter olmalı." };
   }
   const normalizedAccessScope: StaffAccessScope = input.role === "owner" ? "business" : input.accessScope;
   const normalizedBranchId = normalizedAccessScope === "branch" ? input.branchId ?? null : null;
 
   if (normalizedAccessScope === "branch" && !normalizedBranchId) {
-    return { ok: false, error: "Ã…Âube personeli iÃƒÂ§in bir Ã…Å¸ube secilmelidir." };
+    return { ok: false, error: "Şube personeli için bir şube seçilmelidir." };
   }
 
   const businessScope = await getDefaultBusinessScope();
   if (!businessScope.businessId) {
-    return { ok: false, error: "Aktif iÃ…Å¸letme bulunamadi." };
+    return { ok: false, error: "Aktif işletme bulunamadı." };
   }
 
   const { data: existingAccess, error: existingAccessError } = await authClient
@@ -8038,7 +8042,7 @@ export async function updateStaffAccount(input: {
   }
 
   if (!existingAccess || existingAccess.length === 0) {
-    return { ok: false, error: "Bu personel aktif iÃ…Å¸letme kapsaminda bulunamadi." };
+    return { ok: false, error: "Bu personel aktif işletme kapsaminda bulunamadı." };
   }
 
   const authUpdate = await serviceClient.auth.admin.updateUserById(input.profileId, {
@@ -8110,7 +8114,7 @@ export async function deleteStaffAccount(profileId: string) {
 
   const businessScope = await getDefaultBusinessScope();
   if (!businessScope.businessId) {
-    return { ok: false, error: "Aktif iÃ…Å¸letme bulunamadi." };
+    return { ok: false, error: "Aktif işletme bulunamadı." };
   }
 
   const { data: accessRows, error: accessError } = await authClient
@@ -8118,15 +8122,15 @@ export async function deleteStaffAccount(profileId: string) {
     .select("business_id")
     .eq("profile_id", profileId);
   if (accessError || !accessRows || accessRows.length === 0) {
-    return { ok: false, error: accessError?.message ?? "Personel eriÃ…Å¸im kaydÃ„Â± bulunamadi." };
+    return { ok: false, error: accessError?.message ?? "Personel erişim kaydı bulunamadı." };
   }
 
   if (!(accessRows as Array<{ business_id: string }>).some((row) => row.business_id === businessScope.businessId)) {
-    return { ok: false, error: "Bu personel aktif iÃ…Å¸letme kapsaminda bulunamadi." };
+    return { ok: false, error: "Bu personel aktif işletme kapsaminda bulunamadı." };
   }
 
   if ((accessRows as Array<{ business_id: string }>).some((row) => row.business_id !== businessScope.businessId)) {
-    return { ok: false, error: "Bu hesap birden fazla iÃ…Å¸letmede kullaniliyor. Guvenlik iÃƒÂ§in global silme engellendi." };
+    return { ok: false, error: "Bu hesap birden fazla işletmede kullaniliyor. Guvenlik için global silme engellendi." };
   }
 
   const { data: profile, error: profileError } = await authClient
@@ -8135,7 +8139,7 @@ export async function deleteStaffAccount(profileId: string) {
     .eq("id", profileId)
     .maybeSingle();
   if (profileError || !profile) {
-    return { ok: false, error: profileError?.message ?? "Personel bulunamadi." };
+    return { ok: false, error: profileError?.message ?? "Personel bulunamadı." };
   }
 
   if ((profile.role as AppRole) === "owner") {
@@ -8185,7 +8189,7 @@ export async function createStaffAccount(input: {
   const authClient = await getSupabaseAuthServerClient();
   const serviceClient = getSupabaseServerClient();
   if (!authClient || !serviceClient) {
-    return { ok: false, error: "Demo modda kullanÃ„Â±cÃ„Â± oluÃ…Å¸turma pasif." };
+    return { ok: false, error: "Demo modda kullanıcı oluşturma pasif." };
   }
 
   const email = input.email.trim().toLowerCase();
@@ -8197,18 +8201,18 @@ export async function createStaffAccount(input: {
   }
 
   if (password.length < 6) {
-    return { ok: false, error: "Sifre en az 6 karakter olmali." };
+    return { ok: false, error: "Şifre en az 6 karakter olmalı." };
   }
   const normalizedAccessScope: StaffAccessScope = input.role === "owner" ? "business" : "branch";
   const normalizedBranchId = normalizedAccessScope === "branch" ? input.branchId ?? null : null;
 
   if (normalizedAccessScope === "branch" && !normalizedBranchId) {
-    return { ok: false, error: "Ã…Âube personeli iÃƒÂ§in bir Ã…Å¸ube secilmelidir." };
+    return { ok: false, error: "Şube personeli için bir şube seçilmelidir." };
   }
 
   const businessScope = await getDefaultBusinessScope();
   if (!businessScope.businessId) {
-    return { ok: false, error: "Aktif iÃ…Å¸letme bulunamadi." };
+    return { ok: false, error: "Aktif işletme bulunamadı." };
   }
 
   const { data: usersData, error: usersError } = await serviceClient.auth.admin.listUsers();
@@ -8230,7 +8234,7 @@ export async function createStaffAccount(input: {
 
     const businessIds = [...new Set((existingAccessRows as Array<{ business_id: string }>).map((row) => row.business_id))];
     if (businessIds.some((businessId) => businessId !== businessScope.businessId)) {
-      return { ok: false, error: "Bu e-posta baska bir iÃ…Å¸letmede kullaniliyor. Tenant guvenligi iÃƒÂ§in ayni hesap yeniden baglanamaz." };
+      return { ok: false, error: "Bu e-posta başka bir işletmede kullaniliyor. Tenant guvenligi için ayni hesap yeniden baglanamaz." };
     }
   }
 
@@ -8262,7 +8266,7 @@ export async function createStaffAccount(input: {
   }
 
   if (!userId) {
-    return { ok: false, error: "KullanÃ„Â±cÃ„Â± hesabi oluÃ…Å¸turulamadÃ„Â±." };
+    return { ok: false, error: "Kullanıcı hesabı oluşturulamadı." };
   }
 
   const { error: profileError } = await serviceClient.from("profiles").upsert(
@@ -8323,7 +8327,7 @@ export async function assignExistingAuthUserToBusiness(input: {
   const authClient = await getSupabaseAuthServerClient();
   const serviceClient = getSupabaseServerClient();
   if (!authClient || !serviceClient) {
-    return { ok: false, error: "Demo modda kullanÃ„Â±cÃ„Â± baglama pasif." };
+    return { ok: false, error: "Demo modda kullanıcı baglama pasif." };
   }
 
   const email = input.email.trim().toLowerCase();
@@ -8335,12 +8339,12 @@ export async function assignExistingAuthUserToBusiness(input: {
   const normalizedAccessScope: StaffAccessScope = input.role === "owner" ? "business" : "branch";
   const normalizedBranchId = normalizedAccessScope === "branch" ? input.branchId ?? null : null;
   if (normalizedAccessScope === "branch" && !normalizedBranchId) {
-    return { ok: false, error: "Ã…Âube personeli iÃƒÂ§in bir Ã…Å¸ube secilmelidir." };
+    return { ok: false, error: "Şube personeli için bir şube seçilmelidir." };
   }
 
   const businessScope = await getDefaultBusinessScope();
   if (!businessScope.businessId) {
-    return { ok: false, error: "Aktif iÃ…Å¸letme bulunamadi." };
+    return { ok: false, error: "Aktif işletme bulunamadı." };
   }
 
   const { data: usersData, error: usersError } = await serviceClient.auth.admin.listUsers();
@@ -8350,7 +8354,7 @@ export async function assignExistingAuthUserToBusiness(input: {
 
   const authUser = usersData.users.find((user) => user.email?.toLowerCase() === email);
   if (!authUser) {
-    return { ok: false, error: "Auth kayitlarinda bu e-postayla kullanÃ„Â±cÃ„Â± bulunamadi." };
+    return { ok: false, error: "Auth kayıtlarinda bu e-postayla kullanıcı bulunamadı." };
   }
 
   const userId = authUser.id;
@@ -8369,7 +8373,7 @@ export async function assignExistingAuthUserToBusiness(input: {
     ).data ?? [];
   const businessIds = [...new Set((existingAccessRows as Array<{ business_id: string }>).map((row) => row.business_id))];
   if (businessIds.some((businessId) => businessId !== businessScope.businessId)) {
-    return { ok: false, error: "Bu hesap baska bir isletmeye baÃ„Å¸lÃ„Â±. Tenant guvenligi nedeniyle eklenemedi." };
+    return { ok: false, error: "Bu hesap başka bir işletmeye bağlı. Tenant guvenligi nedeniyle eklenemedi." };
   }
 
   const { error: profileError } = await serviceClient.from("profiles").upsert(
@@ -8445,7 +8449,7 @@ export async function createDemoStaffSet() {
   if (failed.length > 0) {
     return {
       ok: false,
-      error: `Bazi demo hesaplari oluÃ…Å¸turulamadÃ„Â±: ${failed.map((item) => item.email).join(", ")}`,
+      error: `Bazi demo hesaplari oluşturulamadı: ${failed.map((item) => item.email).join(", ")}`,
     };
   }
 
@@ -8488,7 +8492,7 @@ export async function updateCategoryPrepStation(categoryId: string, prepStation:
 export async function updateCategorySortOrder(categoryId: string, sortOrder: number) {
   const supabase = await getTenantDataClient();
   if (!supabase) {
-    return { ok: false, error: "Demo modda kategori sira guncelleme pasif." };
+    return { ok: false, error: "Demo modda kategori sira güncelleme pasif." };
   }
 
   const scope = await getDefaultBusinessScope();
@@ -8522,7 +8526,7 @@ export async function updateCategorySortOrder(categoryId: string, sortOrder: num
 export async function reorderCategories(categoryIds: string[]) {
   const supabase = await getTenantDataClient();
   if (!supabase) {
-    return { ok: false, error: "Demo modda kategori sira guncelleme pasif." };
+    return { ok: false, error: "Demo modda kategori sira güncelleme pasif." };
   }
 
   const scope = await getDefaultBusinessScope();
@@ -8582,12 +8586,12 @@ export async function deleteCategory(categoryId: string) {
 export async function bulkUpdateCategoryPrices(categoryId: string, percent: number) {
   const supabase = await getTenantDataClient();
   if (!supabase) {
-    return { ok: false, error: "Demo modda toplu fiyat guncelleme pasif." };
+    return { ok: false, error: "Demo modda toplu fiyat güncelleme pasif." };
   }
 
   const scale = 1 + percent / 100;
   if (scale <= 0) {
-    return { ok: false, error: "GeÃƒÂ§ersiz yuzde degeri." };
+    return { ok: false, error: "Geçersiz yuzde degeri." };
   }
 
   const scope = await getDefaultBusinessScope();
@@ -9019,7 +9023,7 @@ async function getCachedFinancialInsightsRow(input: {
 
             const productMap = new Map<string, { qty: number; revenue: number; cost: number; refundImpact: number }>();
             for (const row of itemRows) {
-              const productName = row.product_name || "Bilinmeyen urun";
+              const productName = row.product_name || "Bilinmeyen ürün";
               const orderFinal = Math.max(0, Number(finalByOrderId.get(row.order_id) ?? 0));
               const orderRefundRaw = Math.max(0, Number(refundByOrderId.get(row.order_id) ?? 0));
               const orderRefund = Math.min(orderFinal, orderRefundRaw);
@@ -9319,7 +9323,7 @@ export async function openCashSession(openingCash: number, note?: string, opened
   }
   const { data: active } = await activeQuery;
   if ((active ?? []).length > 0) {
-    return { ok: false, error: "AÃƒÂ§Ã„Â±k kasa oturumu zaten var." };
+    return { ok: false, error: "Açık kasa oturumu zaten var." };
   }
 
   let insert = await supabase
@@ -9392,7 +9396,7 @@ export async function closeCashSession(input: {
   }
   const { data: sessionRow, error: sessionError } = await sessionQuery.maybeSingle();
   if (sessionError || !sessionRow) {
-    return { ok: false, error: sessionError?.message ?? "Kasa oturumu bulunamadi." };
+    return { ok: false, error: sessionError?.message ?? "Kasa oturumu bulunamadı." };
   }
 
   const { settings: applicationSettings } = await getApplicationSettings();
@@ -9413,7 +9417,7 @@ export async function closeCashSession(input: {
       return { ok: false, error: openOrderError.message };
     }
     if ((openOrderRows?.length ?? 0) > 0) {
-      return { ok: false, error: "Gun sonu kapatilamadi. AÃƒÂ§Ã„Â±k adisyon bulunuyor." };
+      return { ok: false, error: "Gün sonu kapatilamadı. Açık adısyon bulunuyor." };
     }
   }
 
@@ -10072,7 +10076,7 @@ const demoSalesLeads: SalesLead[] = [
     phone: "+90 532 111 11 11",
     email: "elif@mavifincan.com",
     branch_count: 2,
-    note: "QR menÃƒÂ¼ ve stok takibiyle ilgileniyor.",
+    note: "QR menü ve stok takibiyle ilgileniyor.",
     status: "qualified",
     source: "landing_form",
     created_at: minutesAgo(180),
@@ -10097,13 +10101,13 @@ const demoLeadNotes: SalesLeadNote[] = [
   {
     id: "demo-lead-note-1",
     lead_id: "demo-lead-1",
-    note: "Cuma gunu demo takvimi iÃƒÂ§in aranacak.",
+    note: "Cuma günü demo takvimi için aranacak.",
     created_at: minutesAgo(110),
   },
   {
     id: "demo-lead-note-2",
     lead_id: "demo-lead-2",
-    note: "Ilk Ã…Å¸ube iÃƒÂ§in QR menÃƒÂ¼ ve vardiya takibi oncelikli.",
+    note: "İlk şube için QR menü ve vardiya takibi oncelikli.",
     created_at: minutesAgo(35),
   },
 ];
@@ -10123,10 +10127,10 @@ const demoMediaAssets: MediaAsset[] = [
 const demoBlogPosts: BlogPost[] = [
   {
     id: "demo-blog-1",
-    title: "Cafe operasyonunda ilk dijital kurulum nasÃ„Â±l yapilir?",
+    title: "Cafe operasyonunda ilk dijital kurulum nasıl yapilir?",
     slug: "cafe-operasyonunda-ilk-dijital-kurulum",
-    excerpt: "Masa, ÃƒÂ¼rÃƒÂ¼n, ekip ve raporlama akislarini tek gunde nasÃ„Â±l toparlayabilecegini anlatiyor.",
-    body: "Cloud POS ile ilk kurulumda ÃƒÂ¶nce iÃ…Å¸letme yapisini, sonra masa planini, ardindan ÃƒÂ¼rÃƒÂ¼n ve personel rollerini tanimlayin. Bu akÃ„Â±Ã…Å¸Ã„Â± takip ettiginizde landing, demo ve operasyon paneli ayni veri modelini kullanir.",
+    excerpt: "Masa, ürün, ekip ve raporlama akışlarini tek gunde nasıl toparlayabilecegini anlatiyor.",
+    body: "Cloud POS ile ilk kurulumda önce işletme yapisini, sonra masa planini, ardindan ürün ve personel rollerini tanimlayin. Bu akışı takip ettiginizde landing, demo ve operasyon paneli ayni veri modelini kullanir.",
     cover_image_url: "https://images.unsplash.com/photo-1556740749-887f6717d7e4?auto=format&fit=crop&w=1200&q=80",
     status: "published",
     published_at: minutesAgo(1440),
@@ -10146,13 +10150,13 @@ export async function createSalesLead(input: {
 }) {
   const supabase = getSupabaseServerClient();
   if (!supabase) {
-    return { ok: false, error: "Demo modda lead kaydÃ„Â± veritabanina yazilamaz." };
+    return { ok: false, error: "Demo modda lead kaydı veritabanina yazilamaz." };
   }
 
   const companyName = input.companyName.trim();
   const contactName = input.contactName.trim();
   if (!companyName || !contactName) {
-    return { ok: false, error: "Ã„Â°Ã…Å¸letme adi ve yetkili gerekli." };
+    return { ok: false, error: "İşletme adı ve yetkili gerekli." };
   }
 
   const branchCount = Math.max(1, Number(input.branchCount ?? 1) || 1);
@@ -10205,7 +10209,7 @@ export async function listSalesLeads() {
 export async function updateSalesLeadStatus(leadId: string, status: SalesLeadStatus) {
   const supabase = getSupabaseServerClient();
   if (!supabase) {
-    return { ok: false, error: "Demo modda lead guncelleme pasif." };
+    return { ok: false, error: "Demo modda lead güncelleme pasif." };
   }
 
   const { error } = await supabase.from("sales_leads").update({ status }).eq("id", leadId);
@@ -10311,12 +10315,12 @@ function normalizeSitePageSlug(slug?: string) {
   const normalized = (slug || "home")
     .trim()
     .toLowerCase()
-    .replace(/Ã„Â±/g, "i")
-    .replace(/Ã„Å¸/g, "g")
-    .replace(/ÃƒÂ¼/g, "u")
-    .replace(/Ã…Å¸/g, "s")
-    .replace(/ÃƒÂ¶/g, "o")
-    .replace(/ÃƒÂ§/g, "c")
+    .replace(/ı/g, "i")
+    .replace(/ğ/g, "g")
+    .replace(/ü/g, "u")
+    .replace(/ş/g, "s")
+    .replace(/ö/g, "o")
+    .replace(/ç/g, "c")
     .replace(/[^a-z0-9]+/g, "-")
     .replace(/^-+|-+$/g, "");
   return normalized || "home";
@@ -10582,7 +10586,7 @@ export async function getSitePageContent(slug?: string) {
 export async function createSitePage(input: { slug: string; pageTitle: string }) {
   const supabase = getSupabaseServerClient();
   if (!supabase) {
-    return { ok: false, error: "Demo modda sayfa olusturulamaz." };
+    return { ok: false, error: "Demo modda sayfa oluşturulamaz." };
   }
 
   const requestedSlug = input.slug?.trim() ? input.slug : input.pageTitle;
@@ -10629,7 +10633,7 @@ export async function createSitePage(input: { slug: string; pageTitle: string })
 export async function updateLandingContent(content: LandingContent, slug?: string) {
   const supabase = getSupabaseServerClient();
   if (!supabase) {
-    return { ok: false, error: "Demo modda landing icerigi guncellenemez." };
+    return { ok: false, error: "Demo modda landing icerigi güncellenemez." };
   }
 
   const normalized = normalizeLandingContent(content);
@@ -10693,7 +10697,7 @@ export async function deleteSitePage(slug?: string) {
 export async function resetSitePageToEmpty(slug?: string) {
   const supabase = getSupabaseServerClient();
   if (!supabase) {
-    return { ok: false, error: "Demo modda sayfa sifirlanamaz." };
+    return { ok: false, error: "Demo modda sayfa sıfırlanamaz." };
   }
 
   const normalizedSlug = normalizeSitePageSlug(slug);
@@ -10733,7 +10737,7 @@ export async function resetSitePageToEmpty(slug?: string) {
 export async function updateDemoPageContent(content: DemoPageContent) {
   const supabase = getSupabaseServerClient();
   if (!supabase) {
-    return { ok: false, error: "Demo modda demo icerigi guncellenemez." };
+    return { ok: false, error: "Demo modda demo icerigi güncellenemez." };
   }
 
   const normalized = normalizeDemoPageContent(content);
@@ -10779,7 +10783,7 @@ export async function getApplicationSettings() {
 export async function updateApplicationSettings(settings: ApplicationSettings) {
   const supabase = getSupabaseServerClient();
   if (!supabase) {
-    return { ok: false, error: "Demo fallback modunda uygulama ayarlari guncellenemez." };
+    return { ok: false, error: "Demo fallback modunda uygulama ayarlari güncellenemez." };
   }
 
   const normalized = normalizeApplicationSettings(settings);
@@ -10825,7 +10829,7 @@ export async function ensureDemoOperationsData() {
   }
 
   if (products.length === 0 || tables.length === 0) {
-    return { ok: false, error: "Demo mod iÃƒÂ§in en az bir masa ve ÃƒÂ¼rÃƒÂ¼n olmali." };
+    return { ok: false, error: "Demo mod için en az bir masa ve ürün olmalı." };
   }
 
   const primary = products[0];
@@ -10853,10 +10857,10 @@ export async function ensureDemoOperationsData() {
   const businessId = tableOne?.business_id ?? scope.businessId ?? undefined;
   const demoNames = [
     "Demo Mutfak Bekleyen",
-    "Demo Mutfak Hazirlaniyor",
+    "Demo Mutfak Hazırlaniyor",
     "Demo Kasa Testi",
     "Demo Split Ornegi",
-    "Demo Paket Musterisi",
+    "Demo Paket Müşterisi",
   ];
 
   let existingQuery = supabase.from("orders").select("id, customer_name").in("customer_name", demoNames);
@@ -10882,7 +10886,7 @@ export async function ensureDemoOperationsData() {
     });
   }
 
-  if (tableTwo && !existingNames.has("Demo Mutfak Hazirlaniyor")) {
+  if (tableTwo && !existingNames.has("Demo Mutfak Hazırlaniyor")) {
     const items = makeItems(2, 1);
     const created = await createOrder({
       tableId: tableTwo.id,
@@ -10890,7 +10894,7 @@ export async function ensureDemoOperationsData() {
       items,
       totalPrice: items.reduce((sum, item) => sum + item.line_total, 0),
       channel: "dine_in",
-      customerName: "Demo Mutfak Hazirlaniyor",
+      customerName: "Demo Mutfak Hazırlaniyor",
     });
     const orderId = getCreatedOrderId(created);
     if (orderId) {
@@ -10940,14 +10944,14 @@ export async function ensureDemoOperationsData() {
     }
   }
 
-  if (!existingNames.has("Demo Paket Musterisi")) {
+  if (!existingNames.has("Demo Paket Müşterisi")) {
     const items = makeItems(1, 1);
     await createOrder({
       businessId,
       items,
       totalPrice: items.reduce((sum, item) => sum + item.line_total, 0),
       channel: "delivery",
-      customerName: "Demo Paket Musterisi",
+      customerName: "Demo Paket Müşterisi",
       customerPhone: "+90 555 111 22 33",
       deliveryAddress: "Demo Mahallesi No:1",
       deliveryNote: "Kapidan teslim",
@@ -10965,16 +10969,16 @@ export async function ensureDemoOperationsData() {
 export async function clearDemoOperationsData() {
   const supabase = getSupabaseServerClient();
   if (!supabase) {
-    return { ok: false, error: "Demo fallback modunda kayÃ„Â±t temizleme pasif." };
+    return { ok: false, error: "Demo fallback modunda kayıt temizleme pasif." };
   }
 
   const scope = await getDefaultBusinessScope();
   const demoNames = [
     "Demo Mutfak Bekleyen",
-    "Demo Mutfak Hazirlaniyor",
+    "Demo Mutfak Hazırlaniyor",
     "Demo Kasa Testi",
     "Demo Split Ornegi",
-    "Demo Paket Musterisi",
+    "Demo Paket Müşterisi",
   ];
 
   let ordersQuery = supabase
@@ -11038,12 +11042,12 @@ export async function clearDemoOperationsData() {
 export async function clearBusinessOperationalData(options?: { deleteTables?: boolean }) {
   const supabase = await getTenantDataClient();
   if (!supabase) {
-    return { ok: false, error: "Demo fallback modunda iÃ…Å¸letme temizligi pasif." };
+    return { ok: false, error: "Demo fallback modunda işletme temizligi pasif." };
   }
 
   const scope = await getDefaultBusinessScope();
   if (!scope.businessId) {
-    return { ok: false, error: "Aktif iÃ…Å¸letme bulunamadi." };
+    return { ok: false, error: "Aktif işletme bulunamadı." };
   }
 
   const deleteTables = Boolean(options?.deleteTables);
@@ -11199,7 +11203,7 @@ export async function getGeneralSettings(options?: { scope?: GeneralSettingsScop
 export async function updateGeneralSettings(settings: GeneralSettings, options?: { scope?: GeneralSettingsScope }) {
   const supabase = getSupabaseServerClient();
   if (!supabase) {
-    return { ok: false, error: "Demo modda genel ayarlar guncellenemez." };
+    return { ok: false, error: "Demo modda genel ayarlar güncellenemez." };
   }
 
   const scope = options?.scope ?? "global";
@@ -11257,7 +11261,7 @@ export async function getSmtpSettings() {
 export async function updateSmtpSettings(settings: SmtpSettings) {
   const supabase = getSupabaseServerClient();
   if (!supabase) {
-    return { ok: false, error: "Demo modda SMTP ayarlari guncellenemez." };
+    return { ok: false, error: "Demo modda SMTP ayarlari güncellenemez." };
   }
 
   const normalized = normalizeSmtpSettings(settings);
@@ -11303,7 +11307,7 @@ export async function getSeoSettings() {
 export async function updateSeoSettings(settings: SeoSettings) {
   const supabase = getSupabaseServerClient();
   if (!supabase) {
-    return { ok: false, error: "Demo modda SEO ayarlari guncellenemez." };
+    return { ok: false, error: "Demo modda SEO ayarlari güncellenemez." };
   }
 
   const normalized = normalizeSeoSettings(settings);
@@ -11409,7 +11413,7 @@ export async function uploadMediaFile(file: File) {
   }
 
   if (!file || file.size <= 0) {
-    return { ok: false, error: "Gecerli bir dosya secin." };
+    return { ok: false, error: "Geçerli bir dosya seçin." };
   }
 
   const bucket = process.env.SUPABASE_MEDIA_BUCKET || "media";
@@ -11540,7 +11544,7 @@ export async function upsertBlogPost(input: {
 }) {
   const supabase = getSupabaseServerClient();
   if (!supabase) {
-    return { ok: false, error: "Demo modda blog kaydÃ„Â± guncellenemez." };
+    return { ok: false, error: "Demo modda blog kaydı güncellenemez." };
   }
 
   const payload = {
@@ -11568,7 +11572,7 @@ export async function upsertBlogPost(input: {
 export async function deleteBlogPost(id: string) {
   const supabase = getSupabaseServerClient();
   if (!supabase) {
-    return { ok: false, error: "Demo modda blog kaydÃ„Â± silinemez." };
+    return { ok: false, error: "Demo modda blog kaydı silinemez." };
   }
 
   const { error } = await supabase.from("blog_posts").delete().eq("id", id);
@@ -11798,7 +11802,7 @@ export async function upsertPlatformAccessUser(input: {
 export async function setPlatformAccessUserStatus(id: string, isActive: boolean) {
   const supabase = getSupabaseServerClient();
   if (!supabase) {
-    return { ok: false, error: "Demo modda platform kullanicisi guncellenemez." };
+    return { ok: false, error: "Demo modda platform kullanicisi güncellenemez." };
   }
 
   const { error } = await supabase.from("platform_access_users").update({ is_active: isActive }).eq("id", id);
@@ -11819,7 +11823,7 @@ export async function setPlatformAccessUserStatus(id: string, isActive: boolean)
 export async function setPlatformAccessUserRole(id: string, role: PlatformRole) {
   const supabase = getSupabaseServerClient();
   if (!supabase) {
-    return { ok: false, error: "Demo modda platform kullanicisi guncellenemez." };
+    return { ok: false, error: "Demo modda platform kullanicisi güncellenemez." };
   }
 
   const permissions = normalizePlatformPermissions(role);
@@ -11890,7 +11894,7 @@ export async function upsertStudioAccessUser(input: { email: string; fullName?: 
 export async function setStudioAccessUserStatus(id: string, isActive: boolean) {
   const supabase = getSupabaseServerClient();
   if (!supabase) {
-    return { ok: false, error: "Demo modda studio kullanicisi guncellenemez." };
+    return { ok: false, error: "Demo modda studio kullanicisi güncellenemez." };
   }
 
   const { error } = await supabase
@@ -11908,7 +11912,7 @@ export async function setStudioAccessUserStatus(id: string, isActive: boolean) {
 export async function setStudioAccessUserRole(id: string, role: StudioRole) {
   const supabase = getSupabaseServerClient();
   if (!supabase) {
-    return { ok: false, error: "Demo modda studio rol guncellenemez." };
+    return { ok: false, error: "Demo modda studio rol güncellenemez." };
   }
 
   const { error } = await supabase
@@ -12014,7 +12018,7 @@ export async function upsertSupportAccessUser(input: { email: string; fullName?:
 export async function setSupportAccessUserStatus(id: string, isActive: boolean) {
   const supabase = getSupabaseServerClient();
   if (!supabase) {
-    return { ok: false, error: "Demo modda support kullanicisi guncellenemez." };
+    return { ok: false, error: "Demo modda support kullanicisi güncellenemez." };
   }
 
   const { error } = await supabase
@@ -12039,7 +12043,7 @@ export async function setSupportAccessUserStatus(id: string, isActive: boolean) 
 export async function setSupportAccessUserRole(id: string, role: SupportRole) {
   const supabase = getSupabaseServerClient();
   if (!supabase) {
-    return { ok: false, error: "Demo modda support rol guncellenemez." };
+    return { ok: false, error: "Demo modda support rol güncellenemez." };
   }
 
   const { error } = await supabase
@@ -12219,18 +12223,18 @@ export async function createSupportTicket(input: {
 }) {
   const supabase = getSupabaseServerClient();
   if (!supabase) {
-    return { ok: false, error: "Demo modda destek talebi olusturulamaz." };
+    return { ok: false, error: "Demo modda destek talebi oluşturulamaz." };
   }
 
   const context = await getRequestAppContext();
   if (!context.businessId) {
-    return { ok: false, error: "Aktif iÃ…Å¸letme bulunamadi." };
+    return { ok: false, error: "Aktif işletme bulunamadı." };
   }
 
   const subject = input.subject.trim();
   const description = input.description.trim();
   if (!subject || !description) {
-    return { ok: false, error: "Konu ve aciklama zorunlu." };
+    return { ok: false, error: "Konu ve açıklama zorunlu." };
   }
 
   const { data, error } = await supabase
@@ -12408,7 +12412,7 @@ export async function createSupportTicketMessage(input: {
   const actor = await getCurrentSupportActor();
   const message = input.message.trim();
   if (!message) {
-    return { ok: false, error: "Mesaj boÃ…Å¸ olamaz." };
+    return { ok: false, error: "Mesaj boş olamaz." };
   }
 
   const { data: ticket } = await supabase
@@ -12418,7 +12422,7 @@ export async function createSupportTicketMessage(input: {
     .maybeSingle();
 
   if (!ticket) {
-    return { ok: false, error: "Ticket bulunamadi." };
+    return { ok: false, error: "Ticket bulunamadı." };
   }
 
   const { error } = await supabase.from("support_ticket_messages").insert({
@@ -12448,7 +12452,7 @@ export async function createSupportTicketMessage(input: {
 export async function setSupportTicketStatus(id: string, status: SupportTicketStatus) {
   const supabase = getSupabaseServerClient();
   if (!supabase) {
-    return { ok: false, error: "Demo modda destek talebi guncellenemez." };
+    return { ok: false, error: "Demo modda destek talebi güncellenemez." };
   }
 
   const payload = {
@@ -12838,12 +12842,12 @@ export async function createSupportPlanRequest(input: {
 }) {
   const supabase = getSupabaseServerClient();
   if (!supabase) {
-    return { ok: false, error: "Demo modda paket talebi olusturulamaz." };
+    return { ok: false, error: "Demo modda paket talebi oluşturulamaz." };
   }
 
   const context = await getRequestAppContext();
   if (!context.businessId || !context.activeBusiness?.plan) {
-    return { ok: false, error: "Aktif iÃ…Å¸letme bulunamadi." };
+    return { ok: false, error: "Aktif işletme bulunamadı." };
   }
 
   const { data, error } = await supabase
@@ -12878,7 +12882,7 @@ export async function createSupportPlanRequest(input: {
     type: "plan_change",
     priority: "normal",
     subject: `Paket degisikligi talebi: ${context.activeBusiness.plan} -> ${input.requestedPlan}`,
-    description: input.reason?.trim() || "Tenant paket degisikligi talebi olusturdu.",
+    description: input.reason?.trim() || "Tenant paket degisikligi talebi oluşturdu.",
   });
 
   return { ok: true, id: String(data?.id ?? "") };
@@ -12914,7 +12918,7 @@ export async function listSupportPlanRequests(status?: SupportPlanRequestStatus)
 export async function setSupportPlanRequestStatus(id: string, status: SupportPlanRequestStatus) {
   const supabase = getSupabaseServerClient();
   if (!supabase) {
-    return { ok: false, error: "Demo modda paket talebi guncellenemez." };
+    return { ok: false, error: "Demo modda paket talebi güncellenemez." };
   }
 
   const actor = await getCurrentSupportActor();
@@ -12925,7 +12929,7 @@ export async function setSupportPlanRequestStatus(id: string, status: SupportPla
     .maybeSingle();
 
   if (requestError || !requestRow) {
-    return { ok: false, error: requestError?.message ?? "Paket talebi bulunamadi." };
+    return { ok: false, error: requestError?.message ?? "Paket talebi bulunamadı." };
   }
 
   const { error } = await supabase
@@ -13076,7 +13080,7 @@ export async function updateSupportTenantProfile(input: {
 }) {
   const supabase = getSupabaseServerClient();
   if (!supabase) {
-    return { ok: false, error: "Demo modda tenant profili guncellenemez." };
+    return { ok: false, error: "Demo modda tenant profili güncellenemez." };
   }
 
   const { error } = await supabase.from("support_tenant_profiles").upsert(
@@ -13121,7 +13125,7 @@ export async function updateSupportTenantBusinessType(input: {
   const authClient = supabase ? null : await getSupabaseAuthServerClient();
   const client = supabase ?? authClient;
   if (!client) {
-    return { ok: false, error: "Demo modda isletme tipi guncellenemez." };
+    return { ok: false, error: "Demo modda işletme tipi güncellenemez." };
   }
 
   const { error } = await client
@@ -13131,7 +13135,7 @@ export async function updateSupportTenantBusinessType(input: {
 
   if (error) {
     if (error.message.toLowerCase().includes("business_type")) {
-      return { ok: false, error: "business_type kolonu bulunamadi. Lutfen 20260509_add_business_type.sql migration'ini calistirin." };
+      return { ok: false, error: "business_type kolonu bulunamadı. Lutfen 20260509_add_business_type.sql migration'ini çalıştırin." };
     }
     return { ok: false, error: error.message };
   }
@@ -13157,7 +13161,7 @@ export async function updateSupportTenantPlan(input: {
   const authClient = supabase ? null : await getSupabaseAuthServerClient();
   const client = supabase ?? authClient;
   if (!client) {
-    return { ok: false, error: "Demo modda paket guncellenemez." };
+    return { ok: false, error: "Demo modda paket güncellenemez." };
   }
 
   const normalizedPlan: BusinessPlan = input.plan === "starter" || input.plan === "custom" ? input.plan : "growth";
@@ -13168,7 +13172,7 @@ export async function updateSupportTenantPlan(input: {
 
   if (error) {
     if (error.message.toLowerCase().includes("plan")) {
-      return { ok: false, error: "plan kolonu bulunamadi. Lutfen business plan migrationlarini kontrol edin." };
+      return { ok: false, error: "plan kolonu bulunamadı. Lutfen business plan migrationlarini kontrol edin." };
     }
     return { ok: false, error: error.message };
   }
@@ -13238,7 +13242,7 @@ export async function createSupportIncident(input: {
 }) {
   const supabase = getSupabaseServerClient();
   if (!supabase) {
-    return { ok: false, error: "Demo modda incident olusturulamaz." };
+    return { ok: false, error: "Demo modda incident oluşturulamaz." };
   }
 
   const actor = await getCurrentSupportActor();
@@ -13273,7 +13277,7 @@ export async function createSupportIncident(input: {
 export async function setSupportIncidentStatus(id: string, status: SupportIncidentStatus) {
   const supabase = getSupabaseServerClient();
   if (!supabase) {
-    return { ok: false, error: "Demo modda incident guncellenemez." };
+    return { ok: false, error: "Demo modda incident güncellenemez." };
   }
 
   const { data: incident } = await supabase.from("support_incidents").select("business_id").eq("id", id).maybeSingle();
@@ -13349,7 +13353,7 @@ export async function createSupportIncidentUpdate(input: {
 }) {
   const supabase = getSupabaseServerClient();
   if (!supabase) {
-    return { ok: false, error: "Demo modda incident guncellenemez." };
+    return { ok: false, error: "Demo modda incident güncellenemez." };
   }
 
   const actor = await getCurrentSupportActor();
@@ -13427,7 +13431,7 @@ export async function upsertSupportFeatureFlagOverride(input: {
 }) {
   const supabase = getSupabaseServerClient();
   if (!supabase) {
-    return { ok: false, error: "Demo modda feature flag guncellenemez." };
+    return { ok: false, error: "Demo modda feature flag güncellenemez." };
   }
 
   const { error } = await supabase.from("support_feature_flag_overrides").upsert(
@@ -13523,7 +13527,7 @@ export async function upsertSupportKnowledgeArticle(input: {
 }) {
   const supabase = getSupabaseServerClient();
   if (!supabase) {
-    return { ok: false, error: "Demo modda knowledge kaydÃ„Â± guncellenemez." };
+    return { ok: false, error: "Demo modda knowledge kaydı güncellenemez." };
   }
 
   const payload = {

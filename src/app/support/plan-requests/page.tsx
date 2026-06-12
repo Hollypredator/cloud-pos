@@ -67,7 +67,7 @@ export default async function SupportPlanRequestsPage({
               <div>
                 <p className="text-xs uppercase tracking-[0.24em] text-slate-500">{request.current_plan} {"->"} {request.requested_plan}</p>
                 <h2 className="mt-2 text-xl font-semibold text-slate-900">{request.business_name || request.business_id}</h2>
-                <p className="mt-2 text-sm text-slate-600">{request.reason || translateUiText("Aciklama girilmedi.", locale)}</p>
+                <p className="mt-2 text-sm text-slate-600">{request.reason || translateUiText("Açıklama girilmedi.", locale)}</p>
               </div>
               <span className="rounded-full bg-slate-100 px-3 py-1 text-xs font-semibold text-slate-700">{translateUiText(request.status, locale)}</span>
             </div>
@@ -85,7 +85,7 @@ export default async function SupportPlanRequestsPage({
         ))}
         {filteredRequests.length === 0 ? (
           <div className="rounded-2xl border border-dashed border-slate-300 bg-white px-6 py-10 text-sm text-slate-500">
-            {translateUiText("Filtreye uygun paket talebi bulunamadi.", locale)}
+            {translateUiText("Filtreye uygun paket talebi bulunamadı.", locale)}
           </div>
         ) : null}
       </section>

@@ -99,7 +99,7 @@ export default async function AdminLeadsPage() {
                   <p className="mt-1 text-sm text-slate-500">
                     Şube: {lead.branch_count} | Kaynak: {lead.source ?? "-"}
                   </p>
-                  {lead.note ? <p className="mt-3 max-w-3xl text-sm leading-7 text-slate-600">{lead.note}</p> : null}
+                  {lead.note ? <p className="mt-3 max-w-3xl text-sm leadıng-7 text-slate-600">{lead.note}</p> : null}
                   {(notesByLead.get(lead.id) ?? []).length > 0 ? (
                     <div className="mt-4 space-y-2">
                       {(notesByLead.get(lead.id) ?? []).map((note) => (

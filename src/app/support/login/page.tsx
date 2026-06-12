@@ -16,8 +16,8 @@ export default async function SupportLoginPage({
       <div className="min-h-screen bg-slate-950 px-4 py-10 text-white">
         <div className="mx-auto max-w-3xl rounded-[2rem] border border-white/10 bg-white/5 p-8">
           <p className="text-xs uppercase tracking-[0.28em] text-slate-400">Support Access</p>
-          <h1 className="mt-4 text-4xl font-semibold">Supabase baglantisi olmadan support acilmaz</h1>
-          <p className="mt-4 text-sm leading-7 text-slate-300">Support console canli auth ve tenant metadata ile çalışır.</p>
+          <h1 className="mt-4 text-4xl font-semibold">Supabase bağlantısı olmadan support açılmaz</h1>
+          <p className="mt-4 text-sm leadıng-7 text-slate-300">Support console canlı auth ve tenant metadata ile çalışır.</p>
         </div>
       </div>
     );
@@ -38,8 +38,8 @@ export default async function SupportLoginPage({
               Support
             </p>
             <h1 className="mt-6 max-w-xl text-5xl font-semibold tracking-tight">Müşteri ve tenant destek konsolu</h1>
-            <p className="mt-5 max-w-xl text-sm leading-7 text-slate-300">
-              Bu alan support ekiplerine aciktir. Tenant metadata, destek akışı ve erişim yönetimi burada toplanir.
+            <p className="mt-5 max-w-xl text-sm leadıng-7 text-slate-300">
+              Bu alan support ekiplerine açıktır. Tenant metadata, destek akışı ve erişim yönetimi burada toplanır.
             </p>
           </section>
 
@@ -47,10 +47,10 @@ export default async function SupportLoginPage({
             <div className="flex items-center justify-between gap-3">
               <div>
                 <p className="text-sm uppercase tracking-[0.24em] text-slate-500">Support Login</p>
-                <h2 className="mt-3 text-3xl font-semibold tracking-tight">Backoffice hesabinizla girin</h2>
+                <h2 className="mt-3 text-3xl font-semibold tracking-tight">Backoffice hesabınızla girin</h2>
               </div>
               <Link href="/" className="rounded-xl border border-slate-300 px-3 py-2 text-sm font-medium text-slate-700">
-                Siteye Don
+                Siteye Dön
               </Link>
             </div>
             <form action="/auth/login" method="post" className="mt-8 space-y-4">
@@ -60,11 +60,11 @@ export default async function SupportLoginPage({
                 <input id="support-email" type="email" name="email" required className="w-full rounded-2xl border border-slate-200 px-4 py-3 text-sm" />
               </div>
               <div className="space-y-2">
-                <label htmlFor="support-password" className="text-sm font-medium text-slate-700">Sifre</label>
+                <label htmlFor="support-password" className="text-sm font-medium text-slate-700">Şifre</label>
                 <input id="support-password" type="password" name="password" required className="w-full rounded-2xl border border-slate-200 px-4 py-3 text-sm" />
               </div>
               <button type="submit" className="w-full rounded-2xl bg-slate-950 px-4 py-3 text-sm font-semibold text-white">
-                Support Girisi
+                Support Girişi
               </button>
               {error ? (
                 <p className="rounded-2xl border border-rose-200 bg-rose-50 px-4 py-3 text-sm text-rose-700">{error}</p>

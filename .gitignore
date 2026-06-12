@@ -12,10 +12,13 @@
 
 # testing
 /coverage
+/.codex-logs/
+pwa-*-qa.png
 
 # next.js
 /.next/
 /.next-webpack-dev/
+/.next-*.log
 /out/
 
 # production
@@ -40,3 +43,6 @@ yarn-error.log*
 # typescript
 *.tsbuildinfo
 next-env.d.ts
+
+# local supabase runtime metadata
+/supabase/.temp/

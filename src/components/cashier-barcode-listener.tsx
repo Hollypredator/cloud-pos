@@ -51,11 +51,11 @@ export function CashierBarcodeListener({
         const params = new URLSearchParams(searchParams.toString());
         params.set("order", byCheck[0].id);
         router.replace(`${pathname}?${params.toString()}`);
-        setStatus({ tone: "success", message: `Adisyon secildi (check): ${raw}` });
+        setStatus({ tone: "success", message: `Adisyon seçildi (check): ${raw}` });
         return;
       }
       if (byCheck.length > 1) {
-        setStatus({ tone: "error", message: `Ayni check numarasinda birden fazla adisyon var: ${raw}` });
+        setStatus({ tone: "error", message: `Ayni check numarasinda birden fazla adısyon var: ${raw}` });
         return;
       }
 
@@ -64,15 +64,15 @@ export function CashierBarcodeListener({
         const params = new URLSearchParams(searchParams.toString());
         params.set("order", byId[0].id);
         router.replace(`${pathname}?${params.toString()}`);
-        setStatus({ tone: "success", message: `Adisyon secildi (id): ${raw}` });
+        setStatus({ tone: "success", message: `Adisyon seçildi (id): ${raw}` });
         return;
       }
       if (byId.length > 1) {
-        setStatus({ tone: "error", message: `Kod birden fazla adisyona eslesti: ${raw}` });
+        setStatus({ tone: "error", message: `Kod birden fazla adısyona eslesti: ${raw}` });
         return;
       }
 
-      setStatus({ tone: "error", message: `Adisyon bulunamadi: ${raw}` });
+      setStatus({ tone: "error", message: `Adisyon bulunamadı: ${raw}` });
     },
   });
 

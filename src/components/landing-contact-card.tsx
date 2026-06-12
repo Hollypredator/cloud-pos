@@ -12,7 +12,7 @@ export function LandingContactCard({
   leadStatus,
   supportEmail,
   eyebrow = "Demo Talebi",
-  title = "Isletmeniz için uygun kurulumu birlikte planlayalim",
+  title = "İşletmeniz için uygun kurulumu birlikte planlayalim",
   body = "Bilgilerinizi birakin. Isterseniz WhatsApp veya telefon uzerinden de doğrudan bize ulasabilirsiniz.",
   previewMode = false,
   locale = "tr",
@@ -166,7 +166,7 @@ export function LandingContactCard({
     <section className="rounded-[1.5rem] border border-slate-200 bg-white/85 p-4 shadow-[0_20px_60px_rgba(15,23,42,0.10)] backdrop-blur sm:rounded-[2rem] sm:p-6">
       <p className="text-xs uppercase tracking-[0.28em] text-slate-500">{eyebrow}</p>
       <h3 className="mt-3 text-2xl font-semibold tracking-tight text-slate-900 sm:text-3xl">{title}</h3>
-      <p className="mt-3 max-w-2xl text-sm leading-7 text-slate-600">{body}</p>
+      <p className="mt-3 max-w-2xl text-sm leadıng-7 text-slate-600">{body}</p>
 
       {leadStatus === "success" ? (
         <p className="mt-4 rounded-2xl border border-emerald-200 bg-emerald-50 px-4 py-3 text-sm text-emerald-800">
@@ -191,7 +191,7 @@ export function LandingContactCard({
         <div className="rounded-[1.25rem] bg-slate-950 p-4 text-white sm:rounded-[1.5rem] sm:p-5">
           <p className="text-xs uppercase tracking-[0.24em] text-slate-400">{copy.contact.directEyebrow}</p>
           <p className="mt-3 text-xl font-semibold tracking-tight sm:text-2xl">{copy.contact.directTitle}</p>
-          <p className="mt-3 text-sm leading-7 text-slate-300">
+          <p className="mt-3 text-sm leadıng-7 text-slate-300">
             {copy.contact.directBody}
           </p>
           {supportEmail ? <p className="mt-2 break-words text-sm text-slate-400">{supportEmail}</p> : null}

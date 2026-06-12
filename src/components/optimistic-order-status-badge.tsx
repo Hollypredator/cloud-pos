@@ -17,10 +17,10 @@ function resolveStatusTone(status: OrderStatus) {
 
 function resolveStatusLabel(status: OrderStatus) {
   if (status === "pending") return "Bekliyor";
-  if (status === "preparing") return "Hazirlaniyor";
-  if (status === "ready") return "Hazir";
+  if (status === "preparing") return "Hazırlaniyor";
+  if (status === "ready") return "Hazır";
   if (status === "served") return "Teslim edildi";
-  if (status === "cancelled") return "Iptal";
+  if (status === "cancelled") return "İptal";
   if (status === "paid") return "Kapandi";
   return status;
 }

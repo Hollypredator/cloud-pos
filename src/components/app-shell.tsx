@@ -3,6 +3,18 @@
 import Link from "next/link";
 import { useEffect, useEffectEvent, useMemo, useRef, useState } from "react";
 import { usePathname, useRouter } from "next/navigation";
+import {
+  Banknote,
+  ChefHat,
+  ClipboardList,
+  Home,
+  PackageCheck,
+  ReceiptText,
+  Settings,
+  Table2,
+  Truck,
+  type LucideIcon,
+} from "lucide-react";
 import { AppNav } from "@/components/app-nav";
 import { LogoutButton } from "@/components/logout-button";
 import { PwaInstallCard } from "@/components/pwa-install-card";
@@ -28,28 +40,40 @@ const mobileOpsPrefixes = [
 type MobileQuickAction = {
   href: string;
   label: string;
-  icon: string;
+  icon: keyof typeof mobileQuickActionIcons;
   roles: AppRole[];
   group: "order_flow" | "service_flow" | "management";
   feature?: FeatureKey;
 };
 
+const mobileQuickActionIcons = {
+  table: Table2,
+  order: ClipboardList,
+  receipt: ReceiptText,
+  service: PackageCheck,
+  delivery: Truck,
+  kitchen: ChefHat,
+  session: Banknote,
+  settings: Settings,
+  pickup: PackageCheck,
+} satisfies Record<string, LucideIcon>;
+
 const mobileQuickActionsRestaurant: MobileQuickAction[] = [
-  { href: "/tables", label: "Masa Takip", icon: "MT", roles: ["admin", "kitchen", "cashier"], group: "order_flow" },
-  { href: "/admin/orders", label: "Siparis Baslat", icon: "SP", roles: ["owner", "admin", "waiter", "cashier"], group: "order_flow" },
-  { href: "/cashier", label: "Adisyonlar", icon: "AD", roles: ["admin", "cashier", "waiter"], group: "order_flow" },
-  { href: "/service-requests", label: "Masa Talepleri", icon: "SR", roles: ["admin", "cashier"], group: "service_flow" },
-  { href: "/delivery", label: "Teslimat", icon: "DL", roles: ["admin", "cashier"], group: "service_flow", feature: "delivery_dispatch" },
-  { href: "/kitchen", label: "Mutfak", icon: "MK", roles: ["admin", "kitchen"], group: "service_flow", feature: "kitchen_display" },
-  { href: "/cashier/session", label: "Gun Islemleri", icon: "GI", roles: ["admin", "cashier"], group: "management" },
-  { href: "/tables", label: "Masa Yonetimi", icon: "MY", roles: ["owner", "admin"], group: "management" },
+  { href: "/tables", label: "Masa Takip", icon: "table", roles: ["admin", "kitchen", "cashier"], group: "order_flow" },
+  { href: "/admin/orders", label: "Sipariş Baslat", icon: "order", roles: ["owner", "admin", "waiter", "cashier"], group: "order_flow" },
+  { href: "/cashier", label: "Adisyonlar", icon: "receipt", roles: ["admin", "cashier", "waiter"], group: "order_flow" },
+  { href: "/service-requests", label: "Masa Talepleri", icon: "service", roles: ["admin", "cashier"], group: "service_flow" },
+  { href: "/delivery", label: "Teslimat", icon: "delivery", roles: ["admin", "cashier"], group: "service_flow", feature: "delivery_dispatch" },
+  { href: "/kitchen", label: "Mutfak", icon: "kitchen", roles: ["admin", "kitchen"], group: "service_flow", feature: "kitchen_display" },
+  { href: "/cashier/session", label: "Gün İşlemleri", icon: "session", roles: ["admin", "cashier"], group: "management" },
+  { href: "/tables", label: "Masa Yönetimi", icon: "settings", roles: ["owner", "admin"], group: "management" },
 ];
 
 const mobileQuickActionsSelfService: MobileQuickAction[] = [
-  { href: "/admin/orders", label: "Siparis Akisi", icon: "SP", roles: ["owner", "admin", "waiter", "cashier"], group: "order_flow" },
-  { href: "/cashier", label: "Siparis Yonetimi", icon: "TS", roles: ["admin", "cashier", "waiter"], group: "order_flow" },
-  { href: "/pickup-board", label: "Pickup Board", icon: "PB", roles: ["admin", "kitchen", "cashier"], group: "service_flow" },
-  { href: "/cashier/session", label: "Gun Islemleri", icon: "GI", roles: ["admin", "cashier"], group: "management" },
+  { href: "/admin/orders", label: "Sipariş Akisi", icon: "order", roles: ["owner", "admin", "waiter", "cashier"], group: "order_flow" },
+  { href: "/cashier", label: "Sipariş Yönetimi", icon: "receipt", roles: ["admin", "cashier", "waiter"], group: "order_flow" },
+  { href: "/pickup-board", label: "Pickup Board", icon: "pickup", roles: ["admin", "kitchen", "cashier"], group: "service_flow" },
+  { href: "/cashier/session", label: "Gün İşlemleri", icon: "session", roles: ["admin", "cashier"], group: "management" },
 ];
 function getLocale() {
   if (typeof document === "undefined") return "tr";
@@ -105,11 +129,11 @@ function resolveMobileTitle(pathname: string | null, locale: "tr" | "en" | "fr",
   }
   if (pathname === "/ops" || pathname.startsWith("/ops/")) return translateUiText("Operasyon Merkezi", locale);
   if (pathname === "/tables" || pathname.startsWith("/tables/")) return translateUiText("Masa Takip", locale);
-  if (pathname === "/admin/orders" || pathname.startsWith("/admin/orders/")) return translateUiText("Siparis Akisi", locale);
+  if (pathname === "/admin/orders" || pathname.startsWith("/admin/orders/")) return translateUiText("Sipariş Akisi", locale);
   if (pathname === "/admin/tables" || pathname.startsWith("/admin/tables/")) return translateUiText("Masa Takip", locale);
   if (pathname === "/cashier" || pathname.startsWith("/cashier/")) {
     return activeBusinessType === "self_service_coffee"
-      ? translateUiText("Siparis Yonetimi", locale)
+      ? translateUiText("Sipariş Yönetimi", locale)
       : translateUiText("Kasa Ekrani", locale);
   }
   if (pathname === "/kitchen" || pathname.startsWith("/kitchen/")) return translateUiText("Mutfak Board", locale);
@@ -135,6 +159,46 @@ function isFeatureEnabled(
     return Boolean(effectiveCapabilities[feature]);
   }
   return hasFeature(currentPlan, feature);
+}
+
+function booleanRecordSignature(record: Record<string, boolean | undefined> | undefined | null) {
+  return Object.entries(record ?? {})
+    .filter((entry): entry is [string, boolean] => typeof entry[1] === "boolean")
+    .sort(([left], [right]) => left.localeCompare(right))
+    .map(([key, value]) => `${key}:${value ? "1" : "0"}`)
+    .join("|");
+}
+
+function stringListSignature(values: readonly string[] | undefined | null) {
+  return [...(values ?? [])].join("|");
+}
+
+function isSameShellPayload(prev: AppShellPayload, data: AppShellPayload) {
+  return (
+    prev.sessionUserId === data.sessionUserId &&
+    prev.sessionBusinessId === data.sessionBusinessId &&
+    prev.sessionBranchId === data.sessionBranchId &&
+    prev.role === data.role &&
+    prev.hasUser === data.hasUser &&
+    prev.activeBusinessSlug === data.activeBusinessSlug &&
+    prev.activeBusinessType === data.activeBusinessType &&
+    prev.activeBranchId === data.activeBranchId &&
+    prev.activeBranchProfile === data.activeBranchProfile &&
+    prev.activeStationProfile === data.activeStationProfile &&
+    prev.hasMixedBranchProfiles === data.hasMixedBranchProfiles &&
+    prev.forcedBranchSelectionFromAll === data.forcedBranchSelectionFromAll &&
+    prev.sidebarTheme === data.sidebarTheme &&
+    prev.sidebarAccentColor === data.sidebarAccentColor &&
+    prev.brandName === data.brandName &&
+    prev.logoUrl === data.logoUrl &&
+    prev.currentPlan === data.currentPlan &&
+    prev.mobileAppExperienceEnabled === data.mobileAppExperienceEnabled &&
+    prev.mobileReadOnlyPwaEnabled === data.mobileReadOnlyPwaEnabled &&
+    stringListSignature(prev.ownerSidebarOrder) === stringListSignature(data.ownerSidebarOrder) &&
+    stringListSignature(prev.adminSidebarOrder) === stringListSignature(data.adminSidebarOrder) &&
+    booleanRecordSignature(prev.effectiveCapabilities) === booleanRecordSignature(data.effectiveCapabilities) &&
+    booleanRecordSignature(prev.featureOverrides) === booleanRecordSignature(data.featureOverrides)
+  );
 }
 
 export function AppShell({
@@ -200,12 +264,12 @@ export function AppShell({
         key: "order_flow" as const,
         title:
           activeBusinessType === "self_service_coffee"
-            ? translateUiText("Siparis Yonetimi", locale)
-            : translateUiText("Siparis ve Kasa", locale),
+            ? translateUiText("Sipariş Yönetimi", locale)
+            : translateUiText("Sipariş ve Kasa", locale),
         description:
           activeBusinessType === "self_service_coffee"
-            ? translateUiText("Aktif siparisleri guncelle, gecmisi takip et.", locale)
-            : translateUiText("Masa ac, adisyona gec, tahsilat yap.", locale),
+            ? translateUiText("Aktif siparişleri güncelle, gecmisi takip et.", locale)
+            : translateUiText("Masa ac, adısyona gec, tahsilat yap.", locale),
         actions: byGroup.order_flow,
       },
       {
@@ -213,14 +277,14 @@ export function AppShell({
         title: translateUiText("Servis", locale),
         description:
           activeBusinessType === "self_service_coffee"
-            ? translateUiText("Pickup sirasini yonet.", locale)
-            : translateUiText("Mutfak, teslimat ve masa taleplerini yonet.", locale),
+            ? translateUiText("Pickup sirasini yönet.", locale)
+            : translateUiText("Mutfak, teslimat ve masa taleplerini yönet.", locale),
         actions: byGroup.service_flow,
       },
       {
         key: "management" as const,
-        title: translateUiText("Yonetim", locale),
-        description: translateUiText("Gunluk oturum ve ayar aksiyonlari.", locale),
+        title: translateUiText("Yönetim", locale),
+        description: translateUiText("Günluk oturum ve ayar aksiyonlari.", locale),
         actions: byGroup.management,
       },
     ];
@@ -246,29 +310,7 @@ export function AppShell({
         if (!prev) {
           return data;
         }
-        if (
-          prev.sessionUserId === data.sessionUserId &&
-          prev.sessionBusinessId === data.sessionBusinessId &&
-          prev.sessionBranchId === data.sessionBranchId &&
-          prev.role === data.role &&
-          prev.hasUser === data.hasUser &&
-          prev.activeBusinessSlug === data.activeBusinessSlug &&
-          prev.activeBusinessType === data.activeBusinessType &&
-          prev.activeBranchId === data.activeBranchId &&
-          prev.activeBranchProfile === data.activeBranchProfile &&
-          prev.activeStationProfile === data.activeStationProfile &&
-          prev.hasMixedBranchProfiles === data.hasMixedBranchProfiles &&
-          prev.forcedBranchSelectionFromAll === data.forcedBranchSelectionFromAll &&
-          prev.sidebarTheme === data.sidebarTheme &&
-          prev.sidebarAccentColor === data.sidebarAccentColor &&
-          prev.brandName === data.brandName &&
-          prev.logoUrl === data.logoUrl &&
-          prev.currentPlan === data.currentPlan &&
-          JSON.stringify(prev.effectiveCapabilities) === JSON.stringify(data.effectiveCapabilities) &&
-          JSON.stringify(prev.featureOverrides) === JSON.stringify(data.featureOverrides) &&
-          prev.mobileAppExperienceEnabled === data.mobileAppExperienceEnabled &&
-          prev.mobileReadOnlyPwaEnabled === data.mobileReadOnlyPwaEnabled
-        ) {
+        if (isSameShellPayload(prev, data)) {
           return prev;
         }
         return data;
@@ -379,7 +421,7 @@ export function AppShell({
       <PwaRuntime enabled={pwaRuntimeEnabled} />
       <PwaInstallCard enabled={pwaRuntimeEnabled} />
       <div
-        className={`min-h-screen overflow-x-clip ${mobileAppMode ? "bg-slate-100" : "bg-[linear-gradient(180deg,#f4f6f9_0%,#eceff4_100%)]"} md:flex ${mobileAppMode ? "mobile-app-mode" : ""} ${
+        className={`min-h-screen overflow-x-clip ${mobileAppMode ? "bg-slate-100" : "bg-[#f3f5f8]"} md:flex ${mobileAppMode ? "mobile-app-mode" : ""} ${
           mobileAppMode && isOffline ? "offline-mode" : ""
         } ${isOffline && pwaRuntimeEnabled ? "offline-read-only" : ""} ${touchFirstMode ? "touch-first-mode" : ""}`}
       >
@@ -423,12 +465,12 @@ export function AppShell({
         >
           {!mobileAppMode && shellData?.forcedBranchSelectionFromAll ? (
             <div className="no-print border-b border-amber-200 bg-amber-50 px-4 py-3 text-sm font-medium text-amber-900">
-              {translateUiText("Karisik profilde Tum Subeler secimi kapali oldugu icin aktif sube secimi zorlandi.", locale)}
+              {translateUiText("Karisik profilde Tüm Şubeler seçimi kapalı oldugu icin aktif şube seçimi zorlandi.", locale)}
             </div>
           ) : null}
           {!mobileAppMode && isOffline && pwaRuntimeEnabled ? (
             <div className="no-print sticky top-0 z-30 border-b border-amber-200 bg-amber-50 px-4 py-3 text-sm font-medium text-amber-900">
-              {translateUiText("Baglanti kesildi. Offline modda yalnizca okunabilir kullanim acik.", locale)}
+              {translateUiText("Bağlantı kesildi. Offline modda yalnizca okunabilir kullanim açık.", locale)}
             </div>
           ) : null}
           {children}
@@ -454,7 +496,7 @@ export function AppShell({
               </div>
               {isOffline ? (
                 <div className="border-t border-amber-200 bg-amber-50 px-4 py-2 text-xs font-medium text-amber-900">
-                  {translateUiText("Baglanti gerekli. Offline modda sadece okunabilir kullanim acik.", locale)}
+                  {translateUiText("Bağlantı gerekli. Offline modda sadece okunabilir kullanim açık.", locale)}
                 </div>
               ) : null}
             </div>
@@ -465,8 +507,9 @@ export function AppShell({
                   href="/ops"
                   scroll={false}
                   onClick={() => setActionsOpen(false)}
-                  className="inline-flex min-h-[48px] items-center justify-center rounded-2xl bg-slate-950 px-4 py-3 text-sm font-semibold text-white"
+                  className="inline-flex min-h-[48px] items-center justify-center gap-2 rounded-2xl bg-slate-950 px-4 py-3 text-sm font-semibold text-white"
                 >
+                  <Home className="h-4 w-4" aria-hidden="true" />
                   {translateUiText("Home", locale)}
                 </Link>
                 <button
@@ -507,20 +550,23 @@ export function AppShell({
                             <p className="text-[11px] font-semibold uppercase tracking-[0.15em] text-slate-500">{group.title}</p>
                             <p className="mt-1 text-xs text-slate-500">{group.description}</p>
                             <div className="mt-3 grid gap-2">
-                              {group.actions.map((action) => (
-                                <Link
-                                  key={action.href}
-                                  href={action.href}
-                                  scroll={false}
-                                  onClick={() => setActionsOpen(false)}
-                                  className="flex min-h-[54px] items-center gap-3 rounded-2xl border border-slate-200 bg-white px-4 py-3 text-sm font-semibold text-slate-900"
-                                >
-                                  <span className="inline-flex h-9 w-9 items-center justify-center rounded-xl bg-slate-900 text-xs font-bold text-white">
-                                    {action.icon}
-                                  </span>
-                                  <span>{translateUiText(action.label, locale)}</span>
-                                </Link>
-                              ))}
+                              {group.actions.map((action) => {
+                                const Icon = mobileQuickActionIcons[action.icon];
+                                return (
+                                  <Link
+                                    key={action.href}
+                                    href={action.href}
+                                    scroll={false}
+                                    onClick={() => setActionsOpen(false)}
+                                    className="flex min-h-[54px] items-center gap-3 rounded-2xl border border-slate-200 bg-white px-4 py-3 text-sm font-semibold text-slate-900"
+                                  >
+                                    <span className="inline-flex h-9 w-9 items-center justify-center rounded-xl bg-slate-900 text-white">
+                                      <Icon className="h-4 w-4" aria-hidden="true" />
+                                    </span>
+                                    <span>{translateUiText(action.label, locale)}</span>
+                                  </Link>
+                                );
+                              })}
                             </div>
                           </section>
                         ))}
@@ -544,7 +590,7 @@ export function AppShell({
                           href="/login"
                           className="inline-flex min-h-[46px] items-center justify-center rounded-2xl bg-slate-900 px-4 py-3 text-sm font-semibold text-white"
                         >
-                          {translateUiText("Giris", locale)}
+                          {translateUiText("Giriş", locale)}
                         </Link>
                       )}
                     </div>

@@ -1,9 +1,14 @@
 import { cookies } from "next/headers";
 import { redirect } from "next/navigation";
+import { MobileAuthRedirect } from "@/components/mobile-auth-redirect";
 import { MobileOpsShell } from "@/components/mobile-ops-shell";
 import { getAppShellPayload } from "@/lib/server/app-shell";
 
 const MOBILE_APP_SHELL_BUDGET_MS = 220;
+
+function isServiceRoleConfigured() {
+  return Boolean(process.env.NEXT_PUBLIC_SUPABASE_URL && process.env.SUPABASE_SERVICE_ROLE_KEY);
+}
 
 async function getAppShellPayloadWithBudget() {
   try {
@@ -29,6 +34,14 @@ export default async function MobileOpsLayout({
 
   if (initialShellData && !initialShellData.mobileAppExperienceEnabled) {
     redirect("/ops");
+  }
+
+  if (!hasAuthCookie && isServiceRoleConfigured()) {
+    return (
+      <MobileOpsShell initialData={null}>
+        <MobileAuthRedirect />
+      </MobileOpsShell>
+    );
   }
 
   return <MobileOpsShell initialData={initialShellData}>{children}</MobileOpsShell>;

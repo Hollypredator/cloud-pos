@@ -51,7 +51,7 @@ export function CashierPaymentPanel({
   action,
   onSubmit,
   submitIdleLabel = "Ödeme Al",
-  submitPendingLabel = "Ödeme Isleniyor...",
+  submitPendingLabel = "Ödeme İşleniyor...",
   forcePending = false,
 }: {
   orderId: string;
@@ -200,7 +200,7 @@ export function CashierPaymentPanel({
           <div className="flex flex-col items-start justify-between gap-3 sm:flex-row sm:items-center">
             <div>
               <p className="text-xs font-bold uppercase tracking-[0.16em] text-slate-500">Hızlı Tutar</p>
-              <p className="mt-1 text-sm text-slate-500">Kalan bakiyeden tek hamlede tutar sec.</p>
+              <p className="mt-1 text-sm text-slate-500">Kalan bakiyeden tek hamlede tutar seç.</p>
             </div>
             <span className="rounded-full bg-emerald-100 px-3 py-1 text-xs font-semibold text-emerald-700">
               Kalan {defaultAmount.toFixed(2)} TL
@@ -230,14 +230,14 @@ export function CashierPaymentPanel({
         <div className="flex flex-col items-start justify-between gap-3 sm:flex-row sm:items-center">
           <div>
             <p className="text-xs font-bold uppercase tracking-[0.16em] text-slate-500">Ürün Bazli Bol</p>
-            <p className="mt-1 text-sm text-slate-500">Bu odemeye dahil olacak ürün miktarlarini sec.</p>
+            <p className="mt-1 text-sm text-slate-500">Bu ödemeye dahil olacak ürün miktarlarini seç.</p>
           </div>
           <button
             type="button"
             onClick={applySelectedItems}
             className="min-h-[44px] w-full rounded-2xl border border-slate-200 bg-slate-50 px-3 py-2 text-sm font-semibold text-slate-700 sm:w-auto"
           >
-            Secilenleri Tutarla
+            Seçilenleri Tutarla
           </button>
         </div>
         <div className="mt-3 space-y-2">
@@ -266,7 +266,7 @@ export function CashierPaymentPanel({
             </div>
           ))}
         </div>
-        {splitSummary ? <p className="mt-3 text-xs text-slate-500">Secilen: {splitSummary}</p> : null}
+        {splitSummary ? <p className="mt-3 text-xs text-slate-500">Seçilen: {splitSummary}</p> : null}
       </div>
 
       <form action={onSubmit ? undefined : action} onSubmit={handleClientSubmit} className="space-y-3 rounded-[20px] border border-slate-200 bg-white p-4">
@@ -301,7 +301,7 @@ export function CashierPaymentPanel({
         </div>
 
         <div>
-          <p className="text-xs font-bold uppercase tracking-[0.16em] text-slate-500 mb-2">Tutar Girisi</p>
+          <p className="text-xs font-bold uppercase tracking-[0.16em] text-slate-500 mb-2">Tutar Girişi</p>
           <div className="grid gap-4 lg:grid-cols-[minmax(0,1fr)_250px]">
             <div className="rounded-[20px] border border-slate-200 bg-[#f8fafc] p-4">
                <VirtualNumpad value={amount} onChange={setAmount} />
@@ -318,7 +318,7 @@ export function CashierPaymentPanel({
               <input
                 value={note}
                 onChange={(event) => setNote(event.target.value)}
-                placeholder="Ödeme notu (opsiyonel)"
+                placeholder="Ödeme notu (opsiyönel)"
                 className="w-full rounded-2xl border border-slate-300 px-4 py-4 text-sm"
               />
             </div>
@@ -327,7 +327,7 @@ export function CashierPaymentPanel({
 
         <div className="grid gap-2 rounded-2xl bg-emerald-50 px-4 py-3 text-sm">
           <p className="flex items-center justify-between text-slate-700">
-            <span>Bu islemin tutari</span>
+            <span>Bu işlemin tutarı</span>
             <span className="font-semibold">{safeAmount.toFixed(2)} TL</span>
           </p>
           <p className="flex items-center justify-between text-emerald-800">

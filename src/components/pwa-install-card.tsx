@@ -41,10 +41,16 @@ function isStandaloneMode(media?: MediaQueryList) {
   return displayModeMedia.matches || iosStandalone;
 }
 
+function isIOSDevice() {
+  const userAgent = navigator.userAgent || "";
+  return /iPad|iPhone|iPod/.test(userAgent) || (navigator.maxTouchPoints > 1 && /Macintosh/.test(userAgent));
+}
+
 export function PwaInstallCard({ enabled }: { enabled: boolean }) {
   const [installEvent, setInstallEvent] = useState<BeforeInstallPromptEvent | null>(null);
   const [installed, setInstalled] = useState(() => (typeof window === "undefined" ? false : isStandaloneMode()));
   const [dismissed, setDismissed] = useState(() => (typeof window === "undefined" ? false : readDismissState()));
+  const [isIOS, setIsIOS] = useState(false);
   const canPrompt = Boolean(installEvent);
 
   useEffect(() => {
@@ -65,6 +71,7 @@ export function PwaInstallCard({ enabled }: { enabled: boolean }) {
       setInstallEvent(null);
     };
 
+    setIsIOS(isIOSDevice());
     window.addEventListener("beforeinstallprompt", handleBeforeInstallPrompt);
     window.addEventListener("appinstalled", handleInstalled);
     media.addEventListener("change", applyInstalled);
@@ -102,11 +109,11 @@ export function PwaInstallCard({ enabled }: { enabled: boolean }) {
   }
 
   return (
-    <aside className="no-print fixed bottom-4 right-4 z-50 max-w-[320px] rounded-2xl border border-slate-200 bg-white/95 p-4 shadow-[0_16px_34px_rgba(15,23,42,0.18)] backdrop-blur">
-      <p className="text-xs font-semibold uppercase tracking-[0.14em] text-slate-500">Web App</p>
-      <p className="mt-2 text-sm font-semibold text-slate-900">Cloud POS uygulamasini masaustune yukleyin</p>
-      <p className="mt-1 text-xs leading-5 text-slate-600">
-        Yukleme sonrasi uygulama ayrik pencere olarak açılır ve offline cache ile daha kararli çalışır.
+    <aside className="no-print fixed inset-x-3 bottom-[calc(84px+var(--safe-area-bottom))] z-50 rounded-2xl border border-slate-200 bg-white/95 p-4 shadow-[0_16px_34px_rgba(15,23,42,0.18)] backdrop-blur md:inset-x-auto md:bottom-4 md:right-4 md:max-w-[340px]">
+      <p className="text-xs font-semibold uppercase tracking-[0.14em] text-slate-500">PWA</p>
+      <p className="mt-2 text-sm font-semibold text-slate-900">Cloud POS'u cihaza kürün</p>
+      <p className="mt-1 text-xs leadıng-5 text-slate-600">
+        Kurulumdan sonra POS ayri pencere olarak acilir, ana ekran kisa yolu eklenir ve operasyon ekranlari cache ile daha kararli yuklenir.
       </p>
 
       {canPrompt ? (
@@ -117,12 +124,16 @@ export function PwaInstallCard({ enabled }: { enabled: boolean }) {
           }}
           className="mt-3 inline-flex min-h-[40px] w-full items-center justify-center rounded-xl bg-slate-950 px-3 py-2 text-sm font-semibold text-white"
         >
-          Uygulamayi Yükle
+          Cihaza Kur
         </button>
+      ) : isIOS ? (
+        <div className="mt-3 rounded-xl border border-slate-200 bg-slate-50 px-3 py-2 text-xs leadıng-5 text-slate-700">
+          Safari'de Paylas dugmesine basin, sonra <strong>Ana Ekrana Ekle</strong> seçenegini kullanin.
+        </div>
       ) : (
-        <p className="mt-3 rounded-xl border border-slate-200 bg-slate-50 px-3 py-2 text-xs text-slate-700">
-          Tarayicida menuyu acip <strong>Uygulama olarak yükle</strong> secenegini kullanabilirsiniz.
-        </p>
+        <div className="mt-3 rounded-xl border border-slate-200 bg-slate-50 px-3 py-2 text-xs leadıng-5 text-slate-700">
+          Tarayici menusunden <strong>Uygulama olarak yukle</strong> seçenegini kullanabilirsiniz.
+        </div>
       )}
 
       <button
@@ -130,7 +141,7 @@ export function PwaInstallCard({ enabled }: { enabled: boolean }) {
         onClick={handleDismiss}
         className="mt-2 inline-flex min-h-[36px] w-full items-center justify-center rounded-xl border border-slate-200 bg-white px-3 py-2 text-xs font-semibold text-slate-700"
       >
-        Simdilik Kapat
+        Simdilik kapat
       </button>
     </aside>
   );

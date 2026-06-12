@@ -34,7 +34,7 @@ export default async function SupportTenantsPage({
       <header className="flex flex-wrap items-center justify-between gap-3">
         <div>
           <p className="text-sm text-slate-500">{translateUiText("Tenant Directory", locale)}</p>
-          <h1 className="text-3xl font-semibold text-slate-900">{translateUiText("Musteri isletmeleri", locale)}</h1>
+          <h1 className="text-3xl font-semibold text-slate-900">{translateUiText("Müşteri işletmeleri", locale)}</h1>
         </div>
         <Link href="/support/tenants/new" className="rounded-xl bg-slate-900 px-4 py-3 text-sm font-semibold text-white">
           Yeni Tenant
@@ -45,11 +45,11 @@ export default async function SupportTenantsPage({
         <input
           name="q"
           defaultValue={filters.q ?? ""}
-          placeholder={translateUiText("Isletme, slug veya paket ara", locale)}
+          placeholder={translateUiText("İşletme, slug veya paket ara", locale)}
           className="rounded-xl border border-slate-300 px-4 py-3 text-sm"
         />
         <select name="state" defaultValue={state || "all"} className="rounded-xl border border-slate-300 px-4 py-3 text-sm">
-          <option value="all">{translateUiText("Tum durumlar", locale)}</option>
+          <option value="all">{translateUiText("Tüm durumlar", locale)}</option>
           <option value="active">{translateUiText("Aktif", locale)}</option>
           <option value="inactive">{translateUiText("Pasif", locale)}</option>
         </select>
@@ -72,12 +72,12 @@ export default async function SupportTenantsPage({
             </div>
             <div className="mt-4 grid gap-3 sm:grid-cols-2">
               <div className="rounded-xl border border-slate-200 bg-slate-50 px-4 py-3 text-sm text-slate-700">{translateUiText("Paket", locale)}: {tenant.plan}</div>
-              <div className="rounded-xl border border-slate-200 bg-slate-50 px-4 py-3 text-sm text-slate-700">{translateUiText("Sube", locale)}: {tenant.branch_count}</div>
+              <div className="rounded-xl border border-slate-200 bg-slate-50 px-4 py-3 text-sm text-slate-700">{translateUiText("Şube", locale)}: {tenant.branch_count}</div>
               <div className="rounded-xl border border-slate-200 bg-slate-50 px-4 py-3 text-sm text-slate-700 sm:col-span-2">
-                Isletme tipi: {tenant.business_type === "self_service_coffee" ? "Self-Service Coffee" : "Restaurant / Cafe"}
+                İşletme tipi: {tenant.business_type === "self_service_coffee" ? "Self-Service Coffee" : "Restaurant / Cafe"}
               </div>
               <div className="rounded-xl border border-slate-200 bg-slate-50 px-4 py-3 text-sm text-slate-700 sm:col-span-2">
-                {translateUiText("Acik destek kaydi", locale)}: {tenant.support_ticket_count}
+                {translateUiText("Acik destek kaydı", locale)}: {tenant.support_ticket_count}
               </div>
             </div>
             <Link href={`/support/tenants/${tenant.business_id}`} className="mt-4 inline-flex rounded-xl border border-slate-200 bg-slate-50 px-4 py-2 text-sm font-semibold text-slate-700">
@@ -87,7 +87,7 @@ export default async function SupportTenantsPage({
         ))}
         {filteredTenants.length === 0 ? (
           <div className="rounded-2xl border border-dashed border-slate-300 bg-white px-6 py-10 text-sm text-slate-500 md:col-span-2 xl:col-span-3">
-            {translateUiText("Filtreye uygun tenant bulunamadi.", locale)}
+            {translateUiText("Filtreye uygun tenant bulunamadı.", locale)}
           </div>
         ) : null}
       </section>

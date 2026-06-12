@@ -33,7 +33,7 @@ export function LiveOpsBridge({ tables, enableSound = false, fallbackIntervalMs 
   const lastDispatchAtRef = useRef(0);
   const lastSubscribedAtRef = useRef(0);
   const lastConnectionStateChangedAtRef = useRef(0);
-  const hasSubscribedOnceRef = useRef(false);
+  const hasSubscribedÖnceRef = useRef(false);
   const [connectionState, setConnectionState] = useState<"connecting" | "online" | "offline">("connecting");
   const connectionStateRef = useRef<"connecting" | "online" | "offline">("connecting");
   const channelKey = useMemo(() => [...tables].sort().join("-"), [tables]);
@@ -105,7 +105,7 @@ export function LiveOpsBridge({ tables, enableSound = false, fallbackIntervalMs 
   });
   const handleRealtimeChannelStatus = useEffectEvent((status: string) => {
     if (status === "SUBSCRIBED") {
-      hasSubscribedOnceRef.current = true;
+      hasSubscribedÖnceRef.current = true;
       lastSubscribedAtRef.current = Date.now();
       if (connectTimeoutRef.current) {
         clearTimeout(connectTimeoutRef.current);
@@ -132,14 +132,14 @@ export function LiveOpsBridge({ tables, enableSound = false, fallbackIntervalMs 
       disconnectTimeoutRef.current = setTimeout(
         () => {
           disconnectTimeoutRef.current = null;
-          requestConnectionState(hasSubscribedOnceRef.current ? "offline" : "connecting");
+          requestConnectionState(hasSubscribedÖnceRef.current ? "offline" : "connecting");
         },
         holdMs,
       );
       return;
     }
 
-    if (!hasSubscribedOnceRef.current) {
+    if (!hasSubscribedÖnceRef.current) {
       requestConnectionState("connecting");
     }
   });
@@ -237,7 +237,7 @@ export function LiveOpsBridge({ tables, enableSound = false, fallbackIntervalMs 
     if (supabase) {
       requestConnectionState("connecting");
       connectTimeoutRef.current = setTimeout(() => {
-        if (!hasSubscribedOnceRef.current) {
+        if (!hasSubscribedÖnceRef.current) {
           requestConnectionState("offline");
         }
       }, REALTIME_CONNECTING_TIMEOUT_MS);

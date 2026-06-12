@@ -15,7 +15,7 @@ const statusStyles: Record<TableStatus, string> = {
 };
 
 function tableStatusLabel(status: TableStatus) {
-  if (status === "empty") return "Bos";
+  if (status === "empty") return "Boş";
   if (status === "occupied") return "Dolu";
   return "Rezerve";
 }
@@ -60,7 +60,7 @@ export function OptimisticTableStatusBadge({
   return (
     <span className={`${className} ${statusStyles[status]}`}>
       {tableStatusLabel(status)}
-      {pending ? " · Isleniyor" : ""}
+      {pending ? " · İşleniyor" : ""}
     </span>
   );
 }
@@ -100,9 +100,9 @@ export function TableStatusQueueButton({
   );
   const successMessage = useMemo(() => {
     if (effectiveNextStatus === "reserved") {
-      return "Masa rezerveye alindi.";
+      return "Masa rezerveye alındı.";
     }
-    return "Masa tekrar bos duruma alindi.";
+    return "Masa tekrar boş duruma alındı.";
   }, [effectiveNextStatus]);
 
   useEffect(() => {
@@ -117,7 +117,7 @@ export function TableStatusQueueButton({
     if (lastResult.status === "ACK") {
       toast.success(successMessage);
     } else if (lastResult.status === "CONFLICT" || lastResult.status === "REJECT") {
-      toast.error(lastResult.message ?? "Masa durumu guncellenemedi.");
+      toast.error(lastResult.message ?? "Masa durumu güncellenemedi.");
     }
     clearLastResult();
   }, [clearLastResult, lastResult, successMessage, trackedCommandId]);
@@ -145,7 +145,7 @@ export function TableStatusQueueButton({
     });
 
     setTrackedCommandId(queued.commandId);
-    toast.success("Masa komutu kuyruga alindi.");
+    toast.success("Masa komutu kuyruga alındı.");
     void flushPosCommandQueue();
   }
 

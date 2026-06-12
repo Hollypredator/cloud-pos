@@ -23,11 +23,11 @@ function orderRef(snapshot: CustomerDisplaySnapshot | null) {
 }
 
 function statusLabel(status: CustomerDisplaySnapshot["status"]) {
-  if (status === "submitting") return "Siparis Aliniyor";
-  if (status === "created") return "Siparis Alindi";
-  if (status === "error") return "Islem Hatasi";
-  if (status === "composing") return "Siparis Hazirlaniyor";
-  return "Hazir";
+  if (status === "submitting") return "Sipariş Aliniyor";
+  if (status === "created") return "Sipariş Alindi";
+  if (status === "error") return "İşlem Hatasi";
+  if (status === "composing") return "Sipariş Hazırlaniyor";
+  return "Hazır";
 }
 
 function resolveInitialCustomerDisplayState() {
@@ -133,7 +133,7 @@ export function CustomerDisplayClient() {
           total: 0,
           orderId: null,
           checkNumber: null,
-          message: "Yeni siparis icin hazir.",
+          message: "Yeni sipariş icin hazir.",
         };
       });
     }, ORDER_CREATED_CLEAR_MS);
@@ -149,7 +149,7 @@ export function CustomerDisplayClient() {
   function connectWithPairCode() {
     const nextSession = resolveCustomerDisplaySessionByPairCode(pairCode);
     if (!nextSession) {
-      setError("Eslesme kodu bulunamadi ya da suresi doldu.");
+      setError("Eslesme kodu bulunamadı ya da suresi doldu.");
       setSession(null);
       setSnapshot(null);
       setConnectionState("waiting");
@@ -169,12 +169,12 @@ export function CustomerDisplayClient() {
   }
 
   return (
-    <main className="min-h-screen bg-[radial-gradient(circle_at_top,#1f2937_0%,#0b1220_42%,#050812_100%)] text-white">
+    <main className="min-h-screen bg-[radıal-gradient(circle_at_top,#1f2937_0%,#0b1220_42%,#050812_100%)] text-white">
       <div className="mx-auto flex min-h-screen w-full max-w-[1240px] flex-col px-6 py-8">
         <header className="flex flex-wrap items-center justify-between gap-3 rounded-3xl border border-white/10 bg-white/5 px-6 py-4">
           <div>
-            <p className="text-xs font-semibold uppercase tracking-[0.22em] text-slate-300">Musteri Ekrani</p>
-            <h1 className="mt-1 text-3xl font-semibold tracking-tight">Self-Servis Siparis Takip</h1>
+            <p className="text-xs font-semibold uppercase tracking-[0.22em] text-slate-300">Müşteri Ekrani</p>
+            <h1 className="mt-1 text-3xl font-semibold tracking-tight">Self-Servis Sipariş Takip</h1>
           </div>
           <span
             className={`rounded-full px-4 py-2 text-xs font-bold uppercase tracking-[0.14em] ${
@@ -188,7 +188,7 @@ export function CustomerDisplayClient() {
             {connectionState === "connected"
               ? "Bagli"
               : connectionState === "disconnected"
-                ? "Baglanti Koptu"
+                ? "Bağlantı Koptu"
                 : "Bekleniyor"}
           </span>
         </header>
@@ -217,7 +217,7 @@ export function CustomerDisplayClient() {
           <section className="mt-6 grid flex-1 gap-5 xl:grid-cols-[1.25fr_0.75fr]">
             <article className="rounded-3xl border border-white/10 bg-white/5 p-5">
               <div className="flex items-center justify-between">
-                <h2 className="text-2xl font-semibold">Siparis Detaylari</h2>
+                <h2 className="text-2xl font-semibold">Sipariş Detaylari</h2>
                 <span className="rounded-full bg-slate-800/90 px-3 py-1 text-xs font-semibold uppercase tracking-[0.12em] text-slate-200">
                   {snapshot ? statusLabel(snapshot.status) : "Bekleniyor"}
                 </span>
@@ -235,7 +235,7 @@ export function CustomerDisplayClient() {
                 </ul>
               ) : (
                 <div className="mt-6 rounded-2xl border border-dashed border-white/15 bg-slate-950/20 px-4 py-6 text-sm text-slate-300">
-                  Kasiyer urun ekledikce siparis detaylari burada gorunecek.
+                  Kasiyer ürün ekledikce sipariş detaylari burada gorunecek.
                 </div>
               )}
             </article>
@@ -254,9 +254,9 @@ export function CustomerDisplayClient() {
                 <p className="mt-2 text-4xl font-semibold text-emerald-100">{Number(snapshot?.total ?? 0).toFixed(2)} TL</p>
               </div>
               <div className="rounded-2xl border border-white/10 bg-slate-900/50 px-4 py-4">
-                <p className="text-xs uppercase tracking-[0.16em] text-slate-300">Siparis Numarasi</p>
+                <p className="text-xs uppercase tracking-[0.16em] text-slate-300">Sipariş Numarasi</p>
                 <p className="mt-2 text-4xl font-black tracking-[0.08em] text-white">{orderNumber ? `#${orderNumber}` : "--"}</p>
-                <p className="mt-2 text-xs text-slate-300">{snapshot?.message ?? "Siparis onayi bekleniyor."}</p>
+                <p className="mt-2 text-xs text-slate-300">{snapshot?.message ?? "Sipariş onayi bekleniyor."}</p>
               </div>
             </aside>
           </section>

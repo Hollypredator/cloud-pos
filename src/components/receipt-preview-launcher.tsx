@@ -42,8 +42,14 @@ export function ReceiptPreviewLauncher({
   }, [order]);
 
   const handlePrint = () => {
-    document.body.classList.add("printing-inline-receipt");
-    const clear = () => document.body.classList.remove("printing-inline-receipt");
+    const layoutClass =
+      layout === "thermal58" ? "receipt-print-58" : layout === "thermal" ? "receipt-print-80" : "receipt-print-a4";
+    const clear = () => {
+      document.body.classList.remove("printing-inline-receipt", "receipt-print-a4", "receipt-print-80", "receipt-print-58");
+    };
+
+    clear();
+    document.body.classList.add("printing-inline-receipt", layoutClass);
     window.addEventListener("afterprint", clear, { once: true });
     window.print();
     window.setTimeout(clear, 500);
@@ -96,7 +102,7 @@ export function ReceiptPreviewLauncher({
             compactButtons ? "px-3 py-2 text-xs" : "px-4 py-3 text-sm"
           }`}
         >
-          Fis Yazdir
+          Fiş Yazdir
         </button>
       </div>
 

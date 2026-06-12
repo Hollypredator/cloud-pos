@@ -4,6 +4,27 @@ import Link from "next/link";
 import Image from "next/image";
 import { usePathname, useRouter } from "next/navigation";
 import { useEffect, useMemo, useRef, useState } from "react";
+import {
+  BarChart3,
+  Boxes,
+  Building2,
+  CalendarClock,
+  ChefHat,
+  ClipboardList,
+  Landmark,
+  LayoutDashboard,
+  PackageCheck,
+  ReceiptText,
+  ScrollText,
+  Settings,
+  ShoppingBasket,
+  Store,
+  Table2,
+  Truck,
+  Users,
+  WalletCards,
+  type LucideIcon,
+} from "lucide-react";
 import { LogoutButton } from "@/components/logout-button";
 import { ALL_BRANCHES_VALUE } from "@/lib/business";
 import { getPlanLabel, getRequiredPlan, hasFeature, type FeatureKey } from "@/lib/features";
@@ -26,16 +47,16 @@ const sidebarThemes: Record<
   ember: {
     asideClassName: "border-[rgba(255,255,255,0.08)]",
     backgroundImage:
-      "radial-gradient(circle at 0% 0%, rgba(255,120,72,0.30), transparent 24%), radial-gradient(circle at 100% 16%, rgba(255,199,94,0.18), transparent 20%), radial-gradient(circle at 50% 100%, rgba(67,176,143,0.18), transparent 28%), linear-gradient(180deg, #231713 0%, #33211a 36%, #1b2a28 100%)",
-    brandBadgeClassName: "bg-[linear-gradient(135deg,#ff7848_0%,#ffc75e_100%)] shadow-[0_14px_24px_rgba(255,120,72,0.30)]",
-    activeItemClassName: "bg-[linear-gradient(90deg,rgba(255,120,72,0.24)_0%,rgba(255,255,255,0.08)_100%)] shadow-[inset_4px_0_0_#ff7848,0_14px_24px_rgba(27,42,40,0.26)]",
-    activeIconClassName: "bg-[linear-gradient(135deg,#ff7848_0%,#ffc75e_100%)] shadow-[0_12px_24px_rgba(255,120,72,0.28)]",
-    footerBadgeClassName: "bg-[linear-gradient(135deg,#1f9d84_0%,#6dd3b0_100%)] shadow-[0_12px_22px_rgba(31,157,132,0.26)]",
+      "linear-gradient(180deg, #121821 0%, #161f2b 48%, #101720 100%)",
+    brandBadgeClassName: "bg-[#ff7a45] shadow-none",
+    activeItemClassName: "bg-white/10 shadow-[inset_3px_0_0_#ff7a45]",
+    activeIconClassName: "bg-[#ff7a45] shadow-none",
+    footerBadgeClassName: "bg-emerald-500 shadow-none",
   },
   ocean: {
     asideClassName: "border-[rgba(255,255,255,0.08)]",
     backgroundImage:
-      "radial-gradient(circle at top left, rgba(34,211,238,0.24), transparent 24%), radial-gradient(circle at 80% 18%, rgba(59,130,246,0.18), transparent 22%), radial-gradient(circle at 65% 100%, rgba(16,185,129,0.12), transparent 26%), linear-gradient(180deg, #0f172a 0%, #10263c 38%, #133040 100%)",
+      "radıal-gradient(circle at top left, rgba(34,211,238,0.24), transparent 24%), radıal-gradient(circle at 80% 18%, rgba(59,130,246,0.18), transparent 22%), radıal-gradient(circle at 65% 100%, rgba(16,185,129,0.12), transparent 26%), linear-gradient(180deg, #0f172a 0%, #10263c 38%, #133040 100%)",
     brandBadgeClassName: "bg-[linear-gradient(135deg,#22d3ee_0%,#3b82f6_100%)] shadow-[0_14px_24px_rgba(34,211,238,0.24)]",
     activeItemClassName: "bg-[linear-gradient(90deg,rgba(34,211,238,0.16)_0%,rgba(255,255,255,0.08)_100%)] shadow-[inset_3px_0_0_#22d3ee,0_12px_20px_rgba(8,47,73,0.24)]",
     activeIconClassName: "bg-[linear-gradient(135deg,#22d3ee_0%,#3b82f6_100%)] shadow-[0_12px_24px_rgba(59,130,246,0.22)]",
@@ -44,7 +65,7 @@ const sidebarThemes: Record<
   night: {
     asideClassName: "border-[rgba(255,255,255,0.06)]",
     backgroundImage:
-      "radial-gradient(circle at top left, rgba(168,85,247,0.18), transparent 20%), radial-gradient(circle at 85% 20%, rgba(244,114,182,0.1), transparent 18%), radial-gradient(circle at 70% 100%, rgba(148,163,184,0.12), transparent 24%), linear-gradient(180deg, #111111 0%, #171717 42%, #202020 100%)",
+      "radıal-gradient(circle at top left, rgba(168,85,247,0.18), transparent 20%), radıal-gradient(circle at 85% 20%, rgba(244,114,182,0.1), transparent 18%), radıal-gradient(circle at 70% 100%, rgba(148,163,184,0.12), transparent 24%), linear-gradient(180deg, #111111 0%, #171717 42%, #202020 100%)",
     brandBadgeClassName: "bg-[linear-gradient(135deg,#a855f7_0%,#f472b6_100%)] shadow-[0_14px_24px_rgba(168,85,247,0.22)]",
     activeItemClassName: "bg-[linear-gradient(90deg,rgba(168,85,247,0.16)_0%,rgba(255,255,255,0.08)_100%)] shadow-[inset_3px_0_0_#a855f7,0_12px_20px_rgba(15,15,15,0.22)]",
     activeIconClassName: "bg-[linear-gradient(135deg,#a855f7_0%,#f472b6_100%)] shadow-[0_12px_24px_rgba(168,85,247,0.2)]",
@@ -129,6 +150,27 @@ function isFeatureEnabled(
     return Boolean(effectiveCapabilities[feature]);
   }
   return hasFeature(currentPlan, feature);
+}
+
+function getSidebarIcon(href: string): LucideIcon {
+  if (href === "/ops") return LayoutDashboard;
+  if (href === "/tables" || href === "/admin/tables") return Table2;
+  if (href === "/admin/orders") return ClipboardList;
+  if (href === "/pickup-board") return PackageCheck;
+  if (href === "/kitchen") return ChefHat;
+  if (href === "/admin/reports") return BarChart3;
+  if (href === "/cashier/session") return CalendarClock;
+  if (href === "/cashier") return ReceiptText;
+  if (href === "/admin/audit") return ScrollText;
+  if (href === "/admin/finance") return WalletCards;
+  if (href === "/admin/accounting") return Landmark;
+  if (href === "/admin/stock") return Boxes;
+  if (href === "/admin/settings") return Settings;
+  if (href === "/admin/businesses") return Building2;
+  if (href === "/admin/products") return ShoppingBasket;
+  if (href === "/delivery") return Truck;
+  if (href === "/admin/roles") return Users;
+  return Store;
 }
 
 export function AppNav({
@@ -290,11 +332,10 @@ export function AppNav({
   );
   const sidebarLinks = operationLinks;
   const accentBase = /^#[0-9a-fA-F]{6}$/.test(sidebarAccentColor) ? sidebarAccentColor : "#ff7848";
-  const accentBright = mixHex(accentBase, 0.28);
   const accentDark = mixHex(accentBase, -0.18);
   const sidebarBorderClass = isMarketSidebar ? "border-[rgba(122,175,255,0.22)]" : theme.asideClassName;
   const sidebarBackgroundImage = isMarketSidebar
-    ? "radial-gradient(circle at 0% 0%, rgba(77,142,247,0.3), transparent 28%), radial-gradient(circle at 100% 12%, rgba(39,86,161,0.28), transparent 24%), linear-gradient(180deg, #0c1728 0%, #0a1322 42%, #0a101c 100%)"
+    ? "radıal-gradient(circle at 0% 0%, rgba(77,142,247,0.3), transparent 28%), radıal-gradient(circle at 100% 12%, rgba(39,86,161,0.28), transparent 24%), linear-gradient(180deg, #0c1728 0%, #0a1322 42%, #0a101c 100%)"
     : theme.backgroundImage;
   const visibleLinks = useMemo(
     () => {
@@ -313,7 +354,7 @@ export function AppNav({
       });
       return ordered.map((link) =>
         activeBusinessType === "self_service_coffee" && link.href === "/cashier"
-          ? { ...link, label: "Siparis Yonetimi" }
+          ? { ...link, label: "Sipariş Yönetimi" }
           : link,
       );
     },
@@ -437,7 +478,7 @@ export function AppNav({
               >
                 {mobileOpen ? "x" : "="}
               </button>
-              {!hasUser ? <Link href="/login" className="rounded-xl bg-slate-900 px-3 py-2 text-sm text-white">{translateUiText("Giris", locale)}</Link> : <LogoutButton />}
+              {!hasUser ? <Link href="/login" className="rounded-xl bg-slate-900 px-3 py-2 text-sm text-white">{translateUiText("Giriş", locale)}</Link> : <LogoutButton />}
             </div>
           </div>
         </nav>
@@ -451,7 +492,7 @@ export function AppNav({
           >
             <div className="space-y-3">
               <div className="rounded-[22px] border border-slate-200 bg-slate-50 p-3">
-                <p className="text-[11px] uppercase tracking-[0.2em] text-slate-500">{translateUiText("Aktif isletme", locale)}</p>
+                <p className="text-[11px] uppercase tracking-[0.2em] text-slate-500">{translateUiText("Aktif işletme", locale)}</p>
                 <select
                   className="mt-2 w-full rounded-xl border border-slate-200 bg-white px-3 py-3 text-sm text-slate-900 outline-none"
                   value={activeBusinessSlug}
@@ -467,14 +508,14 @@ export function AppNav({
               </div>
 
               <div className="rounded-[22px] border border-slate-200 bg-slate-50 p-3">
-                <p className="text-[11px] uppercase tracking-[0.2em] text-slate-500">{translateUiText("Aktif sube", locale)}</p>
+                <p className="text-[11px] uppercase tracking-[0.2em] text-slate-500">{translateUiText("Aktif şube", locale)}</p>
                 <select
                   className="mt-2 w-full rounded-xl border border-slate-200 bg-white px-3 py-3 text-sm text-slate-900 outline-none"
                   value={resolvedActiveBranchId}
                   disabled={isSwitching || branches.length === 0 || !canSwitchBranches}
                   onChange={(event) => void switchBranch(event.target.value)}
                 >
-                  {canSelectAllBranches ? <option value={ALL_BRANCHES_VALUE}>{translateUiText("Tum Subeler", locale)}</option> : null}
+                  {canSelectAllBranches ? <option value={ALL_BRANCHES_VALUE}>{translateUiText("Tüm Şubeler", locale)}</option> : null}
                   {branches.map((item) => (
                     <option key={item.id} value={item.id}>
                       {branchOptionLabel(item)}
@@ -486,6 +527,7 @@ export function AppNav({
               <div className="grid gap-2">
                 {visibleLinks.map((link) => {
                   const locked = !isFeatureEnabled(currentPlan, effectiveCapabilities, link.feature);
+                  const Icon = getSidebarIcon(link.href);
                   if (locked) {
                     return (
                       <div key={link.href} className="rounded-2xl border border-dashed border-slate-200 bg-slate-50 px-4 py-3 text-sm text-slate-400">
@@ -505,7 +547,7 @@ export function AppNav({
                       }`}
                     >
                       <span className="inline-flex h-8 w-8 items-center justify-center rounded-xl bg-slate-100 text-sm text-slate-700">
-                        {link.icon}
+                        <Icon aria-hidden="true" className="h-4 w-4" strokeWidth={2.2} />
                       </span>
                       <span>{translateUiText(link.label, locale)}</span>
                     </Link>
@@ -521,17 +563,22 @@ export function AppNav({
         <div className="no-print fixed inset-x-0 bottom-0 z-30 border-t border-slate-200 bg-white/95 px-2 py-1.5 shadow-[0_-10px_24px_rgba(15,23,42,0.08)] backdrop-blur md:hidden">
           <div className="grid grid-cols-4 gap-2">
             {mobilePrimaryLinks.map((link) => (
-              <Link
-                key={link.href}
-                href={link.href}
-                scroll={false}
-                className={`flex min-h-[56px] flex-col items-center justify-center rounded-2xl px-2 py-1.5 text-center text-[10px] font-semibold leading-tight ${
-                  activeHref === link.href ? "bg-slate-950 text-white" : "bg-slate-100 text-slate-700"
-                }`}
-              >
-                <span className="mb-1 text-[13px]">{link.icon}</span>
-                <span>{translateUiText(link.label, locale)}</span>
-              </Link>
+              (() => {
+                const Icon = getSidebarIcon(link.href);
+                return (
+                  <Link
+                    key={link.href}
+                    href={link.href}
+                    scroll={false}
+                    className={`flex min-h-[56px] flex-col items-center justify-center rounded-2xl px-2 py-1.5 text-center text-[10px] font-semibold leadıng-tight ${
+                      activeHref === link.href ? "bg-slate-950 text-white" : "bg-slate-100 text-slate-700"
+                    }`}
+                  >
+                    <Icon aria-hidden="true" className="mb-1 h-[17px] w-[17px]" strokeWidth={2.2} />
+                    <span>{translateUiText(link.label, locale)}</span>
+                  </Link>
+                );
+              })()
             ))}
           </div>
         </div>
@@ -554,15 +601,15 @@ export function AppNav({
               ) : (
                 <div className={`flex items-center gap-3 ${isMarketSidebar ? "justify-center" : ""}`}>
                   <span
-                    className={`inline-flex h-12 w-12 items-center justify-center rounded-2xl text-base font-black text-white ${theme.brandBadgeClassName}`}
+                    className={`inline-flex h-11 w-11 items-center justify-center rounded-2xl text-sm font-black text-white ${theme.brandBadgeClassName}`}
                     style={{
-                      backgroundImage: `linear-gradient(135deg, ${accentBase} 0%, ${accentBright} 100%)`,
-                      boxShadow: `0 14px 24px ${hexToRgba(accentBase, 0.3)}`,
+                      backgroundColor: accentBase,
+                      boxShadow: "none",
                     }}
                   >
                     {isMarketSidebar ? "M" : brandName.slice(0, 2).toUpperCase()}
                   </span>
-                  {!desktopCollapsed && !isMarketSidebar ? <p className="font-display truncate text-[1.75rem] font-black leading-none tracking-tight text-white">{brandName}</p> : null}
+                  {!desktopCollapsed && !isMarketSidebar ? <p className="font-display truncate text-[1.45rem] font-black leadıng-none tracking-tight text-white">{brandName}</p> : null}
                 </div>
               )}
               {isMarketSidebar ? (
@@ -586,8 +633,8 @@ export function AppNav({
         <div ref={sidebarScrollRef} className="flex-1 overflow-y-auto px-2 py-4">
           {!desktopCollapsed && !isMarketSidebar ? (
             <>
-              <div className="mb-4 rounded-[22px] border border-white/10 bg-[rgba(255,255,255,0.06)] p-3 backdrop-blur">
-                <p className="text-[11px] uppercase tracking-[0.2em] text-white/50">{translateUiText("Aktif isletme", locale)}</p>
+              <div className="mb-3 rounded-2xl border border-white/10 bg-white/[0.055] p-3">
+                <p className="text-[11px] uppercase tracking-[0.2em] text-white/50">{translateUiText("Aktif işletme", locale)}</p>
                 <select
                   className="mt-2 w-full rounded-xl border border-white/10 bg-black/10 px-3 py-2 text-sm text-white outline-none"
                   value={activeBusinessSlug}
@@ -600,10 +647,10 @@ export function AppNav({
                     </option>
                   ))}
                 </select>
-                <p className="mt-2 text-xs text-white/50">{isSwitching ? translateUiText("Isletme degistiriliyor...", locale) : roleLabel(role, usingDemoData)}</p>
+                <p className="mt-2 text-xs text-white/50">{isSwitching ? translateUiText("İşletme degistiriliyor...", locale) : roleLabel(role, usingDemoData)}</p>
               </div>
-              <div className="mt-3 rounded-[22px] border border-white/10 bg-[rgba(255,255,255,0.05)] p-3 backdrop-blur">
-                <p className="text-[11px] uppercase tracking-[0.2em] text-white/50">{translateUiText("Aktif sube", locale)}</p>
+              <div className="mt-3 rounded-2xl border border-white/10 bg-white/[0.045] p-3">
+                <p className="text-[11px] uppercase tracking-[0.2em] text-white/50">{translateUiText("Aktif şube", locale)}</p>
                 <select
                   className="mt-2 w-full rounded-xl border border-white/10 bg-black/10 px-3 py-2 text-sm text-white outline-none"
                   value={resolvedActiveBranchId}
@@ -612,7 +659,7 @@ export function AppNav({
                 >
                   {canSelectAllBranches ? (
                     <option value={ALL_BRANCHES_VALUE} className="text-slate-900">
-                      {translateUiText("Tum Subeler", locale)}
+                      {translateUiText("Tüm Şubeler", locale)}
                     </option>
                   ) : null}
                   {branches.map((item) => (
@@ -622,11 +669,11 @@ export function AppNav({
                   ))}
                 </select>
                 <p className="mt-2 text-xs text-white/45">
-                  {hasMixedBranchProfiles ? translateUiText("Karisik profilli tenantta Tum Subeler secimi devre disidir.", locale) : branchAccessScope === "business" ? translateUiText("Tum subeleri gorebilirsin.", locale) : translateUiText("Bu kullanici yalnizca atanmis subeyi gorur.", locale)}
+                  {hasMixedBranchProfiles ? translateUiText("Karisik profilli tenantta Tüm Şubeler seçimi devre disidir.", locale) : branchAccessScope === "business" ? translateUiText("Tüm şubeleri gorebilirsin.", locale) : translateUiText("Bu kullanici yalnizca atanmis şubeyi gorur.", locale)}
                 </p>
                 {forcedBranchSelectionFromAll ? (
                   <p className="mt-2 text-xs text-amber-200">
-                    {translateUiText("ALL secimi mevcut cookie'de oldugu icin sube seviyesine zorlandi.", locale)}
+                    {translateUiText("ALL seçimi mevcut cookie'de oldugu icin şube seviyesine zorlandi.", locale)}
                   </p>
                 ) : null}
               </div>
@@ -635,7 +682,7 @@ export function AppNav({
 
           {isMarketSidebar && !desktopCollapsed ? (
             <div className="mb-3 rounded-[20px] border border-white/10 bg-[rgba(255,255,255,0.06)] p-2.5 backdrop-blur">
-              <p className="text-center text-[9px] uppercase tracking-[0.2em] text-white/52">Aktif Sube</p>
+              <p className="text-center text-[9px] uppercase tracking-[0.2em] text-white/52">Aktif Şube</p>
               <select
                 className="mt-2 w-full rounded-lg border border-white/10 bg-black/20 px-2 py-1.5 text-[10px] font-semibold text-white outline-none"
                 value={resolvedActiveBranchId}
@@ -644,7 +691,7 @@ export function AppNav({
               >
                 {canSelectAllBranches ? (
                   <option value={ALL_BRANCHES_VALUE} className="text-slate-900">
-                    Tum Subeler
+                    Tüm Şubeler
                   </option>
                 ) : null}
                 {branches.map((item) => (
@@ -654,7 +701,7 @@ export function AppNav({
                 ))}
               </select>
               <p className="mt-2 text-center text-[9px] text-white/46">
-                {isSwitching ? "Sube degistiriliyor..." : roleLabel(role, usingDemoData)}
+                {isSwitching ? "Şube degistiriliyor..." : roleLabel(role, usingDemoData)}
               </p>
             </div>
           ) : null}
@@ -663,6 +710,7 @@ export function AppNav({
             {visibleLinks.map((link) => {
               const locked = !isFeatureEnabled(currentPlan, effectiveCapabilities, link.feature);
               const isLinkActive = !locked && activeHref === link.href;
+              const Icon = getSidebarIcon(link.href);
               const className = isMarketSidebar
                 ? `group flex flex-col items-center gap-1 rounded-2xl px-2 py-2 text-[10px] font-semibold uppercase tracking-[0.12em] transition ${
                     locked
@@ -671,7 +719,7 @@ export function AppNav({
                         ? "bg-white/14 text-white shadow-[0_10px_18px_rgba(15,23,42,0.3)]"
                         : "text-white/72 hover:bg-white/10 hover:text-white"
                   }`
-                : `group flex items-center gap-3 rounded-2xl px-3 py-3 text-sm font-medium transition ${
+                : `group flex items-center gap-3 rounded-xl px-3 py-2.5 text-sm font-medium transition ${
                     locked
                       ? "cursor-not-allowed border border-white/10 bg-white/5 text-white/40"
                       : isLinkActive
@@ -698,9 +746,11 @@ export function AppNav({
                 const requiredPlan = link.feature ? getRequiredPlan(link.feature) : "growth";
                 return (
                   <div key={link.href} title={`${translateUiText(link.label, locale)} - ${getPlanLabel(requiredPlan)} ${translateUiText("ile acilir", locale)}`} className={className}>
-                    <span className={iconClassName}>{link.icon}</span>
+                    <span className={iconClassName}>
+                      <Icon aria-hidden="true" className="h-5 w-5" strokeWidth={2.15} />
+                    </span>
                     {isMarketSidebar ? (
-                      <span className="text-center leading-tight text-white/55">{translateUiText(link.label, locale)}</span>
+                      <span className="text-center leadıng-tight text-white/55">{translateUiText(link.label, locale)}</span>
                     ) : !desktopCollapsed ? (
                       <div className="min-w-0 flex-1">
                         <div className="truncate">{translateUiText(link.label, locale)}</div>
@@ -734,7 +784,7 @@ export function AppNav({
                     isLinkActive && !isMarketSidebar
                       ? {
                           backgroundImage: `linear-gradient(90deg, ${hexToRgba(accentBase, 0.24)} 0%, rgba(255,255,255,0.08) 100%)`,
-                          boxShadow: `inset 4px 0 0 ${accentBase}, 0 14px 24px rgba(15,23,42,0.18)`,
+                          boxShadow: `inset 3px 0 0 ${accentBase}`,
                         }
                       : undefined
                   }
@@ -744,16 +794,16 @@ export function AppNav({
                     style={
                       isLinkActive && !isMarketSidebar
                         ? {
-                            backgroundImage: `linear-gradient(135deg, ${accentBase} 0%, ${accentBright} 100%)`,
-                            boxShadow: `0 12px 24px ${hexToRgba(accentBase, 0.28)}`,
+                            backgroundColor: accentBase,
+                            boxShadow: "none",
                           }
                         : undefined
                     }
                   >
-                    {link.icon}
+                    <Icon aria-hidden="true" className="h-5 w-5" strokeWidth={2.15} />
                   </span>
                   {isMarketSidebar ? (
-                    <span className="line-clamp-2 text-center leading-tight">{translateUiText(link.label, locale)}</span>
+                    <span className="line-clamp-2 text-center leadıng-tight">{translateUiText(link.label, locale)}</span>
                   ) : !desktopCollapsed ? (
                     <span className="truncate">{translateUiText(link.label, locale)}</span>
                   ) : null}
@@ -765,7 +815,7 @@ export function AppNav({
 
         <div className={`border-t border-white/10 ${isMarketSidebar ? "px-2 py-3" : "px-3 py-4"}`}>
           {!desktopCollapsed && !isMarketSidebar ? (
-            <div className="mb-3 flex items-center justify-between rounded-[22px] border border-white/10 bg-[rgba(255,255,255,0.05)] px-3 py-3">
+            <div className="mb-3 flex items-center justify-between rounded-2xl border border-white/10 bg-white/[0.045] px-3 py-3">
               <div>
                 <p className="font-display text-sm font-semibold text-white">{activeBusinessSlug}</p>
                 <p className="text-xs text-white/55">{translateUiText("Operasyon erisimi", locale)}</p>
@@ -773,8 +823,8 @@ export function AppNav({
               <span
                 className={`inline-flex h-10 w-10 items-center justify-center rounded-full text-sm font-bold ${theme.footerBadgeClassName}`}
                 style={{
-                  backgroundImage: `linear-gradient(135deg, ${accentDark} 0%, ${accentBright} 100%)`,
-                  boxShadow: `0 12px 22px ${hexToRgba(accentDark, 0.24)}`,
+                  backgroundColor: accentDark,
+                  boxShadow: "none",
                 }}
               >
                 {roleLabel(role, usingDemoData).slice(0, 2)}
@@ -783,11 +833,17 @@ export function AppNav({
           ) : null}
           {!hasUser ? (
             <Link href="/login" className={`block rounded-2xl bg-[linear-gradient(135deg,#ff6a3d_0%,#f2b44f_100%)] text-center font-semibold text-white shadow-[0_14px_24px_rgba(255,106,61,0.24)] ${isMarketSidebar ? "px-2 py-2 text-[10px] uppercase tracking-[0.15em]" : "px-4 py-3 text-sm"}`}>
-              {translateUiText("Giris", locale)}
+              {translateUiText("Giriş", locale)}
             </Link>
           ) : (
             <div className={isMarketSidebar ? "flex justify-center" : undefined}>
-              <LogoutButton />
+              <LogoutButton
+                showIcon
+                label={desktopCollapsed || isMarketSidebar ? "" : translateUiText("Çıkış", locale)}
+                className={`inline-flex min-h-[46px] items-center justify-center gap-2 rounded-2xl border border-rose-300 bg-rose-500 font-semibold text-white shadow-[0_10px_22px_rgba(225,29,72,0.22)] transition hover:bg-rose-600 ${
+                  desktopCollapsed || isMarketSidebar ? "w-full px-2" : "w-full px-4 text-sm"
+                }`}
+              />
             </div>
           )}
         </div>

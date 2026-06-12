@@ -35,6 +35,7 @@ type CartMap = Record<string, CartEntry>;
 type EntryMode = "classic" | "table_first";
 type LayoutMode = "auto" | "tablet_3pane" | "mobile_stack" | "modal_3pane";
 type InitialView = "table_picker" | "composer";
+type ReceiptPrintLayout = "thermal" | "thermal58";
 
 function channelLabel(channel: OrderChannel) {
   if (channel === "dine_in") return "Masa";
@@ -43,7 +44,7 @@ function channelLabel(channel: OrderChannel) {
 }
 
 function tableStatusLabel(status: TableStatus) {
-  if (status === "empty") return "Bos";
+  if (status === "empty") return "Boş";
   if (status === "occupied") return "Dolu";
   return "Rezerve";
 }
@@ -137,6 +138,7 @@ export function AdminOrderEntry({
   const [tablePickerFilter, setTablePickerFilter] = useState<"all" | TableStatus>("all");
   const [tablePickerQuery, setTablePickerQuery] = useState("");
   const [productSearchQuery, setProductSearchQuery] = useState("");
+  const [receiptPrintLayout, setReceiptPrintLayout] = useState<ReceiptPrintLayout>("thermal");
   const [displaySession, setDisplaySession] = useState<CustomerDisplaySessionRecord | null>(null);
   const [displayCodeCopied, setDisplayCodeCopied] = useState(false);
   const searchInputRef = useRef<HTMLInputElement>(null);
@@ -316,7 +318,7 @@ export function AdminOrderEntry({
         items: toDisplayItems(cart),
         subtotal: total,
         total,
-        message: "Baglanti kuruldu. Siparis bekleniyor.",
+        message: "Bağlantı kuruldu. Sipariş bekleniyor.",
       },
       nextSession,
     );
@@ -472,7 +474,7 @@ export function AdminOrderEntry({
       const count = (selectedOptions[group.id] ?? []).length;
       if (group.is_required && count < Math.max(1, group.min_select)) {
         setMessageTone("error");
-        setMessage(`${group.name} secimi zorunlu.`);
+        setMessage(`${group.name} seçimi zorunlu.`);
         return;
       }
     }
@@ -538,6 +540,28 @@ export function AdminOrderEntry({
     setCart({});
   }
 
+  function handleReceiptPrint(layout: ReceiptPrintLayout) {
+    if (Object.keys(cart).length === 0) {
+      setMessageTone("error");
+      setMessage("Fiş yazdirmak icin en az bir ürün seç.");
+      return;
+    }
+
+    setReceiptPrintLayout(layout);
+    window.requestAnimationFrame(() => {
+      const layoutClass = layout === "thermal58" ? "receipt-print-58" : "receipt-print-80";
+      const clearPrintMode = () => {
+        document.body.classList.remove("printing-inline-receipt", "receipt-print-80", "receipt-print-58", "receipt-print-a4");
+      };
+
+      clearPrintMode();
+      document.body.classList.add("printing-inline-receipt", layoutClass);
+      window.addEventListener("afterprint", clearPrintMode, { once: true });
+      window.print();
+      window.setTimeout(clearPrintMode, 700);
+    });
+  }
+
   async function submitOrder() {
     const items = Object.values(cart).map((entry) => {
       const modifierTotal = entry.modifiers.reduce((sum, modifier) => sum + Number(modifier.price_delta), 0);
@@ -560,20 +584,20 @@ export function AdminOrderEntry({
 
     if (items.length === 0) {
       setMessageTone("error");
-      setMessage("En az bir urun sec.");
+      setMessage("En az bir ürün seç.");
       return;
     }
 
     const selectedTable = channel === "dine_in" ? tableById.get(selectedTableId) : null;
     if (channel === "dine_in" && !selectedTable) {
       setMessageTone("error");
-      setMessage("Masa secilmeden siparis acilamaz.");
+      setMessage("Masa seçilmeden sipariş acilamaz.");
       return;
     }
 
     if (channel !== "dine_in" && !customerName.trim() && !isSelfServiceCoffee) {
       setMessageTone("error");
-      setMessage("Musteri adi gerekli.");
+      setMessage("Müşteri adı gerekli.");
       return;
     }
 
@@ -609,7 +633,7 @@ export function AdminOrderEntry({
           : null;
       if (!response.ok || !data.ok) {
         setMessageTone("error");
-        setMessage(data.message ?? "Siparis acilamadi.");
+        setMessage(data.message ?? "Sipariş açılamadı.");
         displayFreezeUntilRef.current = Date.now() + 10_000;
         publishDisplaySnapshot({
           status: "error",
@@ -618,7 +642,7 @@ export function AdminOrderEntry({
           items: displayItems,
           subtotal: total,
           total,
-          message: data.message ?? "Siparis acilamadi.",
+          message: data.message ?? "Sipariş açılamadı.",
         });
         return;
       }
@@ -632,7 +656,7 @@ export function AdminOrderEntry({
         total,
         orderId: data.orderId ?? null,
         checkNumber: resolvedCheckNumber,
-        message: resolvedCheckNumber ? `Siparis alindi: #${resolvedCheckNumber}` : "Siparis alindi.",
+        message: resolvedCheckNumber ? `Sipariş alındı: #${resolvedCheckNumber}` : "Sipariş alındı.",
       });
       setCart({});
       setCustomerName("");
@@ -641,14 +665,14 @@ export function AdminOrderEntry({
       setDeliveryNote("");
       setMobileCartOpen(false);
       setMessageTone("success");
-      setMessage(resolvedCheckNumber ? `Siparis acildi: #${resolvedCheckNumber}` : "Siparis acildi.");
+      setMessage(resolvedCheckNumber ? `Sipariş açıldı: #${resolvedCheckNumber}` : "Sipariş açıldı.");
       window.dispatchEvent(new Event("live-ops:update"));
       if (data.orderId) {
         onOrderCreated?.(data.orderId);
       }
     } catch {
       setMessageTone("error");
-      setMessage("Baglanti hatasi olustu.");
+      setMessage("Bağlantı hatası oluştu.");
       displayFreezeUntilRef.current = Date.now() + 10_000;
       publishDisplaySnapshot({
         status: "error",
@@ -657,7 +681,7 @@ export function AdminOrderEntry({
         items: displayItems,
         subtotal: total,
         total,
-        message: "Baglanti hatasi olustu.",
+        message: "Bağlantı hatası oluştu.",
       });
     } finally {
       setSubmitting(false);
@@ -667,6 +691,10 @@ export function AdminOrderEntry({
   const activeProduct = activeProductId ? productById.get(activeProductId) ?? null : null;
   const cartEntries = Object.values(cart);
   const cartCount = cartEntries.reduce((sum, entry) => sum + entry.quantity, 0);
+  const receiptTitle =
+    channel === "dine_in"
+      ? (selectedTable?.name || (selectedTable ? `Masa ${selectedTable.table_number}` : "Masa seçilmedi"))
+      : channelLabel(channel);
   const useStackLayout = layoutMode === "mobile_stack";
   const allCategoryId = "__all__";
   const selfServiceProducts = useMemo(() => {
@@ -705,10 +733,10 @@ export function AdminOrderEntry({
       subtotal: total,
       total,
       message: submitting
-        ? "Siparis aciliyor..."
+        ? "Sipariş aciliyor..."
         : cartCount > 0
-          ? "Kasiyer siparisi hazirliyor."
-          : "Urun secimi bekleniyor.",
+          ? "Kasiyer siparişi hazirliyor."
+          : "Ürün seçimi bekleniyor.",
     });
   }, [cart, cartCount, channel, customerName, displaySession, isSelfServiceCoffee, publishDisplaySnapshot, submitting, total]);
 
@@ -729,10 +757,10 @@ export function AdminOrderEntry({
         subtotal: total,
         total,
         message: submitting
-          ? "Siparis aciliyor..."
+          ? "Sipariş aciliyor..."
           : cartCount > 0
-            ? "Kasiyer siparisi hazirliyor."
-            : "Urun secimi bekleniyor.",
+            ? "Kasiyer siparişi hazirliyor."
+            : "Ürün seçimi bekleniyor.",
       });
     }, 3000);
 
@@ -749,7 +777,7 @@ export function AdminOrderEntry({
               <p className="mt-1 text-sm text-slate-400">Hizli ve Lezzetli</p>
             </div>
             <div className="text-right">
-              <p className="text-xs uppercase tracking-[0.22em] text-slate-500">Siparis Sayisi</p>
+              <p className="text-xs uppercase tracking-[0.22em] text-slate-500">Sipariş Sayisi</p>
               <p className="mt-2 text-2xl font-bold text-rose-400">{cartCount}</p>
             </div>
           </header>
@@ -757,7 +785,7 @@ export function AdminOrderEntry({
           <div className="border-b border-slate-800 bg-slate-900/55 px-6 py-4">
             <div className="flex flex-wrap items-end gap-3">
               <div className="min-w-[220px]">
-                <p className="text-xs uppercase tracking-[0.16em] text-slate-400">Musteri Ekrani Eslesme Kodu</p>
+                <p className="text-xs uppercase tracking-[0.16em] text-slate-400">Müşteri Ekrani Eslesme Kodu</p>
                 <p className="mt-1 text-2xl font-black tracking-[0.14em] text-emerald-300">
                   {displaySession?.pairCode ?? "------"}
                 </p>
@@ -775,7 +803,7 @@ export function AdminOrderEntry({
                 disabled={!displaySession}
                 className="rounded-xl border border-slate-500 bg-slate-800 px-4 py-2 text-sm font-semibold text-slate-100 disabled:cursor-not-allowed disabled:opacity-40"
               >
-                Musteri Ekranini Ac
+                Müşteri Ekranini Ac
               </button>
               <button
                 type="button"
@@ -811,7 +839,7 @@ export function AdminOrderEntry({
                       : "bg-slate-700/60 text-slate-200 hover:bg-slate-600"
                   }`}
                 >
-                  Tumu
+                  Tümu
                 </button>
                 {orderedCategories.map((category) => {
                   const selected = selectedCategoryId === category.id;
@@ -835,14 +863,14 @@ export function AdminOrderEntry({
                   ref={searchInputRef}
                   value={productSearchQuery}
                   onChange={(event) => setProductSearchQuery(event.target.value)}
-                  placeholder="Urun ara... (Ctrl+K)"
+                  placeholder="Ürün ara... (Ctrl+K)"
                   className="h-12 w-full rounded-2xl border border-slate-700 bg-slate-900/80 px-4 text-sm text-slate-100 placeholder:text-slate-500 focus:border-rose-400 focus:outline-none"
                 />
               </div>
 
               {selfServiceProducts.length === 0 ? (
                 <p className="rounded-2xl border border-slate-700 bg-slate-900/70 px-4 py-5 text-sm text-slate-400">
-                  Bu filtrede aktif urun yok.
+                  Bu filtrede aktif ürün yok.
                 </p>
               ) : (
                 <div className="grid gap-4 sm:grid-cols-2 xl:grid-cols-4">
@@ -858,7 +886,7 @@ export function AdminOrderEntry({
                           openModifierPicker(product);
                         }
                       }}
-                      className="cursor-pointer rounded-2xl border border-slate-700/70 bg-[radial-gradient(circle_at_top,#273247_0%,#1e293b_35%,#111827_100%)] p-4 transition hover:border-rose-300/40 active:scale-[0.99] focus:outline-none focus-visible:ring-2 focus-visible:ring-rose-400"
+                      className="cursor-pointer rounded-2xl border border-slate-700/70 bg-[radıal-gradient(circle_at_top,#273247_0%,#1e293b_35%,#111827_100%)] p-4 transition hover:border-rose-300/40 active:scale-[0.99] focus:outline-none focus-visible:ring-2 focus-visible:ring-rose-400"
                     >
                       <div className="mb-4 inline-flex h-11 w-11 items-center justify-center rounded-full bg-slate-700/80 text-xs font-black text-slate-100">
                         {product.name.slice(0, 2).toUpperCase()}
@@ -884,8 +912,8 @@ export function AdminOrderEntry({
             <aside className="flex flex-col border-l border-slate-700/80 bg-[linear-gradient(180deg,#202838_0%,#1a2234_55%,#171f31_100%)]">
               <div className="flex items-center justify-between border-b border-slate-700 px-5 py-5">
                 <div>
-                  <p className="text-3xl font-black tracking-tight text-white">Siparisim</p>
-                  <p className="mt-1 text-sm text-slate-300">Toplam Urun: {cartCount}</p>
+                  <p className="text-3xl font-black tracking-tight text-white">Siparişim</p>
+                  <p className="mt-1 text-sm text-slate-300">Toplam Ürün: {cartCount}</p>
                 </div>
                 <button
                   type="button"
@@ -898,7 +926,7 @@ export function AdminOrderEntry({
 
               <div className="flex-1 overflow-y-auto px-4 py-4">
                 {cartEntries.length === 0 ? (
-                  <p className="mt-20 text-center text-sm text-slate-400">Urun eklemek icin soldan sec.</p>
+                  <p className="mt-20 text-center text-sm text-slate-400">Ürün eklemek icin soldan seç.</p>
                 ) : (
                   <div className="space-y-3">
                     {cartEntries.map((entry) => {
@@ -959,7 +987,7 @@ export function AdminOrderEntry({
 
         <div className={`app-mobile-only space-y-3 ${isStackMobile ? "pb-[calc(190px+var(--safe-area-bottom))]" : "pb-[calc(164px+var(--safe-area-bottom))]"}`}>
           <p className="rounded-2xl border border-slate-700 bg-slate-900 px-4 py-4 text-sm text-slate-200">
-            Self servis mobil akista urun secimi soldaki dark masaustu tasarimla eslenik calisir.
+            Self servis mobil akışta ürün seçimi soldaki dark masaustu tasarimla eslenik çalışır.
           </p>
         </div>
       </>
@@ -975,13 +1003,14 @@ export function AdminOrderEntry({
       : "space-y-4 min-w-0";
 
     return (
+      <>
       <section className={tableFirstSectionClassName}>
         {tablePickerView === "table_picker" ? (
           <article className={`rounded-2xl border border-slate-200 bg-white p-4 shadow-sm overflow-y-auto ${isModalThreePane ? "max-h-[70vh]" : "h-full"}`}>
             <div className="flex flex-col gap-3 md:flex-row md:items-center md:justify-between">
               <div>
-                <p className="text-xs font-semibold uppercase tracking-[0.16em] text-slate-500">Masa Secimi</p>
-                <h2 className="mt-1 text-xl font-semibold text-slate-900">Siparise Baslamak Icin Masa Sec</h2>
+                <p className="text-xs font-semibold uppercase tracking-[0.16em] text-slate-500">Masa Seçimi</p>
+                <h2 className="mt-1 text-xl font-semibold text-slate-900">Siparişe Baslamak Icin Masa Seç</h2>
               </div>
               <div className="flex items-center gap-3">
                 {isTerminal && (
@@ -1001,7 +1030,7 @@ export function AdminOrderEntry({
                           : "border-slate-300 bg-white text-slate-700"
                       }`}
                     >
-                      {(status === "all" ? "Tumu" : tableStatusLabel(status))} ({tableStats[status]})
+                      {(status === "all" ? "Tümu" : tableStatusLabel(status))} ({tableStats[status]})
                     </button>
                   ))}
                 </div>
@@ -1019,7 +1048,7 @@ export function AdminOrderEntry({
 
             {filteredTables.length === 0 ? (
               <p className="mt-4 rounded-xl border border-dashed border-slate-200 bg-slate-50 px-4 py-4 text-sm text-slate-500">
-                Bu filtrede masa bulunamadi.
+                Bu filtrede masa bulunamadı.
               </p>
             ) : (
               <div className="mt-4 grid gap-3 sm:grid-cols-2 lg:grid-cols-4 xl:grid-cols-5">
@@ -1075,14 +1104,25 @@ export function AdminOrderEntry({
                 <div className="flex items-center gap-2 sm:gap-3">
                    {isTerminal ? (
                      <>
-                       <button
-                          type="button"
-                          onClick={() => window.print()}
-                          className="hidden sm:inline-flex h-12 items-center gap-2 rounded-xl border border-slate-200 bg-white px-5 text-sm font-bold text-slate-700 shadow-sm hover:bg-slate-50"
-                       >
-                          <svg xmlns="http://www.w3.org/2000/svg" width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round"><path d="M6 9V2h12v7"/><path d="M6 18H4a2 2 0 0 1-2-2v-5a2 2 0 0 1 2-2h16a2 2 0 0 1 2 2v5a2 2 0 0 1-2 2h-2"/><rect width="12" height="8" x="6" y="14"/></svg>
-                          <span>Fis Yazdir</span>
-                       </button>
+                       <div className="hidden items-center rounded-xl border border-slate-200 bg-white p-1 shadow-sm sm:flex">
+                          <button
+                             type="button"
+                             onClick={() => handleReceiptPrint("thermal")}
+                             disabled={cartEntries.length === 0}
+                             className="inline-flex h-10 items-center gap-2 rounded-lg px-3 text-xs font-bold text-slate-700 transition hover:bg-slate-50 disabled:cursor-not-allowed disabled:opacity-40"
+                          >
+                             <svg xmlns="http://www.w3.org/2000/svg" width="17" height="17" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round"><path d="M6 9V2h12v7"/><path d="M6 18H4a2 2 0 0 1-2-2v-5a2 2 0 0 1 2-2h16a2 2 0 0 1 2 2v5a2 2 0 0 1-2 2h-2"/><rect width="12" height="8" x="6" y="14"/></svg>
+                             <span>80mm</span>
+                          </button>
+                          <button
+                             type="button"
+                             onClick={() => handleReceiptPrint("thermal58")}
+                             disabled={cartEntries.length === 0}
+                             className="inline-flex h-10 items-center rounded-lg px-3 text-xs font-bold text-slate-700 transition hover:bg-slate-50 disabled:cursor-not-allowed disabled:opacity-40"
+                          >
+                             58mm
+                          </button>
+                       </div>
                        <Link
                           href="/cashier"
                           className="inline-flex h-12 items-center gap-2 rounded-xl bg-slate-900 px-4 sm:px-5 text-sm font-bold text-white shadow-lg shadow-slate-900/20 hover:bg-slate-800"
@@ -1094,7 +1134,7 @@ export function AdminOrderEntry({
                      </>
                    ) : (
                      <p className="rounded-xl bg-slate-100 px-3 py-2 text-xs font-semibold uppercase tracking-[0.14em] text-slate-600">
-                       Modal Siparis Akisi
+                       Modal Sipariş Akisi
                      </p>
                    )}
                 </div>
@@ -1150,28 +1190,17 @@ export function AdminOrderEntry({
                 {/* Products Column */}
                 <section className="min-w-0 flex flex-col gap-4 overflow-hidden">
                    {/* Mobile Category Horizontal Scroll */}
-                   <div className={`shrink-0 overflow-x-auto pb-1 -mx-1 px-1 ${isTerminal ? "md:hidden" : "lg:hidden"}`}>
+                   <div className={`mobile-terminal-category-rail shrink-0 overflow-x-auto pb-1 -mx-1 px-1 ${isTerminal ? "md:hidden" : "lg:hidden"}`}>
                       <div className="flex gap-2 min-w-max">
-                         {orderedCategories.map((category, idx) => {
+                         {orderedCategories.map((category) => {
                             const isActive = category.id === activeCategoryId;
-                            const colors = [
-                               "from-orange-500 to-amber-500",
-                               "from-blue-500 to-indigo-500",
-                               "from-emerald-500 to-teal-500",
-                               "from-rose-500 to-pink-500",
-                               "from-purple-500 to-violet-500"
-                            ];
-                            const colorClass = colors[idx % colors.length];
                             return (
                                <button
                                   key={`mob-cat-${category.id}`}
                                   type="button"
                                   onClick={() => setSelectedCategoryId(category.id)}
-                                  className={`min-h-[40px] whitespace-nowrap px-4 py-2 text-xs font-bold rounded-xl transition-all relative overflow-hidden ${
-                                     isActive 
-                                     ? `bg-gradient-to-br ${colorClass} text-white shadow-md ring-2 ring-offset-1 ring-slate-100` 
-                                     : "bg-white text-slate-700 hover:bg-slate-50 border border-slate-200"
-                                  }`}
+                                  data-active={isActive}
+                                  className="mobile-terminal-category-chip whitespace-nowrap"
                                >
                                   {category.name}
                                </button>
@@ -1188,38 +1217,40 @@ export function AdminOrderEntry({
                             autoFocus
                             value={productSearchQuery}
                             onChange={(event) => setProductSearchQuery(event.target.value)}
-                            placeholder="Urun Ara... (Ctrl+K)"
+                            placeholder="Ürün Ara... (Ctrl+K)"
                             className="h-12 w-full rounded-xl bg-slate-50 pl-11 pr-4 text-sm font-medium border-none focus:ring-2 focus:ring-slate-900"
                          />
                       </div>
                    </div>
                    
-                   <div className={`flex-1 overflow-y-auto rounded-2xl bg-white p-4 shadow-sm border border-slate-100 ${
+                   <div className={`mobile-terminal-products flex-1 overflow-y-auto rounded-2xl bg-white p-4 shadow-sm border border-slate-100 ${
                       cartEntries.length > 0 ? "pb-24 md:pb-4" : ""
                    }`}>
                       {filteredVisibleProducts.length === 0 ? (
                          <div className="flex flex-col items-center justify-center h-full text-slate-400">
                             <svg xmlns="http://www.w3.org/2000/svg" width="48" height="48" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="1" strokeLinecap="round" strokeLinejoin="round" className="mb-4"><path d="M14.5 2H6a2 2 0 0 0-2 2v16a2 2 0 0 0 2 2h12a2 2 0 0 0 2-2V7.5L14.5 2z"/><polyline points="14 2 14 8 20 8"/></svg>
-                            <p className="text-sm font-medium">Bu kategoride urun bulunamadi.</p>
+                            <p className="text-sm font-medium">Bu kategoride ürün bulunamadı.</p>
                          </div>
                       ) : (
-                         <div className="grid gap-3 grid-cols-2 sm:grid-cols-2 xl:grid-cols-3">
+                         <div className="mobile-terminal-product-grid grid gap-3 grid-cols-2 sm:grid-cols-2 xl:grid-cols-3">
                             {filteredVisibleProducts.map((product) => (
                                <button
                                   key={`term-prod-${product.id}`}
                                   type="button"
                                   onClick={() => openModifierPicker(product)}
-                                  className="group flex flex-col items-start rounded-2xl border border-slate-100 bg-white p-4 text-left transition-all hover:border-emerald-200 hover:shadow-md active:scale-95"
+                                  className="mobile-terminal-product-card group flex flex-col items-start rounded-2xl border border-slate-100 bg-white p-4 text-left transition-all hover:border-emerald-200 hover:shadow-md active:scale-95"
                                 >
-                                  <div className="w-full">
-                                     <h3 className="font-bold text-slate-900 group-hover:text-emerald-700 transition-colors line-clamp-2 min-h-[40px] text-xs sm:text-sm">{product.name}</h3>
-                                     <p className="mt-2 text-base sm:text-lg font-black text-slate-900">{Number(product.price).toFixed(2)} <span className="text-[10px] sm:text-xs font-medium text-slate-500">TL</span></p>
-                                  </div>
-                                  <div className="mt-4 flex w-full items-center justify-between">
-                                     <span className="rounded-lg bg-slate-50 px-2 py-1 text-[9px] sm:text-[10px] font-bold text-slate-500 uppercase tracking-tight">
-                                        {(groupsByProduct.get(product.id) ?? []).length > 0 ? "Opsiyonlu" : "Normal"}
-                                     </span>
-                                     <div className="h-8 w-8 rounded-full bg-slate-900 text-white flex items-center justify-center opacity-0 group-hover:opacity-100 transition-opacity">
+                                  <h3 className="font-bold text-slate-900 group-hover:text-slate-950 transition-colors line-clamp-2 min-h-[40px] text-xs sm:text-sm">{product.name}</h3>
+                                  <div className="mt-auto flex w-full items-end justify-between gap-2 pt-3">
+                                     <div className="min-w-0">
+                                        {(groupsByProduct.get(product.id) ?? []).length > 0 ? (
+                                          <span className="mobile-terminal-option-dot">Ops</span>
+                                        ) : null}
+                                        <p className="mobile-terminal-product-price text-base sm:text-lg font-black text-slate-900">
+                                          {Number(product.price).toFixed(2)} <span className="text-[10px] sm:text-xs font-medium text-slate-500">TL</span>
+                                        </p>
+                                     </div>
+                                     <div className="mobile-terminal-add-icon h-8 w-8 rounded-full bg-slate-900 text-white flex items-center justify-center opacity-0 group-hover:opacity-100 transition-opacity" aria-hidden="true">
                                         <svg xmlns="http://www.w3.org/2000/svg" width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="3" strokeLinecap="round" strokeLinejoin="round"><path d="M5 12h14"/><path d="M12 5v14"/></svg>
                                      </div>
                                   </div>
@@ -1236,7 +1267,7 @@ export function AdminOrderEntry({
                 }`}>
                    <div className="bg-slate-900 p-4 text-white">
                       <div className="flex items-center justify-between">
-                         <span className="text-xs font-bold uppercase tracking-widest opacity-60">Siparis Detayi</span>
+                         <span className="text-xs font-bold uppercase tracking-widest opacity-60">Sipariş Detayi</span>
                          <button type="button" onClick={clearCart} className="text-[10px] font-bold uppercase tracking-widest text-rose-400">Temizle</button>
                       </div>
                       <div className="mt-2 flex items-baseline gap-1">
@@ -1248,7 +1279,7 @@ export function AdminOrderEntry({
                    <div className="flex-1 overflow-y-auto p-4 bg-[url('https://www.transparenttextures.com/patterns/paper.png')]">
                       {cartEntries.length === 0 ? (
                          <div className="flex flex-col items-center justify-center h-full text-slate-400 opacity-50 italic">
-                            <p>Henuz urun eklenmedi</p>
+                            <p>Henüz ürün eklenmedi</p>
                          </div>
                       ) : (
                          <div className="space-y-4">
@@ -1259,7 +1290,7 @@ export function AdminOrderEntry({
                                   <div key={`term-cart-${entry.key}`} className="relative group border-b border-slate-200 border-dashed pb-4">
                                      <div className="flex justify-between items-start gap-2">
                                         <div className="flex-1">
-                                           <h4 className="font-bold text-slate-900 text-sm leading-tight">{entry.product.name}</h4>
+                                           <h4 className="font-bold text-slate-900 text-sm leadıng-tight">{entry.product.name}</h4>
                                            <div className="mt-1 flex items-center gap-2 text-xs text-slate-500">
                                               <span className="font-bold text-slate-900">x{entry.quantity}</span>
                                               <span>@ {(Number(entry.product.price) + modifierTotal).toFixed(2)} TL</span>
@@ -1304,30 +1335,30 @@ export function AdminOrderEntry({
 
              {/* Mobile Floating Cart Summary Bar */}
              {cartEntries.length > 0 && (
-                <div className={`absolute bottom-0 inset-x-0 z-[90] bg-white border-t border-slate-200 p-4 shadow-[0_-8px_24px_rgba(0,0,0,0.06)] flex items-center justify-between ${
+                <div className={`mobile-terminal-cart-bar absolute bottom-0 inset-x-0 z-[90] bg-white border-t border-slate-200 p-4 shadow-[0_-8px_24px_rgba(0,0,0,0.06)] flex items-center justify-between ${
                    isTerminal ? "md:hidden" : "lg:hidden"
                 }`}>
                    <button 
                       type="button"
                       onClick={() => setMobileCartOpen(true)}
-                      className="flex items-center gap-3 text-left focus:outline-none"
+                      className="mobile-terminal-cart-summary flex items-center gap-3 text-left focus:outline-none"
                    >
-                      <div className="relative h-12 w-12 rounded-xl bg-slate-900 text-white flex items-center justify-center">
+                      <div className="mobile-terminal-cart-icon relative h-12 w-12 rounded-xl bg-slate-900 text-white flex items-center justify-center">
                          <svg xmlns="http://www.w3.org/2000/svg" width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.5" strokeLinecap="round" strokeLinejoin="round"><circle cx="8" cy="21" r="1"/><circle cx="19" cy="21" r="1"/><path d="M2.05 2.05h2l2.66 12.42a2 2 0 0 0 2 1.58h9.78a2 2 0 0 0 1.95-1.57l1.65-7.43H5.12"/></svg>
                          <span className="absolute -top-1.5 -right-1.5 h-5 w-5 rounded-full bg-rose-500 text-[10px] font-black text-white flex items-center justify-center ring-2 ring-white">
                             {cartCount}
                          </span>
                       </div>
                       <div>
-                         <span className="text-[10px] font-bold text-slate-400 uppercase tracking-wider block">Sepet Toplami</span>
-                         <span className="text-base font-black text-slate-900">{total.toFixed(2)} TL</span>
+                         <span className="mobile-terminal-cart-label text-[10px] font-bold text-slate-400 uppercase tracking-wider block">Sepet</span>
+                         <span className="mobile-terminal-cart-total text-base font-black text-slate-900">{total.toFixed(2)} TL</span>
                       </div>
                    </button>
-                   <div className="flex gap-2">
+                   <div className="mobile-terminal-cart-actions flex gap-2">
                       <button
                          type="button"
                          onClick={() => setMobileCartOpen(true)}
-                         className="h-12 px-4 rounded-xl bg-slate-900 text-white font-bold text-sm shadow-md active:scale-95 transition-transform"
+                         className="mobile-terminal-cart-button mobile-terminal-cart-button-secondary h-12 px-4 rounded-xl bg-slate-900 text-white font-bold text-sm shadow-md active:scale-95 transition-transform"
                       >
                          Sepeti Ac
                       </button>
@@ -1335,7 +1366,7 @@ export function AdminOrderEntry({
                          type="button"
                          disabled={submitting}
                          onClick={submitOrder}
-                         className="h-12 px-4 rounded-xl bg-emerald-600 text-white font-bold text-sm shadow-md active:scale-95 transition-transform disabled:opacity-50"
+                         className="mobile-terminal-cart-button mobile-terminal-cart-button-primary h-12 px-4 rounded-xl bg-emerald-600 text-white font-bold text-sm shadow-md active:scale-95 transition-transform disabled:opacity-50"
                       >
                          {submitting ? "..." : "Tamamla"}
                       </button>
@@ -1351,7 +1382,7 @@ export function AdminOrderEntry({
                    <div className="absolute inset-x-0 bottom-0 top-16 rounded-t-[32px] bg-[#f8fafc] shadow-2xl flex flex-col overflow-hidden animate-in slide-in-from-bottom duration-300">
                       <header className="px-6 py-4 bg-slate-900 text-white flex items-center justify-between shrink-0">
                          <div>
-                            <span className="text-xs font-bold uppercase tracking-widest opacity-60">Siparis Detayi</span>
+                            <span className="text-xs font-bold uppercase tracking-widest opacity-60">Sipariş Detayi</span>
                             <div className="mt-1 flex items-baseline gap-1">
                                <span className="text-2xl font-black">{total.toFixed(2)}</span>
                                <span className="text-sm font-bold opacity-60">TL</span>
@@ -1370,7 +1401,7 @@ export function AdminOrderEntry({
                       <div className="flex-1 overflow-y-auto p-6 bg-[url('https://www.transparenttextures.com/patterns/paper.png')]">
                          {cartEntries.length === 0 ? (
                             <div className="flex flex-col items-center justify-center h-full text-slate-400 opacity-50 italic">
-                               <p>Henuz urun eklenmedi</p>
+                               <p>Henüz ürün eklenmedi</p>
                             </div>
                          ) : (
                             <div className="space-y-4">
@@ -1381,7 +1412,7 @@ export function AdminOrderEntry({
                                      <div key={`mobile-drawer-cart-${entry.key}`} className="border-b border-slate-200 border-dashed pb-4">
                                         <div className="flex justify-between items-start gap-2">
                                            <div className="flex-1">
-                                              <h4 className="font-bold text-slate-900 text-sm leading-tight">{entry.product.name}</h4>
+                                              <h4 className="font-bold text-slate-900 text-sm leadıng-tight">{entry.product.name}</h4>
                                               <div className="mt-1 flex items-center gap-2 text-xs text-slate-500">
                                                  <span className="font-bold text-slate-900">x{entry.quantity}</span>
                                                  <span>@ {(Number(entry.product.price) + modifierTotal).toFixed(2)} TL</span>
@@ -1456,7 +1487,7 @@ export function AdminOrderEntry({
                    <article className="w-full max-w-2xl rounded-3xl bg-white overflow-hidden shadow-2xl animate-in zoom-in-95 duration-200">
                       <header className="bg-slate-50 px-6 py-4 border-b border-slate-200 flex items-center justify-between">
                          <div>
-                            <p className="text-xs font-bold text-slate-500 uppercase tracking-widest">Secenekleri Tamamla</p>
+                            <p className="text-xs font-bold text-slate-500 uppercase tracking-widest">Seçenekleri Tamamla</p>
                             <h2 className="text-xl font-bold text-slate-900">{activeProduct.name}</h2>
                          </div>
                          <button onClick={() => { setActiveProductId(null); setSelectedOptions({}); }} className="text-slate-400 hover:text-slate-600 transition-colors">
@@ -1470,7 +1501,7 @@ export function AdminOrderEntry({
                                <div className="flex items-center justify-between mb-3">
                                   <h3 className="font-bold text-slate-900">{group.name}</h3>
                                   <span className={`text-[10px] font-bold px-2 py-0.5 rounded-full uppercase tracking-tight ${group.is_required ? "bg-rose-100 text-rose-600" : "bg-slate-100 text-slate-500"}`}>
-                                     {group.is_required ? "Zorunlu" : "Opsiyonel"}
+                                     {group.is_required ? "Zorunlu" : "Opsiyönel"}
                                   </span>
                                </div>
                                <div className="grid grid-cols-2 gap-2">
@@ -1527,10 +1558,10 @@ export function AdminOrderEntry({
           <div className="space-y-4">
             <div className="flex flex-col gap-2 rounded-2xl border border-slate-200 bg-white p-4 shadow-sm sm:flex-row sm:items-center sm:justify-between">
               <div>
-                <p className="text-xs font-semibold uppercase tracking-[0.14em] text-slate-500">Siparis Akisi</p>
+                <p className="text-xs font-semibold uppercase tracking-[0.14em] text-slate-500">Sipariş Akisi</p>
                 <p className="mt-1 text-lg font-semibold text-slate-900">
                   {channel === "dine_in"
-                    ? (selectedTable?.name || (selectedTable ? `Masa ${selectedTable.table_number}` : "Masa secilmedi"))
+                    ? (selectedTable?.name || (selectedTable ? `Masa ${selectedTable.table_number}` : "Masa seçilmedi"))
                     : channelLabel(channel)}
                 </p>
               </div>
@@ -1590,7 +1621,7 @@ export function AdminOrderEntry({
 
                 {channel === "dine_in" ? (
                   <div className="rounded-xl border border-slate-200 bg-slate-50 px-3 py-3">
-                    <p className="text-xs uppercase tracking-[0.14em] text-slate-500">Secili Masa</p>
+                    <p className="text-xs uppercase tracking-[0.14em] text-slate-500">Seçili Masa</p>
                     {selectedTable ? (
                       <div className="mt-2 flex items-center justify-between gap-2">
                         <p className="font-semibold text-slate-900">{selectedTable.name || `Masa ${selectedTable.table_number}`}</p>
@@ -1599,7 +1630,7 @@ export function AdminOrderEntry({
                         </span>
                       </div>
                     ) : (
-                      <p className="mt-2 text-sm text-slate-500">Masa secilmedi.</p>
+                      <p className="mt-2 text-sm text-slate-500">Masa seçilmedi.</p>
                     )}
                   </div>
                 ) : (
@@ -1607,7 +1638,7 @@ export function AdminOrderEntry({
                     <input
                       value={customerName}
                       onChange={(event) => setCustomerName(event.target.value)}
-                      placeholder="Musteri adi"
+                      placeholder="Müşteri adı"
                       className="min-h-[48px] w-full rounded-xl border border-slate-300 px-3 py-2 text-sm"
                     />
                     <input
@@ -1627,7 +1658,7 @@ export function AdminOrderEntry({
                     <textarea
                       value={deliveryNote}
                       onChange={(event) => setDeliveryNote(event.target.value)}
-                      placeholder={channel === "delivery" ? "Kurye notu" : "Siparis notu"}
+                      placeholder={channel === "delivery" ? "Kurye notu" : "Sipariş notu"}
                       className="min-h-24 w-full rounded-xl border border-slate-300 px-3 py-2 text-sm"
                     />
                   </div>
@@ -1655,7 +1686,7 @@ export function AdminOrderEntry({
 
                 <div className="max-h-[38vh] space-y-2 overflow-y-auto pr-1">
                   {cartEntries.length === 0 ? (
-                    <p className="rounded-xl border border-slate-200 bg-slate-50 px-3 py-3 text-sm text-slate-500">Sepet bos.</p>
+                    <p className="rounded-xl border border-slate-200 bg-slate-50 px-3 py-3 text-sm text-slate-500">Sepet boş.</p>
                   ) : (
                     cartEntries.map((entry) => {
                       const modifierTotal = entry.modifiers.reduce((sum, modifier) => sum + Number(modifier.price_delta), 0);
@@ -1702,7 +1733,7 @@ export function AdminOrderEntry({
                   onClick={submitOrder}
                   className="min-h-[48px] w-full rounded-xl bg-emerald-600 px-4 py-3 text-sm font-semibold text-white disabled:opacity-60"
                 >
-                  {submitting ? "Siparis aciliyor..." : "Siparisi Ac"}
+                  {submitting ? "Sipariş aciliyor..." : "Siparişi Ac"}
                 </button>
               </aside>
 
@@ -1737,9 +1768,9 @@ export function AdminOrderEntry({
 
               <section className="min-w-0 space-y-3 rounded-2xl border border-slate-200 bg-white p-4 shadow-sm">
                 <div className="flex items-center justify-between gap-2">
-                  <h3 className="text-base font-semibold text-slate-900">{activeCategory?.name ?? "Urunler"}</h3>
+                  <h3 className="text-base font-semibold text-slate-900">{activeCategory?.name ?? "Ürünler"}</h3>
                   <span className="rounded-lg bg-slate-100 px-3 py-1 text-xs font-semibold text-slate-700">
-                    {filteredVisibleProducts.length} urun
+                    {filteredVisibleProducts.length} ürün
                   </span>
                 </div>
                 <input
@@ -1747,7 +1778,7 @@ export function AdminOrderEntry({
                   autoFocus
                   value={productSearchQuery}
                   onChange={(event) => setProductSearchQuery(event.target.value)}
-                  placeholder="Urun Ara... (Ctrl+K)"
+                  placeholder="Ürün Ara... (Ctrl+K)"
                   className="min-h-[48px] w-full rounded-xl border border-slate-300 px-3 py-2 text-sm"
                 />
 
@@ -1755,7 +1786,7 @@ export function AdminOrderEntry({
                   <article className="rounded-xl border border-slate-200 bg-slate-50 p-3">
                     <div className="flex items-center justify-between gap-2">
                       <div>
-                        <p className="text-xs uppercase tracking-[0.14em] text-slate-500">Secenekler</p>
+                        <p className="text-xs uppercase tracking-[0.14em] text-slate-500">Seçenekler</p>
                         <p className="text-sm font-semibold text-slate-900">{activeProduct.name}</p>
                       </div>
                       <button
@@ -1774,7 +1805,7 @@ export function AdminOrderEntry({
                         <div key={`table-first-group-${group.id}`} className="rounded-lg border border-slate-200 bg-white p-3">
                           <p className="text-sm font-semibold text-slate-900">{group.name}</p>
                           <p className="mt-1 text-xs text-slate-500">
-                            {group.is_required ? "Zorunlu" : "Opsiyonel"} - en fazla {group.max_select}
+                            {group.is_required ? "Zorunlu" : "Opsiyönel"} - en fazla {group.max_select}
                           </p>
                           <div className="mt-2 grid gap-2 sm:grid-cols-2">
                             {(optionsByGroup.get(group.id) ?? []).map((option) => {
@@ -1810,7 +1841,7 @@ export function AdminOrderEntry({
 
                 {filteredVisibleProducts.length === 0 ? (
                   <p className="rounded-xl border border-dashed border-slate-200 bg-slate-50 px-3 py-4 text-sm text-slate-500">
-                    Bu kategoride aktif urun yok.
+                    Bu kategoride aktif ürün yok.
                   </p>
                 ) : (
                   <div className="grid gap-3 xl:grid-cols-2">
@@ -1819,7 +1850,7 @@ export function AdminOrderEntry({
                         <div className="flex items-start justify-between gap-2">
                           <div>
                             <p className="text-sm font-semibold text-slate-900">{product.name}</p>
-                            <p className="mt-1 text-xs text-slate-600">{product.description ?? "Menu urunu"}</p>
+                            <p className="mt-1 text-xs text-slate-600">{product.description ?? "Menu ürünu"}</p>
                           </div>
                           <span className="text-sm font-semibold text-emerald-700">{Number(product.price).toFixed(2)} TL</span>
                         </div>
@@ -1852,7 +1883,7 @@ export function AdminOrderEntry({
                             onClick={() => openModifierPicker(product)}
                             className="min-h-[44px] w-full rounded-lg bg-slate-900 px-4 py-2 text-sm font-semibold text-white sm:ml-auto sm:w-auto"
                           >
-                            {(groupsByProduct.get(product.id) ?? []).length > 0 ? "Secenekli Ekle" : "Ekle"}
+                            {(groupsByProduct.get(product.id) ?? []).length > 0 ? "Seçenekli Ekle" : "Ekle"}
                           </button>
                         </div>
                       </article>
@@ -1864,6 +1895,53 @@ export function AdminOrderEntry({
           </div>
         )}
       </section>
+      <div
+        aria-hidden="true"
+        className={`receipt-inline-sheet pointer-events-none fixed left-[-10000px] top-0 bg-white text-slate-950 ${
+          receiptPrintLayout === "thermal58" ? "w-[58mm]" : "w-[80mm]"
+        }`}
+      >
+        <header className="border-b border-dashed border-slate-400 pb-2 text-center">
+          <p className="text-[13px] font-bold uppercase tracking-[0.08em]">{businessSlug}</p>
+          <p className="mt-1 text-[11px] font-semibold">{receiptTitle}</p>
+          <p className="mt-1 text-[10px] text-slate-600">{new Date().toLocaleString("tr-TR")}</p>
+        </header>
+
+        <ul className="mt-2 space-y-2">
+          {cartEntries.map((entry) => {
+            const modifierTotal = entry.modifiers.reduce((sum, modifier) => sum + Number(modifier.price_delta), 0);
+            const unitPrice = Number(entry.product.price) + modifierTotal;
+            const itemTotal = unitPrice * entry.quantity;
+            return (
+              <li key={`print-receipt-${entry.key}`} className="text-[11px] leadıng-tight">
+                <div className="flex items-start justify-between gap-2">
+                  <span className="min-w-0 break-words font-semibold">{entry.quantity}x {entry.product.name}</span>
+                  <span className="shrink-0 font-bold">{itemTotal.toFixed(2)}</span>
+                </div>
+                <p className="mt-0.5 text-[10px] text-slate-600">{unitPrice.toFixed(2)} TL</p>
+                {entry.modifiers.length > 0 ? (
+                  <div className="mt-1 space-y-0.5 text-[10px] text-slate-600">
+                    {entry.modifiers.map((modifier) => (
+                      <p key={`${entry.key}-${modifier.group_id}-${modifier.option_id}`}>
+                        + {modifier.option_name}
+                        {Number(modifier.price_delta) !== 0 ? ` (${Number(modifier.price_delta).toFixed(2)} TL)` : ""}
+                      </p>
+                    ))}
+                  </div>
+                ) : null}
+              </li>
+            );
+          })}
+        </ul>
+
+        <div className="mt-3 border-t border-dashed border-slate-400 pt-2 text-[12px] font-bold">
+          <p className="flex justify-between gap-3">
+            <span>TOPLAM</span>
+            <span>{total.toFixed(2)} TL</span>
+          </p>
+        </div>
+      </div>
+      </>
     );
   }
 
@@ -1872,7 +1950,7 @@ export function AdminOrderEntry({
     <div className="app-mobile-hide grid gap-6 xl:grid-cols-[1.15fr_0.85fr]">
       <section className="space-y-6">
         <article className="rounded-2xl bg-white p-5 shadow-sm">
-          <p className="text-xs uppercase tracking-[0.24em] text-slate-500">Siparis Kanali</p>
+          <p className="text-xs uppercase tracking-[0.24em] text-slate-500">Sipariş Kanali</p>
           {(!operatingCapabilities || operatingCapabilities.channels.length > 1) && (
           <div className="mt-4 grid gap-3 sm:grid-cols-3">
             {(["dine_in", "pickup", "delivery"] as OrderChannel[])
@@ -1924,7 +2002,7 @@ export function AdminOrderEntry({
               <input
                 value={customerName}
                 onChange={(event) => setCustomerName(event.target.value)}
-                placeholder="Musteri adi"
+                placeholder="Müşteri adı"
                 className="rounded-xl border border-slate-300 px-3 py-3 text-sm"
               />
               <input
@@ -1944,7 +2022,7 @@ export function AdminOrderEntry({
               <textarea
                 value={deliveryNote}
                 onChange={(event) => setDeliveryNote(event.target.value)}
-                placeholder={channel === "delivery" ? "Kurye notu" : "Siparis notu"}
+                placeholder={channel === "delivery" ? "Kurye notu" : "Sipariş notu"}
                 className="min-h-24 rounded-xl border border-slate-300 px-3 py-3 text-sm md:col-span-2"
               />
             </div>
@@ -1955,7 +2033,7 @@ export function AdminOrderEntry({
           <article className="rounded-2xl border border-slate-200 bg-white p-5 shadow-sm">
             <div className="flex flex-col items-start justify-between gap-3 sm:flex-row sm:items-center">
               <div>
-                <p className="text-xs uppercase tracking-[0.24em] text-slate-500">Modifier Secimi</p>
+                <p className="text-xs uppercase tracking-[0.24em] text-slate-500">Modifier Seçimi</p>
                 <h2 className="mt-2 text-xl font-semibold text-slate-900">{activeProduct.name}</h2>
               </div>
               <div className="flex items-center gap-2">
@@ -1999,7 +2077,7 @@ export function AdminOrderEntry({
                 <div key={group.id} className="rounded-xl bg-slate-50 p-4">
                   <p className="font-semibold text-slate-900">{group.name}</p>
                   <p className="mt-1 text-xs text-slate-500">
-                    {group.is_required ? "Zorunlu" : "Opsiyonel"} - en fazla {group.max_select}
+                    {group.is_required ? "Zorunlu" : "Opsiyönel"} - en fazla {group.max_select}
                   </p>
                   <div className="mt-3 grid gap-2 sm:grid-cols-2">
                     {(optionsByGroup.get(group.id) ?? []).map((option) => {
@@ -2094,12 +2172,12 @@ export function AdminOrderEntry({
             <div className="flex items-center justify-between gap-3">
               <h2 className="text-lg font-semibold text-slate-900">{activeCategory?.name ?? "Kategori"}</h2>
               <span className="rounded-lg bg-slate-100 px-3 py-1 text-xs font-semibold text-slate-700">
-                {visibleProducts.length} urun
+                {visibleProducts.length} ürün
               </span>
             </div>
             {visibleProducts.length === 0 ? (
               <p className="mt-4 rounded-xl border border-slate-200 bg-slate-50 px-3 py-4 text-sm text-slate-500">
-                Bu kategoride aktif urun yok.
+                Bu kategoride aktif ürün yok.
               </p>
             ) : (
               <div className="mt-4 grid gap-3 lg:grid-cols-2">
@@ -2108,7 +2186,7 @@ export function AdminOrderEntry({
                     <div className="flex flex-col items-start justify-between gap-2 sm:flex-row sm:gap-3">
                       <div>
                         <p className="font-semibold text-slate-900">{product.name}</p>
-                        <p className="mt-1 text-sm text-slate-600">{product.description ?? "Menu urunu"}</p>
+                        <p className="mt-1 text-sm text-slate-600">{product.description ?? "Menu ürünu"}</p>
                       </div>
                       <span className="text-sm font-semibold text-emerald-700">{Number(product.price).toFixed(2)} TL</span>
                     </div>
@@ -2141,7 +2219,7 @@ export function AdminOrderEntry({
                         onClick={() => openModifierPicker(product)}
                         className="w-full rounded-lg bg-slate-900 px-3 py-2 text-sm font-semibold text-white sm:ml-auto sm:w-auto"
                       >
-                        {(groupsByProduct.get(product.id) ?? []).length > 0 ? "Seceneklerle Ekle" : "Ekle"}
+                        {(groupsByProduct.get(product.id) ?? []).length > 0 ? "Seçeneklerle Ekle" : "Ekle"}
                       </button>
                     </div>
                   </div>
@@ -2153,7 +2231,7 @@ export function AdminOrderEntry({
       </section>
 
       <aside className="h-fit rounded-2xl bg-white p-5 shadow-sm">
-        <p className="text-xs uppercase tracking-[0.24em] text-slate-500">Aktif Siparis</p>
+        <p className="text-xs uppercase tracking-[0.24em] text-slate-500">Aktif Sipariş</p>
         <h2 className="mt-2 text-2xl font-semibold text-slate-900">{channelLabel(channel)}</h2>
         <div className="mt-4 grid gap-3 sm:grid-cols-2">
           <div className="rounded-2xl bg-slate-50 px-4 py-4">
@@ -2167,7 +2245,7 @@ export function AdminOrderEntry({
         </div>
         <div className="mt-4 space-y-3">
           {Object.values(cart).length === 0 ? (
-            <p className="rounded-xl bg-slate-50 px-3 py-4 text-sm text-slate-500">Sepet bos.</p>
+            <p className="rounded-xl bg-slate-50 px-3 py-4 text-sm text-slate-500">Sepet boş.</p>
           ) : (
             Object.values(cart).map((entry) => {
               const modifierTotal = entry.modifiers.reduce((sum, modifier) => sum + Number(modifier.price_delta), 0);
@@ -2233,13 +2311,13 @@ export function AdminOrderEntry({
           onClick={submitOrder}
           className="mt-5 w-full rounded-xl bg-emerald-600 px-4 py-3 text-sm font-semibold text-white disabled:opacity-60"
         >
-          {submitting ? "Siparis aciliyor..." : "Siparisi Ac"}
+          {submitting ? "Sipariş aciliyor..." : "Siparişi Ac"}
         </button>
       </aside>
     </div>
       <div className={`app-mobile-only space-y-3 ${isStackMobile ? "pb-[calc(190px+var(--safe-area-bottom))]" : "pb-[calc(164px+var(--safe-area-bottom))]"}`}>
         <article className="mobile-task-card space-y-3">
-          <p className="text-[10px] font-bold uppercase tracking-[0.16em] text-slate-500">Siparis Kanali</p>
+          <p className="text-[10px] font-bold uppercase tracking-[0.16em] text-slate-500">Sipariş Kanali</p>
           {(!operatingCapabilities || operatingCapabilities.channels.length > 1) && (
           <div className="grid grid-cols-3 gap-2">
             {(["dine_in", "pickup", "delivery"] as OrderChannel[])
@@ -2288,7 +2366,7 @@ export function AdminOrderEntry({
               <input
                 value={customerName}
                 onChange={(event) => setCustomerName(event.target.value)}
-                placeholder="Musteri adi"
+                placeholder="Müşteri adı"
                 className="rounded-xl border border-slate-300 bg-white px-3 py-3 text-sm"
               />
               <input
@@ -2308,14 +2386,14 @@ export function AdminOrderEntry({
               <textarea
                 value={deliveryNote}
                 onChange={(event) => setDeliveryNote(event.target.value)}
-                placeholder={channel === "delivery" ? "Kurye notu" : "Siparis notu"}
+                placeholder={channel === "delivery" ? "Kurye notu" : "Sipariş notu"}
                 className="min-h-20 rounded-xl border border-slate-300 bg-white px-3 py-3 text-sm"
               />
             </div>
           )}
         </article>
 
-        <article className="mobile-task-card">
+        <article className="mobile-task-card mobile-order-category-card">
           <div className="flex items-center justify-between gap-2">
             <div>
               <p className="text-[10px] font-bold uppercase tracking-[0.16em] text-slate-500">Menu Kategorileri</p>
@@ -2330,7 +2408,7 @@ export function AdminOrderEntry({
             </button>
           </div>
           {categoryTabsOpen ? (
-            <div className="mt-3 overflow-x-auto pb-1">
+            <div className="mobile-order-category-rail mt-3 overflow-x-auto pb-1">
               <div className={`flex min-w-max gap-2 ${isStackMobile ? "mobile-task-tabs-static" : ""}`}>
                 {orderedCategories.map((category) => {
                   const isActive = category.id === activeCategoryId;
@@ -2340,11 +2418,11 @@ export function AdminOrderEntry({
                       key={`mobile-category-${category.id}`}
                       type="button"
                       onClick={() => setSelectedCategoryId(category.id)}
-                      className={`rounded-xl px-4 py-2 text-sm font-semibold whitespace-nowrap ${
-                        isActive ? "bg-slate-900 text-white" : "border border-slate-300 bg-white text-slate-700"
-                      }`}
+                      data-active={isActive}
+                      className="mobile-order-category-chip whitespace-nowrap"
                     >
-                      {category.name} ({productCount})
+                      <span>{category.name}</span>
+                      <small>{productCount}</small>
                     </button>
                   );
                 })}
@@ -2357,7 +2435,7 @@ export function AdminOrderEntry({
           <article className="mobile-task-card space-y-3">
             <div className="flex items-start justify-between gap-2">
               <div>
-                <p className="text-[10px] font-bold uppercase tracking-[0.14em] text-slate-500">Secenekler</p>
+                <p className="text-[10px] font-bold uppercase tracking-[0.14em] text-slate-500">Seçenekler</p>
                 <p className="mt-1 text-base font-semibold text-slate-900">{activeProduct.name}</p>
               </div>
               <button
@@ -2375,7 +2453,7 @@ export function AdminOrderEntry({
               <div key={`mobile-group-${group.id}`} className="rounded-xl border border-slate-200 bg-slate-50 p-3">
                 <p className="text-sm font-semibold text-slate-900">{group.name}</p>
                 <p className="mt-1 text-xs text-slate-500">
-                  {group.is_required ? "Zorunlu" : "Opsiyonel"} - en fazla {group.max_select}
+                  {group.is_required ? "Zorunlu" : "Opsiyönel"} - en fazla {group.max_select}
                 </p>
                 <div className="mt-2 grid gap-2">
                   {(optionsByGroup.get(group.id) ?? []).map((option) => {
@@ -2420,52 +2498,31 @@ export function AdminOrderEntry({
           </div>
         ) : null}
 
-        <article className="mobile-task-card">
+        <article className="mobile-task-card mobile-order-products-card">
           <div className="mb-3 flex items-center justify-between gap-2">
             <h2 className="text-base font-semibold text-slate-900">{activeCategory?.name ?? "Kategori"}</h2>
             <span className="rounded-lg bg-slate-100 px-3 py-1 text-xs font-semibold text-slate-700">
-              {visibleProducts.length} urun
+              {visibleProducts.length} ürün
             </span>
           </div>
-          <div className="space-y-3">
+          <div className="mobile-order-product-list">
             {visibleProducts.map((product) => (
-              <div key={`mobile-product-${product.id}`} className="rounded-xl border border-slate-200 bg-white p-3">
-                <div className="flex items-start justify-between gap-2">
+              <div key={`mobile-product-${product.id}`} className="mobile-order-product-row">
+                <div className="flex min-w-0 items-start justify-between gap-3">
                   <div className="min-w-0">
                     <p className="truncate text-[1rem] font-semibold text-slate-900">{product.name}</p>
-                    <p className="mt-1 text-sm text-emerald-700">{Number(product.price).toFixed(2)} TL</p>
+                    <p className="mt-1 text-sm font-bold text-slate-950">{Number(product.price).toFixed(2)} TL</p>
+                    <span className="mt-2 inline-flex rounded-lg bg-slate-100 px-2 py-1 text-[10px] font-bold uppercase tracking-[0.08em] text-slate-500">
+                      {(groupsByProduct.get(product.id) ?? []).length > 0 ? "Opsiyonlu" : "Normal"}
+                    </span>
                   </div>
-                </div>
-                <div className="mt-3 flex flex-wrap items-center gap-2">
-                  <button
-                    type="button"
-                    onClick={() => setConfiguredQuantity(product.id, getConfiguredQuantity(product.id) - 1)}
-                    className="inline-flex h-10 w-10 items-center justify-center rounded-lg border border-slate-300 text-sm font-semibold text-slate-700"
-                  >
-                    -
-                  </button>
-                  <input
-                    type="number"
-                    min={1}
-                    max={99}
-                    inputMode="numeric"
-                    value={getConfiguredQuantity(product.id)}
-                    onChange={(event) => setConfiguredQuantity(product.id, Number(event.target.value))}
-                    className="h-10 w-16 rounded-lg border border-slate-300 px-2 text-center text-sm"
-                  />
-                  <button
-                    type="button"
-                    onClick={() => setConfiguredQuantity(product.id, getConfiguredQuantity(product.id) + 1)}
-                    className="inline-flex h-10 w-10 items-center justify-center rounded-lg border border-slate-300 text-sm font-semibold text-slate-700"
-                  >
-                    +
-                  </button>
                   <button
                     type="button"
                     onClick={() => openModifierPicker(product)}
-                    className="mobile-cta-primary inline-flex h-10 w-full items-center justify-center rounded-lg px-4 text-sm font-semibold text-white sm:ml-auto sm:w-auto"
+                    className="mobile-order-add-button"
+                    aria-label={`${product.name} sepete ekle`}
                   >
-                    {(groupsByProduct.get(product.id) ?? []).length > 0 ? "Secenekli Ekle" : "Ekle"}
+                    +
                   </button>
                 </div>
               </div>
@@ -2480,7 +2537,7 @@ export function AdminOrderEntry({
             <header className="sticky top-0 z-10 rounded-2xl border border-slate-200 bg-white px-3 py-3 shadow-[0_6px_14px_rgba(15,23,42,0.08)]">
               <div className="flex items-center justify-between gap-3">
                 <div>
-                  <p className="text-[10px] font-semibold uppercase tracking-[0.16em] text-slate-500">Aktif Siparis</p>
+                  <p className="text-[10px] font-semibold uppercase tracking-[0.16em] text-slate-500">Aktif Sipariş</p>
                   <h2 className="mt-1 text-[1.05rem] font-semibold tracking-tight text-slate-900">{channelLabel(channel)}</h2>
                 </div>
                 <button
@@ -2495,7 +2552,7 @@ export function AdminOrderEntry({
 
             <div className="mt-3 space-y-2">
               {cartEntries.length === 0 ? (
-                <p className="rounded-xl border border-slate-200 bg-white px-3 py-4 text-sm text-slate-500">Sepet bos.</p>
+                <p className="rounded-xl border border-slate-200 bg-white px-3 py-4 text-sm text-slate-500">Sepet boş.</p>
               ) : (
                 cartEntries.map((entry) => {
                   const modifierTotal = entry.modifiers.reduce((sum, modifier) => sum + Number(modifier.price_delta), 0);
@@ -2543,27 +2600,26 @@ export function AdminOrderEntry({
         className={`app-mobile-only fixed inset-x-0 z-40 px-3`}
         style={{ bottom: isStackMobile ? "calc(74px + var(--safe-area-bottom))" : "calc(72px + var(--safe-area-bottom))" }}
       >
-        <div className={`rounded-2xl border border-slate-200 bg-white p-3 shadow-[0_12px_30px_rgba(15,23,42,0.14)] ${isStackMobile ? "m-flow-cart-dock" : ""}`}>
+        <div className={`mobile-order-cart-dock rounded-2xl border border-slate-200 bg-white p-3 shadow-[0_12px_30px_rgba(15,23,42,0.14)] ${isStackMobile ? "m-flow-cart-dock" : ""}`}>
           <div className="flex items-center justify-between gap-3">
             <div>
-              <p className="text-[10px] font-semibold uppercase tracking-[0.14em] text-slate-500">Aktif Siparis</p>
-              <p className="mt-1 text-sm font-semibold text-slate-900">{cartCount} kalem - {total.toFixed(2)} TL</p>
+              <p className="text-[10px] font-semibold uppercase tracking-[0.14em] text-slate-500">Aktif Sipariş</p>
+              <p className="mt-1 text-sm font-semibold text-slate-900">{cartCount} kalem</p>
             </div>
             <button
               type="button"
               onClick={() => setMobileCartOpen(true)}
               className="rounded-xl border border-slate-300 bg-white px-3 py-2 text-xs font-semibold text-slate-700"
             >
-              Sepeti Ac
+              {total.toFixed(2)} TL
             </button>
           </div>
           <button
             type="button"
-            disabled={submitting}
-            onClick={submitOrder}
-            className="mobile-cta-primary mt-3 w-full rounded-xl px-4 py-3 text-sm font-semibold text-white disabled:opacity-60"
+            onClick={() => setMobileCartOpen(true)}
+            className="mobile-cta-primary mt-3 w-full rounded-xl px-4 py-3 text-sm font-semibold text-white"
           >
-            {submitting ? "Siparis aciliyor..." : "Siparisi Ac"}
+            Sepeti Ac
           </button>
         </div>
       </div>

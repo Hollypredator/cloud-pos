@@ -181,7 +181,7 @@ export function PickupBoardClient({
     <div className="grid h-screen grid-cols-2">
       <div className="flex min-h-0 flex-col border-r border-white/5 bg-[#111114] p-6">
         <div className="mb-4 flex items-center justify-between">
-          <h2 className="text-3xl font-bold tracking-tight text-slate-300">Hazirlaniyor</h2>
+          <h2 className="text-3xl font-bold tracking-tight text-slate-300">Hazırlaniyor</h2>
           <div className="rounded-full border border-sky-500/20 bg-sky-500/10 px-3 py-1 text-xs font-bold uppercase tracking-widest text-sky-400">
             Preparing
           </div>
@@ -212,14 +212,14 @@ export function PickupBoardClient({
                     </span>
                   </div>
                   <div className={`truncate font-semibold text-slate-200 ${preparingLabelClass}`}>
-                    {resolveOrderLabel(order, "Siparis Hazirlaniyor")}
+                    {resolveOrderLabel(order, "Sipariş Hazırlaniyor")}
                   </div>
                   <div className="mt-1 text-[11px] text-slate-400">{ageMinutes} dk bekliyor</div>
                 </div>
               );
             })}
           </div>
-          {prioritizedPreparing.length === 0 ? <div className="mt-12 text-2xl font-medium text-slate-600">Henuz yeni siparis yok...</div> : null}
+          {prioritizedPreparing.length === 0 ? <div className="mt-12 text-2xl font-medium text-slate-600">Henüz yeni sipariş yok...</div> : null}
         </div>
 
         {preparingTotalPages > 1 ? (
@@ -260,7 +260,7 @@ export function PickupBoardClient({
               </div>
             ))}
           </div>
-          {ready.length === 0 ? <div className="mt-12 text-2xl font-medium text-slate-700">Bekleyen hazir siparis yok.</div> : null}
+          {ready.length === 0 ? <div className="mt-12 text-2xl font-medium text-slate-700">Bekleyen hazir sipariş yok.</div> : null}
         </div>
 
         {readyTotalPages > 1 ? (

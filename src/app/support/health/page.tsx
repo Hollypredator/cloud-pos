@@ -68,7 +68,7 @@ export default async function SupportHealthPage({
         ))}
         {filteredHealth.length === 0 ? (
           <div className="rounded-2xl border border-dashed border-slate-300 bg-white px-6 py-10 text-sm text-slate-500 md:col-span-2 xl:col-span-3">
-            {translateUiText("Filtreye uygun tenant health kaydı bulunamadi.", locale)}
+            {translateUiText("Filtreye uygun tenant health kaydı bulunamadı.", locale)}
           </div>
         ) : null}
       </section>

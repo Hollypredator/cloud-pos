@@ -3,6 +3,8 @@
 import { useEffect } from "react";
 
 const OPS_CACHE_PREFIX = "ops-";
+const RELOAD_MARKER_KEY = "cloudpos:pwa-controller-reload-at";
+const RELOAD_MARKER_TTL_MS = 30_000;
 
 async function clearOpsCaches() {
   if (!("caches" in window)) {
@@ -46,7 +48,56 @@ export function PwaRuntime({ enabled }: { enabled: boolean }) {
       return;
     }
 
-    void navigator.serviceWorker.register("/sw.js", { scope: "/" }).catch(() => {});
+    let reloading = false;
+
+    const shouldReloadForControllerChange = () => {
+      try {
+        const raw = window.sessionStorage.getItem(RELOAD_MARKER_KEY);
+        const lastReloadAt = raw ? Number.parseInt(raw, 10) : 0;
+        return !Number.isFinite(lastReloadAt) || Date.now() - lastReloadAt > RELOAD_MARKER_TTL_MS;
+      } catch {
+        return true;
+      }
+    };
+
+    const markControllerReload = () => {
+      try {
+        window.sessionStorage.setItem(RELOAD_MARKER_KEY, Date.now().toString());
+      } catch {}
+    };
+
+    const handleControllerChange = () => {
+      if (reloading || !shouldReloadForControllerChange()) {
+        return;
+      }
+      reloading = true;
+      markControllerReload();
+      window.location.reload();
+    };
+
+    navigator.serviceWorker.addEventListener("controllerchange", handleControllerChange);
+
+    void navigator.serviceWorker.register("/sw.js", { scope: "/" }).then((registration) => {
+      if (registration.waiting) {
+        registration.waiting.postMessage({ type: "OPS_SKIP_WAITING" });
+      }
+
+      registration.addEventListener("updatefound", () => {
+        const installingWorker = registration.installing;
+        if (!installingWorker) {
+          return;
+        }
+        installingWorker.addEventListener("statechange", () => {
+          if (installingWorker.state === "installed" && navigator.serviceWorker.controller) {
+            installingWorker.postMessage({ type: "OPS_SKIP_WAITING" });
+          }
+        });
+      });
+    }).catch(() => {});
+
+    return () => {
+      navigator.serviceWorker.removeEventListener("controllerchange", handleControllerChange);
+    };
   }, [enabled]);
 
   useEffect(() => {

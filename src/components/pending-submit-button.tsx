@@ -31,7 +31,7 @@ export function PendingSubmitButton({
       }}
       className={`touch-manipulation ${className ?? ""}`}
     >
-      {pending ? pendingLabel ?? "Isleniyor..." : idleLabel}
+      {pending ? pendingLabel ?? "İşleniyor..." : idleLabel}
     </button>
   );
 }
