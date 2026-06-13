@@ -36,6 +36,8 @@ export type ApplicationSettings = {
   appPrintingEnabled: boolean;
   demoMode: boolean;
   embeddedDemoCatalogEnabled: boolean;
+  qrMenuEnabled: boolean;
+  qrOrderingEnabled: boolean;
   mobileAppExperienceEnabled: boolean;
   mobileReadOnlyPwaEnabled: boolean;
   autoSessionCloseEnabled: boolean;
@@ -98,6 +100,8 @@ export const defaultApplicationSettings: ApplicationSettings = {
   appPrintingEnabled: false,
   demoMode: false,
   embeddedDemoCatalogEnabled: true,
+  qrMenuEnabled: true,
+  qrOrderingEnabled: true,
   mobileAppExperienceEnabled: true,
   mobileReadOnlyPwaEnabled: false,
   autoSessionCloseEnabled: false,
@@ -174,6 +178,14 @@ export function normalizeApplicationSettings(input?: Partial<ApplicationSettings
       typeof merged.embeddedDemoCatalogEnabled === "boolean"
         ? merged.embeddedDemoCatalogEnabled
         : defaultApplicationSettings.embeddedDemoCatalogEnabled,
+    qrMenuEnabled:
+      typeof merged.qrMenuEnabled === "boolean"
+        ? merged.qrMenuEnabled
+        : defaultApplicationSettings.qrMenuEnabled,
+    qrOrderingEnabled:
+      typeof merged.qrOrderingEnabled === "boolean"
+        ? merged.qrOrderingEnabled
+        : defaultApplicationSettings.qrOrderingEnabled,
     mobileAppExperienceEnabled: Boolean(merged.mobileAppExperienceEnabled),
     mobileReadOnlyPwaEnabled: Boolean(merged.mobileReadOnlyPwaEnabled),
     autoSessionCloseEnabled: Boolean(merged.autoSessionCloseEnabled),

@@ -85,6 +85,20 @@
 - Local production checks on `http://localhost:3126` returned 200 for `/google25ee5ff439ffbaa2.html`, `/robots.txt`, and `/sitemap.xml`.
 - Note: local sitemap/robots use `http://localhost:3000` unless production sets `NEXT_PUBLIC_SITE_URL` or the SEO canonical URL setting.
 
+## 2026-06-13 Phase 19
+- Implemented optional QR menu and QR ordering controls.
+- Added `qrMenuEnabled` and `qrOrderingEnabled` to normalized application settings with backwards-compatible default `true`.
+- Added owner-facing toggles to `/admin/settings` under application settings.
+- Guarded `/{slug}/qr/{identifier}` so QR menu disabled returns a closed-state page without loading menu products.
+- Guarded `POST /api/orders` so signed QR order submission is rejected when QR menu or QR ordering is disabled.
+- Refreshed the restaurant QR menu UI with a light premium surface, hero summary, search, category chips, richer product cards, disabled-ordering banner, modern cart bar, and updated cart modal.
+- Verification passed: `npm run typecheck`, `npm run lint` (pre-existing `pickup-snapshot` warning only), and `npm run build`.
+- Local production server ran on `http://localhost:3130`; `/qr/table-1` returned 200 and redirected to `/default/qr/table-1`.
+- Browser plugin `iab` was unavailable, so rendered QA used Playwright fallback.
+- Playwright desktop and mobile screenshots confirmed the refreshed QR menu renders nonblank with no framework overlay. Screenshots saved under `C:\Users\coban\AppData\Local\Temp\qr-menu-qa-1781377299195`.
+- Playwright mobile interaction clicked `Hızlı Ekle`, showed the cart bar, opened the cart modal, and captured `C:\Users\coban\AppData\Local\Temp\qr-menu-qa-interaction-1781377337526\mobile-cart.png`.
+- Local QA console showed only expected Vercel analytics/speed-insights 404/MIME errors from local production, not app runtime errors.
+
 ## 2026-06-08
 - Started an operational PWA design audit after the user reported old-screen regressions and asked to identify weak or incomplete areas.
 - Confirmed `/m/cashier`, `/m/kitchen`, `/m/delivery`, and `/m/service-requests` still re-export desktop pages, even though those desktop pages include some mobile-only sections.

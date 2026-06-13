@@ -22,6 +22,7 @@ Improve Cloud POS product screens for PWA use and future App Store, Google Play,
 - Phase 16: General Turkish copy and mojibake cleanup - complete
 - Phase 17: Landing/demo image asset path fix - complete
 - Phase 18: Google Search Console file verification - complete
+- Phase 19: QR menu feature toggles and customer menu redesign - complete
 
 ## Design Thesis
 Cloud POS should feel like a native operations cockpit: calm surfaces, large touch targets, clear queues, and a small number of decisive actions per screen.
@@ -50,10 +51,9 @@ Cloud POS should feel like a native operations cockpit: calm surfaces, large tou
 8. Revenue/expense dashboard
 
 ## Current Session Focus
-- Fix pixelated-looking public typography by smoothing fonts and reducing overly heavy display weights.
-- Update `/demo`, `/studio`, and `/support` to match the colorful Turkish product landing direction.
-- Keep real product screenshots and operational CTAs visible where relevant.
-- Remove remaining mojibake and high-visibility ASCII Turkish spelling issues from public, studio, support, login, demo, and operational copy surfaces.
+- Phase 19 complete: QR menu access and QR customer ordering are independently optional.
+- Admin settings now exposes QR menu and QR ordering switches.
+- Customer QR menu has a refreshed light visual design with search, category chips, product cards, and a modern cart flow.
 
 ## Decisions
 - Keep the current professional light SaaS direction.
@@ -81,3 +81,4 @@ Cloud POS should feel like a native operations cockpit: calm surfaces, large tou
 | Public landing/demo screenshots not loading | Image paths used Turkish characters while files in `public/landing-assets` use ASCII filenames | Fixed component paths and verified `/` plus `/demo` image assets load with HTTP 200 |
 | Windows `Start-Process npm` failed | Tried to start local Next server with `npm` as executable | Retry with `npm.cmd`, which is the Windows command shim |
 | Google verification file route returned app 404 HTML | Public file path was intercepted by the app `[slug]` route in local production check | Added an explicit route handler for `/google25ee5ff439ffbaa2.html` |
+| Browser plugin unavailable | Tried to acquire the in-app `iab` browser for QR visual QA | Used Playwright fallback and saved screenshots under the Windows temp directory |

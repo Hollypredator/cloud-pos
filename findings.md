@@ -75,3 +75,10 @@
 - `src/components/product-landing-page.tsx` references Turkish-character filenames: `/landing-assets/mobil-pos-sipariş.png` and `/landing-assets/mobil-masa-akışı.png`.
 - `src/components/demo-page-renderer.tsx` also references `/landing-assets/mobil-pos-sipariş.png`.
 - Root cause: public asset URL mismatch after Turkish copy cleanup; browser requests those URLs as missing files, producing unloaded image placeholders.
+
+## 2026-06-13 QR Menu Toggle and Redesign
+- `ApplicationSettings` is the right low-risk place for QR feature switches because it is already persisted as JSON in `app_settings` and normalized with backwards-compatible defaults.
+- QR menu visibility must be enforced server-side in `/{slug}/qr/{identifier}` so public users do not receive product/menu data when QR menu is disabled.
+- QR ordering must also be enforced in `POST /api/orders`; hiding client buttons is insufficient because old tabs or direct requests could still submit signed QR orders.
+- Existing local QR demo route `/qr/table-1` redirects to `/default/qr/table-1` and renders a large seeded menu, which is suitable for visual QA.
+- Local production QA reports irrelevant Vercel analytics/speed-insights 404/MIME console errors because those endpoints are not served locally.

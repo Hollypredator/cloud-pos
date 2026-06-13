@@ -89,6 +89,8 @@ async function updateApplicationSettingsAction(formData: FormData) {
     formData.has("mobileAppExperienceEnabled_present") || formData.has("mobileAppExperienceEnabled");
   const hasMobileReadOnlyPwaEnabled =
     formData.has("mobileReadOnlyPwaEnabled_present") || formData.has("mobileReadOnlyPwaEnabled");
+  const hasQrMenuEnabled = formData.has("qrMenuEnabled_present") || formData.has("qrMenuEnabled");
+  const hasQrOrderingEnabled = formData.has("qrOrderingEnabled_present") || formData.has("qrOrderingEnabled");
   const sidebarTheme = readString(formData, "sidebarTheme");
   const sidebarAccentColor = readString(formData, "sidebarAccentColor");
   const ownerSidebarOrderRaw = readString(formData, "ownerSidebarOrder");
@@ -124,6 +126,8 @@ async function updateApplicationSettingsAction(formData: FormData) {
     mobileReadOnlyPwaEnabled: hasMobileReadOnlyPwaEnabled
       ? formData.get("mobileReadOnlyPwaEnabled") === "on"
       : currentSettings.mobileReadOnlyPwaEnabled,
+    qrMenuEnabled: hasQrMenuEnabled ? formData.get("qrMenuEnabled") === "on" : currentSettings.qrMenuEnabled,
+    qrOrderingEnabled: hasQrOrderingEnabled ? formData.get("qrOrderingEnabled") === "on" : currentSettings.qrOrderingEnabled,
     sidebarTheme: nextSidebarTheme,
     sidebarOrder: currentSettings.sidebarOrder,
     sidebarAccentColor: sidebarAccentColor || currentSettings.sidebarAccentColor,
@@ -144,6 +148,8 @@ async function updateApplicationSettingsAction(formData: FormData) {
   revalidatePath("/cashier/session");
   revalidatePath("/delivery");
   revalidatePath("/tables");
+  revalidatePath("/qr/[identifier]", "page");
+  revalidatePath("/[slug]/qr/[identifier]", "page");
   revalidatePath("/admin/reports");
   revalidatePath("/admin/finance");
 }
@@ -395,6 +401,20 @@ export default async function AdminSettingsPage() {
                 defaultChecked={applicationSettings.mobileReadOnlyPwaEnabled}
               />
               <input type="hidden" name="mobileReadOnlyPwaEnabled_present" value="1" />
+              <ToggleField
+                title="QR Menü"
+                description="Masa QR kodu okutuldugunda musteri menusu gorunsun."
+                name="qrMenuEnabled"
+                defaultChecked={applicationSettings.qrMenuEnabled}
+              />
+              <input type="hidden" name="qrMenuEnabled_present" value="1" />
+              <ToggleField
+                title="QR Uzerinden Siparis"
+                description="Musteri QR menuden sepet olusturup siparis gonderebilsin."
+                name="qrOrderingEnabled"
+                defaultChecked={applicationSettings.qrOrderingEnabled}
+              />
+              <input type="hidden" name="qrOrderingEnabled_present" value="1" />
               <div className="grid gap-4">
                 <label className="block">
                   <span className="text-sm font-medium text-slate-700">Sidebar renk temasi</span>

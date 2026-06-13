@@ -12,6 +12,7 @@ import {
 import { getSupabaseServerClient } from "@/lib/supabase/server";
 import { getBusinessScopeContext } from "@/lib/server/app-context";
 import { resolveOperatingProfile } from "@/lib/operating-profile";
+import { getApplicationSettings } from "@/lib/data";
 import { getQrAccessFailurePayload, verifyQrAccessToken } from "@/lib/qr-access";
 import type { FulfillmentStatus, OrderChannel } from "@/lib/types";
 
@@ -147,6 +148,27 @@ export async function POST(request: Request) {
     if (!canCreateOrders) {
       logApiEvent("warn", "orders.create.forbidden", { correlationId });
       return json({ ok: false, code: "FORBIDDEN", message: "Siparis olusturma yetkiniz yok." }, { status: 403 });
+    }
+
+    if (isQrOrder) {
+      const { settings: applicationSettings } = await getApplicationSettings();
+      if (!applicationSettings.qrMenuEnabled || !applicationSettings.qrOrderingEnabled) {
+        logApiEvent("warn", "orders.create.qr_ordering_disabled", {
+          correlationId,
+          businessSlug: body.businessSlug ?? null,
+          qrCodeIdentifier: body.qrCodeIdentifier ?? null,
+          qrMenuEnabled: applicationSettings.qrMenuEnabled,
+          qrOrderingEnabled: applicationSettings.qrOrderingEnabled,
+        });
+        return json(
+          {
+            ok: false,
+            code: "QR_ORDERING_DISABLED",
+            message: "QR uzerinden siparis verme su anda kapali.",
+          },
+          { status: 403 },
+        );
+      }
     }
 
     const businessScope = allowDemoBypass ? null : await getBusinessScopeContext();
