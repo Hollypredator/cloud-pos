@@ -1,6 +1,20 @@
+import type { Metadata } from "next";
 import Link from "next/link";
 import { PublicTopNav } from "@/components/public-top-nav";
-import { listBlogPosts } from "@/lib/data";
+import { getSeoSettings, listBlogPosts } from "@/lib/data";
+import { buildPageMetadata, publicSeo } from "@/lib/seo";
+
+export async function generateMetadata(): Promise<Metadata> {
+  const { settings } = await getSeoSettings();
+
+  return buildPageMetadata({
+    title: publicSeo.blogTitle,
+    description: publicSeo.blogDescription,
+    path: "/blog",
+    seoSettings: settings,
+    image: settings.ogImageUrl || publicSeo.ogImage,
+  });
+}
 
 function formatDate(value: string | null, fallback: string) {
   return new Date(value ?? fallback).toLocaleDateString("tr-TR", {

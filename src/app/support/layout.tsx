@@ -1,5 +1,12 @@
+import type { Metadata } from "next";
 import { LogoutButton } from "@/components/logout-button";
 import { SupportNav } from "@/components/support-nav";
+import { protectedRobots } from "@/lib/seo";
+
+export const metadata: Metadata = {
+  title: "Support",
+  robots: protectedRobots,
+};
 
 export default async function SupportLayout({
   children,

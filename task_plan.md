@@ -20,6 +20,8 @@ Improve Cloud POS product screens for PWA use and future App Store, Google Play,
 - Phase 14: Login surface visual alignment - complete
 - Phase 15: Studio content visual builder correction - complete
 - Phase 16: General Turkish copy and mojibake cleanup - complete
+- Phase 17: Landing/demo image asset path fix - complete
+- Phase 18: Google Search Console file verification - complete
 
 ## Design Thesis
 Cloud POS should feel like a native operations cockpit: calm surfaces, large touch targets, clear queues, and a small number of decisive actions per screen.
@@ -76,3 +78,6 @@ Cloud POS should feel like a native operations cockpit: calm surfaces, large tou
 | Mobile `Siparis Ac` wrong screen | Flow opened order composer without a table and used tablet three-pane layout | Required selected table before composer, moved prompt above table list, and switched to `mobile_stack` |
 | Auth-only mobile delivery/service visual QA | Demo login stayed on `/login?next=/m/*` in local production server | Verified unauthenticated first-load redirects, no visible 404, route guards, typecheck, lint, and build |
 | CSP drift risk | Middleware and `next.config.ts` generated different security policies | Added a shared security header source and `security:headers` guard |
+| Public landing/demo screenshots not loading | Image paths used Turkish characters while files in `public/landing-assets` use ASCII filenames | Fixed component paths and verified `/` plus `/demo` image assets load with HTTP 200 |
+| Windows `Start-Process npm` failed | Tried to start local Next server with `npm` as executable | Retry with `npm.cmd`, which is the Windows command shim |
+| Google verification file route returned app 404 HTML | Public file path was intercepted by the app `[slug]` route in local production check | Added an explicit route handler for `/google25ee5ff439ffbaa2.html` |

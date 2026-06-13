@@ -93,13 +93,13 @@ const screenshots = [
   {
     title: "Mobil POS sipariş",
     body: "Ürün arama, kategori seçimi ve hızlı sipariş ekleme akışı.",
-    image: "/landing-assets/mobil-pos-sipariş.png",
+    image: "/landing-assets/mobil-pos-siparis.png",
     alt: "Cloud POS mobil sipariş gerçek ekran görüntüsü",
   },
   {
     title: "Masa ve servis akışı",
     body: "Masa seçimi, adısyon açma ve servis süreci mobilde net ilerler.",
-    image: "/landing-assets/mobil-masa-akışı.png",
+    image: "/landing-assets/mobil-masa-akisi.png",
     alt: "Cloud POS mobil masa akışı gerçek ekran görüntüsü",
   },
 ];

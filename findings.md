@@ -69,3 +69,9 @@
 - `src/lib/data.ts` was the main shared source of broken user-facing error and demo-copy strings.
 - Studio/support/demo visual editor labels also had many high-visibility ASCII Turkish labels, so they were cleaned directly.
 - Broad replacements can corrupt code identifiers when Turkish-like substrings appear in English code words such as `section`, `loading`, `secure`, or `radius`; typecheck is required after any mechanical Turkish text pass.
+
+## 2026-06-13 Landing Asset Loading Bug
+- `public/landing-assets` contains ASCII filenames: `mobil-pos-siparis.png` and `mobil-masa-akisi.png`.
+- `src/components/product-landing-page.tsx` references Turkish-character filenames: `/landing-assets/mobil-pos-sipariş.png` and `/landing-assets/mobil-masa-akışı.png`.
+- `src/components/demo-page-renderer.tsx` also references `/landing-assets/mobil-pos-sipariş.png`.
+- Root cause: public asset URL mismatch after Turkish copy cleanup; browser requests those URLs as missing files, producing unloaded image placeholders.

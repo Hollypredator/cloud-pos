@@ -9,6 +9,7 @@ import { getCurrentLocale } from "@/lib/i18n-server";
 import { Toaster } from "react-hot-toast";
 import { getAppShellPayload } from "@/lib/server/app-shell";
 import { AppRuntimeWrapper } from "@/components/app-runtime-wrapper";
+import { absoluteUrl, getSiteBaseUrl, publicSeo } from "@/lib/seo";
 
 const APP_SHELL_FETCH_BUDGET_MS = 220;
 
@@ -39,21 +40,49 @@ export async function generateMetadata(): Promise<Metadata> {
   ]);
 
   return {
-    title: seoSettings.metaTitle || generalSettings.siteName,
-    description: seoSettings.metaDescription,
+    metadataBase: new URL(getSiteBaseUrl(seoSettings)),
+    title: {
+      default: seoSettings.metaTitle || publicSeo.homeTitle,
+      template: `%s | ${generalSettings.siteName}`,
+    },
+    description: seoSettings.metaDescription || publicSeo.homeDescription,
     applicationName: generalSettings.siteName,
-    robots: seoSettings.indexable ? "index, follow" : "noindex, nofollow",
-    alternates: seoSettings.canonicalUrl ? { canonical: seoSettings.canonicalUrl } : undefined,
+    keywords: [
+      "Cloud POS",
+      "self servis POS",
+      "kafe restoran POS",
+      "QR sipariş",
+      "bulut POS",
+      "mutfak ekranı",
+      "çok şubeli POS",
+      "stok takip",
+    ],
+    authors: [{ name: generalSettings.siteName }],
+    creator: generalSettings.siteName,
+    publisher: generalSettings.siteName,
+    category: "restaurant point of sale software",
+    robots: seoSettings.indexable ? { index: true, follow: true } : { index: false, follow: false },
     openGraph: {
-      title: seoSettings.ogTitle || seoSettings.metaTitle || generalSettings.siteName,
-      description: seoSettings.ogDescription || seoSettings.metaDescription,
-      images: seoSettings.ogImageUrl ? [{ url: seoSettings.ogImageUrl }] : undefined,
+      type: "website",
+      title: seoSettings.ogTitle || seoSettings.metaTitle || publicSeo.homeTitle,
+      description: seoSettings.ogDescription || seoSettings.metaDescription || publicSeo.homeDescription,
+      siteName: generalSettings.siteName,
+      locale: "tr_TR",
+      url: absoluteUrl("/", seoSettings),
+      images: [
+        {
+          url: seoSettings.ogImageUrl || absoluteUrl(publicSeo.ogImage, seoSettings),
+          width: 1200,
+          height: 630,
+          alt: generalSettings.siteName,
+        },
+      ],
     },
     twitter: {
       card: "summary_large_image",
-      title: seoSettings.ogTitle || seoSettings.metaTitle || generalSettings.siteName,
-      description: seoSettings.ogDescription || seoSettings.metaDescription,
-      images: seoSettings.ogImageUrl ? [seoSettings.ogImageUrl] : undefined,
+      title: seoSettings.ogTitle || seoSettings.metaTitle || publicSeo.homeTitle,
+      description: seoSettings.ogDescription || seoSettings.metaDescription || publicSeo.homeDescription,
+      images: [seoSettings.ogImageUrl || absoluteUrl(publicSeo.ogImage, seoSettings)],
       creator: seoSettings.twitterHandle || undefined,
     },
     appleWebApp: {

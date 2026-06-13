@@ -1,10 +1,17 @@
+import type { Metadata } from "next";
 import { cookies } from "next/headers";
 import { redirect } from "next/navigation";
 import { MobileAuthRedirect } from "@/components/mobile-auth-redirect";
 import { MobileOpsShell } from "@/components/mobile-ops-shell";
 import { getAppShellPayload } from "@/lib/server/app-shell";
+import { protectedRobots } from "@/lib/seo";
 
 const MOBILE_APP_SHELL_BUDGET_MS = 220;
+
+export const metadata: Metadata = {
+  title: "Mobil Operasyon",
+  robots: protectedRobots,
+};
 
 function isServiceRoleConfigured() {
   return Boolean(process.env.NEXT_PUBLIC_SUPABASE_URL && process.env.SUPABASE_SERVICE_ROLE_KEY);

@@ -71,7 +71,7 @@ const demoScreens = [
   {
     title: "Mobil sipariş",
     body: "Kategori, ürün arama ve hızlı ekleme akışı.",
-    image: "/landing-assets/mobil-pos-sipariş.png",
+    image: "/landing-assets/mobil-pos-siparis.png",
     alt: "Cloud POS mobil POS sipariş gerçek ekran görüntüsü",
     className: "",
   },

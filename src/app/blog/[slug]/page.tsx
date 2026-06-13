@@ -1,6 +1,8 @@
+import type { Metadata } from "next";
 import Link from "next/link";
 import { notFound } from "next/navigation";
-import { getBlogPostBySlug, listBlogPosts } from "@/lib/data";
+import { getBlogPostBySlug, getSeoSettings, listBlogPosts } from "@/lib/data";
+import { absoluteUrl, buildPageMetadata, JsonLd, publicSeo } from "@/lib/seo";
 
 function formatDate(value: string | null, fallback: string) {
   return new Date(value ?? fallback).toLocaleDateString("tr-TR", {
@@ -14,9 +16,34 @@ function readingTime(body: string) {
   return Math.max(1, Math.ceil(body.trim().split(/\s+/).filter(Boolean).length / 200));
 }
 
+export async function generateMetadata({ params }: { params: Promise<{ slug: string }> }): Promise<Metadata> {
+  const { slug } = await params;
+  const [{ post }, { settings }] = await Promise.all([getBlogPostBySlug(slug, false), getSeoSettings()]);
+
+  if (!post) {
+    return buildPageMetadata({
+      title: "Blog yazısı bulunamadı",
+      description: publicSeo.blogDescription,
+      path: `/blog/${slug}`,
+      seoSettings: settings,
+    });
+  }
+
+  return buildPageMetadata({
+    title: post.title,
+    description: post.excerpt || post.body.slice(0, 155),
+    path: `/blog/${post.slug}`,
+    seoSettings: settings,
+    image: post.cover_image_url || settings.ogImageUrl || publicSeo.ogImage,
+    type: "article",
+    publishedTime: post.published_at,
+    modifiedTime: post.updated_at,
+  });
+}
+
 export default async function BlogPostPage({ params }: { params: Promise<{ slug: string }> }) {
   const { slug } = await params;
-  const [{ post }, { posts }] = await Promise.all([getBlogPostBySlug(slug, false), listBlogPosts(false)]);
+  const [{ post }, { posts }, { settings }] = await Promise.all([getBlogPostBySlug(slug, false), listBlogPosts(false), getSeoSettings()]);
 
   if (!post) {
     notFound();
@@ -26,6 +53,26 @@ export default async function BlogPostPage({ params }: { params: Promise<{ slug:
 
   return (
     <div className="min-h-screen bg-[linear-gradient(180deg,#f8fafc_0%,#eef2f7_100%)] px-3 py-5 sm:px-4 sm:py-8 md:px-8 md:py-10">
+      <JsonLd
+        data={{
+          "@context": "https://schema.org",
+          "@type": "BlogPosting",
+          headline: post.title,
+          description: post.excerpt || post.body.slice(0, 155),
+          image: post.cover_image_url ? [absoluteUrl(post.cover_image_url, settings)] : [absoluteUrl(publicSeo.ogImage, settings)],
+          datePublished: post.published_at ?? post.created_at,
+          dateModified: post.updated_at,
+          author: {
+            "@type": "Organization",
+            name: publicSeo.siteName,
+          },
+          publisher: {
+            "@type": "Organization",
+            name: publicSeo.siteName,
+          },
+          mainEntityOfPage: absoluteUrl(`/blog/${post.slug}`, settings),
+        }}
+      />
       <main className="mx-auto max-w-6xl space-y-6 sm:space-y-8">
         <Link href="/blog" className="inline-flex w-full rounded-xl border border-slate-300 bg-white px-4 py-2 text-center text-sm font-semibold text-slate-700 sm:w-auto">
           Bloga Don

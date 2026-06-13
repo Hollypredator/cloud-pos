@@ -61,6 +61,30 @@
 - Review the generated mobile QA screenshots with the user.
 - Continue with the next PWA redesign surface after approval: mobile operation center, table selection density, or checkout/adisyon flow.
 
+## 2026-06-13 Phase 17
+- Started investigation for user-reported unloaded public page images.
+- Compared image paths in landing/demo components with files under `public/landing-assets`.
+- Found path mismatch: code uses Turkish-character asset names, while actual files are ASCII `mobil-pos-siparis.png` and `mobil-masa-akisi.png`.
+- Fixed `product-landing-page.tsx` and `demo-page-renderer.tsx` to use the ASCII asset filenames.
+- Verification so far: `npm run typecheck` passed; `npm run build` passed.
+- First attempt to start the local server with `Start-Process npm` failed on Windows because `npm` is not a direct Win32 executable.
+- Retried with `npm.cmd`; local production server ran on `http://localhost:3126`.
+- Direct asset checks returned `200` for `/landing-assets/mobil-pos-siparis.png` and `/landing-assets/mobil-masa-akisi.png`.
+- Browser plugin `iab` was unavailable in this session, so rendered verification used Playwright fallback.
+- Playwright verified `/` and `/demo`: all `/landing-assets/*` images completed with nonzero natural dimensions, and no broken landing images remained.
+- Final verification: `npm run lint` exited 0 with the existing `pickup-snapshot` unused-variable warning.
+
+## 2026-06-13 Phase 18
+- Started Google Search Console HTML file verification setup.
+- Read the downloaded verification file from `C:\Users\coban\Downloads\google25ee5ff439ffbaa2.html`.
+- Added the verification file to `public/google25ee5ff439ffbaa2.html` so Next serves it from the site root.
+- Local check showed `/google25ee5ff439ffbaa2.html` was intercepted by the dynamic `[slug]` route and returned app 404 HTML, not the raw Google verification content.
+- Added explicit route handler `src/app/google25ee5ff439ffbaa2.html/route.ts` to return the exact verification line at the required root URL.
+- Added `src/app/robots.ts` and `src/app/sitemap.ts` so Search Console can crawl the public marketing routes and receive `/sitemap.xml`.
+- Verification passed: `npm run build`; `npm run lint` exited 0 with the existing `pickup-snapshot` unused-variable warning.
+- Local production checks on `http://localhost:3126` returned 200 for `/google25ee5ff439ffbaa2.html`, `/robots.txt`, and `/sitemap.xml`.
+- Note: local sitemap/robots use `http://localhost:3000` unless production sets `NEXT_PUBLIC_SITE_URL` or the SEO canonical URL setting.
+
 ## 2026-06-08
 - Started an operational PWA design audit after the user reported old-screen regressions and asked to identify weak or incomplete areas.
 - Confirmed `/m/cashier`, `/m/kitchen`, `/m/delivery`, and `/m/service-requests` still re-export desktop pages, even though those desktop pages include some mobile-only sections.

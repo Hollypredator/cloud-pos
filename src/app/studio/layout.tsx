@@ -1,5 +1,12 @@
+import type { Metadata } from "next";
 import { LogoutButton } from "@/components/logout-button";
 import { StudioNav } from "@/components/studio-nav";
+import { protectedRobots } from "@/lib/seo";
+
+export const metadata: Metadata = {
+  title: "Studio",
+  robots: protectedRobots,
+};
 
 export default async function StudioLayout({
   children,
