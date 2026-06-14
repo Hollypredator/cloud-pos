@@ -82,7 +82,7 @@ function NavOrderList({
             </span>
             <div>
               <p className="text-sm font-semibold">{item.label}</p>
-              <p className="text-xs text-slate-500">Sira {index + 1}</p>
+              <p className="text-xs text-slate-500">Sıra {index + 1}</p>
             </div>
           </div>
           <span className="text-xs font-semibold uppercase tracking-[0.18em] text-slate-400">Sürükle</span>
@@ -150,12 +150,12 @@ export function SidebarCustomizer({
             />
           </div>
           <div className="mt-4 rounded-[22px] border border-slate-200 bg-white p-4">
-            <p className="text-xs font-bold uppercase tracking-[0.16em] text-slate-500">Onizleme</p>
+            <p className="text-xs font-bold uppercase tracking-[0.16em] text-slate-500">Önizleme</p>
             <div className="mt-3 flex items-center gap-3 rounded-2xl px-4 py-3 text-white" style={previewStyle}>
               <span className="inline-flex h-10 w-10 items-center justify-center rounded-xl bg-white/15 text-xs font-bold">OP</span>
               <div>
                 <p className="text-sm font-semibold">Aktif Menü Ogesi</p>
-                <p className="text-xs text-white/75">Seçecegin renk burada gorunecek</p>
+                <p className="text-xs text-white/75">Seçecegin renk burada görünecek</p>
               </div>
             </div>
           </div>
@@ -194,15 +194,15 @@ export function SidebarCustomizer({
       <div className="grid gap-5 xl:grid-cols-2">
         <div className="rounded-[24px] border border-slate-200 bg-slate-50 p-5">
           <div className="mb-4">
-            <p className="text-lg font-semibold text-slate-900">Patron Sidebar Sirasi</p>
-            <p className="mt-1 text-sm text-slate-500">Tüm şubeleri goren kullanicilar için menuyu surukleyip sirala.</p>
+            <p className="text-lg font-semibold text-slate-900">Patron Sidebar Sırasi</p>
+            <p className="mt-1 text-sm text-slate-500">Tüm şubeleri goren kullanicilar için menüyü surukleyip sırala.</p>
           </div>
           <NavOrderList role="owner" items={ownerOrder} onReorder={handleReorder} />
         </div>
 
         <div className="rounded-[24px] border border-slate-200 bg-slate-50 p-5">
           <div className="mb-4">
-            <p className="text-lg font-semibold text-slate-900">Yönetici Sidebar Sirasi</p>
+            <p className="text-lg font-semibold text-slate-900">Yönetici Sidebar Sırasi</p>
             <p className="mt-1 text-sm text-slate-500">Şube yöneticileri için daha operasyon odaklı akışı belirle.</p>
           </div>
           <NavOrderList role="admin" items={adminOrder} onReorder={handleReorder} />

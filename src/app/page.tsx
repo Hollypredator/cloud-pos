@@ -1,6 +1,6 @@
 import type { Metadata } from "next";
 import { ProductLandingPage } from "@/components/product-landing-page";
-import { getGeneralSettings, getSeoSettings, getSitePageContent } from "@/lib/data";
+import { getGeneralSettings, getSeoSettings } from "@/lib/data";
 import { getCurrentLocale } from "@/lib/i18n-server";
 import { absoluteUrl, buildPageMetadata, JsonLd, publicSeo } from "@/lib/seo";
 
@@ -22,9 +22,8 @@ export default async function LandingPage({
   searchParams: Promise<{ lead?: string }>;
 }) {
   const { lead } = await searchParams;
-  const [locale, , { settings }, { settings: seoSettings }] = await Promise.all([
+  const [locale, { settings }, { settings: seoSettings }] = await Promise.all([
     getCurrentLocale(),
-    getSitePageContent("home"),
     getGeneralSettings(),
     getSeoSettings(),
   ]);

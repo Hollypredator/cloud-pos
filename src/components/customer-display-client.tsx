@@ -133,7 +133,7 @@ export function CustomerDisplayClient() {
           total: 0,
           orderId: null,
           checkNumber: null,
-          message: "Yeni sipariş icin hazir.",
+          message: "Yeni sipariş icin hazır.",
         };
       });
     }, ORDER_CREATED_CLEAR_MS);
@@ -149,7 +149,7 @@ export function CustomerDisplayClient() {
   function connectWithPairCode() {
     const nextSession = resolveCustomerDisplaySessionByPairCode(pairCode);
     if (!nextSession) {
-      setError("Eslesme kodu bulunamadı ya da suresi doldu.");
+      setError("Eslesme kodu bulunamadı ya da süresi doldu.");
       setSession(null);
       setSnapshot(null);
       setConnectionState("waiting");
@@ -235,7 +235,7 @@ export function CustomerDisplayClient() {
                 </ul>
               ) : (
                 <div className="mt-6 rounded-2xl border border-dashed border-white/15 bg-slate-950/20 px-4 py-6 text-sm text-slate-300">
-                  Kasiyer ürün ekledikce sipariş detaylari burada gorunecek.
+                  Kasiyer ürün ekledikce sipariş detaylari burada görünecek.
                 </div>
               )}
             </article>
@@ -256,7 +256,7 @@ export function CustomerDisplayClient() {
               <div className="rounded-2xl border border-white/10 bg-slate-900/50 px-4 py-4">
                 <p className="text-xs uppercase tracking-[0.16em] text-slate-300">Sipariş Numarasi</p>
                 <p className="mt-2 text-4xl font-black tracking-[0.08em] text-white">{orderNumber ? `#${orderNumber}` : "--"}</p>
-                <p className="mt-2 text-xs text-slate-300">{snapshot?.message ?? "Sipariş onayi bekleniyor."}</p>
+                <p className="mt-2 text-xs text-slate-300">{snapshot?.message ?? "Sipariş onay? bekleniyor."}</p>
               </div>
             </aside>
           </section>

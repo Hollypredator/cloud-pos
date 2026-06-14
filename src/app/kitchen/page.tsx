@@ -177,9 +177,9 @@ function statusTone(status: string) {
 }
 
 function statusLabel(status: string) {
-  if (status === "ready") return "Servise Hazir";
-  if (status === "served") return "Servise Hazir";
-  if (status === "preparing") return "Hazirlaniyor";
+  if (status === "ready") return "Servise Hazır";
+  if (status === "served") return "Servise Hazır";
+  if (status === "preparing") return "Hazırlanıyor";
   return "Bekliyor";
 }
 
@@ -252,7 +252,7 @@ export default async function KitchenPage({
   if (!featureAccess.enabled) {
     logServerPerf("/kitchen", [featureAccessResult]);
     return (
-      <BackofficePage title="Mutfak" description="Istasyon bazli hazirlama akisi" minimal={isTabletMode}>
+      <BackofficePage title="Mutfak" description="Istasyon bazli hazırlama akışı" minimal={isTabletMode}>
         <FeatureLockedState
           title={featureAccess.title}
           description={featureAccess.description}
@@ -296,28 +296,28 @@ export default async function KitchenPage({
   return (
     <BackofficePage
       title="Mutfak Board"
-      description="Istasyon bazli hazirlama kuyrugu, gecikmeler ve servis cikislari"
+      description="Istasyon bazli hazırlama kuyrugu, gecikmeler ve servis ??k??lari"
       minimal={isTabletMode}
       actions={
         <>
           <LiveOpsBridge tables={["orders"]} enableSound fallbackIntervalMs={900} />
           <LiveRouteRefresh tables={["orders"]} debounceMs={120} minIntervalMs={700} />
           <Link href="/ops" className="w-full rounded-2xl border border-slate-200 bg-white px-5 py-3 text-center text-sm font-semibold text-slate-800 sm:w-auto">
-            Panele Don
+            Panele Dön
           </Link>
         </>
       }
     >
       {usingDemoData ? (
         <div className="rounded-[24px] border border-amber-200 bg-amber-50 px-5 py-4 text-sm text-amber-900">
-          Demo veri modu aktif. Bekleyen, hazirlanan ve servis cikisi akisini bu board uzerinden test edebilirsin.
+          Demo veri modu aktif. Bekleyen, hazırlanan ve servis ??k??i akışını bu board uzerinden test edebilirsin.
         </div>
       ) : null}
 
       <section className="app-mobile-hide grid gap-4 xl:grid-cols-4">
-        <SummaryCard label="Bekleyen" value={String(pendingCount)} hint="Yeni giren siparisler" tone="accent" />
-        <SummaryCard label="Hazirlaniyor" value={String(preparingCount)} hint="Istasyonda islenen siparis" tone="neutral" />
-        <SummaryCard label="Servise Hazir" value={String(servedCount)} hint="Tamamlandi ama kasaya devredilmedi" tone="success" />
+        <SummaryCard label="Bekleyen" value={String(pendingCount)} hint="Yeni giren siparişler" tone="accent" />
+        <SummaryCard label="Hazırlanıyor" value={String(preparingCount)} hint="Istasyonda islenen sipariş" tone="neutral" />
+        <SummaryCard label="Servise Hazır" value={String(servedCount)} hint="Tamamlandi ama kasaya devredilmedi" tone="success" />
         <SummaryCard label="Kritik" value={String(criticalCount || delayedCount)} hint="Gecikme ve mudahale ihtiyaci" tone="danger" />
       </section>
 
@@ -341,12 +341,12 @@ export default async function KitchenPage({
           <p className="text-[11px] font-bold uppercase tracking-[0.16em] text-slate-500">Aktif Istasyon</p>
           <h2 className="mt-2 text-xl font-semibold tracking-tight text-slate-900">{stationLabel(activeBoard.key)}</h2>
           <p className="mt-1 text-sm text-slate-500">
-            {activeBoard.pending} bekleyen - {activeBoard.preparing} hazirlanan - {activeBoard.served} hazir
+            {activeBoard.pending} bekleyen - {activeBoard.preparing} hazırlanan - {activeBoard.served} hazır
           </p>
         </article>
 
         {activeBoard.orders.length === 0 ? (
-          <article className="mobile-task-card text-sm text-slate-600">Bu istasyonda aktif siparis yok.</article>
+          <article className="mobile-task-card text-sm text-slate-600">Bu istasyonda aktif sipariş yok.</article>
         ) : (
           <div className="grid gap-3">
             {activeBoard.orders.map((order) => {
@@ -370,7 +370,7 @@ export default async function KitchenPage({
                   <div className="flex items-start justify-between gap-3">
                     <div>
                       <p className="text-[11px] font-semibold uppercase tracking-[0.14em] text-slate-500">{orderSourceLabel(order)}</p>
-                      <p className="mt-1 text-lg font-semibold text-slate-900">Siparis #{orderRef(order)}</p>
+                      <p className="mt-1 text-lg font-semibold text-slate-900">Sipariş #{orderRef(order)}</p>
                     </div>
                     <span className={`rounded-full px-3 py-1 text-xs font-semibold ${statusTone(stationStatus)}`}>{statusLabel(stationStatus)}</span>
                   </div>
@@ -398,7 +398,7 @@ export default async function KitchenPage({
                       rel="noreferrer"
                       className="mobile-cta-secondary inline-flex items-center justify-center border border-slate-200 bg-white px-4 py-3 text-sm font-semibold text-slate-700"
                     >
-                      Fis Yazdir
+                      Fis Yazdır
                     </Link>
                     <form action={moveOrder}>
                       <input type="hidden" name="orderId" value={order.id} />
@@ -409,8 +409,8 @@ export default async function KitchenPage({
                         value={stationStatus === "pending" ? "preparing" : stationStatus === "preparing" ? "served" : "preparing"}
                       />
                       <PendingSubmitButton
-                        idleLabel={stationStatus === "pending" ? "Hazirlanmaya Al" : stationStatus === "preparing" ? "Servise Hazir" : "Geri Al"}
-                        pendingLabel="Guncelleniyor..."
+                        idleLabel={stationStatus === "pending" ? "Hazırlanmaya Al" : stationStatus === "preparing" ? "Servise Hazır" : "Geri Al"}
+                        pendingLabel="Güncelleniyor..."
                         showToastOnClick={true}
                         className={`mobile-cta-primary w-full px-4 py-3 text-sm font-semibold text-white ${
                           stationStatus === "pending"
@@ -431,7 +431,7 @@ export default async function KitchenPage({
 
       <ContentCard title="Istasyon Board" className="app-mobile-hide">
         {orders.length === 0 ? (
-          <EmptyPanel title="Kuyruk Bos" description="Mutfakta islenecek siparis bulunmuyor." />
+          <EmptyPanel title="Kuyruk Boş" description="Mutfakta islenecek sipariş bulunmuyor." />
         ) : (
           <div className="grid gap-4 xl:grid-cols-3">
             {stationBoards.map((board) => (
@@ -441,16 +441,16 @@ export default async function KitchenPage({
                     <p className="text-xs font-bold uppercase tracking-[0.16em] text-slate-500">Istasyon</p>
                     <h2 className="mt-2 text-xl font-semibold tracking-tight text-slate-900 sm:text-2xl">{stationLabel(board.key)}</h2>
                     <p className="mt-1 text-sm text-slate-500">
-                      {board.pending} bekleyen - {board.preparing} hazirlanan - {board.served} hazir
+                      {board.pending} bekleyen - {board.preparing} hazırlanan - {board.served} hazır
                     </p>
                   </div>
-                  <span className={`inline-flex w-full justify-center rounded-full px-3 py-1 text-xs font-semibold sm:w-auto ${board.tone}`}>{board.orders.length} siparis</span>
+                  <span className={`inline-flex w-full justify-center rounded-full px-3 py-1 text-xs font-semibold sm:w-auto ${board.tone}`}>{board.orders.length} sipariş</span>
                 </div>
 
                 <div className="mt-4 space-y-4">
                   {board.orders.length === 0 ? (
                     <div className="rounded-[20px] border border-dashed border-slate-200 bg-white px-4 py-8 text-center text-sm text-slate-500">
-                      Bu istasyonda aktif siparis yok.
+                      Bu istasyonda aktif sipariş yok.
                     </div>
                   ) : (
                     board.orders.map((order) => {
@@ -480,7 +480,7 @@ export default async function KitchenPage({
                           <div className="flex flex-col items-start justify-between gap-3 sm:flex-row">
                             <div>
                               <p className="text-xs font-bold uppercase tracking-[0.16em] text-slate-500">{orderSourceLabel(order)}</p>
-                              <h3 className="mt-2 text-xl font-semibold tracking-tight text-slate-900">Siparis #{orderRef(order)}</h3>
+                              <h3 className="mt-2 text-xl font-semibold tracking-tight text-slate-900">Sipariş #{orderRef(order)}</h3>
                               <p className="mt-1 text-sm text-slate-500">{new Date(order.created_at).toLocaleTimeString(localeCode)}</p>
                             </div>
                             <div className="flex w-full flex-col items-start gap-2 sm:w-auto sm:items-end">
@@ -535,7 +535,7 @@ export default async function KitchenPage({
                                 rel="noreferrer"
                                 className="w-full rounded-2xl border border-slate-200 bg-white px-4 py-3 text-center text-sm font-semibold text-slate-700 sm:w-auto"
                               >
-                                Fis Yazdir
+                                Fis Yazdır
                               </Link>
                               <form action={moveOrder}>
                                 <input type="hidden" name="orderId" value={order.id} />
@@ -546,8 +546,8 @@ export default async function KitchenPage({
                                   value={stationStatus === "pending" ? "preparing" : stationStatus === "preparing" ? "served" : "preparing"}
                                 />
                                 <PendingSubmitButton
-                                  idleLabel={stationStatus === "pending" ? "Hazirlanmaya Al" : stationStatus === "preparing" ? "Servise Hazir" : "Geri Al"}
-                                  pendingLabel="Guncelleniyor..."
+                                  idleLabel={stationStatus === "pending" ? "Hazırlanmaya Al" : stationStatus === "preparing" ? "Servise Hazır" : "Geri Al"}
+                                  pendingLabel="Güncelleniyor..."
                                   showToastOnClick={true}
                                   className={`w-full rounded-2xl px-4 py-3 text-sm font-semibold text-white sm:w-auto ${
                                     stationStatus === "pending"
@@ -563,7 +563,7 @@ export default async function KitchenPage({
                           {stationStatus === "served" ? (
                             <div className="mt-3 flex flex-col items-start gap-3 rounded-2xl border border-emerald-200 bg-emerald-50 px-3 py-3 text-sm sm:flex-row sm:items-center sm:justify-between">
                               <div>
-                                <p className="font-semibold text-emerald-900">Siparis tampon alanda tutuluyor</p>
+                                <p className="font-semibold text-emerald-900">Sipariş tampon alanda tutuluyor</p>
                                 <p className="mt-1 text-emerald-700">Yanlis basim veya son dakika duzeltmesi icin mutfaktan geri alinabilir.</p>
                               </div>
                               <Link href="/cashier" className="w-full rounded-xl border border-emerald-200 bg-white px-3 py-2 text-center font-semibold text-emerald-800 sm:w-auto">

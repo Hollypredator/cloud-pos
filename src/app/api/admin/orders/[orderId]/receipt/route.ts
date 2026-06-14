@@ -20,7 +20,7 @@ export async function GET(
 
   const { order } = await getOrderReceipt(orderId);
   if (!order) {
-    return NextResponse.json({ ok: false, message: "Adisyon bulunamadi." }, { status: 404 });
+    return NextResponse.json({ ok: false, message: "Adisyon bulunamadı." }, { status: 404 });
   }
 
   return NextResponse.json(

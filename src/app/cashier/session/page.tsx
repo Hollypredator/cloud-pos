@@ -43,13 +43,13 @@ async function openSessionAction(formData: FormData) {
       },
     });
     if (result.status !== "ACK") {
-      redirect(feedbackHref("error", result.message ?? "Gun basi islemi tamamlanamadi.", returnPath));
+      redirect(feedbackHref("error", result.message ?? "Gun basi işlemi tamamlanamadi.", returnPath));
     }
     revalidatePath("/cashier/session");
     revalidatePath("/m/cashier/session");
-    redirect(feedbackHref("success", "Gun basi basariyla acildi.", returnPath));
+    redirect(feedbackHref("success", "Gun basi basariyla açıldı.", returnPath));
   } catch {
-    redirect(feedbackHref("error", "Gun basi islemi tamamlanamadi.", returnPath));
+    redirect(feedbackHref("error", "Gun basi işlemi tamamlanamadi.", returnPath));
   }
 }
 async function closeSessionAction(formData: FormData) {
@@ -61,7 +61,7 @@ async function closeSessionAction(formData: FormData) {
   const note = formData.get("note");
   const returnPath = resolveCashierSessionReturnPath(formData.get("returnPath"));
   if (typeof sessionId !== "string") {
-    redirect(feedbackHref("error", "Kapatilacak oturum bulunamadi.", returnPath));
+    redirect(feedbackHref("error", "Kapatilacak oturum bulunamadı.", returnPath));
   }
   if (!Number.isFinite(closingCash) || closingCash < 0) {
     redirect(feedbackHref("error", "Sayilan nakit gecerli bir sifir veya pozitif tutar olmali.", returnPath));
@@ -77,7 +77,7 @@ async function closeSessionAction(formData: FormData) {
       },
     });
     if (result.status !== "ACK") {
-      redirect(feedbackHref("error", result.message ?? "Gun sonu islemi tamamlanamadi.", returnPath));
+      redirect(feedbackHref("error", result.message ?? "Gün sonu işlemi tamamlanamadi.", returnPath));
     }
     revalidatePath("/cashier/session");
     revalidatePath("/m/cashier/session");
@@ -89,11 +89,11 @@ async function closeSessionAction(formData: FormData) {
         : "";
     const mismatchMessage =
       result.data?.mismatchAlertSent === true
-        ? " Mutabakat farki esigi asildigi icin operasyon alarmi olusturuldu."
+        ? " Mutabakat farki esigi asildigi icin operasyon alarmi oluşturuldu."
         : "";
-    redirect(feedbackHref("success", `Gun sonu islemi tamamlandi.${varianceMessage}${mismatchMessage}`, returnPath));
+    redirect(feedbackHref("success", `Gün sonu işlemi tamamlandi.${varianceMessage}${mismatchMessage}`, returnPath));
   } catch {
-    redirect(feedbackHref("error", "Gun sonu islemi tamamlanamadi.", returnPath));
+    redirect(feedbackHref("error", "Gün sonu işlemi tamamlanamadi.", returnPath));
   }
 }
 async function updateSessionSettingsAction(
@@ -124,7 +124,7 @@ async function updateSessionSettingsAction(
   if (!result.ok) {
     return {
       tone: "error",
-      message: result.error ?? "Gun islemleri ayarlari kaydedilemedi.",
+      message: result.error ?? "Gun işlemleri ayarlari kaydedilemedi.",
     };
   }
 
@@ -132,7 +132,7 @@ async function updateSessionSettingsAction(
   revalidatePath("/m/cashier/session");
   return {
     tone: "success",
-    message: "Gun islemleri ayarlari kaydedildi.",
+    message: "Gun işlemleri ayarlari kaydedildi.",
   };
 }
 
@@ -148,7 +148,7 @@ export default async function CashierSessionPage({
   const featureAccess = await getFeatureAccess("shift_management");
   if (!featureAccess.enabled) {
     return (
-      <BackofficePage title="Gun Islemleri" description="Kasa vardiya ve gun sonu yönetimi">
+      <BackofficePage title="Gün İşlemleri" description="Kasa vardiya ve gün sonu yönetimi">
         <FeatureLockedState
           title={featureAccess.title}
           description={featureAccess.description}
@@ -167,7 +167,7 @@ export default async function CashierSessionPage({
 
   return (
     <BackofficePage
-      title="Gun Islemleri"
+      title="Gün İşlemleri"
       description="Kasa acilis / kapanış ve gunluk operasyon takibi"
       sidebar={
         <div className="space-y-5">
@@ -198,7 +198,7 @@ export default async function CashierSessionPage({
             )}
           </SidebarPanel>
 
-          <SidebarPanel title="Gun Islemleri Ayarlari">
+          <SidebarPanel title="Gün İşlemleri Ayarlari">
             <CashierSessionSettingsForm
               values={{
                 autoSessionCloseEnabled: applicationSettings.autoSessionCloseEnabled,
@@ -237,23 +237,23 @@ export default async function CashierSessionPage({
       ) : null}
 
       <section className="grid gap-4 xl:grid-cols-4">
-        <SummaryCard label="Nakit Satis" value={`${today.cashSale.toFixed(2)} TL`} hint="Kasa girisi" tone="accent" />
-        <SummaryCard label="Kart Satis" value={`${today.cardSale.toFixed(2)} TL`} hint="POS tahsilati" />
-        <SummaryCard label="Iade" value={`${today.refunds.toFixed(2)} TL`} hint="Gunluk iade" tone="danger" />
-        <SummaryCard label="Net" value={`${today.net.toFixed(2)} TL`} hint="Gun sonu beklentisi" tone="success" />
+        <SummaryCard label="Nakit Satış" value={`${today.cashSale.toFixed(2)} TL`} hint="Kasa girisi" tone="accent" />
+        <SummaryCard label="Kart Satış" value={`${today.cardSale.toFixed(2)} TL`} hint="POS tahsilati" />
+        <SummaryCard label="İade" value={`${today.refunds.toFixed(2)} TL`} hint="Gunluk iade" tone="danger" />
+        <SummaryCard label="Net" value={`${today.net.toFixed(2)} TL`} hint="Gün sonu beklentisi" tone="success" />
       </section>
 
       <WorkflowGuide
-        title="Gun Islemleri 3 Adim"
-        description="Kasayi yeni kullanan personel gun basi ve gun sonunu karistirmadan tamamlayabilsin."
+        title="Gün İşlemleri 3 Adim"
+        description="Kasayi yeni kullanan personel gun basi ve gün sonunu karistirmadan tamamlayabilsin."
         steps={[
           { title: "Vardiya acarken gun basi yap", description: "Kasaya koyulan ilk nakit tutarini gir ve acilis notunu yaz; sonra Gun Basi Yap butonuna bas." },
-          { title: "Gun boyu tahsilati takip et", description: "Ustteki nakit, kart, iade ve net kartlari vardiya boyunca kasa durumunu gosterir." },
-          { title: "Kapanista sayilan nakdi gir", description: "Gun sonunda kasadaki sayilan tutari yaz, gerekiyorsa not dus ve Gun Sonu Yap ile vardiyayi kapat." },
+          { title: "Gun boyu tahsilati takip et", description: "Ustteki nakit, kart, iade ve net kartlari vardiya boyunca kasa durumunu gösterir." },
+          { title: "Kapanista sayilan nakdi gir", description: "Gün sonunda kasadaki sayilan tutari yaz, gerekiyorsa not dus ve Gun Sonu Yap ile vardiyayi kapat." },
         ]}
       />
 
-      <ContentCard title="Gun Islemleri Gecmisi">
+      <ContentCard title="Gün İşlemleri Geçmişi">
         <div className="responsive-table-shell rounded-[22px] border border-slate-200">
           <table className="responsive-table w-full text-left text-sm">
             <thead className="bg-slate-50 text-slate-500">

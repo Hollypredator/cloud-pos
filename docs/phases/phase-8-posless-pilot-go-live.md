@@ -20,5 +20,5 @@ Hedef bitiş: `1 hafta`
 - [x] Productization ana durum dokümanı Faz 8 engineering tamamlandı şeklinde güncellendi.
 
 ## Açık Kalanlar
-- [ ] Pilot subede kritik incident olmadan 7-14 gun operasyonel izleme (canli operasyon adimi)
+- [ ] Pilot şubede kritik incident olmadan 7-14 gun operasyonel izleme (canli operasyon adimi)
 - [ ] KPI/ciro/mutabakat hedeflerinin saha onayı (işletme adimi)

@@ -67,12 +67,12 @@ export default async function AdminTablesPage({
     businessSlug = businessScopeResult.value.activeSlug;
     perfSegments.push(businessScopeResult);
 
-    const menuResult = await measureAsync("menu_for_table_modal_order_entry", () => getMenu(businessSlug));
-    categories = menuResult.value.categories;
-    products = menuResult.value.products;
-    modifierGroups = menuResult.value.modifierGroups;
-    modifierOptions = menuResult.value.modifierOptions;
-    perfSegments.push(menuResult);
+    const menüResult = await measureAsync("menü_for_table_modal_order_entry", () => getMenu(businessSlug));
+    categories = menüResult.value.categories;
+    products = menüResult.value.products;
+    modifierGroups = menüResult.value.modifierGroups;
+    modifierOptions = menüResult.value.modifierOptions;
+    perfSegments.push(menüResult);
 
     const selectedHistoryResult = await measureAsync("selected_table_history", () => getOrderHistoryByTableId(selectedTable.id, 8));
     selectedTableHistory = selectedHistoryResult.value.orders;
@@ -126,7 +126,7 @@ export default async function AdminTablesPage({
     zoneFilter === "__unassigned__"
       ? "Atanmamis"
       : zoneFilter
-        ? zoneById.get(zoneFilter)?.name ?? "Secili bölge"
+        ? zoneById.get(zoneFilter)?.name ?? "Seçili bölge"
         : "Tüm bolgeler";
   const deleteMode = deleteParam === "1";
   const zoneQueryPart = zoneFilter ? `?zone=${encodeURIComponent(zoneFilter)}` : "";
@@ -158,7 +158,7 @@ export default async function AdminTablesPage({
               className="min-h-12 w-full rounded-2xl border border-slate-200 bg-slate-50 px-4 py-3 text-base sm:w-44 sm:text-sm"
             />
             <select name="zoneId" defaultValue="__none__" className="min-h-12 w-full rounded-2xl border border-slate-200 bg-slate-50 px-4 py-3 text-base sm:w-44 sm:text-sm">
-              <option value="__none__">Bölge sec (opsiyonel)</option>
+              <option value="__none__">Bölge seç (opsiyonel)</option>
               {zones.map((zone) => (
                 <option key={zone.id} value={zone.id}>
                   {zone.name}
@@ -198,7 +198,7 @@ export default async function AdminTablesPage({
           className="bg-[linear-gradient(130deg,rgba(251,113,133,0.12),rgba(255,255,255,0.9)_65%)]"
         />
         <SummaryCard
-          label={translateUiText("Bos Masa", locale)}
+          label={translateUiText("Boş Masa", locale)}
           value={String(emptyCount)}
           hint={translateUiText("Yeni müşteri için hazır", locale)}
           tone="success"
@@ -213,13 +213,13 @@ export default async function AdminTablesPage({
       </section>
 
       <WorkflowGuide
-        title={translateUiText("Masalari 3 Adimda Hazirla", locale)}
+        title={translateUiText("Masalari 3 Adimda Hazırla", locale)}
         description={translateUiText("Salon kurulumu ilk kez yapilsa bile masa akışı kolay anlasilsin.", locale)}
         className="bg-[linear-gradient(125deg,rgba(15,23,42,0.03),rgba(255,255,255,0.92)_45%,rgba(255,106,61,0.08))]"
         steps={[
-          { title: translateUiText("Masayi oluştur ve isim ver", locale), description: translateUiText("Yeni masa numarasini ve gorunur masa adini kaydet; ekip bu isimle çalışır.", locale) },
-          { title: translateUiText("QR'i kontrol et", locale), description: translateUiText("QR ve yazdirma islerini Masa Yonet popup'i icinden tamamla.", locale) },
-          { title: translateUiText("Aktif siparişi buradan izle", locale), description: translateUiText("Her kartta son adisyon ozetini gör; detayli gecmisi popup icinden ac.", locale) },
+          { title: translateUiText("Masayı oluştur ve isim ver", locale), description: translateUiText("Yeni masa numarasını ve görünur masa adini kaydet; ekip bu isimle çalışır.", locale) },
+          { title: translateUiText("QR'i kontrol et", locale), description: translateUiText("QR ve yazdırma islerini Masa Yönet popup'i icinden tamamla.", locale) },
+          { title: translateUiText("Aktif siparişi buradan izle", locale), description: translateUiText("Her kartta son adisyon ozetini gör; detayli geçmişi popup icinden ac.", locale) },
         ]}
       />
 
@@ -305,9 +305,9 @@ export default async function AdminTablesPage({
                     </option>
                   ))}
                 </select>
-                <p className="text-xs text-rose-700">Secilen bolgeler silinir; bu bolgelerdeki masalar otomatik olarak atanmamış olur.</p>
+                <p className="text-xs text-rose-700">Seçilen bolgeler silinir; bu bolgelerdeki masalar otomatik olarak atanmamış olur.</p>
                 <PendingSubmitButton
-                  idleLabel="Secili Bolgeleri Sil"
+                  idleLabel="Seçili Bolgeleri Sil"
                   pendingLabel="Siliniyor..."
                   className="min-h-12 w-full rounded-2xl border border-rose-300 bg-white px-4 py-3 text-sm font-semibold text-rose-700"
                 />
@@ -319,7 +319,7 @@ export default async function AdminTablesPage({
             <div className="flex items-center justify-between gap-3">
               <div>
                 <h2 className="text-xl font-semibold tracking-tight text-slate-900 sm:text-2xl">Masalar</h2>
-                <p className="text-sm text-slate-500">Secili gorunum: {selectedZoneLabel}</p>
+                <p className="text-sm text-slate-500">Seçili görünum: {selectedZoneLabel}</p>
               </div>
               <div className="flex items-center gap-2">
                 <span className="inline-flex h-10 min-w-10 items-center justify-center rounded-full bg-[#ff5a34] px-3 text-sm font-bold text-white">
@@ -362,7 +362,7 @@ export default async function AdminTablesPage({
                 className="min-h-12 rounded-2xl border border-slate-300 px-4 py-3 text-base sm:text-sm"
               />
               <select name="zoneId" defaultValue="__none__" className="min-h-12 rounded-2xl border border-slate-300 px-4 py-3 text-base sm:text-sm">
-                <option value="__none__">Bölge sec (opsiyonel)</option>
+                <option value="__none__">Bölge seç (opsiyonel)</option>
                 {zones.map((zone) => (
                   <option key={zone.id} value={zone.id}>
                     {zone.name}
@@ -482,7 +482,7 @@ export default async function AdminTablesPage({
                         <div className="mt-4 rounded-2xl border border-slate-200 bg-white px-3 py-3 text-sm">
                           <span className={`inline-flex items-center gap-2 font-semibold ${isEmptyTable ? "text-rose-700" : "text-amber-700"}`}>
                             <input type="checkbox" name="tableIds" value={table.id} className="h-4 w-4 rounded border-rose-300" />
-                            {isEmptyTable ? "Silmek için sec" : "Aktif/Rezerve masa (zorla silme için sec)"}
+                            {isEmptyTable ? "Silmek için seç" : "Aktif/Rezerve masa (zorla silme için seç)"}
                           </span>
                         </div>
                       </label>
@@ -495,7 +495,7 @@ export default async function AdminTablesPage({
                     Dolu/rezerve masalari da sil
                   </label>
                   <PendingSubmitButton
-                    idleLabel="Secili Masalari Sil"
+                    idleLabel="Seçili Masalari Sil"
                     pendingLabel="Siliniyor..."
                     className="min-h-12 w-full rounded-2xl border border-rose-300 bg-white px-4 py-3 text-base font-semibold text-rose-700 sm:w-auto sm:text-sm"
                   />
@@ -552,7 +552,7 @@ export default async function AdminTablesPage({
                           </>
                         ) : (
                           <>
-                            <p className="text-[11px] font-bold uppercase tracking-[0.16em] text-slate-500">Hazirlik Durumu</p>
+                            <p className="text-[11px] font-bold uppercase tracking-[0.16em] text-slate-500">Hazırlık Durumu</p>
                             <p className="mt-2 text-sm text-slate-500">Bu masa yeni sipariş almak için hazır.</p>
                           </>
                         )}
@@ -586,12 +586,12 @@ export default async function AdminTablesPage({
                           </div>
                         )}
                         <Link href={`/admin/tables?table=${table.id}${zoneFilter ? `&zone=${zoneFilter}` : ""}`} className="inline-flex min-h-11 items-center justify-center rounded-xl bg-gradient-to-r from-[#ff6a3d] to-[#f2b44f] px-3 py-3 text-center text-base font-semibold text-white sm:text-sm">
-                          Masa Yonet
+                          Masa Yönet
                         </Link>
                         {latestOrder ? (
                           <div className="grid gap-2 sm:grid-cols-2">
                             <Link href={`/cashier?order=${latestOrder.id}`} className="inline-flex min-h-11 items-center justify-center rounded-xl border border-slate-200 bg-slate-50 px-3 py-3 text-center text-base font-semibold text-slate-700 sm:text-sm">
-                              Kasada Ac
+                              Kasada A?
                             </Link>
                             <Link href={`/receipt/${latestOrder.id}`} className="inline-flex min-h-11 items-center justify-center rounded-xl border border-slate-200 bg-slate-50 px-3 py-3 text-center text-base font-semibold text-slate-700 sm:text-sm">
                               Adisyon

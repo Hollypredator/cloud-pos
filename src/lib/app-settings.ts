@@ -51,7 +51,7 @@ export type ApplicationSettings = {
 };
 
 export const sidebarThemeOptions = [
-  { value: "ember", label: "Sicak Turuncu" },
+  { value: "ember", label: "Sicak TÜrüncu" },
   { value: "ocean", label: "Okyanus" },
   { value: "night", label: "Gece Grafit" },
 ] as const;
@@ -70,7 +70,7 @@ export const defaultGeneralSettings: GeneralSettings = {
   supportEmail: "info@cloudpos.local",
   address: "Istanbul",
   logoUrl: "",
-  footerNote: "Cloud POS ile masa, sipariş, mutfak ve kasa akislarini tek panelde yönetin.",
+  footerNote: "Cloud POS ile masa, sipariş, mutfak ve kasa akışlarini tek panelde yönetin.",
 };
 
 export const defaultSmtpSettings: SmtpSettings = {
@@ -87,7 +87,7 @@ export const defaultSmtpSettings: SmtpSettings = {
 
 export const defaultSeoSettings: SeoSettings = {
   metaTitle: "Cloud POS | Cafe ve restoran operasyonu",
-  metaDescription: "Cloud POS ile masa, sipariş, mutfak, kasa ve raporlama akislarini tek panelde yönetin.",
+  metaDescription: "Cloud POS ile masa, sipariş, mutfak, kasa ve raporlama akışlarini tek panelde yönetin.",
   ogTitle: "Cloud POS",
   ogDescription: "Cafe ve restoranlar için yeni nesil operasyon, QR menü ve raporlama platformu.",
   ogImageUrl: "",

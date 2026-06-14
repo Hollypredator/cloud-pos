@@ -18,11 +18,11 @@
   - timeout: 10 sn
 - Alert dispatch cron:
   - endpoint: `POST /api/alerts/dispatch`
-  - header: `x-alert-secret: $ALERT_DISPATCH_SECRET`
+  - header: `x-alert-seçret: $ALERT_DISPATCH_SECRET`
   - interval: 5 dakika
 - Auto session close cron:
   - endpoint: `POST /api/cashier/session/auto-close`
-  - header: `x-auto-close-secret: $AUTO_SESSION_CLOSE_SECRET`
+  - header: `x-auto-close-seçret: $AUTO_SESSION_CLOSE_SECRET`
   - interval: 5 dakika
 - Perf SLA gate:
   - komut: `npm run perf:sla`

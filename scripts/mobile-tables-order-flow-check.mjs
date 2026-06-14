@@ -1,7 +1,7 @@
 import { readFileSync } from "node:fs";
 
 const mobileTables = readFileSync("src/app/m/tables/page.tsx", "utf8");
-const promptIndex = mobileTables.indexOf("Once masa secin.");
+const promptIndex = mobileTables.indexOf("Once masa seçin.");
 const listIndex = mobileTables.indexOf('<section className="m-stack mt-3">');
 
 const checks = [

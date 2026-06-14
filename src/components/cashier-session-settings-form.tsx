@@ -36,7 +36,7 @@ export function CashierSessionSettingsForm({
       <label className="flex items-center justify-between gap-4 rounded-2xl border border-slate-200 bg-white px-4 py-4">
         <div>
           <p className="text-lg font-semibold text-slate-900">Otomatik Gün Sonu</p>
-          <p className="text-sm text-slate-500">Belirtilen saatte gun sonunu otomatik tetikle</p>
+          <p className="text-sm text-slate-500">Belirtilen saatte gün sonunu otomatik tetikle</p>
         </div>
         <span className="relative inline-flex cursor-pointer items-center">
           <input type="checkbox" name="autoSessionCloseEnabled" defaultChecked={values.autoSessionCloseEnabled} className="peer sr-only" />

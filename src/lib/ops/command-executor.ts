@@ -270,7 +270,7 @@ export async function executeOpsCommand(command: OpsCommand, options?: ExecuteCo
         }
         const result = await applyOrderFinancials({ orderId, discountAmount, serviceFee });
         if (!result.ok) {
-          return commandResult(command, classifyFailure(result.error), { message: result.error ?? "Finansal guncelleme başarısız." });
+          return commandResult(command, classifyFailure(result.error), { message: result.error ?? "Finansal güncelleme başarısız." });
         }
         return commandResult(command, "ACK", { data: flattenResultData(result as unknown as Record<string, unknown>) });
       }

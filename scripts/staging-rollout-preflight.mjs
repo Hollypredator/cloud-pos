@@ -16,7 +16,7 @@ function info(message) {
 function ensureFile(relPath) {
   const absPath = path.join(process.cwd(), relPath);
   if (!fs.existsSync(absPath)) {
-    fail(`dosya bulunamadi: ${relPath}`);
+    fail(`dosya bulunamadı: ${relPath}`);
   }
   return fs.readFileSync(absPath, "utf8");
 }
@@ -33,7 +33,7 @@ function ensureFlagLiteral(value, name) {
     return;
   }
   if (value !== "true" && value !== "false") {
-    fail(`${name} yalnizca true/false olabilir.`);
+    fail(`${name} yalnızca true/false olabilir.`);
   }
 }
 
@@ -67,7 +67,7 @@ function run() {
   }
 
   if (!(process.env.STAGING_ADMIN_ACCOUNT_READY === "true")) {
-    warn("STAGING_ADMIN_ACCOUNT_READY=true degil. Admin test hesabinin hazir oldugunu manuel dogrula.");
+    warn("STAGING_ADMIN_ACCOUNT_READY=true degil. Admin test hesabinin hazır oldugunu manuel dogrula.");
   }
 
   info("ok");

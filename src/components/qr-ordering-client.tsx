@@ -168,19 +168,19 @@ function createCartSnapshotHash(input: {
 
 function getHumanErrorMessage(input?: QrApiFailure) {
   if (!input) {
-    return "Sipariş gönderilemedi. Lutfen tekrar deneyin.";
+    return "Sipariş gönderilemedi. Lütfen tekrar deneyin.";
   }
   if (input.code === "QR_TOKEN_EXPIRED") {
-    return "QR oturumu suresi doldu. Lutfen 2-3 saniye icinde tekrar deneyin.";
+    return "QR oturumu süresi doldu. Lütfen 2-3 saniye icinde tekrar deneyin.";
   }
   if (input.code === "QR_TOKEN_MISSING" || input.code === "QR_TOKEN_INVALID" || input.code === "QR_TOKEN_MISMATCH") {
-    return "QR erisim dogrulanamadı. Lutfen QR kodu yeniden okutun.";
+    return "QR erisim dogrulanamadı. Lütfen QR kodu yeniden okutun.";
   }
   if (input.code === "TABLE_NOT_FOUND") {
     return "Masa kaydı bulunamadı. QR kodunu yeniden okutup tekrar deneyin.";
   }
   if (input.resultStatus === "CONFLICT") {
-    return "Ayni sipariş daha once alinmis gorunuyor. Durum panelinden kontrol edin.";
+    return "Ayn? sipariş daha once alinmis görünuyor. Durum panelinden kontrol edin.";
   }
   return input.message ?? "Sipariş gönderilemedi. Internet bağlantınizi kontrol edip tekrar deneyin.";
 }
@@ -839,7 +839,7 @@ export function QrOrderingClient({
       return;
     }
     if (operatingProfile === "coffee_self_service" && !customerName.trim()) {
-      setSubmitError("Lutfen isminizi giriniz.");
+      setSubmitError("Lütfen isminizi giriniz.");
       return;
     }
     setSubmitError(null);
@@ -1037,7 +1037,7 @@ export function QrOrderingClient({
       setCancelSuccess(data.alreadyCancelled ? "Sipariş zaten iptal edilmiş." : "Siparişiniz iptal edildi.");
       setCancelSeçondsLeft(0);
     } catch (error) {
-      setCancelError(error instanceof Error ? error.message : "İptal işlemi sirasinda hata oluştu.");
+      setCancelError(error instanceof Error ? error.message : "İptal işlemi sırasında hata oluştu.");
     } finally {
       setIsCancelling(false);
     }
@@ -1144,7 +1144,7 @@ export function QrOrderingClient({
                 </div>
                 <div>
                   <p className="text-3xl font-black tracking-tight">Self Servis Kahvecim</p>
-                  <p className="text-sm text-slate-300">Hizli & Lezzetli</p>
+                  <p className="text-sm text-slate-300">Hızlı & Lezzetli</p>
                 </div>
               </div>
               <div className="text-right">
@@ -1244,7 +1244,7 @@ export function QrOrderingClient({
                           <div className="mt-2 flex items-center justify-center gap-2 text-[11px]">
                             <span className="rounded-full border border-amber-300/40 bg-amber-400/10 px-2 py-1 text-amber-200">Hazırlik: {getPrepTimeLabel(product)}</span>
                             {topPickProductIds.includes(product.id) ? (
-                              <span className="rounded-full border border-rose-300/40 bg-rose-500/20 px-2 py-1 text-rose-100">En Cok Tercih</span>
+                              <span className="rounded-full border border-rose-300/40 bg-rose-500/20 px-2 py-1 text-rose-100">En Çok Tercih</span>
                             ) : null}
                           </div>
                           <p className="mt-2 text-center text-[1.9rem] font-black text-rose-400">{formatPrice(product.price)}</p>
@@ -1403,7 +1403,7 @@ export function QrOrderingClient({
 
             {cartItems.length > 0 ? (
               <div className="mt-3 rounded-xl border border-emerald-300/25 bg-emerald-500/10 p-3">
-                <p className="text-xs font-semibold uppercase tracking-[0.14em] text-emerald-100">Sana Ozel Oneri</p>
+                <p className="text-xs font-semibold uppercase tracking-[0.14em] text-emerald-100">Sana Özel Oneri</p>
                 <div className="mt-2 flex flex-wrap gap-2">
                   {suggestUpsellProducts(2).map((product) => (
                     <button
@@ -1480,7 +1480,7 @@ export function QrOrderingClient({
                     disabled={isSubmitting}
                     className="w-full rounded-2xl bg-[linear-gradient(135deg,#ff5f7a_0%,#ff385c_100%)] px-4 py-3 text-lg font-bold text-white disabled:opacity-50"
                   >
-                    {isSubmitting ? "Sipariş Gonderiliyor..." : `Siparişi ${paymentMethod === "cash" ? "Nakit" : "Kart"} Olarak Gonder`}
+                    {isSubmitting ? "Sipariş Günderiliyor..." : `Siparişi ${paymentMethod === "cash" ? "Nakit" : "Kart"} Olarak Günder`}
                   </button>
                 </div>
               ) : (
@@ -1904,7 +1904,7 @@ export function QrOrderingClient({
                             disabled={isSubmitting || !confirmationChecked}
                             className="w-full rounded-xl bg-slate-950 px-4 py-3 text-sm font-bold text-white shadow-[0_10px_24px_rgba(15,23,42,0.18)] transition hover:bg-slate-800 disabled:opacity-50"
                           >
-                            {isSubmitting ? "Sipariş Gonderiliyor..." : "Son Onayla Gonder"}
+                            {isSubmitting ? "Sipariş Günderiliyor..." : "Son Onayla Günder"}
                           </button>
                         </div>
                       </div>
@@ -1917,7 +1917,7 @@ export function QrOrderingClient({
                       disabled={isSubmitting}
                       className="w-full rounded-2xl bg-slate-950 py-4 text-lg font-bold text-white shadow-[0_10px_24px_rgba(15,23,42,0.18)] transition hover:bg-slate-800 disabled:opacity-50"
                     >
-                      {isSubmitting ? "Sipariş Gonderiliyor..." : "Siparişi Onayla"}
+                      {isSubmitting ? "Sipariş Günderiliyor..." : "Siparişi Onayla"}
                     </button>
                   )
                 ) : (

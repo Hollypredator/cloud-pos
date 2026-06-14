@@ -17,7 +17,7 @@ Not: Fiziksel POS, e-Fatura ve e-Arsiv entegrasyonlari son fazlara saklanmistir.
 - Amaç: Ürün kapsamını döndürüp kritik operasyon akışlarını tek listede kilitlemek.
 - Çıkış kriteri:
   - Scope freeze dokümanı onayli
-  - Kritik akis listesi tamam
+  - Kritik akış listesi tamam
   - Definition of Done (DoD) tanımlı
   - Önceliklendirilmiş backlog hazır
 
@@ -42,16 +42,16 @@ Not: Fiziksel POS, e-Fatura ve e-Arsiv entegrasyonlari son fazlara saklanmistir.
 ## Faz 5 - Dayanıklılık ve Hata Yönetimi
 - Amaç: Retry/timeout/race/duplicate gibi hata siniflarini kontrol altina almak.
 - Çıkış kriteri:
-  - Kritik akislarda "yarim kalmis işlem" problemi kalmiyor
+  - Kritik akışlarda "yarim kalmis işlem" problemi kalmiyor
 
 ## Faz 6 - Operasyonel Gözlemlenebilirlik ve Support
-- Amaç: Olay tespiti ve mudahele suresini dusurmek.
+- Amaç: Olay tespiti ve mudahele süresini dusurmek.
 - Çıkış kriteri:
   - Structured log + correlation id
   - Alert akışı ve runbook operasyonel
 
 ## Faz 7 - Staging UAT ve Pilot Hazırlık
-- Amaç: Gercek işletme senaryolariyla onayli staging testi.
+- Amaç: Gerçek işletme senaryolariyla onayli staging testi.
 - Çıkış kriteri:
   - `docs/staging-uat.md` checklist tamamlanıyor
   - Bloklayici hata kalmiyor
@@ -59,10 +59,10 @@ Not: Fiziksel POS, e-Fatura ve e-Arsiv entegrasyonlari son fazlara saklanmistir.
 ## Faz 8 - POS'suz Pilot Canlıya Geçiş
 - Amaç: Cihaz entegrasyonu olmadan ilk ticari kullanımın güvenli açılışı.
 - Çıkış kriteri:
-  - Pilot subede kritik incident yok
-  - KPI ve gun sonu mutabakat hedefleri sağlanıyor
+  - Pilot şubede kritik incident yok
+  - KPI ve gün sonu mutabakat hedefleri sağlanıyor
 
 ## Sonraki Asama (Faz 9+)
-- Fiziksel POS cihaz baglantisi
+- Fiziksel POS cihaz bağlantısı
 - e-Fatura / e-Arsiv entegrasyonlari
 - Bu asamalar Faz 1-8 tamamlandiktan sonra acilacak.

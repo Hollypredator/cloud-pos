@@ -139,7 +139,7 @@ export default async function AdminSettingsPage({
 
         {usingDemoData ? (
           <p className="rounded-lg bg-amber-100 px-3 py-2 text-sm text-amber-900">
-            Ayarlar tablosu okunamadı. Varsayilan ayarlar gosteriliyor.
+            Ayarlar tablosu okunamadı. Varsayilan ayarlar gösteriliyor.
           </p>
         ) : null}
 
@@ -250,7 +250,7 @@ export default async function AdminSettingsPage({
               </div>
               <div className="mt-6 flex justify-end">
                 <button type="submit" className="rounded-xl bg-slate-900 px-5 py-3 text-sm font-semibold text-white">
-                  Test Maili Gonder
+                  Test Maili Günder
                 </button>
               </div>
             </form>

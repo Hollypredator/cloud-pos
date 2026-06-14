@@ -21,7 +21,7 @@ const checks = [
   },
   {
     name: "mobile kitchen exposes operational station copy",
-    pass: mobileKitchen.includes("Aktif Istasyon") && mobileKitchen.includes("Hazirlanmaya Al"),
+    pass: mobileKitchen.includes("Aktif Istasyon") && mobileKitchen.includes("Hazırlanmaya Al"),
   },
 ];
 

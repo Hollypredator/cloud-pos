@@ -231,7 +231,7 @@ async function run() {
 
   const targets = buildTargets();
   if (targets.length === 0) {
-    console.error("[perf:sla] olculecek hedef bulunamadi. PERF_AUTH_COOKIE tanimlaman gerekebilir.");
+    console.error("[perf:sla] olculecek hedef bulunamadı. PERF_AUTH_COOKIE tanimlaman gerekebilir.");
     process.exit(1);
   }
 

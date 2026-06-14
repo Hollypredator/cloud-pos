@@ -5,7 +5,7 @@ export function feedbackHref(tone: "success" | "error", message: string) {
 export function tableStatusLabel(status: string) {
   if (status === "occupied") return "Dolu";
   if (status === "reserved") return "Rezerve";
-  return "Bos";
+  return "Boş";
 }
 
 export function tableStatusTone(status: string) {

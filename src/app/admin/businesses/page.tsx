@@ -48,7 +48,7 @@ async function updateBranchAction(formData: FormData) {
   const slug = formData.get("slug");
   const branchProfile = normalizeBranchProfile(formData.get("branchProfile"));
   if (typeof branchId !== "string" || typeof name !== "string" || typeof slug !== "string") {
-    redirect(feedbackHref("error", "Guncellenecek şube bulunamadi."));
+    redirect(feedbackHref("error", "Güncellenecek şube bulunamadı."));
   }
 
   const result = await updateBranch({ branchId, name, slug, branchProfile });
@@ -67,7 +67,7 @@ async function toggleBranchAction(formData: FormData) {
   const branchId = formData.get("branchId");
   const isActive = formData.get("isActive") === "true";
   if (typeof branchId !== "string") {
-    redirect(feedbackHref("error", "Şube bulunamadi."));
+    redirect(feedbackHref("error", "Şube bulunamadı."));
   }
 
   const result = await setBranchActiveStatus({ branchId, isActive });
@@ -85,7 +85,7 @@ async function deleteBranchAction(formData: FormData) {
 
   const branchId = formData.get("branchId");
   if (typeof branchId !== "string") {
-    redirect(feedbackHref("error", "Silinecek şube bulunamadi."));
+    redirect(feedbackHref("error", "Silinecek şube bulunamadı."));
   }
 
   const result = await deleteBranch(branchId);
@@ -119,7 +119,7 @@ export default async function AdminBusinessesPage({
   if (!featureAccess.enabled) {
     logServerPerf("/admin/businesses", [authContextResult, featureAccessResult]);
     return (
-      <BackofficePage title="Subeler" description="Coklu şube ve merkezden yönetim">
+      <BackofficePage title="Şubeler" description="Çoklu şube ve merkezden yönetim">
         <FeatureLockedState
           title={featureAccess.title}
           description={featureAccess.description}
@@ -140,9 +140,9 @@ export default async function AdminBusinessesPage({
   return (
     <BackofficePage
       title="Şube Yönetimi"
-      description="Sublere ayrilan operasyonlari merkezden duzenle ve aktif/pasif durumunu yonet."
+      description="Sublere ayrilan operasyonlari merkezden duzenle ve aktif/pasif durumunu yönet."
       sidebar={
-        <SidebarPanel title="Şube Özet" description="Coklu şube kullaniminda aktif yapinin dengeli kalmasini sagla.">
+        <SidebarPanel title="Şube Özet" description="Çoklu şube kullanıminda aktif yapinin dengeli kalmasini sagla.">
           <div className="rounded-[24px] bg-gradient-to-br from-slate-900 via-slate-800 to-slate-700 p-5 text-white">
             <p className="text-xs font-bold uppercase tracking-[0.18em] text-slate-300">Toplam Şube</p>
             <p className="mt-4 text-3xl font-semibold tracking-tight sm:text-4xl">{branches.length}</p>
@@ -152,24 +152,24 @@ export default async function AdminBusinessesPage({
                 <p className="mt-2 text-2xl font-semibold">{activeCount}</p>
               </div>
               <div className="rounded-2xl bg-white/10 p-3">
-                <p className="text-xs uppercase tracking-[0.16em] text-slate-300">Secili</p>
+                <p className="text-xs uppercase tracking-[0.16em] text-slate-300">Seçili</p>
                 <p className="mt-2 text-lg font-semibold">{branches.find((branch) => branch.id === activeBranchId)?.name ?? "-"}</p>
               </div>
             </div>
           </div>
           <WorkflowGuide
-            title="Subeyi 3 Adimda Hazirla"
+            title="Şubeyi 3 Adimda Hazırla"
             steps={[
               { title: "Şube kaydini ac", description: "Ad ve slug ile yeni şubeyi oluştur." },
-              { title: "Durumunu belirle", description: "Kullanilmiyorsa pasif yap, operasyon aciksa aktif tut." },
-              { title: "Operasyonu ayir", description: "Masalar, siparişler ve vardiyalar secili subede çalışır." },
+              { title: "Durumunu belirle", description: "Kullanilmiyorsa pasif yap, operasyon açıksa aktif tut." },
+              { title: "Operasyonu ayir", description: "Masalar, siparişler ve vardiyalar seçili şubede çalışır." },
             ]}
           />
         </SidebarPanel>
       }
       actions={
         <Link href="/ops" className="w-full rounded-2xl border border-slate-200 bg-white px-5 py-3 text-center text-sm font-semibold text-slate-800 sm:w-auto">
-          Panele Don
+          Panele Dön
         </Link>
       }
     >
@@ -182,13 +182,13 @@ export default async function AdminBusinessesPage({
       ) : null}
 
       {usingDemoData ? (
-        <NoticeBanner tone="warning" title="Demo mod aktif" description="Şube listesi ornek veriyle gosteriliyor." />
+        <NoticeBanner tone="warning" title="Demo mod aktif" description="Şube listesi Örnek veriyle gösteriliyor." />
       ) : null}
 
       <section className="grid gap-4 xl:grid-cols-3">
         <SummaryCard label="Toplam Şube" value={String(branches.length)} hint="Bu işletmede tanimli şube sayısı" tone="accent" />
         <SummaryCard label="Aktif Şube" value={String(activeCount)} hint="Operasyonda kullanilan şubeler" tone="success" />
-        <SummaryCard label="Secili Şube" value={branches.find((branch) => branch.id === activeBranchId)?.name ?? "-"} hint="Shell uzerindeki aktif operasyon subesi" />
+        <SummaryCard label="Seçili Şube" value={branches.find((branch) => branch.id === activeBranchId)?.name ?? "-"} hint="Shell uzerindeki aktif operasyon şubesi" />
       </section>
 
       <section className="grid gap-5 xl:grid-cols-[0.9fr_1.1fr]">
@@ -219,7 +219,7 @@ export default async function AdminBusinessesPage({
                         Restaurant
                       </span>
                       {branch.id === activeBranchId ? (
-                        <span className="rounded-full bg-emerald-100 px-3 py-1 text-xs font-semibold text-emerald-700">Secili</span>
+                        <span className="rounded-full bg-emerald-100 px-3 py-1 text-xs font-semibold text-emerald-700">Seçili</span>
                       ) : null}
                       <span className={`rounded-full px-3 py-1 text-xs font-semibold ${branch.is_active ? "bg-sky-100 text-sky-700" : "bg-slate-200 text-slate-700"}`}>
                         {branch.is_active ? "Aktif" : "Pasif"}
@@ -271,15 +271,15 @@ export default async function AdminBusinessesPage({
                 </form>
               </ContentCard>
 
-              <ContentCard title="Subeyi Kaldir">
+              <ContentCard title="Şubeyi Kaldır">
                 <div className="space-y-4">
                   <div className="rounded-[22px] border border-slate-200 bg-slate-50 p-4 text-sm text-slate-600">
-                    Şube silinmeden önce bu subeye bağlı masa, sipariş ve kurye kayıtları temizlenmis olmalidir.
+                    Şube silinmeden önce bu şubeye bağlı masa, sipariş ve kurye kayıtları temizlenmis olmalidir.
                   </div>
                   <form action={deleteBranchAction}>
                     <input type="hidden" name="branchId" value={selectedBranch.id} />
                     <button type="submit" className="rounded-2xl border border-rose-300 bg-rose-50 px-4 py-3 text-sm font-semibold text-rose-700">
-                      Subeyi Sil
+                      Şubeyi Sil
                     </button>
                   </form>
                 </div>

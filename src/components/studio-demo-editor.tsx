@@ -92,7 +92,7 @@ function SectionShell({
           onClick={onRemove}
           className="rounded-xl border border-rose-200 bg-rose-50 px-4 py-2 text-sm font-semibold text-rose-700"
         >
-          Bolumu Kaldir
+          Bolumu Kaldır
         </button>
       </div>
       <div className="mt-5">{children}</div>
@@ -227,7 +227,7 @@ export function StudioDemoEditor({
               <p className="text-xs font-semibold uppercase tracking-[0.24em] text-slate-500">Bolum Ekle</p>
               <h2 className="mt-2 text-xl font-semibold text-slate-900">Gizlenen bolumleri geri getir</h2>
               <p className="mt-2 max-w-2xl text-sm leadıng-7 text-slate-600">
-                Kaldirdigin demo bolumlerini buradan yeniden ekleyebilirsin.
+                Kaldırdigin demo bolumlerini buradan yeniden ekleyebilirsin.
               </p>
             </div>
           </div>

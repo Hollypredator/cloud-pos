@@ -82,21 +82,21 @@ function feedbackHref(tone: "success" | "error", message: string, filter: TableF
 }
 
 function tableStatusLabel(status: TableStatus) {
-  if (status === "empty") return "Bos";
+  if (status === "empty") return "Boş";
   if (status === "occupied") return "Dolu";
   return "Rezerve";
 }
 
 function orderStatusLabel(status: string) {
   if (status === "pending") return "Bekliyor";
-  if (status === "preparing") return "Hazirlaniyor";
+  if (status === "preparing") return "Hazırlanıyor";
   if (status === "ready") return "Servise Hazır";
   if (status === "served") return "Servise Hazır";
   if (status === "partially_paid") return "Kısmi Ödeme";
-  if (status === "paid") return "Kapandi";
-  if (status === "partially_refunded") return "Kısmi Iade";
-  if (status === "cancelled") return "Iptal";
-  if (status === "refunded") return "Iade";
+  if (status === "paid") return "Kapand?";
+  if (status === "partially_refunded") return "Kısmi İade";
+  if (status === "cancelled") return "İptal";
+  if (status === "refunded") return "İade";
   return status;
 }
 
@@ -251,11 +251,11 @@ export default async function MobileTablesPage({
       {usingDemoData ? (
         <div className="m-card m-banner-warning">Demo veri modu aktif.</div>
       ) : null}
-      {orderEntryData?.usingMenuDemo ? <div className="m-card m-banner-warning">Menü demo verisi kullaniliyor.</div> : null}
+      {orderEntryData?.usingMenuDemo ? <div className="m-card m-banner-warning">Menü demo verisi kullanılıyor.</div> : null}
 
       <section className="m-grid-3 mt-3">
         <article className="m-card text-center">
-          <p className="m-label">Bos</p>
+          <p className="m-label">Boş</p>
           <p className="m-value text-emerald-700">{emptyCount}</p>
         </article>
         <article className="m-card text-center">
@@ -274,7 +274,7 @@ export default async function MobileTablesPage({
             Tumu
           </Link>
           <Link href={baseHref("empty")} data-active={activeFilter === "empty"} className="m-segment-pill">
-            Bos
+            Boş
           </Link>
           <Link href={baseHref("occupied")} data-active={activeFilter === "occupied"} className="m-segment-pill">
             Dolu
@@ -288,16 +288,16 @@ export default async function MobileTablesPage({
 
       {openOrderFlow && !selectedTable ? (
         <section className="m-card mt-3 border-orange-200 bg-orange-50">
-          <p className="m-label text-orange-700">Siparis akisi</p>
-          <p className="mt-2 text-base font-semibold text-slate-900">Once masa secin.</p>
-          <p className="mt-1 text-sm text-slate-600">Siparis acmak icin asagidaki masa kartlarindan birini kullanin.</p>
+          <p className="m-label text-orange-700">Sipariş akışı</p>
+          <p className="mt-2 text-base font-semibold text-slate-900">Once masa seçin.</p>
+          <p className="mt-1 text-sm text-slate-600">Sipariş acmak icin asagidaki masa kartlarindan birini kullanin.</p>
         </section>
       ) : null}
 
       <section className="m-stack mt-3">
         {filteredTables.length === 0 ? (
           <article className="m-card">
-            <p className="m-value-sm">Bu filtrede gosterilecek masa yok.</p>
+            <p className="m-value-sm">Bu filtrede gösterilecek masa yok.</p>
           </article>
         ) : (
           filteredTables.map((table) => {
@@ -352,7 +352,7 @@ export default async function MobileTablesPage({
                 <div className="mt-3 grid gap-2">
                   {canOpenOrders ? (
                     <Link href={flowHref(activeFilter, table.id)} className="m-btn-primary inline-flex items-center justify-center">
-                      {latestOrder && hasOpenOrder ? "Siparise Ekle" : "Sipariş Ac"}
+                      {latestOrder && hasOpenOrder ? "Siparişe Ekle" : "Sipariş Ac"}
                     </Link>
                   ) : null}
 
@@ -391,7 +391,7 @@ export default async function MobileTablesPage({
                       <input type="hidden" name="returnFlow" value={activeFlow ?? ""} />
                       <input type="hidden" name="returnFlowTableId" value={selectedTableId ?? ""} />
                       <PendingSubmitButton
-                        idleLabel="Rezervasyonu Kaldir"
+                        idleLabel="Rezervasyonu Kaldır"
                         pendingLabel="Isleniyor..."
                         className="m-btn-secondary min-h-[44px] w-full"
                       />
@@ -411,7 +411,7 @@ export default async function MobileTablesPage({
               <div>
                 <p className="m-label">Sipariş Akışı</p>
                 <h2 className="text-lg font-semibold text-slate-900">
-                  {selectedTable ? `${selectedTable.name || `Masa ${selectedTable.table_number}`} Siparisi` : "Yeni Sipariş"}
+                  {selectedTable ? `${selectedTable.name || `Masa ${selectedTable.table_number}`} Siparişi` : "Yeni Sipariş"}
                 </h2>
               </div>
               <Link href={baseHref(activeFilter)} className="m-btn-secondary inline-flex items-center justify-center px-3">

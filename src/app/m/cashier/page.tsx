@@ -57,9 +57,9 @@ function orderSourceLabel(order: {
 
 function statusLabel(status: string) {
   if (status === "served") return "Tahsilat";
-  if (status === "partially_paid") return "Kismi Odeme";
-  if (status === "paid") return "Kapandi";
-  if (status === "ready") return "Hazir";
+  if (status === "partially_paid") return "Kismi Ödeme";
+  if (status === "paid") return "Kapand?";
+  if (status === "ready") return "Hazır";
   return status;
 }
 
@@ -113,7 +113,7 @@ async function completeMobilePaymentAction(formData: FormData) {
   const returnOrderId = resolveReturnOrderId(formData);
 
   if (typeof orderId !== "string" || typeof method !== "string") {
-    redirect(feedbackHref("error", "Odeme bilgileri gecersiz.", returnOrderId));
+    redirect(feedbackHref("error", "Ödeme bilgileri geçersiz.", returnOrderId));
   }
 
   let result: Awaited<ReturnType<typeof executeWebOpsCommand>>;
@@ -129,11 +129,11 @@ async function completeMobilePaymentAction(formData: FormData) {
       },
     });
   } catch {
-    redirect(feedbackHref("error", "Odeme alinamadi.", returnOrderId ?? orderId));
+    redirect(feedbackHref("error", "Ödeme alinamadi.", returnOrderId ?? orderId));
   }
 
   if (result.status !== "ACK") {
-    redirect(feedbackHref("error", result.message ?? "Odeme alinamadi.", returnOrderId ?? orderId));
+    redirect(feedbackHref("error", result.message ?? "Ödeme alinamadi.", returnOrderId ?? orderId));
   }
 
   revalidatePath("/m/cashier");
@@ -143,8 +143,8 @@ async function completeMobilePaymentAction(formData: FormData) {
   const remaining = typeof result.data?.remaining === "number" ? result.data.remaining : 0;
   const message =
     result.data?.idempotent === true
-      ? `Ayni odeme daha once kaydedildi. Kalan bakiye: ${remaining.toFixed(2)} TL.`
-      : `Odeme kaydedildi. Kalan bakiye: ${remaining.toFixed(2)} TL.`;
+      ? `Ayn? Ödeme daha once kaydedildi. Kalan bakiye: ${remaining.toFixed(2)} TL.`
+      : `Ödeme kaydedildi. Kalan bakiye: ${remaining.toFixed(2)} TL.`;
   redirect(feedbackHref("success", message, returnOrderId ?? orderId));
 }
 
@@ -155,7 +155,7 @@ async function closePaidOrderAction(formData: FormData) {
   const orderId = formData.get("orderId");
   const returnOrderId = resolveReturnOrderId(formData);
   if (typeof orderId !== "string") {
-    redirect(feedbackHref("error", "Siparis bulunamadi.", returnOrderId));
+    redirect(feedbackHref("error", "Sipariş bulunamadı.", returnOrderId));
   }
 
   let result: Awaited<ReturnType<typeof executeWebOpsCommand>>;
@@ -237,7 +237,7 @@ export default async function MobileCashierPage({
         <div className="flex items-center justify-between gap-3">
           <div>
             <p className="m-label">Tahsilat Kuyrugu</p>
-            <p className="m-muted mt-1">Adisyon sec, odemeyi tam ekranda tamamla.</p>
+            <p className="m-muted mt-1">Adisyon seç, Ödemeyi tam ekranda tamamla.</p>
           </div>
           <Link href="/m/cashier/session" className="m-btn-secondary inline-flex min-h-[40px] items-center justify-center px-3 text-xs">
             Gun
@@ -249,7 +249,7 @@ export default async function MobileCashierPage({
         {servedOrders.length === 0 ? (
           <article className="m-card">
             <p className="m-value-sm">Bekleyen adisyon yok.</p>
-            <p className="m-muted mt-1">Servise hazir veya kismi odemeli adisyonlar burada gorunur.</p>
+            <p className="m-muted mt-1">Servise hazır veya kismi Ödemeli adisyonlar burada görünur.</p>
           </article>
         ) : (
           servedOrders.map((order) => {
@@ -272,7 +272,7 @@ export default async function MobileCashierPage({
                     <p className="text-xl font-semibold text-emerald-700">{formatMoney(remaining)}</p>
                   </div>
                   <Link href={`/m/cashier?order=${order.id}`} className="m-btn-primary inline-flex items-center justify-center px-4">
-                    {isActive ? "Acik" : "Tahsilata Gec"}
+                    {isActive ? "Açık" : "Tahsilata Gec"}
                   </Link>
                 </div>
               </article>
@@ -287,7 +287,7 @@ export default async function MobileCashierPage({
             <div>
               <p className="m-label">Adisyon Detayi</p>
               <h2 className="mt-1 text-lg font-semibold text-slate-950">{orderSourceLabel(selectedOrder)}</h2>
-              <p className="m-muted mt-1">Siparis #{orderRef(selectedOrder)}</p>
+              <p className="m-muted mt-1">Sipariş #{orderRef(selectedOrder)}</p>
             </div>
             <Link href="/m/cashier" className="m-btn-secondary inline-flex min-h-[40px] items-center justify-center px-3 text-xs">
               Kapat
@@ -300,7 +300,7 @@ export default async function MobileCashierPage({
               <p className="mt-1 text-sm font-semibold text-slate-900">{formatMoney(selectedFinal)}</p>
             </div>
             <div className="rounded-2xl bg-emerald-50 px-3 py-3">
-              <p className="m-label">Odenen</p>
+              <p className="m-label">Ödenen</p>
               <p className="mt-1 text-sm font-semibold text-emerald-700">{formatMoney(selectedPaid)}</p>
             </div>
             <div className="rounded-2xl bg-rose-50 px-3 py-3">
@@ -336,8 +336,8 @@ export default async function MobileCashierPage({
               items={selectedItems}
               requestKey={crypto.randomUUID()}
               action={completeMobilePaymentAction}
-              submitIdleLabel="Odemeyi Kaydet"
-              submitPendingLabel="Odeme Isleniyor..."
+              submitIdleLabel="Ödemeyi Kaydet"
+              submitPendingLabel="Ödeme Isleniyor..."
             />
           ) : (
             <form action={closePaidOrderAction} className="mt-4">

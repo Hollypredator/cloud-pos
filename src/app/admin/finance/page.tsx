@@ -42,7 +42,7 @@ function resolveDateInputs(days: number, start?: string, end?: string) {
     return {
       startDate: toDateInputValue(defaultStart),
       endDate: toDateInputValue(defaultEnd),
-      warning: start || end ? "Tarih formati gecersizdi. Varsayilan aralik uygulandi." : null,
+      warning: start || end ? "Tarih formati geçersizdi. Varsayilan aralik uygulandi." : null,
     };
   }
 
@@ -225,7 +225,7 @@ export default async function AdminFinancePage({
     if (!featureAccess.enabled) {
       logServerPerf("/admin/finance", [featureAccessResult]);
       return (
-        <BackofficePage title={translateUiText("Gelir/Gider", locale)} description={translateUiText("Nakit akis yönetimi ve finans ozetleri", locale)}>
+        <BackofficePage title={translateUiText("Gelir/Gider", locale)} description={translateUiText("Nakit akış yönetimi ve finans ozetleri", locale)}>
           <FeatureLockedState
             title={featureAccess.title}
             description={featureAccess.description}
@@ -258,7 +258,7 @@ export default async function AdminFinancePage({
     logServerPerf("/admin/finance", [featureAccessResult, financialResult, branchContextResult]);
   const branchLabel =
     branchContext.activeBranchId === ALL_BRANCHES_VALUE
-      ? translateUiText("Tüm Subeler", locale)
+      ? translateUiText("Tüm Şubeler", locale)
       : branchContext.branches.find((branch) => branch.id === branchContext.activeBranchId)?.name ?? translateUiText("Aktif Şube", locale);
 
   const maxHourly = Math.max(1, ...hourlySales.map((row) => row.sales));
@@ -275,7 +275,7 @@ export default async function AdminFinancePage({
     return (
     <BackofficePage
       title={translateUiText("Gelir/Gider", locale)}
-      description={translateUiText("Nakit akis yönetimi ve finans ozetleri", locale)}
+      description={translateUiText("Nakit akış yönetimi ve finans ozetleri", locale)}
       sidebar={
         <SidebarPanel title={translateUiText("Filtreler", locale)}>
           <form method="get" className="space-y-4">
@@ -286,7 +286,7 @@ export default async function AdminFinancePage({
                 href={buildFinanceHref({ days, view: activeView, mode: "period" })}
                 className={mode === "period" ? "rounded-2xl bg-gradient-to-r from-[#ff5a34] to-[#f0b14f] px-4 py-3 text-center text-sm font-semibold text-white" : "rounded-2xl border border-slate-200 bg-slate-50 px-4 py-3 text-center text-sm font-semibold text-slate-700"}
               >
-                {translateUiText("Donem Bazli", locale)}
+                {translateUiText("Dönem Bazlı", locale)}
               </Link>
               <Link
                 href={buildFinanceHref({ days, view: activeView, mode: "date", start: startDate, end: endDate })}
@@ -297,13 +297,13 @@ export default async function AdminFinancePage({
             </div>
             {mode === "period" ? (
               <div>
-                <p className="mb-2 text-sm font-semibold text-slate-800">{translateUiText("Donem", locale)}</p>
+                <p className="mb-2 text-sm font-semibold text-slate-800">{translateUiText("Dönem", locale)}</p>
                 <select name="days" defaultValue={String(days)} className="w-full rounded-2xl border border-slate-200 bg-slate-50 px-4 py-3 text-sm">
                   <option value="1">{translateUiText("Bugün", locale)}</option>
-                  <option value="7">{translateUiText("Son 7 gun", locale)}</option>
-                  <option value="14">{translateUiText("Son 14 gun", locale)}</option>
-                  <option value="30">{translateUiText("Son 30 gun", locale)}</option>
-                  <option value="90">{translateUiText("Son 90 gun", locale)}</option>
+                  <option value="7">{translateUiText("Son 7 gün", locale)}</option>
+                  <option value="14">{translateUiText("Son 14 gün", locale)}</option>
+                  <option value="30">{translateUiText("Son 30 gün", locale)}</option>
+                  <option value="90">{translateUiText("Son 90 gün", locale)}</option>
                 </select>
               </div>
             ) : (
@@ -328,7 +328,7 @@ export default async function AdminFinancePage({
             ) : null}
           </form>
           <div>
-            <p className="mb-2 text-sm font-semibold text-slate-800">{translateUiText("Gorunum", locale)}</p>
+            <p className="mb-2 text-sm font-semibold text-slate-800">{translateUiText("Gürünüm", locale)}</p>
             <div className="grid gap-2 sm:grid-cols-2">
               <Link href={buildFinanceHref({ days, view: "overview", mode, start: startDate, end: endDate })} className={activeView === "overview" ? "rounded-2xl bg-slate-900 px-4 py-3 text-center text-xs font-semibold text-white" : "rounded-2xl border border-slate-200 bg-slate-50 px-4 py-3 text-center text-xs font-semibold text-slate-700"}>
                 {translateUiText("Özet", locale)}
@@ -337,7 +337,7 @@ export default async function AdminFinancePage({
                 {translateUiText("Nakit Akışı", locale)}
               </Link>
               <Link href={buildFinanceHref({ days, view: "sales", mode, start: startDate, end: endDate })} className={activeView === "sales" ? "rounded-2xl bg-slate-900 px-4 py-3 text-center text-xs font-semibold text-white" : "rounded-2xl border border-slate-200 bg-slate-50 px-4 py-3 text-center text-xs font-semibold text-slate-700"}>
-                {translateUiText("Satis Analizi", locale)}
+                {translateUiText("Satış Analizi", locale)}
               </Link>
               <Link href={buildFinanceHref({ days, view: "transactions", mode, start: startDate, end: endDate })} className={activeView === "transactions" ? "rounded-2xl bg-slate-900 px-4 py-3 text-center text-xs font-semibold text-white" : "rounded-2xl border border-slate-200 bg-slate-50 px-4 py-3 text-center text-xs font-semibold text-slate-700"}>
                 {translateUiText("Hareketler", locale)}
@@ -350,13 +350,13 @@ export default async function AdminFinancePage({
                 {translateUiText("Bugün", locale)}
               </Link>
               <Link href={buildFinanceHref({ days: 7, view: activeView, mode: "period" })} className={`rounded-2xl px-4 py-3 text-center text-sm font-semibold ${days === 7 ? "bg-[#ff5a34] text-white" : "border border-slate-200 bg-slate-50 text-slate-700"}`}>
-                {translateUiText("7 Gun", locale)}
+                {translateUiText("7 Gün", locale)}
               </Link>
               <Link href={buildFinanceHref({ days: 30, view: activeView, mode: "period" })} className={`rounded-2xl px-4 py-3 text-center text-sm font-semibold ${days === 30 ? "bg-[#ff5a34] text-white" : "border border-slate-200 bg-slate-50 text-slate-700"}`}>
-                {translateUiText("30 Gun", locale)}
+                {translateUiText("30 Gün", locale)}
               </Link>
               <Link href={buildFinanceHref({ days: 90, view: activeView, mode: "period" })} className={`rounded-2xl px-4 py-3 text-center text-sm font-semibold ${days === 90 ? "bg-[#ff5a34] text-white" : "border border-slate-200 bg-slate-50 text-slate-700"}`}>
-                {translateUiText("90 Gun", locale)}
+                {translateUiText("90 Gün", locale)}
               </Link>
             </div>
           ) : null}
@@ -367,7 +367,7 @@ export default async function AdminFinancePage({
               <p className="font-display font-numeric mt-1 text-2xl font-semibold tracking-tight text-slate-900">{averageTicket.toFixed(2)} TL</p>
             </div>
             <div>
-              <p className="text-sm text-slate-500">{translateUiText("Iade orani", locale)}</p>
+              <p className="text-sm text-slate-500">{translateUiText("İade oranı", locale)}</p>
               <p className={`font-display font-numeric mt-1 text-2xl font-semibold tracking-tight ${refundRate > 10 ? "text-rose-700" : "text-slate-900"}`}>
                 %{refundRate.toFixed(1)}
               </p>
@@ -397,7 +397,7 @@ export default async function AdminFinancePage({
         tabs={[
           { label: translateUiText("Özet", locale), active: activeView === "overview", href: buildFinanceHref({ days, view: "overview", mode, start: startDate, end: endDate }) },
           { label: translateUiText("Nakit Akışı", locale), active: activeView === "cashflow", href: buildFinanceHref({ days, view: "cashflow", mode, start: startDate, end: endDate }) },
-          { label: translateUiText("Satis Analizi", locale), active: activeView === "sales", href: buildFinanceHref({ days, view: "sales", mode, start: startDate, end: endDate }) },
+          { label: translateUiText("Satış Analizi", locale), active: activeView === "sales", href: buildFinanceHref({ days, view: "sales", mode, start: startDate, end: endDate }) },
           { label: translateUiText("Hareketler", locale), active: activeView === "transactions", href: buildFinanceHref({ days, view: "transactions", mode, start: startDate, end: endDate }) },
         ]}
       />
@@ -409,8 +409,8 @@ export default async function AdminFinancePage({
       ) : null}
 
       <section className="grid gap-4 xl:grid-cols-4">
-        <SummaryCard label={translateUiText("Gelir", locale)} value={`${summary.grossSales.toFixed(2)} TL`} hint={translateUiText("Brut satis", locale)} tone="success" />
-        <SummaryCard label={translateUiText("Gider", locale)} value={`${summary.refunds.toFixed(2)} TL`} hint={translateUiText("Iade / cikis", locale)} tone="danger" />
+        <SummaryCard label={translateUiText("Gelir", locale)} value={`${summary.grossSales.toFixed(2)} TL`} hint={translateUiText("Brüt satış", locale)} tone="success" />
+        <SummaryCard label={translateUiText("Gider", locale)} value={`${summary.refunds.toFixed(2)} TL`} hint={translateUiText("İade / çıkış", locale)} tone="danger" />
         <SummaryCard label={translateUiText("Net", locale)} value={`${summary.netSales.toFixed(2)} TL`} hint={translateUiText("Kalan bakiye", locale)} tone="accent" />
         <SummaryCard label={translateUiText("Toplam", locale)} value={`${summary.paidOrderCount}`} hint={translateUiText("Tamamlanan ödeme", locale)} />
       </section>
@@ -419,7 +419,7 @@ export default async function AdminFinancePage({
       <section className="grid gap-5 xl:grid-cols-[1.15fr_0.85fr]">
         <ContentCard title={translateUiText("Grafik Panorama", locale)}>
           {hourlySales.length === 0 ? (
-            <EmptyPanel title={translateUiText("Grafik Verisi Yok", locale)} description={translateUiText("Secilen filtrelerde cizilecek finans akışı yok.", locale)} />
+            <EmptyPanel title={translateUiText("Grafik Verisi Yok", locale)} description={translateUiText("Seçilen filtrelerde çizilecek finans akışı yok.", locale)} />
           ) : (
             <div className="grid gap-4 xl:grid-cols-[1fr_280px]">
               <div className="rounded-[24px] border border-slate-200 bg-slate-50 p-5">
@@ -465,7 +465,7 @@ export default async function AdminFinancePage({
 
               <div className="space-y-3">
                 <div className="rounded-[24px] border border-slate-200 bg-slate-50 p-4">
-                  <p className="text-xs font-bold uppercase tracking-[0.16em] text-slate-500">Net Akis</p>
+                  <p className="text-xs font-bold uppercase tracking-[0.16em] text-slate-500">Net Akış</p>
                   <p className="font-display font-numeric mt-3 text-2xl font-semibold tracking-tight text-slate-900 sm:text-3xl">{summary.netSales.toFixed(2)} TL</p>
                 </div>
                 <div className="rounded-[24px] border border-slate-200 bg-slate-50 p-4">
@@ -482,7 +482,7 @@ export default async function AdminFinancePage({
           )}
         </ContentCard>
 
-        <ContentCard title={translateUiText("Iade / Tahsilat Dengesi", locale)}>
+        <ContentCard title={translateUiText("İade / Tahsilat Dengesi", locale)}>
           <div className="space-y-4">
             <div className="rounded-[24px] border border-slate-200 bg-slate-50 p-4">
               <div className="flex items-center justify-between gap-3">
@@ -495,7 +495,7 @@ export default async function AdminFinancePage({
             </div>
             <div className="rounded-[24px] border border-slate-200 bg-slate-50 p-4">
               <div className="flex items-center justify-between gap-3">
-                <span className="text-sm font-semibold text-slate-900">{translateUiText("Iade", locale)}</span>
+                <span className="text-sm font-semibold text-slate-900">{translateUiText("İade", locale)}</span>
                 <span className="font-display font-numeric text-lg font-semibold text-rose-700">{summary.refunds.toFixed(2)} TL</span>
               </div>
               <div className="mt-4 h-3 overflow-hidden rounded-full bg-white">
@@ -517,7 +517,7 @@ export default async function AdminFinancePage({
             <div className="panel-hover rounded-[22px] border border-slate-200 bg-slate-50 p-4">
               <p className="text-xs font-bold uppercase tracking-[0.16em] text-slate-500">{translateUiText("Net Durum", locale)}</p>
               <p className="font-display font-numeric mt-3 text-2xl font-semibold tracking-tight text-slate-900 sm:text-3xl">{summary.netSales.toFixed(2)} TL</p>
-              <p className="mt-2 text-sm text-slate-500">{translateUiText("Secili aralikta gelir ve iade etkisinin net sonucu.", locale)}</p>
+              <p className="mt-2 text-sm text-slate-500">{translateUiText("Seçili aralikta gelir ve iade etkisinin net sonucu.", locale)}</p>
             </div>
             <div className="panel-hover rounded-[22px] border border-slate-200 bg-slate-50 p-4">
               <p className="text-xs font-bold uppercase tracking-[0.16em] text-slate-500">{translateUiText("Ortalama Fis", locale)}</p>
@@ -536,7 +536,7 @@ export default async function AdminFinancePage({
           <div className="space-y-3">
             <div className="rounded-[22px] border border-slate-200 bg-slate-50 p-4">
               <div className="flex items-center justify-between gap-3">
-                <span className="text-sm font-semibold text-slate-900">{translateUiText("Iade Baskisi", locale)}</span>
+                <span className="text-sm font-semibold text-slate-900">{translateUiText("İade Baskısı", locale)}</span>
                 <span className={`rounded-full px-3 py-1 text-xs font-semibold ${refundRate > 10 ? "bg-rose-100 text-rose-700" : "bg-emerald-100 text-emerald-700"}`}>
                   %{refundRate.toFixed(1)}
                 </span>
@@ -548,7 +548,7 @@ export default async function AdminFinancePage({
                 <span className="text-sm font-semibold text-slate-900">{translateUiText("Son Hareket Yogunlugu", locale)}</span>
                 <span className="rounded-full bg-slate-200 px-3 py-1 text-xs font-semibold text-slate-700">{recentPayments.length}</span>
               </div>
-              <p className="mt-3 text-sm text-slate-500">{translateUiText("Secili aralikta listelenen son ödeme ve iade hareketleri.", locale)}</p>
+              <p className="mt-3 text-sm text-slate-500">{translateUiText("Seçili aralikta listelenen son ödeme ve iade hareketleri.", locale)}</p>
             </div>
           </div>
         </ContentCard>
@@ -574,7 +574,7 @@ export default async function AdminFinancePage({
       <section className="grid gap-5 xl:grid-cols-2">
         <ContentCard title={translateUiText("Ödeme Dagilimi", locale)}>
           {methodBreakdown.length === 0 ? (
-            <EmptyPanel title={translateUiText("Dagilim Yok", locale)} description={translateUiText("Ödeme yontemi dagilimini gosterecek veri bulunmuyor.", locale)} />
+            <EmptyPanel title={translateUiText("Dagilim Yok", locale)} description={translateUiText("Ödeme yontemi dagilimini gösterecek veri bulunmuyor.", locale)} />
           ) : (
             <div className="grid gap-5 xl:grid-cols-[320px_1fr]">
               <DonutChart
@@ -603,7 +603,7 @@ export default async function AdminFinancePage({
                       </div>
                       <div className="mt-3 grid grid-cols-3 gap-2 text-xs text-slate-500">
                         <span>{translateUiText("Gelir", locale)}: <span className="font-numeric font-semibold text-emerald-700">{row.sales.toFixed(2)}</span></span>
-                        <span>{translateUiText("Iade", locale)}: <span className="font-numeric font-semibold text-rose-700">{row.refunds.toFixed(2)}</span></span>
+                        <span>{translateUiText("İade", locale)}: <span className="font-numeric font-semibold text-rose-700">{row.refunds.toFixed(2)}</span></span>
                         <span>{translateUiText("Pay", locale)}: <span className="font-numeric font-semibold text-slate-900">%{((Math.max(0, row.net) / totalMethodNet) * 100).toFixed(1)}</span></span>
                       </div>
                     </div>
@@ -616,7 +616,7 @@ export default async function AdminFinancePage({
 
         <ContentCard title={translateUiText("Ödeme Tipi", locale)}>
           {methodBreakdown.length === 0 ? (
-            <EmptyPanel title={translateUiText("Kayıt Bulunamadi", locale)} description={translateUiText("Secili filtrelere uygun ödeme kaydı yok.", locale)} />
+            <EmptyPanel title={translateUiText("Kayıt Bulunamadı", locale)} description={translateUiText("Seçili filtrelere uygun ödeme kaydı yok.", locale)} />
           ) : (
             <div className="responsive-table-shell rounded-[22px] border border-slate-200">
               <table className="responsive-table w-full text-left text-sm">
@@ -643,7 +643,7 @@ export default async function AdminFinancePage({
           )}
         </ContentCard>
 
-        <ContentCard title={translateUiText("Saatlik Satis", locale)}>
+        <ContentCard title={translateUiText("Saatlik Satış", locale)}>
           <div className="grid gap-3">
             {hourlySales.map((row) => (
               <div key={row.hour} className="panel-hover grid grid-cols-[56px_1fr_96px] items-center gap-3 rounded-[20px] border border-slate-200 bg-slate-50 px-3 py-3 text-sm">
@@ -686,21 +686,21 @@ export default async function AdminFinancePage({
           </div>
         </ContentCard>
 
-        <ContentCard title="Urun Karliligi (Recete Bazli)">
+        <ContentCard title="Ürün Karlılığı (Reçete Bazli)">
           {topProducts.length === 0 ? (
-            <EmptyPanel title={translateUiText("Kayıt Bulunamadi", locale)} description="Secili filtrelerde urun karliligi verisi yok." />
+            <EmptyPanel title={translateUiText("Kayıt Bulunamadı", locale)} description="Seçili filtrelerde Ürün karlılığı verisi yok." />
           ) : (
             <div className="responsive-table-shell rounded-[22px] border border-slate-200">
               <table className="responsive-table w-full text-left text-sm">
                 <thead className="bg-slate-50 text-slate-500">
                   <tr>
-                    <th className="px-4 py-4 font-semibold">Urun</th>
+                    <th className="px-4 py-4 font-semibold">Ürün</th>
                     <th className="px-4 py-4 font-semibold">Adet</th>
                     <th className="px-4 py-4 font-semibold">Net Gelir</th>
                     <th className="px-4 py-4 font-semibold">Maliyet</th>
                     <th className="px-4 py-4 font-semibold">Kar</th>
                     <th className="px-4 py-4 font-semibold">Marj</th>
-                    <th className="px-4 py-4 font-semibold">Iade Etkisi</th>
+                    <th className="px-4 py-4 font-semibold">İade Etkisi</th>
                   </tr>
                 </thead>
                 <tbody>
@@ -726,7 +726,7 @@ export default async function AdminFinancePage({
         </ContentCard>
         <ContentCard title={translateUiText("Son Hareketler", locale)}>
           {recentPayments.length === 0 ? (
-            <EmptyPanel title={translateUiText("Kayıt Bulunamadi", locale)} description={translateUiText("Secili filtrelere uygun hareket yok.", locale)} />
+            <EmptyPanel title={translateUiText("Kayıt Bulunamadı", locale)} description={translateUiText("Seçili filtrelere uygun hareket yok.", locale)} />
           ) : (
             <div className="responsive-table-shell max-h-[420px] overflow-y-auto rounded-[22px] border border-slate-200">
               <table className="responsive-table w-full text-left text-sm">
@@ -761,7 +761,7 @@ export default async function AdminFinancePage({
       <section className="grid gap-5">
         <ContentCard title={translateUiText("Son Hareketler", locale)}>
           {recentPayments.length === 0 ? (
-            <EmptyPanel title={translateUiText("Kayıt Bulunamadi", locale)} description={translateUiText("Secili filtrelere uygun hareket yok.", locale)} />
+            <EmptyPanel title={translateUiText("Kayıt Bulunamadı", locale)} description={translateUiText("Seçili filtrelere uygun hareket yok.", locale)} />
           ) : (
             <div className="responsive-table-shell max-h-[560px] overflow-y-auto rounded-[22px] border border-slate-200">
               <table className="responsive-table w-full text-left text-sm">
@@ -796,9 +796,9 @@ export default async function AdminFinancePage({
   } catch (error) {
     console.error("[admin-finance-page] failed", error);
     return (
-      <BackofficePage title="Gelir/Gider" description="Nakit akis yönetimi ve finans ozetleri">
+      <BackofficePage title="Gelir/Gider" description="Nakit akış yönetimi ve finans ozetleri">
         <div className="rounded-[24px] border border-amber-200 bg-amber-50 px-5 py-4 text-sm text-amber-900">
-          {translateUiText("Finans verileri yuklenemedi. Lütfen biraz sonra tekrar deneyin.", "tr")}
+          {translateUiText("Finans verileri yüklenemedi. Lütfen biraz sonra tekrar deneyin.", "tr")}
         </div>
       </BackofficePage>
     );

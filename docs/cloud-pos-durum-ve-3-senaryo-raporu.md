@@ -64,7 +64,7 @@ Bu rapordaki TRY örnekleri için referans kur: `1 USD = 38.00 TRY` (örnek hesa
 
 - Middleware:
   - Rate limit kuralları (özel endpoint bazlı)
-  - Security headers (CSP, HSTS, X-Frame-Options, vb.)
+  - Seçurity headers (CSP, HSTS, X-Frame-Options, vb.)
   - Correlation id propagation
   - Legacy mobile redirect (`/m -> /ops`, `/m/* -> /*`)
 - Domain dayanıklılığı:
@@ -252,7 +252,7 @@ Bu rapordaki TRY örnekleri için referans kur: `1 USD = 38.00 TRY` (örnek hesa
 
 ### Dahil
 
-- Teknik envanter, API sözleşmeleri, security/dayanıklılık resmi
+- Teknik envanter, API sözleşmeleri, seçurity/dayanıklılık resmi
 - 3 senaryo için süre, ekip, CAPEX/OPEX, risk, go-live gate
 - USD+TRY hibrit maliyet modeli ve duyarlılık analizi
 

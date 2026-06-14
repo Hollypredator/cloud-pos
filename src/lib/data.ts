@@ -254,11 +254,11 @@ function isRetryableMutationError(message?: string | null) {
 }
 
 async function retryMutation<T>(
-  operation: () => Promise<{ data?: T | null; error?: { message: string } | null }>,
+  operation: () => Promise<{ data: T | null; error?: { message: string } | null }>,
   maxAttempts = 3,
 ) {
   let attempt = 0;
-  let lastResult: { data?: T | null; error?: { message: string } | null } | null = null;
+  let lastResult: { data: T | null; error?: { message: string } | null } | null = null;
   while (attempt < maxAttempts) {
     attempt += 1;
     const result = await operation();
@@ -2105,7 +2105,7 @@ export async function createSupportTenantProvision(input: {
     );
     if (hasOtherTenant) {
       await rollback();
-      return { ok: false, error: "Bu owner e-postasi başka tenantta kullaniliyor." };
+      return { ok: false, error: "Bu owner e-postasi başka tenantta kullanılıyor." };
     }
   }
 
@@ -2500,7 +2500,7 @@ export async function getMenu(businessSlug?: string) {
       usingDemoData: false,
     };
   }
-  const cacheKey = `menu:${business?.id ?? "none"}:${useLegacySchema ? "legacy" : "scoped"}`;
+  const cacheKey = `menü:${business?.id ?? "none"}:${useLegacySchema ? "legacy" : "scoped"}`;
   const reader = unstable_cache(
     async () => {
       const innerSupabase = getSupabaseServerClient();
@@ -2564,7 +2564,7 @@ export async function getMenu(businessSlug?: string) {
       };
     },
     [cacheKey],
-    { revalidate: 30, tags: ["menu", "product-management"] },
+    { revalidate: 30, tags: ["menü", "product-management"] },
   );
 
   try {
@@ -6635,7 +6635,7 @@ export async function moveTableOrder(input: { sourceTableId: string; targetTable
 function revalidateProductManagementCaches() {
   revalidateTag("product-management", "max");
   revalidateTag("kitchen-catalog", "max");
-  revalidateTag("menu", "max");
+  revalidateTag("menü", "max");
 }
 
 function revalidateReportCaches() {
@@ -6780,7 +6780,7 @@ function normalizeEnterpriseMarketImportPayload(jsonText: string) {
   } catch {
     return {
       rows: [] as EnterpriseMarketImportRow[],
-      errors: ["JSON parse edilemedi. Dosya icerigi gecersiz."],
+      errors: ["JSON parse edilemedi. Dosya icerigi geçersiz."],
       conflicts: [] as EnterpriseMarketImportIssue[],
     };
   }
@@ -6804,7 +6804,7 @@ function normalizeEnterpriseMarketImportPayload(jsonText: string) {
     const rowNumber = index + 1;
     const item = raw[index];
     if (!item || typeof item !== "object") {
-      errors.push(`Satir ${rowNumber}: kayıt nesnesi gecersiz.`);
+      errors.push(`Satir ${rowNumber}: kayıt nesnesi geçersiz.`);
       continue;
     }
 
@@ -6841,7 +6841,7 @@ function normalizeEnterpriseMarketImportPayload(jsonText: string) {
       conflicts.push({
         row: rowNumber,
         field: "name",
-        message: `Ayni kategori+ürün tekrarli (onceki satir: ${seenProductKeys.get(productKey)}).`,
+        message: `Ayn? kategori+ürün tekrarli (onceki satir: ${seenProductKeys.get(productKey)}).`,
       });
     } else {
       seenProductKeys.set(productKey, rowNumber);
@@ -6851,7 +6851,7 @@ function normalizeEnterpriseMarketImportPayload(jsonText: string) {
         conflicts.push({
           row: rowNumber,
           field: "barcode",
-          message: `Ayni barkod tekrarli (onceki satir: ${seenBarcodes.get(barcode)}).`,
+          message: `Ayn? barkod tekrarli (onceki satir: ${seenBarcodes.get(barcode)}).`,
         });
       } else {
         seenBarcodes.set(barcode, rowNumber);
@@ -6862,7 +6862,7 @@ function normalizeEnterpriseMarketImportPayload(jsonText: string) {
         conflicts.push({
           row: rowNumber,
           field: "plu_code",
-          message: `Ayni PLU kodu tekrarli (onceki satir: ${seenPluCodes.get(pluCode)}).`,
+          message: `Ayn? PLU kodu tekrarli (onceki satir: ${seenPluCodes.get(pluCode)}).`,
         });
       } else {
         seenPluCodes.set(pluCode, rowNumber);
@@ -7058,7 +7058,7 @@ export async function dryRunEnterpriseMarketImport(input: { jsonText: string; re
         conflicts.push({
           row: rowNumber,
           field: "barcode",
-          message: "Barkod farkli bir ürün tarafinda kullaniliyor.",
+          message: "Barkod farkli bir ürün tarafinda kullanılıyor.",
         });
       }
     }
@@ -7068,7 +7068,7 @@ export async function dryRunEnterpriseMarketImport(input: { jsonText: string; re
         conflicts.push({
           row: rowNumber,
           field: "plu_code",
-          message: "PLU kodu farkli bir ürün tarafinda kullaniliyor.",
+          message: "PLU kodu farkli bir ürün tarafinda kullanılıyor.",
         });
       }
     }
@@ -7316,7 +7316,7 @@ export async function createProductModifierGroup(input: {
 export async function createProductModifierOption(input: {
   groupId: string;
   name: string;
-  priceDelta?: number;
+  priceDelta: number;
   isDefault?: boolean;
 }) {
   const supabase = getSupabaseServerClient() ?? (await getTenantDataClient());
@@ -8130,7 +8130,7 @@ export async function deleteStaffAccount(profileId: string) {
   }
 
   if ((accessRows as Array<{ business_id: string }>).some((row) => row.business_id !== businessScope.businessId)) {
-    return { ok: false, error: "Bu hesap birden fazla işletmede kullaniliyor. Guvenlik için global silme engellendi." };
+    return { ok: false, error: "Bu hesap birden fazla işletmede kullanılıyor. Güvenlik için global silme engellendi." };
   }
 
   const { data: profile, error: profileError } = await authClient
@@ -8234,7 +8234,7 @@ export async function createStaffAccount(input: {
 
     const businessIds = [...new Set((existingAccessRows as Array<{ business_id: string }>).map((row) => row.business_id))];
     if (businessIds.some((businessId) => businessId !== businessScope.businessId)) {
-      return { ok: false, error: "Bu e-posta başka bir işletmede kullaniliyor. Tenant guvenligi için ayni hesap yeniden baglanamaz." };
+      return { ok: false, error: "Bu e-posta başka bir işletmede kullanılıyor. Tenant guvenligi için ayn? hesap yeniden baglanamaz." };
     }
   }
 
@@ -8492,7 +8492,7 @@ export async function updateCategoryPrepStation(categoryId: string, prepStation:
 export async function updateCategorySortOrder(categoryId: string, sortOrder: number) {
   const supabase = await getTenantDataClient();
   if (!supabase) {
-    return { ok: false, error: "Demo modda kategori sira güncelleme pasif." };
+    return { ok: false, error: "Demo modda kategori sıra güncelleme pasif." };
   }
 
   const scope = await getDefaultBusinessScope();
@@ -8526,7 +8526,7 @@ export async function updateCategorySortOrder(categoryId: string, sortOrder: num
 export async function reorderCategories(categoryIds: string[]) {
   const supabase = await getTenantDataClient();
   if (!supabase) {
-    return { ok: false, error: "Demo modda kategori sira güncelleme pasif." };
+    return { ok: false, error: "Demo modda kategori sıra güncelleme pasif." };
   }
 
   const scope = await getDefaultBusinessScope();
@@ -10130,7 +10130,7 @@ const demoBlogPosts: BlogPost[] = [
     title: "Cafe operasyonunda ilk dijital kurulum nasıl yapilir?",
     slug: "cafe-operasyonunda-ilk-dijital-kurulum",
     excerpt: "Masa, ürün, ekip ve raporlama akışlarini tek gunde nasıl toparlayabilecegini anlatiyor.",
-    body: "Cloud POS ile ilk kurulumda önce işletme yapisini, sonra masa planini, ardindan ürün ve personel rollerini tanimlayin. Bu akışı takip ettiginizde landing, demo ve operasyon paneli ayni veri modelini kullanir.",
+    body: "Cloud POS ile ilk kurulumda önce işletme yapisini, sonra masa planini, ardindan ürün ve personel rollerini tanimlayin. Bu akışı takip ettiginizde landing, demo ve operasyon paneli ayn? veri modelini kullanir.",
     cover_image_url: "https://images.unsplash.com/photo-1556740749-887f6717d7e4?auto=format&fit=crop&w=1200&q=80",
     status: "published",
     published_at: minutesAgo(1440),
@@ -10373,8 +10373,8 @@ async function getCachedOpsPageRow(input: {
             .eq("business_id", input.businessId)
             .lte("stock_count", 10)
             .order("stock_count", { ascending: true })
-            .limit(4)
-        : supabase.from("products").select("id, name, stock_count").lte("stock_count", 10).order("stock_count", { ascending: true }).limit(4),
+            .limit(8)
+        : supabase.from("products").select("id, name, stock_count").lte("stock_count", 10).order("stock_count", { ascending: true }).limit(8),
     ]);
 
     return {
@@ -13135,7 +13135,7 @@ export async function updateSupportTenantBusinessType(input: {
 
   if (error) {
     if (error.message.toLowerCase().includes("business_type")) {
-      return { ok: false, error: "business_type kolonu bulunamadı. Lutfen 20260509_add_business_type.sql migration'ini çalıştırin." };
+      return { ok: false, error: "business_type kolonu bulunamadı. Lütfen 20260509_add_business_type.sql migration'ini çalıştırin." };
     }
     return { ok: false, error: error.message };
   }
@@ -13172,7 +13172,7 @@ export async function updateSupportTenantPlan(input: {
 
   if (error) {
     if (error.message.toLowerCase().includes("plan")) {
-      return { ok: false, error: "plan kolonu bulunamadı. Lutfen business plan migrationlarini kontrol edin." };
+      return { ok: false, error: "plan kolonu bulunamadı. Lütfen business plan migrationlarini kontrol edin." };
     }
     return { ok: false, error: error.message };
   }

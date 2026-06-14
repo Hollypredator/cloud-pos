@@ -93,7 +93,7 @@ async function run() {
 
   if (cancelledWithNetPositive.length > 0) {
     fail(
-      `cancelled ama net tahsilatli siparis bulundu: ${cancelledWithNetPositive
+      `cancelled ama net tahsilatli sipariş bulundu: ${cancelledWithNetPositive
         .slice(0, 10)
         .map((row) => `${row.orderId}(net=${row.net.toFixed(2)})`)
         .join(", ")}`,

@@ -58,7 +58,7 @@ function resolveMobileActions(activeBusinessType: AppShellPayload["activeBusines
   }
 
   return [
-    { href: "/m/tables", label: "Masa Akisi", icon: "table", roles: ["admin", "cashier"], group: "order" },
+    { href: "/m/tables", label: "Masa Akışi", icon: "table", roles: ["admin", "cashier"], group: "order" },
     { href: "/m/tables?flow=new-order", label: "Sipariş Ac", icon: "plus", roles: ["owner", "admin", "cashier"], group: "order" },
     { href: "/m/cashier", label: "Adisyon", icon: "receipt", roles: ["admin", "cashier", "waiter"], group: "order" },
     { href: "/m/kitchen", label: "Mutfak", icon: "chefHat", roles: ["admin", "kitchen"], group: "ops", feature: "kitchen_display" },
@@ -307,7 +307,7 @@ export function MobileOpsShell({
                 isOffline ? "bg-amber-100 text-amber-800" : "bg-emerald-100 text-emerald-700"
               }`}
             >
-              {isOffline ? "Offline" : "Canli"}
+              {isOffline ? "Offline" : "Canlı"}
             </span>
           </div>
           {isOffline ? (
@@ -347,12 +347,12 @@ export function MobileOpsShell({
             <button
               type="button"
               onClick={() => setActionsOpen((prev) => !prev)}
-              aria-label="Diger is akışlari"
+              aria-label="Diğer is akışlari"
               aria-expanded={actionsOpen}
               className="inline-flex min-h-[56px] w-[58px] flex-col items-center justify-center gap-1 rounded-2xl border border-slate-200 bg-slate-50 px-2 py-2 text-[11px] font-semibold text-slate-700"
             >
               <MoreHorizontal aria-hidden="true" className="h-5 w-5" strokeWidth={2.2} />
-              Diger
+              Diğer
             </button>
           </div>
         </nav>

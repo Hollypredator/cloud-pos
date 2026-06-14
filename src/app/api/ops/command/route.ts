@@ -67,7 +67,7 @@ function normalizeCommandFromBody(body: CommandRequestBody, actor: SyncActorCont
   }
 
   if (!body.type || !isRecord(body.payload)) {
-    return { ok: false as const, error: "Komut govdesi geçersiz. command veya type+payload gonderin." };
+    return { ok: false as const, error: "Komut govdesi geçersiz. command veya type+payload günderin." };
   }
 
   const command = makeOpsCommandEnvelope({

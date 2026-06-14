@@ -23,7 +23,7 @@ export default async function AdminAuditPage() {
   return (
     <BackofficePage
       title="İşlem Loglari"
-      description="Sistem hareketleri ve degisiklik gecmisi"
+      description="Sistem hareketleri ve degisiklik geçmişi"
       sidebar={
         <SidebarPanel title="Filtreler">
           <div className="grid gap-3">
@@ -61,9 +61,9 @@ export default async function AdminAuditPage() {
         </div>
       ) : null}
 
-      <ContentCard title="Kayitlar">
+      <ContentCard title="Kayıtlar">
         {logs.length === 0 ? (
-          <EmptyPanel title="Kayıt Bulunamadi" description="Secili kriterlere uygun işlem bulunamadi." />
+          <EmptyPanel title="Kayıt Bulunamadı" description="Seçili kriterlere uygun işlem bulunamadı." />
         ) : (
           <div className="responsive-table-shell rounded-[22px] border border-slate-200">
             <table className="responsive-table w-full min-w-[960px] text-left text-sm">

@@ -30,11 +30,11 @@ function orderSourceLabel(order: {
 
 function statusLabel(status: string) {
   if (status === "pending") return "Bekliyor";
-  if (status === "preparing") return "Hazirlaniyor";
+  if (status === "preparing") return "Hazırlanıyor";
   if (status === "ready") return "Servise Hazır";
   if (status === "served") return "Servise Hazır";
   if (status === "partially_paid") return "Kısmi Ödeme";
-  if (status === "paid") return "Kapandi";
+  if (status === "paid") return "Kapand?";
   return status;
 }
 
@@ -70,17 +70,17 @@ export default async function MobileOpsPage() {
       tone: toneClass(ops.delayedKitchenOrders, true),
     },
     {
-      title: isSelfServiceCoffee ? "Siparis Yonetimi Kuyrugu" : "Kasa Kuyrugu",
+      title: isSelfServiceCoffee ? "Sipariş Yönetimi Kuyrugu" : "Kasa Kuyrugu",
       value: ops.servedOrders,
-      description: isSelfServiceCoffee ? "Durum guncelleme bekleyen pickup siparisler" : "Tahsilat bekleyen adisyon",
+      description: isSelfServiceCoffee ? "Durum güncelleme bekleyen pickup siparişler" : "Tahsilat bekleyen adisyon",
       href: "/m/cashier",
-      cta: isSelfServiceCoffee ? "Siparis Yonetimi" : "Kasa Ekrani",
+      cta: isSelfServiceCoffee ? "Sipariş Yönetimi" : "Kasa Ekranı",
       tone: toneClass(ops.servedOrders),
     },
     {
       title: "Masa Talepleri",
       value: ops.openServiceRequests,
-      description: "Acil servis islemleri",
+      description: "Acil servis işlemleri",
       href: "/m/service-requests",
       cta: "Taleplere Git",
       tone: toneClass(ops.openServiceRequests),
@@ -90,14 +90,14 @@ export default async function MobileOpsPage() {
       value: metrics.occupiedTables,
       description: `${metrics.emptyTables} boş masa hazır`,
       href: "/m/tables",
-      cta: "Masalari Ac",
+      cta: "Masalar? A?",
       tone: metrics.occupiedTables > metrics.emptyTables ? "m-tone-warning" : "m-tone-success",
     },
   ];
 
   const quickActions = [
-    { href: "/m/tables?flow=new-order", label: "Siparis Ac" },
-    { href: "/m/cashier", label: isSelfServiceCoffee ? "Siparis Yonetimi" : "Tahsilat" },
+    { href: "/m/tables?flow=new-order", label: "Sipariş A?" },
+    { href: "/m/cashier", label: isSelfServiceCoffee ? "Sipariş Yönetimi" : "Tahsilat" },
     { href: "/m/kitchen", label: "Mutfak" },
     { href: "/m/delivery", label: "Teslimat" },
   ];
@@ -117,12 +117,12 @@ export default async function MobileOpsPage() {
         <article className="m-card">
           <p className="m-label">Gunluk Ciro</p>
           <p className="m-value">{formatMoney(metrics.todayRevenue)}</p>
-          <p className="m-muted">Canli tahsilat toplam net tutar</p>
+          <p className="m-muted">Canlı tahsilat toplam net tutar</p>
         </article>
         <article className="m-card">
           <p className="m-label">Açık Sipariş</p>
           <p className="m-value">{metrics.openOrders}</p>
-          <p className="m-muted">Bekleyen + hazirlanan + servis hazır</p>
+          <p className="m-muted">Bekleyen + hazırlanan + servis hazır</p>
         </article>
       </section>
 
@@ -145,7 +145,7 @@ export default async function MobileOpsPage() {
       </section>
 
       <section className="m-card mt-3">
-        <p className="m-label">Hızlı Baslat</p>
+        <p className="m-label">Hızlı Başlat</p>
         <div className="mt-2 grid grid-cols-2 gap-2">
           {quickActions.map((action) => (
             <Link key={action.href} href={action.href} className="m-btn-secondary inline-flex items-center justify-center">
@@ -157,7 +157,7 @@ export default async function MobileOpsPage() {
 
       <section className="m-card mt-3">
         <div className="flex items-center justify-between gap-3">
-          <p className="m-label">Son Siparisler</p>
+          <p className="m-label">Son Siparişler</p>
           <Link href="/m/tables" className="text-xs font-semibold text-slate-700">
             Tumunu gör
           </Link>

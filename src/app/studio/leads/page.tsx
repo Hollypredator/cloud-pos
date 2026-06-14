@@ -59,14 +59,14 @@ export default async function AdminLeadsPage() {
         <header className="flex flex-wrap items-center justify-between gap-3">
           <div>
             <p className="text-sm text-slate-500">Studio CRM</p>
-            <h1 className="text-3xl font-semibold text-slate-900">Satis Leadleri</h1>
+            <h1 className="text-3xl font-semibold text-slate-900">Satış Leadleri</h1>
           </div>
           <Link href="/" className="rounded-lg bg-slate-900 px-4 py-2 text-sm font-medium text-white">Siteyi Ac</Link>
         </header>
 
         {usingDemoData ? (
           <p className="rounded-lg bg-amber-100 px-3 py-2 text-sm text-amber-900">
-            Demo modda ornek lead listesi gosteriliyor.
+            Demo modda Örnek lead listesi gösteriliyor.
           </p>
         ) : null}
 

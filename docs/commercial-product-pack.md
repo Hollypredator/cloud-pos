@@ -6,13 +6,13 @@
 - QR ile masa bazlı sipariş alma
 - Mutfak akışı (pending/preparing/served)
 - Kasa akışı (ödeme alma, iade, adisyon kapama)
-- Gün basi/gun sonu kasa oturumu
+- Gün basi/gün sonu kasa oturumu
 - Servis talepleri (garson cagir, hesap iste)
 - Masa yönetimi (ekle/güncelle/sil/taşıma)
 
 ### Yönetim
 - Rol bazlı erişim (owner/admin/cashier/kitchen/waiter)
-- Coklu şube kapsamlandirmasi (branch scope)
+- Çoklu şube kapsamlandirmasi (branch scope)
 - Ürün/kategori/stok yönetimi
 - Raporlama ve finans özetleri
 - Audit log ve operasyon izleri
@@ -20,7 +20,7 @@
 ### Güvenlik ve Dayanıklılık
 - Endpoint guard + role kontrolü
 - Tenant/branch isolation sertlestirmeleri
-- Rate limit + security headers
+- Rate limit + seçurity headers
 - Idempotent ödeme kayıtları
 - Retry/reconciliation kontrolleri
 - Correlation id + structured logging
@@ -34,7 +34,7 @@
 ## 2) Ek Geliştirme Paketleri (Ticari Büyüme İçin)
 
 ### Paket A - Fiziksel POS Entegrasyonu (Faz 9)
-- Terminalden tutar gonderme
+- Terminalden tutar günderme
 - Ön provizyon/satış/iptal/iade akışları
 - Cihaz timeout/retry/idempotency
 - Kasa mutabakatinda terminal referansi
@@ -43,7 +43,7 @@
 ### Paket B - Pazar Yeri Entegrasyonlari (Faz 10)
 - Trendyol Yemek entegrasyonu
 - Yemeksepeti entegrasyonu
-- Sipariş cekme, durum guncelleme, iptal akışı
+- Sipariş cekme, durum güncelleme, iptal akışı
 - Menu/fiyat/stok senkronizasyonu
 - Kanal bazlı komisyon ve kar marji raporu
 
@@ -66,7 +66,7 @@
 - UAT + saha testleri
 
 ### Faz 10 (4-6 hafta)
-- Trendyol Yemek + Yemeksepeti baglantisi
+- Trendyol Yemek + Yemeksepeti bağlantısı
 - Kanal sipariş orkestrasyonu
 - Kanal bazlı raporlama
 

@@ -45,7 +45,7 @@ export default async function StudioAccessPage() {
       <form action={addStudioUserAction} className="rounded-2xl bg-white p-6 shadow-sm">
         <div className="grid gap-4 md:grid-cols-2">
           <input name="fullName" placeholder="Ad soyad" className="rounded-xl border border-slate-300 px-4 py-3 text-sm" />
-          <input name="email" type="email" placeholder="ornek@firma.com" className="rounded-xl border border-slate-300 px-4 py-3 text-sm" />
+          <input name="email" type="email" placeholder="Örnek@firma.com" className="rounded-xl border border-slate-300 px-4 py-3 text-sm" />
           <select name="role" className="rounded-xl border border-slate-300 px-4 py-3 text-sm md:col-span-2">
             <option value="editor">Editor</option>
             <option value="owner">Owner</option>

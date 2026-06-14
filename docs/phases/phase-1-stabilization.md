@@ -7,12 +7,12 @@ Hedef bitiş: `1 hafta`
 ## Hedef
 - Ürünü "özellik ekleme" modundan çıkarıp "stabilizasyon" moduna almak.
 - Kritik operasyon akışlarını kilitlemek.
-- Faz 2-8 için net ve oncelikli backlog hazirlamak.
+- Faz 2-8 için net ve oncelikli backlog hazırlamak.
 
 ## Scope Freeze
 ### In Scope
 - Güvenlik, performans, tutarlılık, kalite ve operasyonel iyileştirmeler
-- Kritik akislardaki bug fix ve hata mesaji iyilestirmeleri
+- Kritik akışlardaki bug fix ve hata mesaji iyilestirmeleri
 - Test, CI gate ve dokümantasyon iyilestirmeleri
 
 ### Out of Scope
@@ -25,7 +25,7 @@ Hedef bitiş: `1 hafta`
 1. Sipariş oluşturma: `/admin/orders` -> `/api/orders`
 2. Mutfak akışı: `/kitchen` (pending -> preparing -> served)
 3. Kasa tahsilat akışı: `/cashier` (ödeme, split, iade)
-4. Vardiya akışı: `/cashier/session` (gun basi / gun sonu)
+4. Vardiya akışı: `/cashier/session` (gun basi / gün sonu)
 5. Masa operasyonu: `/admin/tables` (ekle, güncelle, taşı, sil)
 6. Servis talepleri: `/service-requests` + `/api/table-requests`
 7. Operasyon saglik ve alert: `/api/health`, `/api/alerts/dispatch`
@@ -39,7 +39,7 @@ Hedef bitiş: `1 hafta`
   - Endpoint yetki kontrolleri dogrulandi
   - Tenant/branch scope ihlali yok
 - Dokumantasyon:
-  - Etkilenen akisin notu README veya ilgili docs dosyasina islendi
+  - Etkilenen akışın notu README veya ilgili docs dosyasina islendi
 
 ## Önceliklendirilmiş Backlog (Faz 2 için giriş listesi)
 ### P0
@@ -56,10 +56,10 @@ Hedef bitiş: `1 hafta`
 - Operasyon ekranlarinda UX hizlandirma (kasa/mutfak)
 - Faz bazlı release note otomasyonu
 
-## Faz 1 Gorev Takibi
+## Faz 1 Görev Takibi
 - [x] 8 faz master plan dokümanı oluşturuldu (`docs/productization-8-phases.md`)
 - [x] Faz 1 scope freeze yazildi
-- [x] Kritik akis listesi netlestirildi
+- [x] Kritik akış listesi netlestirildi
 - [x] DoD tanımlandı
 - [x] Faz 2 giriş backlog'u P0/P1/P2 olarak siniflandi
 - [ ] Ekip onayı alındı

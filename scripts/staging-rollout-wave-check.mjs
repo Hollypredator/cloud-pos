@@ -64,9 +64,9 @@ function runTablesWave() {
   assertFlag("NEXT_PUBLIC_POS_CLIENT_QUEUE_TABLES", "true");
   assertFlag("NEXT_PUBLIC_POS_CLIENT_QUEUE_CASHIER", "false");
 
-  info("dalga=tables flag kontrolu gecti, ops smoke calistiriliyor...");
+  info("dalga=tables flag kontrol? gecti, ops smoke calistiriliyor...");
   runNpmScript("ops:smoke");
-  info("tables smoke gate PASS. Manuel checklist: /tables render, empty->reserved->empty, optimistic Isleniyor, duplicate submit kontrolu.");
+  info("tables smoke gate PASS. Manuel checklist: /tables render, empty->reserved->empty, optimistic Isleniyor, duplicate submit kontrol?.");
 }
 
 function runCashierWave() {
@@ -77,7 +77,7 @@ function runCashierWave() {
   assertFlag("NEXT_PUBLIC_POS_CLIENT_QUEUE_TABLES", "true");
   assertFlag("NEXT_PUBLIC_POS_CLIENT_QUEUE_CASHIER", "true");
 
-  info("dalga=cashier flag kontrolu gecti, ops smoke calistiriliyor...");
+  info("dalga=cashier flag kontrol? gecti, ops smoke calistiriliyor...");
   runNpmScript("ops:smoke");
   info("cashier smoke gate PASS. Manuel checklist: financials/payment/item-cancel/cancel/refund ACK-REJECT geri bildirimleri.");
 }
@@ -90,7 +90,7 @@ function runPerfAuthWave() {
   assertFlag("PERF_REQUIRE_AUTH_BASELINE", "true");
   requireValue("PERF_AUTH_COOKIE");
 
-  info("dalga=perf-auth kontrolu gecti, perf:sla calistiriliyor...");
+  info("dalga=perf-auth kontrol? gecti, perf:sla calistiriliyor...");
   runNpmScript("perf:sla");
   info("perf gate PASS. Hedef: auth page avg<=900ms, p95<=1200ms.");
 }

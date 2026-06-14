@@ -40,7 +40,7 @@ export async function POST(request: Request) {
         qrCodeIdentifier,
         businessSlug: body.businessSlug ?? null,
       });
-      return json({ ok: false, code: "TABLE_NOT_FOUND", message: "Masa bulunamadi." }, { status: 404 });
+      return json({ ok: false, code: "TABLE_NOT_FOUND", message: "Masa bulunamadı." }, { status: 404 });
     }
 
     const qrAccessToken = createQrAccessToken({

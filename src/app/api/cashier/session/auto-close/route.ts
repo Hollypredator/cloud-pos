@@ -195,7 +195,7 @@ async function runAutoCloseTick(input: { dryRun: boolean; correlationId: string 
       return sum + amount;
     }, Math.max(0, Number(session.opening_cash ?? 0)));
     const roundedExpected = Math.round(expectedCash * 100) / 100;
-    const autoNote = `Otomatik gun sonu (${settings.autoSessionCloseTime}, ${timeZone})`;
+    const autoNote = `Otomatik gün sonu (${settings.autoSessionCloseTime}, ${timeZone})`;
     const nextNote = session.note ? `${session.note} | ${autoNote}` : autoNote;
 
     if (input.dryRun) {

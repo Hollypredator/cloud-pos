@@ -173,7 +173,7 @@ async function flushInternal() {
       await invalidateQueriesForScope(next.scope, activeQueryClient);
       resolvedAny = true;
     } catch (error) {
-      const message = error instanceof Error ? error.message : "Komut gonderimi başarısız.";
+      const message = error instanceof Error ? error.message : "Komut günderimi başarısız.";
       store.getState().markRetry(next.commandId, {
         retryAfterMs: getRetryBackoffMs(next.retryCount),
         message,

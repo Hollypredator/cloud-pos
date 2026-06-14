@@ -95,7 +95,7 @@ export default async function ReceiptPage({
             <span>{subtotal.toFixed(2)} TL</span>
           </p>
           <p className="mt-1 flex justify-between">
-            <span>Indirim</span>
+            <span>İndirim</span>
             <span>-{discount.toFixed(2)} TL</span>
           </p>
           <p className="mt-1 flex justify-between">
@@ -107,7 +107,7 @@ export default async function ReceiptPage({
             <span>{final.toFixed(2)} TL</span>
           </p>
           <p className={`mt-1 flex justify-between text-slate-600 ${compact ? "text-[11px]" : "text-sm"}`}>
-            <span>Odenen</span>
+            <span>Ödenen</span>
             <span>{paid.toFixed(2)} TL</span>
           </p>
           <p className={`mt-1 flex justify-between font-semibold text-rose-700 ${compact ? "text-[11px]" : "text-sm"}`}>
@@ -117,9 +117,9 @@ export default async function ReceiptPage({
           {remaining > 0 ? (
             <div className={`mt-3 rounded-lg bg-slate-50 text-slate-600 ${compact ? "p-2 text-[10px]" : "p-3 text-xs"}`}>
               <p className="font-semibold text-slate-700">Adisyon Bolunmus Tutarlar</p>
-              <p className="mt-2">2 kisi: {(remaining / 2).toFixed(2)} TL</p>
-              <p>3 kisi: {(remaining / 3).toFixed(2)} TL</p>
-              <p>4 kisi: {(remaining / 4).toFixed(2)} TL</p>
+              <p className="mt-2">2 kişi: {(remaining / 2).toFixed(2)} TL</p>
+              <p>3 kişi: {(remaining / 3).toFixed(2)} TL</p>
+              <p>4 kişi: {(remaining / 4).toFixed(2)} TL</p>
             </div>
           ) : null}
           {vatRate > 0 ? (
@@ -137,7 +137,7 @@ export default async function ReceiptPage({
         </div>
         <div className="mt-4 flex items-center justify-between">
           <Link href="/ops" className="w-full text-sm font-medium text-slate-700 underline sm:w-auto">
-            Ana Panele Don
+            Ana Panele Dön
           </Link>
         </div>
       </main>

@@ -40,7 +40,7 @@ export default async function BlogIndexPage() {
             <p className="text-xs uppercase tracking-[0.28em] text-slate-500">Cloud POS Blog</p>
             <h1 className="mt-3 text-3xl font-semibold tracking-tight text-slate-900 sm:text-4xl">Duyurular, operasyon notlari ve saha icgoruleri</h1>
             <p className="mt-4 max-w-3xl text-sm leading-7 text-slate-600 sm:text-base sm:leading-8">
-              Restoran operasyonu, QR sipariş, kasa akislar ve sahada ogrendigimiz karar kaliplariyla ilgili yayinlar.
+              Restoran operasyonu, QR sipariş, kasa akışlar ve sahada ogrendigimiz karar kaliplariyla ilgili yayinlar.
             </p>
           </div>
           <PublicTopNav />

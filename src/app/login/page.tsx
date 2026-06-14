@@ -160,7 +160,7 @@ export default async function LoginPage({
                 error={error}
                 labels={{
                   email: "E-posta",
-                  emailPlaceholder: "ornek@cloudpos.com",
+                  emailPlaceholder: "Örnek@cloudpos.com",
                   password: "Şifre",
                   loginCta: "Operasyon Paneli Giriş",
                   pendingCta: "Giriş yapılıyor...",

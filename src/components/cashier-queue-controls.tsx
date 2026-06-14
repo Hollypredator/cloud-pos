@@ -169,7 +169,7 @@ export function CashierFinancialsQueueForm({
         min="0"
         step="0.01"
         defaultValue={defaultDiscountAmount}
-        placeholder="Indirim"
+        placeholder="İndirim"
         className="rounded-2xl border border-slate-300 px-4 py-3 text-sm"
       />
       <input
@@ -426,7 +426,7 @@ export function CashierRefundQueueForm({
         disabled={pending}
         className="rounded-2xl border border-rose-300 px-4 py-3 text-sm font-semibold text-rose-700 disabled:cursor-not-allowed disabled:opacity-70"
       >
-        {pending ? "İşleniyor..." : "İade Baslat"}
+        {pending ? "İşleniyor..." : "İade Başlat"}
       </button>
     </form>
   );

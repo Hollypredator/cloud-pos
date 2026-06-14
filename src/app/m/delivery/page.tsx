@@ -78,12 +78,12 @@ async function createMobileCourierAction(formData: FormData) {
     phone: typeof phone === "string" ? phone : undefined,
   });
   if (!result.ok) {
-    redirect(feedbackHref("error", result.error ?? "Kurye olusturulamadi."));
+    redirect(feedbackHref("error", result.error ?? "Kurye oluşturulamad?."));
   }
 
   revalidatePath("/m/delivery");
   revalidatePath("/delivery");
-  redirect(feedbackHref("success", "Yeni kurye olusturuldu."));
+  redirect(feedbackHref("success", "Yeni kurye oluşturuldu."));
 }
 
 async function assignMobileCourierAction(formData: FormData) {
@@ -94,12 +94,12 @@ async function assignMobileCourierAction(formData: FormData) {
   const courierValue = formData.get("courierValue");
   const stage = parseDeliveryStage(typeof formData.get("stage") === "string" ? String(formData.get("stage")) : undefined);
   if (typeof orderId !== "string" || typeof courierValue !== "string") {
-    redirect(feedbackHref("error", "Siparis ve kurye secimi zorunludur.", { stage }));
+    redirect(feedbackHref("error", "Sipariş ve kurye seçimi zorunludur.", { stage }));
   }
 
   const [courierId, courierName, courierPhone] = courierValue.split("||");
   if (!courierId || !courierName) {
-    redirect(feedbackHref("error", "Gecerli bir kurye secin.", { stage }));
+    redirect(feedbackHref("error", "Gecerli bir kurye seçin.", { stage }));
   }
 
   try {
@@ -122,7 +122,7 @@ async function assignMobileCourierAction(formData: FormData) {
   revalidatePath("/m/delivery");
   revalidatePath("/delivery");
   revalidatePath("/m/ops");
-  redirect(feedbackHref("success", "Siparis kuryeye atandi.", { stage: "travel" }));
+  redirect(feedbackHref("success", "Sipariş kuryeye atandi.", { stage: "travel" }));
 }
 
 async function completeMobileDeliveryAction(formData: FormData) {
@@ -131,7 +131,7 @@ async function completeMobileDeliveryAction(formData: FormData) {
 
   const orderId = formData.get("orderId");
   if (typeof orderId !== "string") {
-    redirect(feedbackHref("error", "Teslimat kapatilacak siparis bulunamadi.", { stage: "travel" }));
+    redirect(feedbackHref("error", "Teslimat kapatilacak sipariş bulunamadı.", { stage: "travel" }));
   }
 
   try {
@@ -164,8 +164,8 @@ function mobileOrderCard(
     <article key={order.id} className="m-card">
       <div className="flex items-start justify-between gap-3">
         <div className="min-w-0">
-          <p className="m-label">Siparis #{orderRef(order)}</p>
-          <h2 className="mt-1 truncate text-lg font-semibold text-slate-950">{order.customer_name ?? "Musteri yok"}</h2>
+          <p className="m-label">Sipariş #{orderRef(order)}</p>
+          <h2 className="mt-1 truncate text-lg font-semibold text-slate-950">{order.customer_name ?? "Müşteri yok"}</h2>
           <p className="m-muted mt-1">{order.customer_phone ?? "Telefon yok"}</p>
         </div>
         <span className={`m-pill ${stageTone(stage)}`}>{timelineLabel(order)}</span>
@@ -196,7 +196,7 @@ function mobileOrderCard(
             className="min-h-[48px] rounded-2xl border border-slate-300 bg-white px-3 text-sm font-medium text-slate-900 disabled:bg-slate-100 disabled:text-slate-400"
           >
             <option value="" disabled>
-              {couriers.length === 0 ? "Once kurye ekle" : "Kurye sec"}
+              {couriers.length === 0 ? "Once kurye ekle" : "Kurye seç"}
             </option>
             {couriers.map((courier) => (
               <option key={courier.id} value={`${courier.id}||${courier.full_name}||${courier.phone ?? ""}`}>
@@ -222,7 +222,7 @@ function mobileOrderCard(
       ) : null}
 
       <Link href={`/m/delivery?stage=${stage}&order=${order.id}`} className="m-btn-secondary mt-2 inline-flex w-full items-center justify-center">
-        Detayi Ac
+        Detay? A?
       </Link>
     </article>
   );
@@ -303,16 +303,16 @@ export default async function MobileDeliveryPage({
       <section className="m-card mt-3">
         <div className="flex items-start justify-between gap-3">
           <div>
-            <p className="m-label">Aktif Akis</p>
+            <p className="m-label">Aktif Akış</p>
             <h2 className="mt-1 text-lg font-semibold text-slate-950">
-              {activeStage === "dispatch" ? "Kurye Atama" : activeStage === "travel" ? "Yoldaki Siparisler" : "Kapanan Teslimatlar"}
+              {activeStage === "dispatch" ? "Kurye Atama" : activeStage === "travel" ? "Yoldaki Siparişler" : "Kapanan Teslimatlar"}
             </h2>
             <p className="m-muted mt-1">
               {activeStage === "dispatch"
-                ? "Siparisi uygun kuryeye ata."
+                ? "Siparişi uygun kuryeye ata."
                 : activeStage === "travel"
-                  ? "Teslim edilen siparisi tek dokunusla kapat."
-                  : "Bugun kapanan teslimatlari kontrol et."}
+                  ? "Teslim edilen siparişi tek dokunusla kapat."
+                  : "Bugün kapanan teslimatlari kontrol et."}
             </p>
           </div>
           <span className={`m-pill ${stageTone(activeStage)}`}>{activeOrders.length} is</span>
@@ -322,8 +322,8 @@ export default async function MobileDeliveryPage({
       <section className="m-stack mt-3">
         {activeOrders.length === 0 ? (
           <article className="m-card">
-            <p className="m-value-sm">Bu asamada siparis yok.</p>
-            <p className="m-muted mt-1">Yeni delivery siparisi geldiginde burada gorunur.</p>
+            <p className="m-value-sm">Bu asamada sipariş yok.</p>
+            <p className="m-muted mt-1">Yeni delivery siparişi geldiginde burada görünur.</p>
           </article>
         ) : (
           activeOrders.map((order) => mobileOrderCard(order, activeStage, couriers))
@@ -346,7 +346,7 @@ export default async function MobileDeliveryPage({
           <div className="flex items-start justify-between gap-3">
             <div>
               <p className="m-label">Teslimat Detayi</p>
-              <h2 className="mt-1 text-lg font-semibold text-slate-950">Siparis #{orderRef(selectedOrder)}</h2>
+              <h2 className="mt-1 text-lg font-semibold text-slate-950">Sipariş #{orderRef(selectedOrder)}</h2>
               <p className="m-muted mt-1">{timelineLabel(selectedOrder)}</p>
             </div>
             <Link href={stageHref(activeStage)} className="m-btn-secondary inline-flex min-h-[40px] items-center justify-center px-3 text-xs">
@@ -356,7 +356,7 @@ export default async function MobileDeliveryPage({
 
           <div className="mt-3 grid grid-cols-2 gap-2">
             <div className="rounded-2xl bg-slate-50 px-3 py-3">
-              <p className="m-label">Musteri</p>
+              <p className="m-label">Müşteri</p>
               <p className="mt-1 truncate text-sm font-semibold text-slate-900">{selectedOrder.customer_name ?? "Yok"}</p>
             </div>
             <div className="rounded-2xl bg-slate-50 px-3 py-3">

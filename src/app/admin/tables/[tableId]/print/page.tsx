@@ -48,16 +48,16 @@ export default async function PrintTableQrPage({
 
         <div className="mt-8 rounded-[24px] bg-slate-50 p-5 text-center">
           <p className="text-lg font-semibold">Telefonunuzla QR kodu okutun</p>
-          <p className="mt-2 text-sm text-slate-500">Menuyu goruntuleyin, sipariş verin ve masa taleplerini iletin.</p>
+          <p className="mt-2 text-sm text-slate-500">Menuyu görüntuleyin, sipariş verin ve masa taleplerini iletin.</p>
           <p className="mt-4 break-all text-xs text-slate-400">{qrTarget}</p>
         </div>
 
         <div className="mt-8 flex justify-center gap-3 print:hidden">
           <a href={qrImage} download={`masa-${table.table_number}-qr.png`} className="rounded-2xl border border-slate-200 bg-slate-50 px-5 py-3 text-sm font-semibold text-slate-700">
-            PNG Indir
+            PNG İndir
           </a>
           <button type="button" onClick={() => window.print()} className="rounded-2xl bg-gradient-to-r from-[#ff5a34] to-[#f0b14f] px-5 py-3 text-sm font-semibold text-white">
-            Yazdir
+            Yazdır
           </button>
         </div>
       </div>

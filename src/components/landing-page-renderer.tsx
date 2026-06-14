@@ -35,7 +35,7 @@ type HeroShowcaseTab = {
 };
 
 type LandingHeaderCopy = {
-  menuLabel: string;
+  menüLabel: string;
   solutionsLabel: string;
   requestDemoLabel: string;
   nav: {
@@ -65,7 +65,7 @@ type LandingHeaderCopy = {
 function getLandingHeaderCopy(locale: AppLocale): LandingHeaderCopy {
   if (locale === "fr") {
     return {
-      menuLabel: "Menü",
+      menüLabel: "Menü",
       solutionsLabel: "Solutions Produits",
       requestDemoLabel: "Demander une Demo",
       nav: {
@@ -95,7 +95,7 @@ function getLandingHeaderCopy(locale: AppLocale): LandingHeaderCopy {
 
   if (locale === "en") {
     return {
-      menuLabel: "Menü",
+      menüLabel: "Menü",
       solutionsLabel: "Product Solutions",
       requestDemoLabel: "Request Demo",
       nav: {
@@ -124,7 +124,7 @@ function getLandingHeaderCopy(locale: AppLocale): LandingHeaderCopy {
   }
 
   return {
-    menuLabel: "Menü",
+    menüLabel: "Menü",
     solutionsLabel: "Ürün Cozumleri",
     requestDemoLabel: "Demo Talep Et",
     nav: {
@@ -143,7 +143,7 @@ function getLandingHeaderCopy(locale: AppLocale): LandingHeaderCopy {
     },
     stats: {
       venuesLabel: "Operasyon",
-      venuesValue: "Coklu",
+      venuesValue: "Çoklu",
       uptimeLabel: "Altyapi",
       uptimeValue: "Bulut",
       supportLabel: "Destek",
@@ -239,11 +239,11 @@ function getHeaderMegaMenus(locale: AppLocale): Partial<Record<HeaderNavKey, Hea
     },
     orders: {
       title: "Sipariş Cozumleri",
-      ctaLabel: "Sipariş Akislarini Kesfet",
+      ctaLabel: "Sipariş Akışlarini Kesfet",
       cards: [
         { badge: "MB", title: "Mobil POS", body: "Tablet ve telefonla operasyon." },
         { badge: "QR", title: "QR Menü", body: "Menü görüntüleme ve sipariş durumu." },
-        { badge: "WB", title: "Web Panel", body: "Tarayicidan operasyon yönetimi." },
+        { badge: "WB", title: "Web Panel", body: "Tarayıcıdan operasyon yönetimi." },
         { badge: "KS", title: "Kiosk Sipariş", body: "Self-servis sipariş akışı." },
       ],
     },
@@ -252,9 +252,9 @@ function getHeaderMegaMenus(locale: AppLocale): Partial<Record<HeaderNavKey, Hea
       ctaLabel: "Tüm Modülleri Incele",
       cards: [
         { badge: "HR", title: "Personel", body: "Rol, vardiya, hedef ve ekip takibi." },
-        { badge: "ST", title: "Stok", body: "Recete bazli maliyet ve stok yönetimi." },
+        { badge: "ST", title: "Stok", body: "Reçete bazli maliyet ve stok yönetimi." },
         { badge: "RP", title: "Raporlar", body: "Saatlik, gunluk, şube bazli raporlama." },
-        { badge: "BR", title: "Şube", body: "Merkezden coklu şube yönetimi." },
+        { badge: "BR", title: "Şube", body: "Merkezden Çoklu şube yönetimi." },
       ],
     },
   };
@@ -589,7 +589,7 @@ function renderSection(
   const copy = getPublicCopy(locale);
   const heroStats = getLandingHeaderCopy(locale).stats;
   if (section.type === "hero") {
-    const activeTab = heroShowcase?.tabs[heroShowcase.activeIndex] ?? null;
+    const activeTab = heroShowcase ? (heroShowcase.tabs[heroShowcase.activeIndex] ?? null) : null;
     const wantsHeroImage = section.heroVisualMode === "image";
     const hasHeroImage = wantsHeroImage && section.heroImageUrl.trim().length > 0;
     return wrapEditableSection(
@@ -639,7 +639,7 @@ function renderSection(
                 <div className="flex h-full items-center justify-center rounded-[1.1rem] border border-dashed border-slate-300 bg-slate-50/80 p-6 text-center">
                   <div>
                     <p className="text-sm font-semibold text-slate-700">Hero gorseli bekleniyor</p>
-                    <p className="mt-2 text-xs leadıng-6 text-slate-500">Studio icinde "Görsel URL" alanini doldurdugünüzda burada gosterilir.</p>
+                    <p className="mt-2 text-xs leadıng-6 text-slate-500">Studio icinde "Görsel URL" alanini doldurdugünüzda burada gösterilir.</p>
                   </div>
                 </div>
               ) : (
@@ -964,7 +964,7 @@ export function LandingPageRenderer({
                   aria-expanded={isMobileMenuOpen}
                   aria-controls="landing-mobile-menü"
                 >
-                  {headerCopy.menuLabel}
+                  {headerCopy.menüLabel}
                 </button>
               </div>
             </div>

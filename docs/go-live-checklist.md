@@ -1,6 +1,6 @@
 # Go-Live Checklist
 
-## Security
+## Seçurity
 - [x] `POST /api/orders` endpointinde rol bazlı zorunlu yetki kontrolü aktif.
 - [x] QR public API (`/api/orders/latest`, `/api/orders/history`, `/api/table-requests`) için imzalı erişim tokeni aktif.
 - [x] API rate limit middleware aktif.
@@ -19,8 +19,8 @@
 - [x] Staging UAT tamamlandı ve imzalı onay alındı.
 - [x] Veritabani yedekleme politikasi production ortaminda aktif.
 - [x] Uptime monitoru `/api/health` endpointine baglandi.
-- [x] Alert dispatch cron gorevi production'da aktif edildi (`POST /api/alerts/dispatch` + `x-alert-secret`).
-- [ ] Otomatik gun sonu cron gorevi production'da aktif (`POST /api/cashier/session/auto-close` + `x-auto-close-secret`).
+- [x] Alert dispatch cron gorevi production'da aktif edildi (`POST /api/alerts/dispatch` + `x-alert-seçret`).
+- [ ] Otomatik gün sonu cron gorevi production'da aktif (`POST /api/cashier/session/auto-close` + `x-auto-close-seçret`).
 
 ## Notes
 - Ops otomasyonu GitHub Actions schedule ile yönetilir: `.github/workflows/ops-monitoring.yml`

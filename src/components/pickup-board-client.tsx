@@ -260,7 +260,7 @@ export function PickupBoardClient({
               </div>
             ))}
           </div>
-          {ready.length === 0 ? <div className="mt-12 text-2xl font-medium text-slate-700">Bekleyen hazir sipariş yok.</div> : null}
+          {ready.length === 0 ? <div className="mt-12 text-2xl font-medium text-slate-700">Bekleyen hazır sipariş yok.</div> : null}
         </div>
 
         {readyTotalPages > 1 ? (

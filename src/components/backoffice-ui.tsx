@@ -244,7 +244,7 @@ export function FeatureLockedState({
             href={actionHref}
             className="rounded-2xl bg-gradient-to-r from-[#ff5a34] to-[#f0b14f] px-5 py-3 text-sm font-semibold text-white"
           >
-            {translateUiText("Paket Bilgisini Gor", locale)}
+            {translateUiText("Paket Bilgisini Gör", locale)}
           </Link>
           <Link
             href="/ops"

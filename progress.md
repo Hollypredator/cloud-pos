@@ -1,5 +1,39 @@
 # Cloud POS PWA Redesign Progress
 
+## 2026-06-14 Turkish Character Audit
+- Scanned the full workspace for UTF-8 mojibake, replacement-character artifacts, suspicious `?` Turkish text, and common ASCII Turkish UI terms.
+- Repaired visible Turkish copy across app, components, docs, scripts, shared i18n/data sources, and the local pickup board temp snapshot.
+- Preserved ASCII-only technical route and asset slugs where required, including SEO route slugs and `public/landing-assets` filenames.
+- Verification passed: `npm run typecheck`, `npm run lint` with the existing `pickup-snapshot` warning only, `npm run build`, mojibake scan 0, suspicious question-mark scan 0, and common ASCII Turkish visible-term scan 0.
+
+## 2026-06-13 Phase 21
+- Started lightweight SEO landing page work for target Turkish search clusters: POS sistemleri, restoran yönetim sistemi, self servis sipariş, QR menü, kare restoran yönetimi, stok takipli POS, adisyon programı, garson el terminali, and bulut POS.
+- Decision: prefer static public landing pages with shared renderer, metadata, FAQ JSON-LD, and sitemap entries instead of DB-backed blog records so the system does not take extra runtime query load.
+- Added shared SEO content in `src/lib/seo-landing-pages.ts`, shared renderer in `src/components/seo-landing-page.tsx`, and shared route helper in `src/app/seo-landing-route.tsx`.
+- Added public routes: `/restoran-pos-sistemi`, `/kafe-pos-sistemi`, `/qr-menu`, `/self-servis-siparis-sistemi`, `/kare-restoran-yonetim-sistemi`, `/stok-takipli-pos-sistemi`, `/adisyon-programi`, `/garson-el-terminali`, and `/bulut-pos-sistemi`.
+- Added the SEO routes to `sitemap.xml` and linked them from a lightweight homepage solution-pages block.
+- Verification passed: `npm run typecheck`, focused ESLint for the new SEO files, `npm run lint` with the existing `pickup-snapshot` warning only, and `npm run build`.
+- Local production smoke on `http://127.0.0.1:3133` confirmed `/restoran-pos-sistemi`, `/qr-menu`, `/self-servis-siparis-sistemi`, `/adisyon-programi`, and `/sitemap.xml` return 200; SEO pages include JSON-LD and sitemap includes the new routes.
+
+## 2026-06-13 Admin Stock Redesign Follow-up
+- Redesigned `/admin/stock` after the user noted the stock counting area looked underdeveloped.
+- Updated `src/app/admin/stock/page.tsx` with a stronger admin header, clearer description, wider max width, and modern page background.
+- Reworked `src/components/admin-stock-workbench.tsx` into a stock counting center with progress hero, active session state, low/out-of-stock/changed KPI cards, sticky search/filter toolbar, improved count cards, clearer undo toast, and a cleaner movement history table.
+- Preserved existing bulk adjustment server action, route query filters, barcode/PLU flow, undo behavior, and movement table data.
+- Verification passed: `npm run typecheck`, focused ESLint for stock files, `npm run lint` with the existing `pickup-snapshot` warning only, and `npm run build`.
+- In-app Browser was unavailable (`iab`), so Playwright fallback checked local production `/admin/stock` auth redirect, nonblank login page, and no framework overlay on desktop/mobile.
+
+## 2026-06-14 SEO / CMO Growth Implementation
+- Implemented the SEO / CMO growth plan for local Turkey and global English search coverage.
+- Rebuilt `src/lib/seo-landing-pages.ts` with clean UTF-8 Turkish copy, locale/market/cluster metadata, canonical slugs, hreflang alternates, schema type, and local page scenarios.
+- Added English SEO route support under `/en/[slug]` and added local Turkey pages for Istanbul restaurant POS, Ankara cafe POS, and Izmir QR menü.
+- Updated the SEO landing route helper to emit canonical URLs, hreflang alternates, SoftwareApplication JSON-LD and FAQ JSON-LD without DB-backed SEO settings.
+- Updated the shared SEO landing renderer with locale-aware UI copy and same-locale related-page links.
+- Updated sitemap generation from the SEO landing data model and limited homepage solution links to Turkish primary pages.
+- Added `docs/seo-cmo-plan.md` with keyword clusters, URL inventory, Search Console metrics and 30/60/90 day targets.
+- Verification passed: `npm run typecheck`, focused ESLint for SEO files, `npm run lint` with the existing `pickup-snapshot` warning only, and `npm run build`.
+- Local production smoke on `http://127.0.0.1:3135` confirmed `/restoran-pos-sistemi`, `/en/restaurant-pos-system`, `/istanbul-restoran-pos-sistemi`, `/qr-menu`, and `/sitemap.xml`; pages returned 200 with title, description, JSON-LD, hreflang alternates and no framework overlay, and sitemap contained the target URLs.
+
 ## 2026-06-12 Phase 13
 - Started and completed public demo, studio, and support visual alignment.
 - Added global font smoothing and replaced the jagged display font stack with a smoother Segoe/Avenir/Inter/Arial stack.
@@ -32,9 +66,9 @@
 
 ## 2026-06-12 Phase 16
 - Cleaned remaining Turkish copy problems across the refreshed public/studio/support/login/demo surfaces and common operational copy.
-- Fixed visible ASCII Turkish labels such as `Sifre`, `Giris`, `Baslik`, `Aciklama`, `Sayfayi Ac`, `Yukari`, `Asagi`, `Siparis`, `Odeme`, `Urun`, and common error-message forms like `bulunamadi`, `olmali`, and `guncellendi`.
-- Repaired mojibake in `src/lib/data.ts` and `src/app/ops/page.tsx`, then verified with a Node UTF-8 scan that no `Ã/Å/Ä` mojibake-like hits remain under `src`.
-- A broad mechanical spelling pass briefly changed code identifiers such as `section` and `loading`; typecheck caught it, and the affected identifiers were restored before completion.
+- Fixed visible ASCII Turkish labels such as `Şifre`, `Giris`, `Başlık`, `Açıklama`, `Sayfayı A?`, `Yukarı`, `Aşağı`, `Sipariş`, `Ödeme`, `Ürün`, and common error-message forms like `bulunamadı`, `olmali`, and `güncellendi`.
+- Repaired mojibake in `src/lib/data.ts` and `src/app/ops/page.tsx`, then verified with a Node UTF-8 scan that no mojibake benzeri UTF-8 bozulması remain under `src`.
+- A broad mechanical spelling pass briefly changed code identifiers such as `seçtion` and `loading`; typecheck caught it, and the affected identifiers were restored before completion.
 - Verification passed: `npm run typecheck`, `npm run build`, and `npm run lint` (pre-existing `pickup-snapshot` warning only).
 
 ## 2026-06-05
@@ -49,7 +83,7 @@
 - First implementation pass targets mobile AdminOrderEntry: product-first mobile cards, horizontal category chips, and simpler cart dock.
 - Noted local Next docs path lookup failed in this POS project; used existing App Router/component structure instead.
 - Seeded demo auth users with `scripts/seed-access-users.mjs`.
-- Playwright reached `/m/tables?flow=new-order`; screenshot showed the active path uses the terminal mobile branch, so the second pass moved one-column product cards and visible add affordances into that branch.
+- Playwright reached `/m/tables?flow=new-order`; screenshot showed the active path uses the terminal mobile branch, so the seçond pass moved one-column product cards and visible add affordances into that branch.
 - Playwright also exposed an initial-render redirect bug: mobile routes could redirect to desktop `/tables` before media query state settled. `MobileOpsShell` now starts in mobile-safe viewport state and only redirects desktop after media effects resolve.
 - Fixed middleware legacy mobile redirect so current `/m/*` PWA routes are preserved instead of being rewritten to desktop routes.
 - `npm run lint`, `npm run typecheck`, and `npm run build` completed successfully. Lint still reports the pre-existing `pickup-snapshot` unused variable warning.
@@ -60,6 +94,19 @@
 ## Next
 - Review the generated mobile QA screenshots with the user.
 - Continue with the next PWA redesign surface after approval: mobile operation center, table selection density, or checkout/adisyon flow.
+
+## 2026-06-13 Phase 20
+- Started landing-page Turkish copy and speed pass after the user called out `adısyon`.
+- Fixed visible landing copy from `adısyon` to `adisyon`.
+- Removed unused `getSitePageContent("home")` from `/` rendering.
+- Converted landing screenshots from plain `<img>` to `next/image` with explicit dimensions, hero priority, responsive sizes, and lazy below-fold behavior.
+- Generated `public/landing-assets/mobil-masa-akisi-preview.png` from the top of the very tall mobile table-flow screenshot, reducing that landing asset from about 607KB to about 90KB.
+- Verification passed: UTF-8 copy scan found no `adısyon` or mojibake hits in landing/page/settings files; `npm run typecheck`; `npm run lint` (pre-existing `pickup-snapshot` warning only); `npm run build`.
+- Local production server ran on `http://localhost:3131`.
+- Perf guard: `page.root` passed at avg 30.02ms and p95 35.17ms; full perf script still exited 1 because unauthenticated `api.metrics_ops` correctly returned 401 without `PERF_AUTH_COOKIE`.
+- Browser plugin `iab` was unavailable again, so rendered QA used Playwright fallback.
+- Playwright QA confirmed `/` returns 200, no `adısyon` text remains, correct `adisyon` text is present, no framework overlay appears, all visible/loaded images are healthy, the preview asset is used, and the original tall `mobil-masa-akisi.png` is no longer referenced by rendered landing images.
+- Screenshots saved under `C:\Users\coban\AppData\Local\Temp\landing-speed-copy-qa-final-1781378881937`.
 
 ## 2026-06-13 Phase 17
 - Started investigation for user-reported unloaded public page images.
@@ -86,31 +133,31 @@
 - Note: local sitemap/robots use `http://localhost:3000` unless production sets `NEXT_PUBLIC_SITE_URL` or the SEO canonical URL setting.
 
 ## 2026-06-13 Phase 19
-- Implemented optional QR menu and QR ordering controls.
+- Implemented optional QR menü and QR ordering controls.
 - Added `qrMenuEnabled` and `qrOrderingEnabled` to normalized application settings with backwards-compatible default `true`.
 - Added owner-facing toggles to `/admin/settings` under application settings.
-- Guarded `/{slug}/qr/{identifier}` so QR menu disabled returns a closed-state page without loading menu products.
-- Guarded `POST /api/orders` so signed QR order submission is rejected when QR menu or QR ordering is disabled.
-- Refreshed the restaurant QR menu UI with a light premium surface, hero summary, search, category chips, richer product cards, disabled-ordering banner, modern cart bar, and updated cart modal.
+- Guarded `/{slug}/qr/{identifier}` so QR menü disabled returns a closed-state page without loading menü products.
+- Guarded `POST /api/orders` so signed QR order submission is rejected when QR menü or QR ordering is disabled.
+- Refreshed the restaurant QR menü UI with a light premium surface, hero summary, search, category chips, richer product cards, disabled-ordering banner, modern cart bar, and updated cart modal.
 - Verification passed: `npm run typecheck`, `npm run lint` (pre-existing `pickup-snapshot` warning only), and `npm run build`.
 - Local production server ran on `http://localhost:3130`; `/qr/table-1` returned 200 and redirected to `/default/qr/table-1`.
 - Browser plugin `iab` was unavailable, so rendered QA used Playwright fallback.
-- Playwright desktop and mobile screenshots confirmed the refreshed QR menu renders nonblank with no framework overlay. Screenshots saved under `C:\Users\coban\AppData\Local\Temp\qr-menu-qa-1781377299195`.
+- Playwright desktop and mobile screenshots confirmed the refreshed QR menü renders nonblank with no framework overlay. Screenshots saved under `C:\Users\coban\AppData\Local\Temp\qr-menu-qa-1781377299195`.
 - Playwright mobile interaction clicked `Hızlı Ekle`, showed the cart bar, opened the cart modal, and captured `C:\Users\coban\AppData\Local\Temp\qr-menu-qa-interaction-1781377337526\mobile-cart.png`.
 - Local QA console showed only expected Vercel analytics/speed-insights 404/MIME errors from local production, not app runtime errors.
 
 ## 2026-06-08
 - Started an operational PWA design audit after the user reported old-screen regressions and asked to identify weak or incomplete areas.
-- Confirmed `/m/cashier`, `/m/kitchen`, `/m/delivery`, and `/m/service-requests` still re-export desktop pages, even though those desktop pages include some mobile-only sections.
+- Confirmed `/m/cashier`, `/m/kitchen`, `/m/delivery`, and `/m/service-requests` still re-export desktop pages, even though those desktop pages include some mobile-only seçtions.
 - Confirmed login still has a desktop `/ops` redirect path for already-authenticated users.
 - Logged the highest-risk findings in `findings.md`; no application code changed in this audit pass.
 - Implemented the first approved package: mobile route hardening.
 - Added `scripts/mobile-pwa-route-hardening-check.mjs` and `npm run pwa:routes`.
 - Changed authenticated login redirect to use the resolved mobile-aware next path.
-- Moved mobile visible "Gun Islemleri" navigation to `/m/cashier/session` and removed the mobile action sheet's direct `/admin/tables` escape.
+- Moved mobile visible "Gün İşlemleri" navigation to `/m/cashier/session` and removed the mobile action sheet's direct `/admin/tables` escape.
 - Added `/m/cashier/session` and return-path support for cashier session open/close redirects.
 - Verification passed: `npm run pwa:routes`, `npm run typecheck`, `npm run lint` (pre-existing warning only), `npm run build`, Playwright mobile login hidden `next=/m/ops`, and `curl -I /m/cashier/session` returned 200.
-- Implemented the second approved package: `/m/cashier` no longer re-exports the desktop cashier page.
+- Implemented the seçond approved package: `/m/cashier` no longer re-exports the desktop cashier page.
 - Added a dedicated queue-first mobile cashier page with summary counts, adisyon queue cards, selected adisyon detail, item list, and mobile payment panel.
 - Added `scripts/mobile-cashier-page-check.mjs` and `npm run pwa:cashier` to prevent the mobile cashier page from regressing back into a desktop export.
 - Verification passed: `npm run pwa:cashier`, `npm run pwa:routes`, `npm run typecheck`, `npm run lint` (pre-existing warning only), and `npm run build`.
@@ -123,7 +170,7 @@
 - Fixed the reported mobile regression package: unauthenticated `/m/*` pages are guarded in the mobile layout before nested server pages render, preventing the temporary 404/not-found fallback on first load.
 - Added `src/components/mobile-auth-redirect.tsx` for mobile auth redirects that preserve the requested route.
 - Bumped the service worker ops cache version to `v7` so old mobile shells are replaced on first reload/update.
-- Corrected the mobile `Siparis Ac` flow: it no longer opens an order entry without a selected table, the "Once masa secin" prompt appears before the table list, and the selected-table order entry uses the mobile stack layout.
+- Corrected the mobile `Sipariş A?` flow: it no longer opens an order entry without a selected table, the "Once masa seçin" prompt appears before the table list, and the selected-table order entry uses the mobile stack layout.
 - Added `scripts/mobile-tables-order-flow-check.mjs` and `npm run pwa:tables` to lock the mobile table/order behavior.
 - Verification passed: `npm run pwa:routes`, `npm run pwa:tables`, `npm run pwa:kitchen`, `npm run typecheck`, `npm run lint` (pre-existing warning only), `npm run build`, and Playwright clean mobile checks for `/m/kitchen` and `/m/tables?flow=new-order` with no 404.
 - Follow-up fix after the same symptoms persisted on device: replaced server-component redirects on mobile first-load paths with client redirect placeholders to avoid Next RSC not-found fallback HTML becoming visible.
@@ -143,20 +190,20 @@
 - Production smoke on `http://localhost:3100` confirmed unauthenticated `/m/delivery` and `/m/service-requests` redirect to login without visible 404. Authenticated visual QA was blocked because demo login stayed on the login route in this local environment.
 - Started desktop operations visual modernization after reviewing the `/ops` screenshot.
 - Target decisions: neutral sidebar, less card chrome, tighter header/KPIs, lower visual weight for first-use guidance, and denser operational rows.
-- Implemented the desktop visual pass: neutral charcoal sidebar, flatter backoffice surface, tighter header/cards, compact content cards, and `/ops` sidebar reordered so live status leads while first-use guidance is secondary.
+- Implemented the desktop visual pass: neutral charcoal sidebar, flatter backoffice surface, tighter header/cards, compact content cards, and `/ops` sidebar reordered so live status leads while first-use guidance is seçondary.
 - Fixed unauthenticated desktop `/ops` first-load client exception by replacing server redirects with `ClientRouteRedirect` for login/unauthorized guards.
 - Visual QA screenshots saved under `.codex-logs/ops-modern-auth-desktop-final.png` and `.codex-logs/ops-modern-auth-mobile.png`.
 - Verification passed: `npm run typecheck`, `npm run pwa:routes`, `npm run pwa:delivery-service`, `npm run lint` (pre-existing `pickup-snapshot` warning only), and `npm run build`.
-- Started and completed Phase 11: operations performance, UI consistency, and security hardening.
-- Added shared security header generation for middleware and Next config, with `SECURITY_CSP_STRICT_MODE` support.
+- Started and completed Phase 11: operations performance, UI consistency, and seçurity hardening.
+- Added shared seçurity header generation for middleware and Next config, with `SECURITY_CSP_STRICT_MODE` support.
 - Expanded rate-limit coverage for ops command, sync push/pull, QR token refresh, and cashier auto-close APIs.
 - Rebalanced web performance profiles for `/m/*`, `/admin/orders`, and critical cashier/kitchen routes; dashboard refreshes are calmer.
 - Reduced live route refresh churn by avoiding hidden-tab refreshes and clearing stale route timers.
 - Replaced AppShell mobile quick-action text abbreviations with Lucide icons and replaced heavy shell payload `JSON.stringify` comparisons with deterministic signatures.
 - Bumped the ops service worker cache to `v9`.
-- Added `scripts/security-headers-check.mjs`, `npm run security:headers`, and included it in `phase2:checks`.
+- Added `scripts/seçurity-headers-check.mjs`, `npm run seçurity:headers`, and included it in `phase2:checks`.
 - Extended write-route guard checks to recognize sync/QR guard patterns and added audit logging to studio media upload.
-- Verification passed: `npm run typecheck`, `npm run lint` (pre-existing `pickup-snapshot` warning only), `npm run phase2:checks`, `npm run phase2:isolation`, `npm run security:headers`, `npm run pwa:routes`, and `npm run build`.
+- Verification passed: `npm run typecheck`, `npm run lint` (pre-existing `pickup-snapshot` warning only), `npm run phase2:checks`, `npm run phase2:isolation`, `npm run seçurity:headers`, `npm run pwa:routes`, and `npm run build`.
 - Perf SLA public targets passed on local `http://localhost:3110`; the full run failed only on authenticated `api.metrics_ops` because no `PERF_AUTH_COOKIE` was available and the endpoint correctly returned 401.
 - Started Phase 12: public landing page redesign.
 - User rejected the acquisition-only direction and requested a Turkish, more colorful, product-focused page using real product visuals.

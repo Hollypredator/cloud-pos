@@ -543,7 +543,7 @@ export function AdminOrderEntry({
   function handleReceiptPrint(layout: ReceiptPrintLayout) {
     if (Object.keys(cart).length === 0) {
       setMessageTone("error");
-      setMessage("Fiş yazdirmak icin en az bir ürün seç.");
+      setMessage("Fiş yazdırmak icin en az bir ürün seç.");
       return;
     }
 
@@ -735,7 +735,7 @@ export function AdminOrderEntry({
       message: submitting
         ? "Sipariş aciliyor..."
         : cartCount > 0
-          ? "Kasiyer siparişi hazirliyor."
+          ? "Kasiyer siparişi hazırliyor."
           : "Ürün seçimi bekleniyor.",
     });
   }, [cart, cartCount, channel, customerName, displaySession, isSelfServiceCoffee, publishDisplaySnapshot, submitting, total]);
@@ -759,7 +759,7 @@ export function AdminOrderEntry({
         message: submitting
           ? "Sipariş aciliyor..."
           : cartCount > 0
-            ? "Kasiyer siparişi hazirliyor."
+            ? "Kasiyer siparişi hazırliyor."
             : "Ürün seçimi bekleniyor.",
       });
     }, 3000);
@@ -774,7 +774,7 @@ export function AdminOrderEntry({
           <header className="flex items-center justify-between border-b border-slate-800 px-6 py-5">
             <div>
               <p className="text-3xl font-black tracking-tight">Self Servis Kahvecim</p>
-              <p className="mt-1 text-sm text-slate-400">Hizli ve Lezzetli</p>
+              <p className="mt-1 text-sm text-slate-400">Hızlı ve Lezzetli</p>
             </div>
             <div className="text-right">
               <p className="text-xs uppercase tracking-[0.22em] text-slate-500">Sipariş Sayisi</p>
@@ -1134,7 +1134,7 @@ export function AdminOrderEntry({
                      </>
                    ) : (
                      <p className="rounded-xl bg-slate-100 px-3 py-2 text-xs font-semibold uppercase tracking-[0.14em] text-slate-600">
-                       Modal Sipariş Akisi
+                       Modal Sipariş Akışi
                      </p>
                    )}
                 </div>
@@ -1360,7 +1360,7 @@ export function AdminOrderEntry({
                          onClick={() => setMobileCartOpen(true)}
                          className="mobile-terminal-cart-button mobile-terminal-cart-button-secondary h-12 px-4 rounded-xl bg-slate-900 text-white font-bold text-sm shadow-md active:scale-95 transition-transform"
                       >
-                         Sepeti Ac
+                         Sepeti A?
                       </button>
                       <button
                          type="button"
@@ -1558,7 +1558,7 @@ export function AdminOrderEntry({
           <div className="space-y-4">
             <div className="flex flex-col gap-2 rounded-2xl border border-slate-200 bg-white p-4 shadow-sm sm:flex-row sm:items-center sm:justify-between">
               <div>
-                <p className="text-xs font-semibold uppercase tracking-[0.14em] text-slate-500">Sipariş Akisi</p>
+                <p className="text-xs font-semibold uppercase tracking-[0.14em] text-slate-500">Sipariş Akışi</p>
                 <p className="mt-1 text-lg font-semibold text-slate-900">
                   {channel === "dine_in"
                     ? (selectedTable?.name || (selectedTable ? `Masa ${selectedTable.table_number}` : "Masa seçilmedi"))
@@ -2619,7 +2619,7 @@ export function AdminOrderEntry({
             onClick={() => setMobileCartOpen(true)}
             className="mobile-cta-primary mt-3 w-full rounded-xl px-4 py-3 text-sm font-semibold text-white"
           >
-            Sepeti Ac
+            Sepeti A?
           </button>
         </div>
       </div>

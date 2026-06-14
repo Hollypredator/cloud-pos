@@ -24,7 +24,7 @@ export default async function SupportHealthPage({
     <main className="mx-auto w-full max-w-7xl space-y-6 px-4 py-8 md:px-8">
       <header>
         <p className="text-sm text-slate-500">{translateUiText("Tenant Health", locale)}</p>
-        <h1 className="text-3xl font-semibold text-slate-900">{translateUiText("Saglik gorunumu", locale)}</h1>
+        <h1 className="text-3xl font-semibold text-slate-900">{translateUiText("Saglik görünumu", locale)}</h1>
       </header>
 
       <form className="grid gap-3 rounded-2xl bg-white p-4 shadow-sm md:grid-cols-[1fr_180px_120px]">

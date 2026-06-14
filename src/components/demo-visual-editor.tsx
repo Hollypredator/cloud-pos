@@ -339,7 +339,7 @@ export function DemoVisualEditor({
               <h3 className="mt-1 text-lg font-semibold text-slate-900">Metrik Kartlari</h3>
             </div>
             <button type="button" onClick={() => setShowMetrics(false)} className="rounded-lg border border-rose-200 bg-rose-50 px-3 py-2 text-xs font-semibold text-rose-700">
-              Bolumu Kaldir
+              Bolumu Kaldır
             </button>
           </div>
           <div className="rounded-2xl border border-slate-200 bg-slate-50 p-4 text-sm leadıng-7 text-slate-600">
@@ -360,7 +360,7 @@ export function DemoVisualEditor({
               <h3 className="mt-1 text-lg font-semibold text-slate-900">Sunum Akışı</h3>
             </div>
             <button type="button" onClick={() => setShowPresentationFlow(false)} className="rounded-lg border border-rose-200 bg-rose-50 px-3 py-2 text-xs font-semibold text-rose-700">
-              Bolumu Kaldir
+              Bolumu Kaldır
             </button>
           </div>
           <TextInput label="Eyebrow" value={flowEyebrow} onChange={setFlowEyebrow} />
@@ -404,7 +404,7 @@ export function DemoVisualEditor({
               <h3 className="mt-1 text-lg font-semibold text-slate-900">Demo Hesaplari</h3>
             </div>
             <button type="button" onClick={() => setShowStaffAccounts(false)} className="rounded-lg border border-rose-200 bg-rose-50 px-3 py-2 text-xs font-semibold text-rose-700">
-              Bolumu Kaldir
+              Bolumu Kaldır
             </button>
           </div>
           <TextInput label="Eyebrow" value={accountsEyebrow} onChange={setAccountsEyebrow} />
@@ -458,7 +458,7 @@ export function DemoVisualEditor({
               <h3 className="mt-1 text-lg font-semibold text-slate-900">Son Siparişler</h3>
             </div>
             <button type="button" onClick={() => setShowRecentOrders(false)} className="rounded-lg border border-rose-200 bg-rose-50 px-3 py-2 text-xs font-semibold text-rose-700">
-              Bolumu Kaldir
+              Bolumu Kaldır
             </button>
           </div>
           <TextInput label="Başlık" value={recentOrdersTitle} onChange={setRecentOrdersTitle} />
@@ -478,7 +478,7 @@ export function DemoVisualEditor({
               <h3 className="mt-1 text-lg font-semibold text-slate-900">Masa Durumu</h3>
             </div>
             <button type="button" onClick={() => setShowTableStatus(false)} className="rounded-lg border border-rose-200 bg-rose-50 px-3 py-2 text-xs font-semibold text-rose-700">
-              Bolumu Kaldir
+              Bolumu Kaldır
             </button>
           </div>
           <TextInput label="Başlık" value={tableStatusTitle} onChange={setTableStatusTitle} />
@@ -497,7 +497,7 @@ export function DemoVisualEditor({
               <h3 className="mt-1 text-lg font-semibold text-slate-900">Kritik Stok</h3>
             </div>
             <button type="button" onClick={() => setShowLowStock(false)} className="rounded-lg border border-rose-200 bg-rose-50 px-3 py-2 text-xs font-semibold text-rose-700">
-              Bolumu Kaldir
+              Bolumu Kaldır
             </button>
           </div>
           <TextInput label="Başlık" value={lowStockTitle} onChange={setLowStockTitle} />
@@ -517,7 +517,7 @@ export function DemoVisualEditor({
               <h3 className="mt-1 text-lg font-semibold text-slate-900">Demo Paketleri</h3>
             </div>
             <button type="button" onClick={() => setShowPackages(false)} className="rounded-lg border border-rose-200 bg-rose-50 px-3 py-2 text-xs font-semibold text-rose-700">
-              Bolumu Kaldir
+              Bolumu Kaldır
             </button>
           </div>
           {packages.map((item, index) => (
@@ -554,7 +554,7 @@ export function DemoVisualEditor({
               <h3 className="mt-1 text-lg font-semibold text-slate-900">Kapanis CTA</h3>
             </div>
             <button type="button" onClick={() => setShowClosingCta(false)} className="rounded-lg border border-rose-200 bg-rose-50 px-3 py-2 text-xs font-semibold text-rose-700">
-              Bolumu Kaldir
+              Bolumu Kaldır
             </button>
           </div>
           <TextInput label="Başlık" value={closingCtaTitle} onChange={setClosingCtaTitle} />

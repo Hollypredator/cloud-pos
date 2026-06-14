@@ -9,7 +9,7 @@ export default async function SupportOnboardingPage() {
     <main className="mx-auto w-full max-w-7xl space-y-6 px-4 py-8 md:px-8">
       <header>
         <p className="text-sm text-slate-500">Onboarding</p>
-        <h1 className="text-3xl font-semibold text-slate-900">Tenant hazirlik durumu</h1>
+        <h1 className="text-3xl font-semibold text-slate-900">Tenant hazırlik durumu</h1>
       </header>
 
       <section className="space-y-4">

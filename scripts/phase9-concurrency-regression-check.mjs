@@ -28,7 +28,7 @@ async function run() {
     supabase.from("tables").select("table_number").order("table_number", { ascending: false }).limit(1).maybeSingle(),
   ]);
   if (branchError || !branchRow) {
-    fail(`aktif sube bulunamadi: ${branchError?.message ?? "branch yok"}`);
+    fail(`aktif Şube bulunamadı: ${branchError?.message ?? "branch yok"}`);
   }
 
   const businessId = String(branchRow.business_id);
@@ -49,7 +49,7 @@ async function run() {
     .select("id")
     .single();
   if (createTableError || !createdTable) {
-    fail(`test masasi olusturulamadi: ${createTableError?.message ?? "unknown"}`);
+    fail(`test masasi oluşturulamad?: ${createTableError?.message ?? "unknown"}`);
   }
 
   const tableId = String(createdTable.id);
@@ -112,14 +112,14 @@ async function run() {
     ]);
 
     if (createA.error || createB.error) {
-      fail(`create_or_append_order race testi basarisiz: ${createA.error?.message ?? createB.error?.message}`);
+      fail(`create_or_append_order race testi başarısız: ${createA.error?.message ?? createB.error?.message}`);
     }
 
     const createdA = (createA.data ?? [])[0];
     const createdB = (createB.data ?? [])[0];
     const orderIdA = String(createdA?.order_id ?? "");
     const orderIdB = String(createdB?.order_id ?? "");
-    assert(orderIdA.length > 0 && orderIdA === orderIdB, "eszamanli siparis acmada ayni adisyona append edilmedi");
+    assert(orderIdA.length > 0 && orderIdA === orderIdB, "eszamanli sipariş acmada ayn? adisyona append edilmedi");
     orderIdForCleanup = orderIdA;
 
     const [payA, payB] = await Promise.all([
@@ -148,12 +148,12 @@ async function run() {
     ]);
 
     if (payA.error || payB.error) {
-      fail(`odeme rpc testi basarisiz: ${payA.error?.message ?? payB.error?.message}`);
+      fail(`Ödeme rpc testi başarısız: ${payA.error?.message ?? payB.error?.message}`);
     }
 
     const payRows = [payA, payB].map((item) => (item.data ?? [])[0] ?? null);
     const appliedPaymentCount = payRows.filter((row) => row?.applied === true).length;
-    assert(appliedPaymentCount === 1, `eszamanli odemede beklenen 1 uygulama yerine ${appliedPaymentCount} uygulama oldu`);
+    assert(appliedPaymentCount === 1, `eszamanli Ödemede beklenen 1 uygulama yerine ${appliedPaymentCount} uygulama oldu`);
 
     const [refundA, refundB] = await Promise.all([
       supabase.rpc("apply_order_payment_mutation", {
@@ -181,7 +181,7 @@ async function run() {
     ]);
 
     if (refundA.error || refundB.error) {
-      fail(`iade rpc testi basarisiz: ${refundA.error?.message ?? refundB.error?.message}`);
+      fail(`iade rpc testi başarısız: ${refundA.error?.message ?? refundB.error?.message}`);
     }
 
     const refundRows = [refundA, refundB].map((item) => (item.data ?? [])[0] ?? null);
@@ -193,7 +193,7 @@ async function run() {
       .select("payment_type, amount")
       .eq("order_id", orderIdForCleanup);
     if (paymentRowsError) {
-      fail(`payment toplam kontrolu basarisiz: ${paymentRowsError.message}`);
+      fail(`payment toplam kontrol? başarısız: ${paymentRowsError.message}`);
     }
     const net = (paymentRows ?? []).reduce((sum, row) => {
       const amount = Number(row.amount ?? 0);

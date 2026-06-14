@@ -7,7 +7,7 @@ Hedef bitiş: `1 hafta`
 ## Hedef
 - Kritik write endpoint'lerde guard eksiklerini kapatmak.
 - Tenant/branch izolasyonunu otomatik kontrolle dogrulamak.
-- Kasa gun sonu mutabakat farklarini operasyonel alarma baglamak.
+- Kasa gün sonu mutabakat farklarini operasyonel alarma baglamak.
 
 ## P0 Görevleri
 1. Tenant isolation negatif testleri

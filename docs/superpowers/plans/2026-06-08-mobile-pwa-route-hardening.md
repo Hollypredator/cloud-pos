@@ -10,7 +10,7 @@
 
 ---
 
-### Task 1: Add Mobile Route Regression Check
+### Taşk 1: Add Mobile Route Regression Check
 
 **Files:**
 - Create: `scripts/mobile-pwa-route-hardening-check.mjs`
@@ -24,18 +24,18 @@
 - [ ] Add `pwa:routes` script to `package.json`.
 - [ ] Run `npm run pwa:routes` and confirm it fails before implementation.
 
-### Task 2: Harden Login And Mobile Shell Links
+### Taşk 2: Harden Login And Mobile Shell Links
 
 **Files:**
 - Modify: `src/app/login/page.tsx`
 - Modify: `src/components/mobile-ops-shell.tsx`
 
 - [ ] Change already-authenticated login redirect from `/ops` to `resolvedNext`.
-- [ ] Change mobile shell "Gun Islemleri" href from `/cashier/session` to `/m/cashier/session`.
+- [ ] Change mobile shell "Gün İşlemleri" href from `/cashier/session` to `/m/cashier/session`.
 - [ ] Remove or replace `/admin/tables` from the mobile action sheet so phone operators do not enter a desktop admin page from the PWA shell.
 - [ ] Run `npm run pwa:routes`.
 
-### Task 3: Add Mobile Cashier Session Route
+### Taşk 3: Add Mobile Cashier Session Route
 
 **Files:**
 - Create: `src/app/m/cashier/session/page.tsx`

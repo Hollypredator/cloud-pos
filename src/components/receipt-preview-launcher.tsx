@@ -90,7 +90,7 @@ export function ReceiptPreviewLauncher({
             compactButtons ? "px-3 py-2 text-xs" : "px-4 py-3 text-sm"
           }`}
         >
-          Adisyon Yazdir
+          Adisyon Yazdır
         </button>
         <button
           type="button"
@@ -102,7 +102,7 @@ export function ReceiptPreviewLauncher({
             compactButtons ? "px-3 py-2 text-xs" : "px-4 py-3 text-sm"
           }`}
         >
-          Fiş Yazdir
+          Fiş Yazdır
         </button>
       </div>
 
@@ -116,7 +116,7 @@ export function ReceiptPreviewLauncher({
                 <button type="button" onClick={() => setLayout("thermal58")} className={`rounded-xl px-3 py-2 text-xs font-semibold ${layout === "thermal58" ? "bg-slate-900 text-white" : "border border-slate-300 bg-white text-slate-700"}`}>58mm</button>
               </div>
               <div className="flex flex-wrap gap-2">
-                <button type="button" onClick={handlePrint} className="rounded-xl bg-gradient-to-r from-[#ff6a3d] to-[#f2b44f] px-3 py-2 text-xs font-semibold text-white">Yazdir / PDF</button>
+                <button type="button" onClick={handlePrint} className="rounded-xl bg-gradient-to-r from-[#ff6a3d] to-[#f2b44f] px-3 py-2 text-xs font-semibold text-white">Yazdır / PDF</button>
                 <button type="button" onClick={() => setOpen(false)} className="rounded-xl border border-slate-300 bg-white px-3 py-2 text-xs font-semibold text-slate-700">Kapat</button>
               </div>
             </div>
@@ -140,10 +140,10 @@ export function ReceiptPreviewLauncher({
 
               <div className="mt-4 space-y-1 border-t border-slate-200 pt-3 text-sm">
                 <p className="flex justify-between"><span>Ara Toplam</span><span>{totals.subtotal.toFixed(2)} TL</span></p>
-                <p className="flex justify-between"><span>Indirim</span><span>-{totals.discount.toFixed(2)} TL</span></p>
+                <p className="flex justify-between"><span>İndirim</span><span>-{totals.discount.toFixed(2)} TL</span></p>
                 <p className="flex justify-between"><span>Servis Ucreti</span><span>+{totals.service.toFixed(2)} TL</span></p>
                 <p className="flex justify-between text-base font-semibold text-slate-900"><span>Toplam</span><span>{totals.final.toFixed(2)} TL</span></p>
-                <p className="flex justify-between text-emerald-700"><span>Odenen</span><span>{totals.paid.toFixed(2)} TL</span></p>
+                <p className="flex justify-between text-emerald-700"><span>Ödenen</span><span>{totals.paid.toFixed(2)} TL</span></p>
                 <p className="flex justify-between font-semibold text-[#ff5a34]"><span>Kalan</span><span>{totals.remaining.toFixed(2)} TL</span></p>
               </div>
             </main>

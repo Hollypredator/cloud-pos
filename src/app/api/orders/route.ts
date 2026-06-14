@@ -56,15 +56,15 @@ type Body = {
 
 function resolveOrderCreateFailureMessage(commandStatus: "ACK" | "RETRY" | "CONFLICT" | "REJECT", message?: string | null) {
   if (commandStatus === "CONFLICT") {
-    return message ?? "Ayni siparis istegi zaten islenmis. Lutfen siparis durumunu kontrol edin.";
+    return message ?? "Ayn? sipariş istegi zaten islenmis. Lütfen sipariş durumunu kontrol edin.";
   }
   if (commandStatus === "RETRY") {
-    return message ?? "Siparis gecici olarak islenemedi. Lutfen tekrar deneyin.";
+    return message ?? "Sipariş gecici olarak islenemedi. Lütfen tekrar deneyin.";
   }
   if (commandStatus === "REJECT") {
-    return message ?? "Siparis dogrulanamadi. Lutfen sepeti kontrol edin.";
+    return message ?? "Sipariş dogrulanamadi. Lütfen sepeti kontrol edin.";
   }
-  return message ?? "Siparis kaydedilemedi.";
+  return message ?? "Sipariş kaydedilemedi.";
 }
 
 function parseQrConfirmation(input: Body["qrConfirmation"]) {
@@ -147,7 +147,7 @@ export async function POST(request: Request) {
 
     if (!canCreateOrders) {
       logApiEvent("warn", "orders.create.forbidden", { correlationId });
-      return json({ ok: false, code: "FORBIDDEN", message: "Siparis olusturma yetkiniz yok." }, { status: 403 });
+      return json({ ok: false, code: "FORBIDDEN", message: "Sipariş olusturma yetkiniz yok." }, { status: 403 });
     }
 
     if (isQrOrder) {
@@ -164,7 +164,7 @@ export async function POST(request: Request) {
           {
             ok: false,
             code: "QR_ORDERING_DISABLED",
-            message: "QR uzerinden siparis verme su anda kapali.",
+            message: "QR uzerinden sipariş verme su anda kapali.",
           },
           { status: 403 },
         );
@@ -190,19 +190,19 @@ export async function POST(request: Request) {
         {
           ok: false,
           code: "QR_CONFIRMATION_REQUIRED",
-          message: "Siparis onayi eksik veya gecersiz. Lutfen siparis onay ekranini tamamlayin.",
+          message: "Sipariş onayı eksik veya geçersiz. Lütfen sipariş onay ekranini tamamlayin.",
         },
         { status: 400 },
       );
     }
     if (!body.items?.length || typeof body.totalPrice !== "number") {
       logApiEvent("warn", "orders.create.missing_fields", { correlationId, channel });
-      return json({ ok: false, code: "MISSING_FIELDS", message: "Eksik siparis alanlari var." }, { status: 400 });
+      return json({ ok: false, code: "MISSING_FIELDS", message: "Eksik sipariş alanlari var." }, { status: 400 });
     }
 
     if (channel === "dine_in" && !body.qrCodeIdentifier && !body.tableId) {
       logApiEvent("warn", "orders.create.missing_qr", { correlationId });
-      return json({ ok: false, code: "MISSING_TABLE", message: "Masa siparisi icin masa secimi gerekli." }, { status: 400 });
+      return json({ ok: false, code: "MISSING_TABLE", message: "Masa siparişi icin masa seçimi gerekli." }, { status: 400 });
     }
 
     const slugCandidates = Array.from(
@@ -283,7 +283,7 @@ export async function POST(request: Request) {
         tableId: body.tableId ?? null,
         qrCodeIdentifier: body.qrCodeIdentifier ?? null,
       });
-      return json({ ok: false, code: "TABLE_NOT_FOUND", message: "Masa bulunamadi." }, { status: 404 });
+      return json({ ok: false, code: "TABLE_NOT_FOUND", message: "Masa bulunamadı." }, { status: 404 });
     }
 
     if (channel === "dine_in" && table && body.tableId && table.id !== body.tableId) {
@@ -292,7 +292,7 @@ export async function POST(request: Request) {
         tableId: body.tableId,
         resolvedTableId: table.id,
       });
-      return json({ ok: false, code: "TABLE_MISMATCH", message: "Masa secimi dogrulanamadi." }, { status: 400 });
+      return json({ ok: false, code: "TABLE_MISMATCH", message: "Masa seçimi dogrulanamadi." }, { status: 400 });
     }
 
     if (channel === "dine_in" && table && body.qrCodeIdentifier && table.qr_code_identifier !== body.qrCodeIdentifier) {
@@ -331,7 +331,7 @@ export async function POST(request: Request) {
     if (businessScope && !businessScope.useLegacySchema) {
       if (!businessScope.businessId) {
         logApiEvent("warn", "orders.create.no_business_scope", { correlationId });
-        return json({ ok: false, code: "NO_BUSINESS_SCOPE", message: "Aktif isletme secilmedi." }, { status: 403 });
+        return json({ ok: false, code: "NO_BUSINESS_SCOPE", message: "Aktif işletme seçilmedi." }, { status: 403 });
       }
       if (targetBusinessId && targetBusinessId !== businessScope.businessId) {
         logApiEvent("warn", "orders.create.cross_business_forbidden", {
@@ -339,7 +339,7 @@ export async function POST(request: Request) {
           requestedBusinessId: targetBusinessId,
           activeBusinessId: businessScope.businessId,
         });
-        return json({ ok: false, code: "CROSS_BUSINESS_FORBIDDEN", message: "Bu isletme icin siparis olusturma yetkiniz yok." }, { status: 403 });
+        return json({ ok: false, code: "CROSS_BUSINESS_FORBIDDEN", message: "Bu işletme icin sipariş olusturma yetkiniz yok." }, { status: 403 });
       }
     }
 
@@ -361,7 +361,7 @@ export async function POST(request: Request) {
           candidateBranchId,
           allowedBranchIds: [...allowedBranchIds],
         });
-        return json({ ok: false, code: "CROSS_BRANCH_FORBIDDEN", message: "Bu sube icin siparis olusturma yetkiniz yok." }, { status: 403 });
+        return json({ ok: false, code: "CROSS_BRANCH_FORBIDDEN", message: "Bu Şube icin sipariş olusturma yetkiniz yok." }, { status: 403 });
       }
     }
 
@@ -379,7 +379,7 @@ export async function POST(request: Request) {
         items: body.items,
         total_price: body.totalPrice,
         channel,
-        customer_name: body.customerName?.trim() || (isQrOrder ? "QR Siparis" : null),
+        customer_name: body.customerName?.trim() || (isQrOrder ? "QR Sipariş" : null),
         customer_phone: body.customerPhone ?? null,
         delivery_address: body.deliveryAddress ?? null,
         delivery_note: body.deliveryNote ?? null,
@@ -522,6 +522,6 @@ export async function POST(request: Request) {
       correlationId,
       error: error instanceof Error ? error.message : "unknown",
     });
-    return json({ ok: false, code: "UNHANDLED", message: "Siparis islemi sirasinda beklenmeyen hata olustu." }, { status: 500 });
+    return json({ ok: false, code: "UNHANDLED", message: "Sipariş işlemi sırasında beklenmeyen hata olustu." }, { status: 500 });
   }
 }

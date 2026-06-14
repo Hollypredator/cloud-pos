@@ -32,7 +32,7 @@ export default async function SupportFeatureFlagsPage() {
         ))}
         {overrides.length === 0 ? (
           <div className="rounded-2xl border border-dashed border-slate-300 bg-white px-6 py-10 text-sm text-slate-500">
-            Henüz feature override tanimlanmamis. Plan varsayilanlari kullaniliyor.
+            Henüz feature override tanimlanmamis. Plan varsayilanlari kullanılıyor.
           </div>
         ) : null}
       </section>

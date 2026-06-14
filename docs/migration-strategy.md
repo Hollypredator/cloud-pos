@@ -19,7 +19,7 @@ Bu projede migration sayısı hızlı buyudugu için, kurulum hizi ve bakım kol
 1. `supabase/baseline/20260316_baseline.sql` dosyasini calistirin.
 2. `supabase/migrations` altında `20260316` sonrası dosyaları tarih sırasıyla uygulayın.
 
-## Baseline Guncelleme
+## Baseline Güncelleme
 
 Yeni bir major release öncesi veya migration sayısı belirgin arttiginda baseline yenileyin.
 
@@ -32,10 +32,10 @@ powershell -NoProfile -ExecutionPolicy Bypass -File scripts/build-supabase-basel
 Opsiyonel:
 
 - `-UpToVersion 20260316` ile belirli tarihe kadar baseline uretebilirsiniz.
-- Script, README'deki migration sirasini baz alir; boylece bağımlılık sirasi korunur.
+- Script, README'deki migration sırasıni baz alir; boylece bağımlılık sırası korunur.
 
 ## Neden Bu Model
 
-- Yeni ortamlarda kurulum suresini kisaltir.
-- Uzun migration listesi yonetimini basitlestirir.
-- Canli ortamlarda migration gecmisini bozmadan ilerlemeyi saglar.
+- Yeni ortamlarda kurulum süresini kısaltir.
+- Uzun migration listesi yönetimini basitlestirir.
+- Canlı ortamlarda migration geçmişini bozmadan ilerlemeyi saglar.

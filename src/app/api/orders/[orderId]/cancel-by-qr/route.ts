@@ -26,7 +26,7 @@ export async function POST(
   try {
     const { orderId } = await params;
     if (!orderId?.trim()) {
-      return json({ ok: false, code: "MISSING_ORDER_ID", message: "Siparis kimligi gecersiz." }, { status: 400 });
+      return json({ ok: false, code: "MISSING_ORDER_ID", message: "Sipariş kimligi geçersiz." }, { status: 400 });
     }
 
     let body: Body;
@@ -67,7 +67,7 @@ export async function POST(
         qrCodeIdentifier,
         businessSlug: body.businessSlug ?? null,
       });
-      return json({ ok: false, code: "TABLE_NOT_FOUND", message: "Masa bulunamadi." }, { status: 404 });
+      return json({ ok: false, code: "TABLE_NOT_FOUND", message: "Masa bulunamadı." }, { status: 404 });
     }
 
     const supabase = getSupabaseServerClient();
@@ -103,7 +103,7 @@ export async function POST(
         orderId,
         tableId: table.id,
       });
-      return json({ ok: false, code: "ORDER_NOT_FOUND", message: "Siparis bulunamadi." }, { status: 404 });
+      return json({ ok: false, code: "ORDER_NOT_FOUND", message: "Sipariş bulunamadı." }, { status: 404 });
     }
 
     if (orderRow.status === "cancelled") {
@@ -117,7 +117,7 @@ export async function POST(
         orderId,
         status: orderRow.status,
       });
-      return json({ ok: false, code: "ORDER_NOT_CANCELLABLE", message: "Siparis artik iptal edilemez durumda." }, { status: 409 });
+      return json({ ok: false, code: "ORDER_NOT_CANCELLABLE", message: "Sipariş artik iptal edilemez durumda." }, { status: 409 });
     }
 
     const snapshotResult = await supabase
@@ -137,7 +137,7 @@ export async function POST(
         orderId,
         tableId: table.id,
       });
-      return json({ ok: false, code: "CONFIRMATION_NOT_FOUND", message: "Bu siparis icin iptal penceresi bulunamadi." }, { status: 409 });
+      return json({ ok: false, code: "CONFIRMATION_NOT_FOUND", message: "Bu sipariş icin iptal penceresi bulunamadı." }, { status: 409 });
     }
 
     const cancelUntil = new Date(snapshotResult.data.cancel_until);
@@ -148,7 +148,7 @@ export async function POST(
         orderId,
         cancelUntil: snapshotResult.data.cancel_until,
       });
-      return json({ ok: false, code: "CANCEL_WINDOW_EXPIRED", message: "Iptal suresi doldu." }, { status: 409 });
+      return json({ ok: false, code: "CANCEL_WINDOW_EXPIRED", message: "İptal süresi doldu." }, { status: 409 });
     }
 
     const { data: paymentRows, error: paymentError } = await supabase
@@ -157,7 +157,7 @@ export async function POST(
       .eq("order_id", orderId);
 
     if (paymentError) {
-      return json({ ok: false, code: "PAYMENT_CHECK_FAILED", message: "Odeme kontrolu yapilamadi." }, { status: 503 });
+      return json({ ok: false, code: "PAYMENT_CHECK_FAILED", message: "Ödeme kontrolü yapilamadi." }, { status: 503 });
     }
 
     const netPayment = (paymentRows ?? []).reduce((acc, row) => {
@@ -172,7 +172,7 @@ export async function POST(
         orderId,
         netPayment,
       });
-      return json({ ok: false, code: "PAYMENT_EXISTS", message: "Tahsilat alinan siparis iptal edilemez." }, { status: 409 });
+      return json({ ok: false, code: "PAYMENT_EXISTS", message: "Tahsilat alinan sipariş iptal edilemez." }, { status: 409 });
     }
 
     let cancelUpdate = supabase.from("orders").update({ status: "cancelled" }).eq("id", orderId).eq("table_id", table.id);
@@ -184,7 +184,7 @@ export async function POST(
     }
     const cancelResult = await cancelUpdate;
     if (cancelResult.error) {
-      return json({ ok: false, code: "ORDER_CANCEL_FAILED", message: "Siparis iptal edilirken hata olustu." }, { status: 500 });
+      return json({ ok: false, code: "ORDER_CANCEL_FAILED", message: "Sipariş iptal edilirken hata olustu." }, { status: 500 });
     }
 
     await supabase.from("tables").update({ status: "empty" }).eq("id", table.id);

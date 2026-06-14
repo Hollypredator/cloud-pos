@@ -60,7 +60,7 @@ const mobileQuickActionIcons = {
 
 const mobileQuickActionsRestaurant: MobileQuickAction[] = [
   { href: "/tables", label: "Masa Takip", icon: "table", roles: ["admin", "kitchen", "cashier"], group: "order_flow" },
-  { href: "/admin/orders", label: "Sipariş Baslat", icon: "order", roles: ["owner", "admin", "waiter", "cashier"], group: "order_flow" },
+  { href: "/admin/orders", label: "Sipariş Başlat", icon: "order", roles: ["owner", "admin", "waiter", "cashier"], group: "order_flow" },
   { href: "/cashier", label: "Adisyonlar", icon: "receipt", roles: ["admin", "cashier", "waiter"], group: "order_flow" },
   { href: "/service-requests", label: "Masa Talepleri", icon: "service", roles: ["admin", "cashier"], group: "service_flow" },
   { href: "/delivery", label: "Teslimat", icon: "delivery", roles: ["admin", "cashier"], group: "service_flow", feature: "delivery_dispatch" },
@@ -70,7 +70,7 @@ const mobileQuickActionsRestaurant: MobileQuickAction[] = [
 ];
 
 const mobileQuickActionsSelfService: MobileQuickAction[] = [
-  { href: "/admin/orders", label: "Sipariş Akisi", icon: "order", roles: ["owner", "admin", "waiter", "cashier"], group: "order_flow" },
+  { href: "/admin/orders", label: "Sipariş Akışi", icon: "order", roles: ["owner", "admin", "waiter", "cashier"], group: "order_flow" },
   { href: "/cashier", label: "Sipariş Yönetimi", icon: "receipt", roles: ["admin", "cashier", "waiter"], group: "order_flow" },
   { href: "/pickup-board", label: "Pickup Board", icon: "pickup", roles: ["admin", "kitchen", "cashier"], group: "service_flow" },
   { href: "/cashier/session", label: "Gün İşlemleri", icon: "session", roles: ["admin", "cashier"], group: "management" },
@@ -129,12 +129,12 @@ function resolveMobileTitle(pathname: string | null, locale: "tr" | "en" | "fr",
   }
   if (pathname === "/ops" || pathname.startsWith("/ops/")) return translateUiText("Operasyon Merkezi", locale);
   if (pathname === "/tables" || pathname.startsWith("/tables/")) return translateUiText("Masa Takip", locale);
-  if (pathname === "/admin/orders" || pathname.startsWith("/admin/orders/")) return translateUiText("Sipariş Akisi", locale);
+  if (pathname === "/admin/orders" || pathname.startsWith("/admin/orders/")) return translateUiText("Sipariş Akışi", locale);
   if (pathname === "/admin/tables" || pathname.startsWith("/admin/tables/")) return translateUiText("Masa Takip", locale);
   if (pathname === "/cashier" || pathname.startsWith("/cashier/")) {
     return activeBusinessType === "self_service_coffee"
       ? translateUiText("Sipariş Yönetimi", locale)
-      : translateUiText("Kasa Ekrani", locale);
+      : translateUiText("Kasa Ekranı", locale);
   }
   if (pathname === "/kitchen" || pathname.startsWith("/kitchen/")) return translateUiText("Mutfak Board", locale);
   if (pathname === "/pickup-board" || pathname.startsWith("/pickup-board/")) return translateUiText("Pickup Board", locale);
@@ -206,7 +206,7 @@ export function AppShell({
   initialData,
 }: {
   children: React.ReactNode;
-  initialData?: AppShellPayload | null;
+  initialData: AppShellPayload | null;
 }) {
   const pathname = usePathname();
   const router = useRouter();
@@ -268,7 +268,7 @@ export function AppShell({
             : translateUiText("Sipariş ve Kasa", locale),
         description:
           activeBusinessType === "self_service_coffee"
-            ? translateUiText("Aktif siparişleri güncelle, gecmisi takip et.", locale)
+            ? translateUiText("Aktif siparişleri güncelle, geçmişi takip et.", locale)
             : translateUiText("Masa ac, adısyona gec, tahsilat yap.", locale),
         actions: byGroup.order_flow,
       },
@@ -277,7 +277,7 @@ export function AppShell({
         title: translateUiText("Servis", locale),
         description:
           activeBusinessType === "self_service_coffee"
-            ? translateUiText("Pickup sirasini yönet.", locale)
+            ? translateUiText("Pickup sırasıni yönet.", locale)
             : translateUiText("Mutfak, teslimat ve masa taleplerini yönet.", locale),
         actions: byGroup.service_flow,
       },
@@ -465,12 +465,12 @@ export function AppShell({
         >
           {!mobileAppMode && shellData?.forcedBranchSelectionFromAll ? (
             <div className="no-print border-b border-amber-200 bg-amber-50 px-4 py-3 text-sm font-medium text-amber-900">
-              {translateUiText("Karisik profilde Tüm Şubeler seçimi kapalı oldugu icin aktif şube seçimi zorlandi.", locale)}
+              {translateUiText("Karışık profilde Tüm Şubeler seçimi kapalı oldugu icin aktif şube seçimi zorlandi.", locale)}
             </div>
           ) : null}
           {!mobileAppMode && isOffline && pwaRuntimeEnabled ? (
             <div className="no-print sticky top-0 z-30 border-b border-amber-200 bg-amber-50 px-4 py-3 text-sm font-medium text-amber-900">
-              {translateUiText("Bağlantı kesildi. Offline modda yalnizca okunabilir kullanim açık.", locale)}
+              {translateUiText("Bağlantı kesildi. Offline modda yalnızca okunabilir kullanım açık.", locale)}
             </div>
           ) : null}
           {children}
@@ -491,12 +491,12 @@ export function AppShell({
                     isOffline ? "bg-amber-100 text-amber-800" : "bg-emerald-100 text-emerald-700"
                   }`}
                 >
-                  {isOffline ? translateUiText("Offline", locale) : translateUiText("Canli", locale)}
+                  {isOffline ? translateUiText("Offline", locale) : translateUiText("Canlı", locale)}
                 </span>
               </div>
               {isOffline ? (
                 <div className="border-t border-amber-200 bg-amber-50 px-4 py-2 text-xs font-medium text-amber-900">
-                  {translateUiText("Bağlantı gerekli. Offline modda sadece okunabilir kullanim açık.", locale)}
+                  {translateUiText("Bağlantı gerekli. Offline modda sadece okunabilir kullanım açık.", locale)}
                 </div>
               ) : null}
             </div>
@@ -531,7 +531,7 @@ export function AppShell({
                   <div className="mx-auto w-full max-w-[980px]">
                     <div className="mb-3 flex items-center justify-between gap-3">
                       <p className="text-sm font-semibold uppercase tracking-[0.16em] text-slate-500">
-                        {translateUiText("Hizli Aksiyonlar", locale)}
+                        {translateUiText("Hızlı Aksiyonlar", locale)}
                       </p>
                       <button
                         type="button"

@@ -92,13 +92,13 @@ export default async function MobileServiceRequestsPage({
 
       {usingDemoData ? (
         <div className="m-card m-banner-warning">
-          Demo modda masa talebi verisi uretilmiyor. Canli akista QR ve masa ekranindan bu kuyruk dolar.
+          Demo modda masa talebi verisi uretilmiyor. Canlı akışta QR ve masa ekranindan bu kuyruk dolar.
         </div>
       ) : null}
 
       <section className="m-grid-3 mt-3">
         <article className="m-card text-center">
-          <p className="m-label">{activeStatus === "open" ? "Acik" : "Cozulen"}</p>
+          <p className="m-label">{activeStatus === "open" ? "Açık" : "Cozulen"}</p>
           <p className="m-value text-orange-700">{requests.length}</p>
         </article>
         <article className="m-card text-center">
@@ -114,7 +114,7 @@ export default async function MobileServiceRequestsPage({
       <section className="m-card m-segment-wrap mt-3">
         <div className="m-segment-row">
           <Link href={statusHref("open")} data-active={activeStatus === "open"} className="m-segment-pill">
-            Acik
+            Açık
           </Link>
           <Link href={statusHref("resolved")} data-active={activeStatus === "resolved"} className="m-segment-pill">
             Cozuldu
@@ -130,7 +130,7 @@ export default async function MobileServiceRequestsPage({
               {activeStatus === "open" ? "Mudahale Bekleyen Talepler" : "Kapanan Talepler"}
             </h2>
             <p className="m-muted mt-1">
-              {activeStatus === "open" ? "Masa numarasini gor, talebi kapat." : "Cozulen talepleri vardiya icin izle."}
+              {activeStatus === "open" ? "Masa numarasını gor, talebi kapat." : "Cozulen talepleri vardiya icin izle."}
             </p>
           </div>
           <span className={`m-pill ${delayedCalls > 0 && activeStatus === "open" ? "m-tone-critical" : "m-tone-neutral"}`}>
@@ -142,8 +142,8 @@ export default async function MobileServiceRequestsPage({
       <section className="m-stack mt-3">
         {requests.length === 0 ? (
           <article className="m-card">
-            <p className="m-value-sm">{activeStatus === "open" ? "Acik talep yok." : "Cozulen talep yok."}</p>
-            <p className="m-muted mt-1">Garson cagri veya hesap istegi geldiginde burada gorunur.</p>
+            <p className="m-value-sm">{activeStatus === "open" ? "Açık talep yok." : "Cozulen talep yok."}</p>
+            <p className="m-muted mt-1">Garson cagri veya hesap istegi geldiginde burada görünur.</p>
           </article>
         ) : (
           requests.map((request) => {
@@ -185,10 +185,10 @@ export default async function MobileServiceRequestsPage({
       <div className="mt-3 grid grid-cols-2 gap-2">
         {hasPreviousPage ? (
           <Link href={statusHref(activeStatus, page - 1)} className="m-btn-secondary inline-flex items-center justify-center">
-            Onceki
+            önceki
           </Link>
         ) : (
-          <span className="m-btn-secondary inline-flex items-center justify-center bg-slate-100 text-slate-400">Onceki</span>
+          <span className="m-btn-secondary inline-flex items-center justify-center bg-slate-100 text-slate-400">önceki</span>
         )}
         {hasNextPage ? (
           <Link href={statusHref(activeStatus, page + 1)} className="m-btn-secondary inline-flex items-center justify-center">

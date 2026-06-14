@@ -13,11 +13,11 @@ export default function UnauthorizedPage() {
           <h1 className="mt-6 text-4xl font-semibold tracking-tight text-slate-900">Yetki Yok</h1>
           <p className="mx-auto mt-4 max-w-lg text-sm leading-7 text-slate-600">
             Bu alana erismek için hesabinizin gerekli role sahip olmasi gerekiyor. Farkli bir hesapla giriş yapin ya da
-            yoneticinizden rol atamasi isteyin.
+            yöneticinizden rol atamasi isteyin.
           </p>
           <div className="mt-8 flex flex-wrap items-center justify-center gap-3">
             <Link href="/ops" className="inline-flex rounded-2xl bg-slate-950 px-5 py-3 text-sm font-semibold text-white">
-              Ana Panele Don
+              Ana Panele Dön
             </Link>
             <Link
               href="/login?force=1"

@@ -50,7 +50,7 @@ function resolveDateInputs(days: number, start?: string, end?: string) {
     return {
       startDate: toDateInputValue(defaultStart),
       endDate: toDateInputValue(defaultEnd),
-      warning: start || end ? "Tarih formati gecersizdi. Varsayilan aralik uygulandi." : null,
+      warning: start || end ? "Tarih formati geçersizdi. Varsayilan aralik uygulandi." : null,
     };
   }
 
@@ -229,7 +229,7 @@ export default async function AdminReportsPage({
     if (!featureAccess.enabled) {
       logServerPerf("/admin/reports", [featureAccessResult]);
       return (
-        <BackofficePage title={translateUiText("Raporlar", locale)} description={translateUiText("Satis, cari ve personel performansi", locale)}>
+        <BackofficePage title={translateUiText("Raporlar", locale)} description={translateUiText("Satış, cari ve personel performansi", locale)}>
           <FeatureLockedState
             title={featureAccess.title}
             description={featureAccess.description}
@@ -348,7 +348,7 @@ export default async function AdminReportsPage({
     logServerPerf("/admin/reports", [featureAccessResult, salesResult, financialResult, opsResult, roleCountsResult, branchContextResult]);
   const branchLabel =
     branchContext.activeBranchId === ALL_BRANCHES_VALUE
-      ? translateUiText("Tüm Subeler", locale)
+      ? translateUiText("Tüm Şubeler", locale)
       : branchContext.branches.find((branch) => branch.id === branchContext.activeBranchId)?.name ?? translateUiText("Aktif Şube", locale);
 
   const totalSales = rows.reduce((sum, row) => sum + row.sales, 0);
@@ -360,12 +360,12 @@ export default async function AdminReportsPage({
     return (
     <BackofficePage
       title={translateUiText("Raporlar", locale)}
-      description={translateUiText("Satis ritmi, iade etkisi ve net performansi hızlı okumak için tasarlandi", locale)}
+      description={translateUiText("Satış ritmi, iade etkisi ve net performansi hızlı okumak için tasarlandi", locale)}
       sidebar={
-        <SidebarPanel title={translateUiText("Filtreler", locale)} description={translateUiText("Donem ve gorunum secimi", locale)}>
+        <SidebarPanel title={translateUiText("Filtreler", locale)} description={translateUiText("Dönem ve görünum seçimi", locale)}>
           <div className="grid gap-2 sm:grid-cols-2">
             <Link href={buildReportHref({ tab: activeTab, days, mode: "period" })} className={mode === "period" ? "rounded-2xl bg-gradient-to-r from-[#ff5a34] to-[#f0b14f] px-4 py-3 text-center text-sm font-semibold text-white" : "rounded-2xl border border-slate-200 bg-slate-50 px-4 py-3 text-center text-sm font-semibold text-slate-700"}>
-              {translateUiText("Donem", locale)}
+              {translateUiText("Dönem", locale)}
             </Link>
             <Link href={buildReportHref({ tab: activeTab, days, mode: "date", start: startDate, end: endDate })} className={mode === "date" ? "rounded-2xl bg-gradient-to-r from-[#ff5a34] to-[#f0b14f] px-4 py-3 text-center text-sm font-semibold text-white" : "rounded-2xl border border-slate-200 bg-slate-50 px-4 py-3 text-center text-sm font-semibold text-slate-700"}>
               {translateUiText("Tarih", locale)}
@@ -380,13 +380,13 @@ export default async function AdminReportsPage({
                   {translateUiText("Bugün", locale)}
                 </Link>
                 <Link href={buildReportHref({ tab: activeTab, days: 2, mode: "period" })} className={days === 2 ? "rounded-2xl bg-gradient-to-r from-[#ff5a34] to-[#f0b14f] px-4 py-3 text-center text-sm font-semibold text-white" : "rounded-2xl border border-slate-200 bg-slate-50 px-4 py-3 text-center text-sm font-semibold text-slate-700"}>
-                  {translateUiText("Dun", locale)}
+                  {translateUiText("Dön", locale)}
                 </Link>
                 <Link href={buildReportHref({ tab: activeTab, days: 7, mode: "period" })} className={days === 7 ? "rounded-2xl bg-gradient-to-r from-[#ff5a34] to-[#f0b14f] px-4 py-3 text-center text-sm font-semibold text-white" : "rounded-2xl border border-slate-200 bg-slate-50 px-4 py-3 text-center text-sm font-semibold text-slate-700"}>
-                  {translateUiText("Son 7 Gun", locale)}
+                  {translateUiText("Son 7 Gün", locale)}
                 </Link>
                 <Link href={buildReportHref({ tab: activeTab, days: 30, mode: "period" })} className={days === 30 ? "rounded-2xl bg-gradient-to-r from-[#ff5a34] to-[#f0b14f] px-4 py-3 text-center text-sm font-semibold text-white" : "rounded-2xl border border-slate-200 bg-slate-50 px-4 py-3 text-center text-sm font-semibold text-slate-700"}>
-                  {translateUiText("Son 30 Gun", locale)}
+                  {translateUiText("Son 30 Gün", locale)}
                 </Link>
               </div>
             </div>
@@ -415,7 +415,7 @@ export default async function AdminReportsPage({
           )}
 
           <div>
-            <p className="mb-3 text-sm font-bold uppercase tracking-[0.16em] text-slate-800">{translateUiText("Satis Kanali", locale)}</p>
+            <p className="mb-3 text-sm font-bold uppercase tracking-[0.16em] text-slate-800">{translateUiText("Satış Kanal?", locale)}</p>
             <div className="rounded-2xl border border-slate-200 bg-slate-50 px-4 py-3 text-sm text-slate-700">{translateUiText("Tüm Kanallar", locale)}</div>
           </div>
 
@@ -423,7 +423,7 @@ export default async function AdminReportsPage({
             <p className="text-xs font-bold uppercase tracking-[0.16em] text-slate-500">{translateUiText("Hızlı Özet", locale)}</p>
             <div className="mt-3 space-y-3 text-sm">
               <div className="flex items-center justify-between rounded-xl bg-white px-3 py-3">
-                <span>{translateUiText("Net Satis", locale)}</span>
+                <span>{translateUiText("Net Satış", locale)}</span>
                 <span className="font-semibold text-emerald-700">{net.toFixed(2)} TL</span>
               </div>
               <div className="flex items-center justify-between rounded-xl bg-white px-3 py-3">
@@ -480,18 +480,18 @@ export default async function AdminReportsPage({
       ) : null}
 
       <section className="grid gap-4 xl:grid-cols-4">
-        <SummaryCard label={translateUiText("Brut Satis", locale)} value={`${totalSales.toFixed(2)} TL`} hint={translateUiText("Toplam giren satis", locale)} tone="accent" />
-        <SummaryCard label={translateUiText("Iade", locale)} value={`${totalRefunds.toFixed(2)} TL`} hint={translateUiText("Donemsel cikan tutar", locale)} tone="danger" />
-        <SummaryCard label={translateUiText("Net Satis", locale)} value={`${net.toFixed(2)} TL`} hint={translateUiText("Gercek donem sonucu", locale)} tone="success" />
+        <SummaryCard label={translateUiText("Brüt Satış", locale)} value={`${totalSales.toFixed(2)} TL`} hint={translateUiText("Toplam giren satış", locale)} tone="accent" />
+        <SummaryCard label={translateUiText("İade", locale)} value={`${totalRefunds.toFixed(2)} TL`} hint={translateUiText("Dönemsel cikan tutar", locale)} tone="danger" />
+        <SummaryCard label={translateUiText("Net Satış", locale)} value={`${net.toFixed(2)} TL`} hint={translateUiText("Gerçek dönem sonucu", locale)} tone="success" />
         <SummaryCard label={translateUiText("Gunluk Ort", locale)} value={`${average.toFixed(2)} TL`} hint={translateUiText("7 gunluk net ortalama", locale)} />
       </section>
 
       {activeTab === "general" ? (
         <>
       <section className="grid gap-5 xl:grid-cols-[1.25fr_0.75fr]">
-        <ContentCard title={translateUiText("Net Satis Grafigi", locale)}>
+        <ContentCard title={translateUiText("Net Satış Grafigi", locale)}>
           {rows.length === 0 ? (
-            <EmptyPanel title={translateUiText("Kayıt Yok", locale)} description={translateUiText("Secilen filtrelerde rapor verisi bulunamadi.", locale)} />
+            <EmptyPanel title={translateUiText("Kayıt Yok", locale)} description={translateUiText("Seçilen filtrelerde rapor verisi bulunamadı.", locale)} />
           ) : (
             <div className="rounded-[24px] border border-slate-200 bg-slate-50 p-5">
               <svg viewBox="0 0 720 260" className="h-[260px] w-full">
@@ -545,7 +545,7 @@ export default async function AdminReportsPage({
               </p>
             </div>
             <div className="rounded-[22px] border border-slate-200 bg-slate-50 p-4">
-              <p className="text-xs font-bold uppercase tracking-[0.16em] text-slate-500">{translateUiText("Iade Etkisi", locale)}</p>
+              <p className="text-xs font-bold uppercase tracking-[0.16em] text-slate-500">{translateUiText("İade Etkisi", locale)}</p>
               <p className="mt-2 text-xl font-semibold tracking-tight text-rose-700">
                 %{totalSales > 0 ? ((totalRefunds / totalSales) * 100).toFixed(1) : "0.0"}
               </p>
@@ -563,15 +563,15 @@ export default async function AdminReportsPage({
       <section className="grid gap-5 xl:grid-cols-2">
         <ContentCard title={translateUiText("Gun Bazli Dagilim", locale)}>
           {rows.length === 0 ? (
-            <EmptyPanel title={translateUiText("Kayıt Yok", locale)} description={translateUiText("Gun bazli tablo gosterilemiyor.", locale)} />
+            <EmptyPanel title={translateUiText("Kayıt Yok", locale)} description={translateUiText("Gun bazli tablo gösterilemiyor.", locale)} />
           ) : (
             <div className="responsive-table-shell rounded-[22px] border border-slate-200">
               <table className="responsive-table w-full text-left text-sm">
                 <thead className="bg-slate-50 text-slate-500">
                   <tr>
                     <th className="px-4 py-4 font-semibold">{translateUiText("Gun", locale)}</th>
-                    <th className="px-4 py-4 font-semibold">{translateUiText("Satis", locale)}</th>
-                    <th className="px-4 py-4 font-semibold">{translateUiText("Iade", locale)}</th>
+                    <th className="px-4 py-4 font-semibold">{translateUiText("Satış", locale)}</th>
+                    <th className="px-4 py-4 font-semibold">{translateUiText("İade", locale)}</th>
                     <th className="px-4 py-4 font-semibold">{translateUiText("Net", locale)}</th>
                   </tr>
                 </thead>
@@ -615,7 +615,7 @@ export default async function AdminReportsPage({
         <section className="grid gap-5 xl:grid-cols-[1.05fr_0.95fr]">
           <ContentCard title={translateUiText("Cari Ödeme Dagilimi", locale)}>
             {financial.methodBreakdown.length === 0 ? (
-              <EmptyPanel title={translateUiText("Cari Veri Yok", locale)} description={translateUiText("Secilen aralikta tahsilat hareketi bulunmuyor.", locale)} />
+              <EmptyPanel title={translateUiText("Cari Veri Yok", locale)} description={translateUiText("Seçilen aralikta tahsilat hareketi bulunmuyor.", locale)} />
             ) : (
               <div className="grid gap-5 xl:grid-cols-[320px_1fr]">
                 <DonutChart
@@ -648,7 +648,7 @@ export default async function AdminReportsPage({
                         </div>
                         <div className="mt-3 grid grid-cols-3 gap-2 text-xs text-slate-500">
                           <span>{translateUiText("Gelir", locale)} <span className="font-numeric font-semibold text-emerald-700">{row.sales.toFixed(2)}</span></span>
-                          <span>{translateUiText("Iade", locale)} <span className="font-numeric font-semibold text-rose-700">{row.refunds.toFixed(2)}</span></span>
+                          <span>{translateUiText("İade", locale)} <span className="font-numeric font-semibold text-rose-700">{row.refunds.toFixed(2)}</span></span>
                           <span>{translateUiText("Net", locale)} <span className="font-numeric font-semibold text-slate-900">{row.net.toFixed(2)}</span></span>
                         </div>
                       </div>
@@ -694,21 +694,21 @@ export default async function AdminReportsPage({
 
       {activeTab === "detail" ? (
         <section className="grid gap-5 xl:grid-cols-[1fr_1fr]">
-          <ContentCard title="Urun Karliligi (Recete Bazli)">
+          <ContentCard title="Ürün Karlılığı (Reçete Bazli)">
             {financial.topProducts.length === 0 ? (
-              <EmptyPanel title={translateUiText("Detay Veri Yok", locale)} description="Secili filtrede urun karliligi bulunmuyor." />
+              <EmptyPanel title={translateUiText("Detay Veri Yok", locale)} description="Seçili filtrede Ürün karlılığı bulunmuyor." />
             ) : (
               <div className="responsive-table-shell rounded-[22px] border border-slate-200">
                 <table className="responsive-table w-full text-left text-sm">
                   <thead className="bg-slate-50 text-slate-500">
                     <tr>
-                      <th className="px-4 py-4 font-semibold">Urun</th>
+                      <th className="px-4 py-4 font-semibold">Ürün</th>
                       <th className="px-4 py-4 font-semibold">Adet</th>
                       <th className="px-4 py-4 font-semibold">Net Gelir</th>
                       <th className="px-4 py-4 font-semibold">Maliyet</th>
                       <th className="px-4 py-4 font-semibold">Kar</th>
                       <th className="px-4 py-4 font-semibold">Marj</th>
-                      <th className="px-4 py-4 font-semibold">Iade Etkisi</th>
+                      <th className="px-4 py-4 font-semibold">İade Etkisi</th>
                     </tr>
                   </thead>
                   <tbody>
@@ -734,15 +734,15 @@ export default async function AdminReportsPage({
           </ContentCard>
           <ContentCard title={translateUiText("Gun Bazli Detay", locale)}>
             {rows.length === 0 ? (
-              <EmptyPanel title={translateUiText("Gunluk Detay Yok", locale)} description={translateUiText("Gun bazli detay tablosu gosterilemiyor.", locale)} />
+              <EmptyPanel title={translateUiText("Gunluk Detay Yok", locale)} description={translateUiText("Gun bazli detay tablosu gösterilemiyor.", locale)} />
             ) : (
               <div className="responsive-table-shell rounded-[22px] border border-slate-200">
                 <table className="responsive-table w-full text-left text-sm">
                   <thead className="bg-slate-50 text-slate-500">
                     <tr>
                       <th className="px-4 py-4 font-semibold">{translateUiText("Gun", locale)}</th>
-                      <th className="px-4 py-4 font-semibold">{translateUiText("Satis", locale)}</th>
-                      <th className="px-4 py-4 font-semibold">{translateUiText("Iade", locale)}</th>
+                      <th className="px-4 py-4 font-semibold">{translateUiText("Satış", locale)}</th>
+                      <th className="px-4 py-4 font-semibold">{translateUiText("İade", locale)}</th>
                       <th className="px-4 py-4 font-semibold">{translateUiText("Net", locale)}</th>
                     </tr>
                   </thead>
@@ -770,7 +770,7 @@ export default async function AdminReportsPage({
               <SummaryCard label={translateUiText("Patron", locale)} value={String(roleCounts.owner)} hint={translateUiText("Tüm şubeler", locale)} tone="accent" />
               <SummaryCard label={translateUiText("Yonetici", locale)} value={String(roleCounts.admin)} hint={translateUiText("Atanmis şube", locale)} />
               <SummaryCard label={translateUiText("Kasa", locale)} value={String(roleCounts.cashier)} hint={translateUiText("Tahsilat", locale)} />
-              <SummaryCard label={translateUiText("Mutfak", locale)} value={String(roleCounts.kitchen)} hint={translateUiText("Hazirlama", locale)} tone="danger" />
+              <SummaryCard label={translateUiText("Mutfak", locale)} value={String(roleCounts.kitchen)} hint={translateUiText("Hazırlama", locale)} tone="danger" />
               <SummaryCard label={translateUiText("Servis", locale)} value={String(roleCounts.waiter)} hint={translateUiText("Masa operasyonu", locale)} tone="success" />
             </div>
           </ContentCard>
@@ -801,9 +801,9 @@ export default async function AdminReportsPage({
   } catch (error) {
     console.error("[admin-reports-page] failed", error);
     return (
-      <BackofficePage title="Raporlar" description="Satis, cari ve personel performansi">
+      <BackofficePage title="Raporlar" description="Satış, cari ve personel performansi">
         <div className="rounded-[24px] border border-amber-200 bg-amber-50 px-5 py-4 text-sm text-amber-900">
-          {translateUiText("Rapor verileri yuklenemedi. Lütfen biraz sonra tekrar deneyin.", "tr")}
+          {translateUiText("Rapor verileri yüklenemedi. Lütfen biraz sonra tekrar deneyin.", "tr")}
         </div>
       </BackofficePage>
     );

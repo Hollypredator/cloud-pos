@@ -73,7 +73,7 @@ export async function POST(request: Request) {
         requestType: body.requestType,
         error: result.error ?? "unknown",
       });
-      return json({ ok: false, code: "REQUEST_CREATE_FAILED", message: result.error ?? "Talep olusturulamadi." }, { status: 500 });
+      return json({ ok: false, code: "REQUEST_CREATE_FAILED", message: result.error ?? "Talep oluşturulamad?." }, { status: 500 });
     }
 
     logApiEvent("info", "table_requests.create.success", {

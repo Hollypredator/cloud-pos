@@ -124,7 +124,7 @@ export async function POST(request: Request) {
         status: response.status,
       });
       return json(
-        { ok: false, message: "Webhook gonderimi başarısız.", status: response.status },
+        { ok: false, message: "Webhook günderimi başarısız.", status: response.status },
         { status: 502 },
       );
     }

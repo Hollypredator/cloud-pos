@@ -52,7 +52,7 @@ function toRel(filePath) {
 function run() {
   const apiDir = path.join(process.cwd(), "src", "app", "api");
   if (!fs.existsSync(apiDir)) {
-    throw new Error(`API klasoru bulunamadi: ${apiDir}`);
+    throw new Error(`API klasoru bulunamadı: ${apiDir}`);
   }
 
   const routeFiles = walkRoutes(apiDir);
@@ -81,7 +81,7 @@ function run() {
   }
 
   if (!writeRoutes.length) {
-    console.log("[check-write-route-guards] write route bulunamadi.");
+    console.log("[check-write-route-guards] write route bulunamadı.");
     return;
   }
 

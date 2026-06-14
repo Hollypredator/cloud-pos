@@ -46,7 +46,7 @@ function normalizeProduct(node) {
   if (!node || typeof node !== "object" || Array.isArray(node)) return null;
 
   const name = pickString(node, ["name", "product_name", "productName", "title"]);
-  const category = pickString(node, ["category", "category_name", "categoryName", "group_name", "groupName"]) ?? "Diger";
+  const category = pickString(node, ["category", "category_name", "categoryName", "group_name", "groupName"]) ?? "Diğer";
   const price = pickPrice(node);
 
   if (!name || price == null) return null;
@@ -102,7 +102,7 @@ function dedupeProducts(products) {
 async function tryCredentialLogin(page, email, password) {
   const emailSelector = 'input[type="email"], input[name="email"], input[autocomplete="username"]';
   const passwordSelector = 'input[type="password"], input[name="password"], input[autocomplete="current-password"]';
-  const submitSelector = 'button[type="submit"], button:has-text("Giris"), button:has-text("Giris Yap"), button:has-text("Login")';
+  const submitSelector = 'button[type="submit"], button:has-text("Giris"), button:has-text("Giriş Yap"), button:has-text("Login")';
 
   await page.waitForSelector(emailSelector, { timeout: 20_000 });
   await page.fill(emailSelector, email);

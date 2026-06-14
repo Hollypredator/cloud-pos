@@ -36,7 +36,7 @@ export function PickupBoardClient({
       {/* Preparing Column */}
       <div className="bg-[#111114] border-r border-white/5 p-12">
         <div className="flex items-center justify-between mb-12">
-          <h2 className="text-4xl font-bold text-slate-400 tracking-tight">HazÄ±rlanÄ±yor</h2>
+          <h2 className="text-4xl font-bold text-slate-400 tracking-tight">Hazırlanıyor</h2>
           <div className="px-4 py-1 rounded-full bg-sky-500/10 text-sky-400 text-sm font-bold border border-sky-500/20 uppercase tracking-widest">
             Preparing
           </div>
@@ -55,7 +55,7 @@ export function PickupBoardClient({
           ))}
           {preparing.length === 0 && (
             <div className="col-span-2 text-slate-600 text-2xl font-medium mt-12">
-              HenÃ¼z yeni sipariÅŸ yok...
+              Henüz yeni sipariş yok...
             </div>
           )}
         </div>
@@ -86,7 +86,7 @@ export function PickupBoardClient({
           ))}
           {ready.length === 0 && (
             <div className="col-span-2 text-slate-700 text-2xl font-medium mt-12">
-              Bekleyen hazÄ±r sipariÅŸ yok.
+              Bekleyen hazır sipariş yok.
             </div>
           )}
         </div>

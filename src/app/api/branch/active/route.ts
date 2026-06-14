@@ -24,7 +24,7 @@ export async function POST(request: Request) {
   if (auth.accessScope === "branch") {
     if (!auth.primaryBranchId || (branchId && branchId !== auth.primaryBranchId)) {
       return NextResponse.json(
-        { ok: false, message: "Bu kullanici yalnizca atanmis subeyi gorebilir." },
+        { ok: false, message: "Bu kullanici yalnızca atanmis Şubeyi gorebilir." },
         { status: 403 },
       );
     }
@@ -32,7 +32,7 @@ export async function POST(request: Request) {
     const context = await getRequestAppContext();
     if (context.hasMixedBranchProfiles) {
       return NextResponse.json(
-        { ok: false, message: "Karisik profilli tenantta Tum Subeler secimi kullanilamaz." },
+        { ok: false, message: "Karışık profilli tenantta Tum Şubeler seçimi kullanilamaz." },
         { status: 409 },
       );
     }

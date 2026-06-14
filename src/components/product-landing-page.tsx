@@ -1,4 +1,5 @@
 import Link from "next/link";
+import Image from "next/image";
 import {
   ArrowRight,
   BarChart3,
@@ -18,6 +19,7 @@ import {
 import { LanguageSwitcher } from "@/components/language-switcher";
 import type { GeneralSettings } from "@/lib/app-settings";
 import type { AppLocale } from "@/lib/i18n";
+import { primaryHomeSeoLandingPages } from "@/lib/seo-landing-pages";
 
 type ProductLandingPageProps = {
   settings: GeneralSettings;
@@ -29,7 +31,7 @@ const productModules = [
   {
     icon: Store,
     title: "Kafe ve restoran operasyonu",
-    body: "Masa, adısyon, sipariş, mutfak, kasa ve servis taleplerini tek akışta yönetin.",
+    body: "Masa, adisyon, sipariş, mutfak, kasa ve servis taleplerini tek akışta yönetin.",
     color: "bg-orange-100 text-orange-700",
   },
   {
@@ -46,7 +48,7 @@ const productModules = [
   },
   {
     icon: CreditCard,
-    title: "Kasa ve adısyon",
+    title: "Kasa ve adisyon",
     body: "Açık hesaplar, ödeme akışı, gün işlemleri ve tahsilat süreçleri için hazır ekranlar.",
     color: "bg-emerald-100 text-emerald-700",
   },
@@ -82,6 +84,8 @@ const screenshots = [
     body: "Anlık sipariş, masa, mutfak ve kasa durumunu tek yönetim ekranında görün.",
     image: "/landing-assets/operasyon-paneli-desktop.png",
     alt: "Cloud POS operasyon paneli gerçek ekran görüntüsü",
+    width: 1440,
+    height: 900,
     wide: true,
   },
   {
@@ -89,18 +93,24 @@ const screenshots = [
     body: "PWA uyumlu mobil ekranlarla personel sahada hızlı hareket eder.",
     image: "/landing-assets/operasyon-paneli-mobil.png",
     alt: "Cloud POS mobil operasyon gerçek ekran görüntüsü",
+    width: 390,
+    height: 844,
   },
   {
     title: "Mobil POS sipariş",
     body: "Ürün arama, kategori seçimi ve hızlı sipariş ekleme akışı.",
     image: "/landing-assets/mobil-pos-siparis.png",
     alt: "Cloud POS mobil sipariş gerçek ekran görüntüsü",
+    width: 780,
+    height: 1688,
   },
   {
     title: "Masa ve servis akışı",
-    body: "Masa seçimi, adısyon açma ve servis süreci mobilde net ilerler.",
-    image: "/landing-assets/mobil-masa-akisi.png",
+    body: "Masa seçimi, adisyon açma ve servis süreci mobilde net ilerler.",
+    image: "/landing-assets/mobil-masa-akisi-preview.png",
     alt: "Cloud POS mobil masa akışı gerçek ekran görüntüsü",
+    width: 780,
+    height: 1688,
   },
 ];
 
@@ -108,7 +118,7 @@ const included = [
   "Operasyon paneli",
   "POS sipariş ekranı",
   "Mutfak ekranı",
-  "Kasa ve adısyon",
+  "Kasa ve adisyon",
   "Masa yönetimi",
   "Self servis / QR altyapısı",
   "Mobil PWA ekranları",
@@ -257,16 +267,23 @@ export function ProductLandingPage({ settings, leadStatus, locale = "tr" }: Prod
 
           <div className="relative">
             <div className="rounded-[2rem] border border-white bg-white p-3 shadow-2xl shadow-slate-950/15">
-              <img
+              <Image
                 src="/landing-assets/operasyon-paneli-desktop.png"
                 alt="Cloud POS operasyon paneli gerçek ekran görüntüsü"
+                width={1440}
+                height={900}
+                priority
+                sizes="(min-width: 1024px) 58vw, 100vw"
                 className="aspect-[16/10] w-full rounded-[1.35rem] object-cover object-left-top"
               />
             </div>
             <div className="absolute -bottom-8 right-4 hidden w-48 rounded-[1.5rem] border border-white bg-white p-2 shadow-2xl shadow-slate-950/20 md:block lg:w-56">
-              <img
+              <Image
                 src="/landing-assets/operasyon-paneli-mobil.png"
                 alt="Cloud POS mobil operasyon gerçek ekran görüntüsü"
+                width={390}
+                height={844}
+                sizes="224px"
                 className="max-h-[360px] w-full rounded-[1rem] object-cover object-top"
               />
             </div>
@@ -318,9 +335,12 @@ export function ProductLandingPage({ settings, leadStatus, locale = "tr" }: Prod
                       Gerçek ekran
                     </span>
                   </div>
-                  <img
+                  <Image
                     src={item.image}
                     alt={item.alt}
+                    width={item.width}
+                    height={item.height}
+                    sizes={item.wide ? "(min-width: 1024px) 1184px, 100vw" : "(min-width: 1024px) 584px, 100vw"}
                     className={`${item.wide ? "aspect-[16/9]" : "aspect-[4/5]"} w-full rounded-[1.35rem] border border-slate-100 object-cover object-left-top`}
                   />
                 </div>
@@ -378,6 +398,34 @@ export function ProductLandingPage({ settings, leadStatus, locale = "tr" }: Prod
                   </div>
                 </div>
               </div>
+            ))}
+          </div>
+        </div>
+      </section>
+
+      <section className="border-b border-slate-200 bg-[#f8fafc] py-14 sm:py-18">
+        <div className="mx-auto max-w-7xl px-4 sm:px-6 lg:px-8">
+          <div className="flex flex-col gap-4 lg:flex-row lg:items-end lg:justify-between">
+            <div className="max-w-3xl">
+              <p className="text-xs font-bold uppercase tracking-[0.22em] text-cyan-700">Çözüm sayfaları</p>
+              <h2 className="mt-3 text-3xl font-bold tracking-tight text-slate-950 sm:text-4xl">
+                POS, QR menü, self servis ve stok aramaları için detaylı sayfalar.
+              </h2>
+              <p className="mt-4 text-sm leading-7 text-slate-600 sm:text-base">
+                Cloud POS modüllerini farklı işletme ihtiyaçlarına göre ayrı ayrı inceleyin.
+              </p>
+            </div>
+            <Link href="/demo" className="inline-flex items-center justify-center gap-2 rounded-2xl bg-slate-950 px-5 py-3 text-sm font-semibold text-white transition hover:bg-slate-800">
+              Demo sayfasına git
+              <ArrowRight size={18} />
+            </Link>
+          </div>
+          <div className="mt-8 grid gap-3 sm:grid-cols-2 lg:grid-cols-3">
+            {primaryHomeSeoLandingPages.map((page) => (
+              <Link key={page.slug} href={`/${page.slug}`} className="rounded-3xl border border-slate-200 bg-white p-5 shadow-sm transition hover:-translate-y-0.5 hover:border-cyan-200 hover:shadow-lg hover:shadow-cyan-500/10">
+                <p className="text-base font-bold tracking-tight text-slate-950">{page.title}</p>
+                <p className="mt-2 text-sm leading-6 text-slate-600">{page.description}</p>
+              </Link>
             ))}
           </div>
         </div>

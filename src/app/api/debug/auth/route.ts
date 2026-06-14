@@ -5,7 +5,7 @@ import { listBranches } from "@/lib/data";
 
 export async function GET() {
   if (process.env.NODE_ENV === "production") {
-    return NextResponse.json({ ok: false, message: "Bulunamadi" }, { status: 404 });
+    return NextResponse.json({ ok: false, message: "Bulunamadı" }, { status: 404 });
   }
 
   const [auth, activeBranchId, branchContext] = await Promise.all([

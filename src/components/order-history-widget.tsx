@@ -51,7 +51,7 @@ export function OrderHistoryWidget({
       );
       const data = (await response.json()) as { ok: boolean; orders: HistoryOrder[]; message?: string };
       if (!response.ok || !data.ok) {
-        setError(data.message ?? "Sipariş gecmisi alınamadı.");
+        setError(data.message ?? "Sipariş geçmişi alınamadı.");
         return;
       }
       setOrders(data.orders);
@@ -97,9 +97,9 @@ export function OrderHistoryWidget({
 
   return (
     <section className="rounded-2xl border border-slate-200 bg-white p-4">
-      <h2 className="text-sm font-semibold text-slate-900">Son Sipariş Gecmisi</h2>
+      <h2 className="text-sm font-semibold text-slate-900">Son Sipariş Geçmişi</h2>
       {loading ? (
-        <p className="mt-2 text-sm text-slate-500">Gecmis yukleniyor...</p>
+        <p className="mt-2 text-sm text-slate-500">Geçmiş yükleniyor...</p>
       ) : error ? (
         <p className="mt-2 text-sm text-rose-600">{error}</p>
       ) : orders.length === 0 ? (

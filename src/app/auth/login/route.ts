@@ -23,10 +23,10 @@ function normalizeRetryPassword(rawPassword: string) {
 function toFriendlyAuthError(message: string) {
   const normalized = message.toLowerCase();
   if (normalized.includes("invalid login credentials")) {
-    return "E-posta veya sifre hatali gorunuyor. Kopyala-yapistir yaptiysaniz basta/sonda bosluk olmadigindan emin olun.";
+    return "E-posta veya sifre hatali görünuyor. Kopyala-yapistir yaptiysaniz basta/sonda bosluk olmadigindan emin olun.";
   }
   if (normalized.includes("email not confirmed")) {
-    return "E-posta dogrulamasi tamamlanmamis. Lutfen e-posta kutunuzu kontrol edin.";
+    return "E-posta dogrulamasi tamamlanmamis. Lütfen e-posta kutunuzu kontrol edin.";
   }
   return message;
 }
@@ -106,7 +106,7 @@ export async function POST(request: NextRequest) {
     const firstAttempt = await withTimeout(
       supabase.auth.signInWithPassword({ email, password }),
       LOGIN_TIMEOUT_MS,
-      "Giris istegi zaman asimina ugradi.",
+      "Giriş isteği zaman a??m?na u?rad?.",
     );
 
     let signInError = firstAttempt.error ?? null;
@@ -118,7 +118,7 @@ export async function POST(request: NextRequest) {
       const retryAttempt = await withTimeout(
         supabase.auth.signInWithPassword({ email: retryEmail, password: retryPassword }),
         LOGIN_TIMEOUT_MS,
-        "Giris istegi zaman asimina ugradi.",
+        "Giriş isteği zaman a??m?na u?rad?.",
       );
       signInError = retryAttempt.error ?? null;
     }
@@ -128,15 +128,15 @@ export async function POST(request: NextRequest) {
       return buildErrorResponse(`/login?error=${encodeURIComponent(friendlyMessage)}`, friendlyMessage);
     }
   } catch (error) {
-    const message = error instanceof Error ? error.message : "Giris istegi basarisiz.";
+    const message = error instanceof Error ? error.message : "Giriş isteği başarısız.";
     return buildErrorResponse(`/login?error=${encodeURIComponent(message)}`, message);
   }
 
   const hasAuthCookie = successResponse.cookies.getAll().some((cookie) => cookie.name.includes("auth-token"));
   if (!hasAuthCookie) {
     return buildErrorResponse(
-      "/login?error=Oturum%20olusturulamadi.%20Lutfen%20tekrar%20deneyin.",
-      "Oturum olusturulamadi. Lutfen tekrar deneyin.",
+      "/login?error=Oturum%20oluşturulamad?.%20Lütfen%20tekrar%20deneyin.",
+      "Oturum oluşturulamad?. Lütfen tekrar deneyin.",
     );
   }
 

@@ -75,7 +75,7 @@ export default async function BlogPostPage({ params }: { params: Promise<{ slug:
       />
       <main className="mx-auto max-w-6xl space-y-6 sm:space-y-8">
         <Link href="/blog" className="inline-flex w-full rounded-xl border border-slate-300 bg-white px-4 py-2 text-center text-sm font-semibold text-slate-700 sm:w-auto">
-          Bloga Don
+          Bloga Dön
         </Link>
 
         <article className="overflow-hidden rounded-[1.5rem] border border-slate-200 bg-white shadow-[0_25px_70px_rgba(15,23,42,0.08)] sm:rounded-[2rem]">

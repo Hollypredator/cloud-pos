@@ -669,7 +669,7 @@ export function AppNav({
                   ))}
                 </select>
                 <p className="mt-2 text-xs text-white/45">
-                  {hasMixedBranchProfiles ? translateUiText("Karisik profilli tenantta Tüm Şubeler seçimi devre disidir.", locale) : branchAccessScope === "business" ? translateUiText("Tüm şubeleri gorebilirsin.", locale) : translateUiText("Bu kullanici yalnizca atanmis şubeyi gorur.", locale)}
+                  {hasMixedBranchProfiles ? translateUiText("Karışık profilli tenantta Tüm Şubeler seçimi devre disidir.", locale) : branchAccessScope === "business" ? translateUiText("Tüm şubeleri gorebilirsin.", locale) : translateUiText("Bu kullanici yalnızca atanmis şubeyi gorur.", locale)}
                 </p>
                 {forcedBranchSelectionFromAll ? (
                   <p className="mt-2 text-xs text-amber-200">

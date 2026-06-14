@@ -109,7 +109,7 @@ export type LandingContent = {
 
 export const defaultLandingContent: LandingContent = {
   pageTitle: "Ana Sayfa",
-  topLoginLabel: "Personel Girisi",
+  topLoginLabel: "Personel Girişi",
   topDemoLabel: "Demo Panel",
   businessPhone: "+90 555 000 00 00",
   sections: [
@@ -120,7 +120,7 @@ export const defaultLandingContent: LandingContent = {
       badge: "Cloud POS",
       title: "Cafe ve restoran operasyonunu tek panelden yönetin.",
       body:
-        "Cloud POS; masa, adisyon, mutfak, kasa ve yönetsel raporlari ayni sistemde toplar. Müşteri menuyu kendi telefonunda görür, sipariş ve operasyon akışı personel tarafindan yönetilir.",
+        "Cloud POS; masa, adisyon, mutfak, kasa ve yönetsel raporlari ayn? sistemde toplar. Müşteri menüyü kendi telefonunda görür, sipariş ve operasyon akışı personel tarafindan yönetilir.",
       primaryCtaLabel: "Panele Giriş",
       primaryCtaHref: "/login",
       secondaryCtaLabel: "Demo Incele",
@@ -138,11 +138,11 @@ export const defaultLandingContent: LandingContent = {
       items: [
         {
           title: "QR Menü",
-          body: "Müşteri masada menuyu kendi telefonundan görür, sipariş akışı personel tarafindan yönetilir.",
+          body: "Müşteri masada menüyü kendi telefonundan görür, sipariş akışı personel tarafindan yönetilir.",
         },
         {
-          title: "Canli Operasyon",
-          body: "Mutfak, kasa ve servis ekipleri ayni akışı es zamanli izler ve operasyon kopmadan ilerler.",
+          title: "Canlı Operasyon",
+          body: "Mutfak, kasa ve servis ekipleri ayn? akışı es zamanli izler ve operasyon kopmadan ilerler.",
         },
         {
           title: "Yönetsel Kontrol",
@@ -156,9 +156,9 @@ export const defaultLandingContent: LandingContent = {
       type: "process_steps",
       eyebrow: "Nasıl Calisir",
       items: [
-        { title: "1. Kurulum", body: "İşletme, şube, masa ve personel yapısı kısa surede hazırlanır." },
-        { title: "2. Operasyon", body: "Adisyon, mutfak, servis ve kasa akışı ayni sistemde ilerler." },
-        { title: "3. Takip", body: "Gun sonu, finans ve yönetsel raporlar panel uzerinden izlenir." },
+        { title: "1. Kurulum", body: "İşletme, şube, masa ve personel yapısı kısa sürede hazırlanır." },
+        { title: "2. Operasyon", body: "Adisyon, mutfak, servis ve kasa akışı ayn? sistemde ilerler." },
+        { title: "3. Takip", body: "Gün sonu, finans ve yönetsel raporlar panel uzerinden izlenir." },
       ],
     },
     {
@@ -189,9 +189,9 @@ export const defaultLandingContent: LandingContent = {
       style: { paddingTop: 28, paddingBottom: 28, paddingX: 0, radius: 32, containerWidth: "default", surface: "transparent", border: "none", shadow: "none", textAlign: "left" },
       type: "credibility",
       eyebrow: "Neden Cloud POS",
-      title: "Operasyonun diline uygun, sahada kullanima hazır",
+      title: "Operasyonun diline uygun, sahada kullanıma hazır",
       body:
-        "Mutfak, kasa, servis ve yönetim ekranlari rol bazli ayrilir. Boylesiyle ekipler kendi is akisini görür, yönetim ise tüm resmi tek panelden takip eder.",
+        "Mutfak, kasa, servis ve yönetim ekranlari rol bazli ayrilir. Boylesiyle ekipler kendi is akışını görür, yönetim ise tüm resmi tek panelden takip eder.",
       references: ["Nord Roast", "Atelier Bakehouse", "Mimoza Brasserie", "Kule Kahve"],
     },
     {
@@ -199,8 +199,8 @@ export const defaultLandingContent: LandingContent = {
       style: { paddingTop: 28, paddingBottom: 32, paddingX: 0, radius: 32, containerWidth: "default", surface: "transparent", border: "none", shadow: "none", textAlign: "left" },
       type: "contact_cta",
       eyebrow: "İletişim",
-      title: "Demo ve kurulum sureci için bizimle iletisime gecin",
-      body: "Bilgilerinizi birakin. Isterseniz doğrudan WhatsApp veya telefon uzerinden de bize ulasabilirsiniz.",
+      title: "Demo ve kurulum süreci için bizimle iletişime gecin",
+      body: "Bilgilerinizi birakin. Isterseniz doğrudan WhatsApp veya telefon uzerinden de bize ulaşabilirsiniz.",
     },
     {
       id: "faq-main",
@@ -209,12 +209,12 @@ export const defaultLandingContent: LandingContent = {
       eyebrow: "Sik Sorulan Sorular",
       items: [
         {
-          title: "Kurulum ne kadar surer?",
-          body: "Kurulum süresi işletmenin şube, ürün ve operasyon yapısına göre planlanir. Pilot kurulumlar kısa surede baslatilabilir.",
+          title: "Kurulum ne kadar sürer?",
+          body: "Kurulum süresi işletmenin şube, ürün ve operasyon yapısına göre planlanir. Pilot kurulumlar kısa sürede baslatilabilir.",
         },
         {
           title: "Ekipler farkli ekran mi kullanir?",
-          body: "Evet. Mutfak, kasa, servis ve yönetim ayni sistemin rol bazli ayri ekranlarini kullanir.",
+          body: "Evet. Mutfak, kasa, servis ve yönetim ayn? sistemin rol bazli ayri ekranlarini kullanir.",
         },
         {
           title: "QR ile sipariş aliniyor mu?",
@@ -357,15 +357,15 @@ function modernizeLandingText(value: string) {
     .replace(/QR Sipariş/gi, "QR Menü")
     .replace(/QR sipariş/gi, "QR menü")
     .replace(/Demo ve Teklif/gi, "Demo Talebi")
-    .replace(/Müşteri gorusmesini buradan kapat/gi, "Isletmeniz için uygun kurulumu birlikte planlayalim")
-    .replace(/Demo tarihi netlestir/gi, "WhatsApp veya telefonla bize ulasin")
+    .replace(/Müşteri gorusmesini buradan kapat/gi, "İşletmeniz için uygun kurulumu birlikte planlayalim")
+    .replace(/Demo tarihi netlestir/gi, "WhatsApp veya telefonla bize ulaşın")
     .replace(/Hızlı İletişim/gi, "Doğrudan İletişim")
-    .replace(/Teklif Talebi Gonder/gi, "Talep Gonder")
+    .replace(/Teklif Talebi Günder/gi, "Talep Günder")
     .replace(/WhatsApp ile Teklif Al/gi, "WhatsApp ile Ulas")
     .replace(/Hemen Ara/gi, "Telefonla Ara")
-    .replace(/QR uzerinden doğrudan sipariş kapali\. Lütfen garsona iletin\./gi, "QR uzerinden sipariş alinmiyor. Siparisler personel tarafindan yönetilir.")
-    .replace(/Masaya oturan müşteri menuyu açsın, siparişi doğrudan sisteme düşsün\./gi, "Masaya oturan müşteri menuyu kendi telefonunda açsın, siparişi ekip yönetsin.")
-    .replace(/Müşteri menuyu açsın, siparişi doğrudan sisteme düşsün\./gi, "Müşteri menuyu açsın, sipariş akisini ekip yönetsin.")
+    .replace(/QR uzerinden doğrudan sipariş kapali\. Lütfen garsona iletin\./gi, "QR uzerinden sipariş alinmiyor. Siparişler personel tarafindan yönetilir.")
+    .replace(/Masaya oturan müşteri menüyü açsın, siparişi doğrudan sisteme düşsün\./gi, "Masaya oturan müşteri menüyü kendi telefonunda açsın, siparişi ekip yönetsin.")
+    .replace(/Müşteri menüyü açsın, siparişi doğrudan sisteme düşsün\./gi, "Müşteri menüyü açsın, sipariş akışını ekip yönetsin.")
     .replace(/QR sipariş zorunlu mu\?/gi, "QR ile sipariş aliniyor mu?")
     .replace(/Hayır\. Masa bazli operasyon QR ile veya personel ekranlari uzerinden birlikte yürütülebilir\./gi, "Hayır. QR tarafı sadece menü görüntüleme icindir; sipariş ekleme personel ekranlarından yapilir.");
 }
@@ -648,7 +648,7 @@ export function createLandingSectionTemplate(type: LandingSection["type"]): Land
       style: { paddingTop: 40, paddingBottom: 56, paddingX: 0, radius: 32, containerWidth: "wide", surface: "transparent", border: "none", shadow: "none", textAlign: "left" },
       type,
       badge: "Yeni Blok",
-      title: "Baslik girin",
+      title: "Başlık girin",
       body: "Bu hero blokunu studio icinden duzenleyin.",
       primaryCtaLabel: "Giriş Yap",
       primaryCtaHref: "/login",
@@ -667,7 +667,7 @@ export function createLandingSectionTemplate(type: LandingSection["type"]): Land
       style: { paddingTop: 24, paddingBottom: 24, paddingX: 0, radius: 32, containerWidth: "wide", surface: "transparent", border: "none", shadow: "none", textAlign: "left" },
       type,
       eyebrow: "One Cikanlar",
-      items: [{ title: "Kart 1", body: "Aciklama" }],
+      items: [{ title: "Kart 1", body: "Açıklama" }],
     };
   }
 
@@ -676,8 +676,8 @@ export function createLandingSectionTemplate(type: LandingSection["type"]): Land
       id: baseId,
       style: { paddingTop: 24, paddingBottom: 24, paddingX: 0, radius: 32, containerWidth: "default", surface: "transparent", border: "none", shadow: "none", textAlign: "left" },
       type,
-      eyebrow: "Akis",
-      items: [{ title: "Adim 1", body: "Aciklama" }],
+      eyebrow: "Akış",
+      items: [{ title: "Adim 1", body: "Açıklama" }],
     };
   }
 
@@ -687,7 +687,7 @@ export function createLandingSectionTemplate(type: LandingSection["type"]): Land
       style: { paddingTop: 24, paddingBottom: 24, paddingX: 0, radius: 32, containerWidth: "wide", surface: "transparent", border: "none", shadow: "none", textAlign: "left" },
       type,
       eyebrow: "Paketler",
-      items: [{ name: "Paket", price: "Teklif", summary: "Aciklama" }],
+      items: [{ name: "Paket", price: "Teklif", summary: "Açıklama" }],
     };
   }
 
@@ -698,7 +698,7 @@ export function createLandingSectionTemplate(type: LandingSection["type"]): Land
       type,
       eyebrow: "Guven",
       title: "Guven basligi",
-      body: "Aciklama",
+      body: "Açıklama",
       references: ["Referans 1"],
     };
   }
@@ -719,7 +719,7 @@ export function createLandingSectionTemplate(type: LandingSection["type"]): Land
     type: "contact_cta",
     eyebrow: "İletişim",
     title: "İletişim basligi",
-    body: "Aciklama",
+    body: "Açıklama",
   };
 }
 

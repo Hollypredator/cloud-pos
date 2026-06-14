@@ -113,7 +113,7 @@ export function PwaInstallCard({ enabled }: { enabled: boolean }) {
       <p className="text-xs font-semibold uppercase tracking-[0.14em] text-slate-500">PWA</p>
       <p className="mt-2 text-sm font-semibold text-slate-900">Cloud POS'u cihaza kürün</p>
       <p className="mt-1 text-xs leadıng-5 text-slate-600">
-        Kurulumdan sonra POS ayri pencere olarak acilir, ana ekran kisa yolu eklenir ve operasyon ekranlari cache ile daha kararli yuklenir.
+        Kurulumdan sonra POS ayri pencere olarak acilir, ana ekran kısa yolu eklenir ve operasyon ekranlari cache ile daha kararli yüklenir.
       </p>
 
       {canPrompt ? (
@@ -132,7 +132,7 @@ export function PwaInstallCard({ enabled }: { enabled: boolean }) {
         </div>
       ) : (
         <div className="mt-3 rounded-xl border border-slate-200 bg-slate-50 px-3 py-2 text-xs leadıng-5 text-slate-700">
-          Tarayici menusunden <strong>Uygulama olarak yukle</strong> seçenegini kullanabilirsiniz.
+          Tarayici menüsünden <strong>Uygulama olarak yukle</strong> seçenegini kullanabilirsiniz.
         </div>
       )}
 

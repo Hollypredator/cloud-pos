@@ -213,7 +213,7 @@ export default async function AdminContentPage({
               <form action={createSitePageAction} className="grid gap-3 rounded-2xl border border-slate-200 bg-[#f7f8fb] p-4 md:grid-cols-[180px_220px_auto]">
                 <div>
                   <label className="text-xs font-bold uppercase tracking-[0.18em] text-slate-500">Slug</label>
-                  <input name="slug" placeholder="ornek-sayfa" className="mt-2 w-full rounded-xl border border-slate-300 bg-white px-4 py-3 text-sm text-slate-900" />
+                  <input name="slug" placeholder="Örnek-sayfa" className="mt-2 w-full rounded-xl border border-slate-300 bg-white px-4 py-3 text-sm text-slate-900" />
                 </div>
                 <div>
                   <label className="text-xs font-bold uppercase tracking-[0.18em] text-slate-500">Sayfa başlığı</label>

@@ -84,7 +84,7 @@ export default async function SupportAccessPage() {
         <p className="mb-4 text-lg font-semibold text-slate-900">Platform kullanicilari</p>
         <div className="grid gap-4 md:grid-cols-2">
           <input name="fullName" placeholder="Ad soyad" className="rounded-xl border border-slate-300 px-4 py-3 text-sm" />
-          <input name="email" type="email" placeholder="ornek@firma.com" className="rounded-xl border border-slate-300 px-4 py-3 text-sm" />
+          <input name="email" type="email" placeholder="Örnek@firma.com" className="rounded-xl border border-slate-300 px-4 py-3 text-sm" />
           <select name="role" className="rounded-xl border border-slate-300 px-4 py-3 text-sm md:col-span-2">
             <option value="platform_owner">Platform Owner</option>
             <option value="platform_admin">Platform Admin</option>
@@ -149,7 +149,7 @@ export default async function SupportAccessPage() {
         <p className="mb-4 text-lg font-semibold text-slate-900">Support kullanicilari</p>
         <div className="grid gap-4 md:grid-cols-2">
           <input name="fullName" placeholder="Ad soyad" className="rounded-xl border border-slate-300 px-4 py-3 text-sm" />
-          <input name="email" type="email" placeholder="ornek@firma.com" className="rounded-xl border border-slate-300 px-4 py-3 text-sm" />
+          <input name="email" type="email" placeholder="Örnek@firma.com" className="rounded-xl border border-slate-300 px-4 py-3 text-sm" />
           <select name="role" className="rounded-xl border border-slate-300 px-4 py-3 text-sm md:col-span-2">
             <option value="support_agent">Support Agent</option>
             <option value="support_admin">Support Admin</option>

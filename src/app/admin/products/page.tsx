@@ -183,7 +183,7 @@ const restaurantDemoCatalogSeed = {
 
     { categoryName: "Pizzalar", name: "Margherita Pizza", price: 250, stockCount: 999, description: "Tomato mozzarella basil" },
     { categoryName: "Pizzalar", name: "Pepperoni Pizza", price: 285, stockCount: 999, description: "Pepperoni mozzarella tomato sauce" },
-    { categoryName: "Pizzalar", name: "Karisik Pizza", price: 305, stockCount: 999, description: "Mixed topping house pizza" },
+    { categoryName: "Pizzalar", name: "Karışık Pizza", price: 305, stockCount: 999, description: "Mixed topping house pizza" },
     { categoryName: "Pizzalar", name: "Dort Peynir Pizza", price: 295, stockCount: 999, description: "Four cheese pizza" },
     { categoryName: "Pizzalar", name: "Vejetaryen Pizza", price: 275, stockCount: 999, description: "Vegetable topping pizza" },
     { categoryName: "Pizzalar", name: "Tavuklu BBQ Pizza", price: 310, stockCount: 999, description: "Chicken bbq pizza" },
@@ -308,7 +308,7 @@ const restaurantDemoCatalogSeed = {
     { categoryName: "Atistirmalik", name: "Citir Tavuk Sepeti", price: 225, stockCount: 999, description: "Crispy chicken basket" },
     { categoryName: "Atistirmalik", name: "Nachos", price: 210, stockCount: 999, description: "Nachos with cheddar sauce" },
     { categoryName: "Atistirmalik", name: "Sosis Tabagi", price: 185, stockCount: 999, description: "Mini sausage platter" },
-    { categoryName: "Atistirmalik", name: "Karisik Finger Plate", price: 295, stockCount: 999, description: "Mixed fried finger foods" },
+    { categoryName: "Atistirmalik", name: "Karışık Finger Plate", price: 295, stockCount: 999, description: "Mixed fried finger foods" },
 
     { categoryName: "El Yapimi Limonatalar", name: "Klasik Limonata", price: 145, stockCount: 999, description: "Fresh lemon and mint lemonade" },
     { categoryName: "El Yapimi Limonatalar", name: "Naneli Limonata", price: 150, stockCount: 999, description: "Mint lemonade with crushed ice" },
@@ -373,9 +373,9 @@ const restaurantDemoIngredientsSeed: Array<{ name: string; unit: string; cost: n
   { name: "Frozen Buz Base", unit: "ml", cost: 0.36 },
   { name: "Soda Suyu", unit: "ml", cost: 0.03 },
   { name: "Gazli Icecek Kutusu", unit: "adet", cost: 55 },
-  { name: "Ayran Hazir", unit: "adet", cost: 35 },
-  { name: "Maden Suyu Hazir", unit: "adet", cost: 28 },
-  { name: "Meyveli Soda Hazir", unit: "adet", cost: 30 },
+  { name: "Ayran Hazır", unit: "adet", cost: 35 },
+  { name: "Maden Suyu Hazır", unit: "adet", cost: 28 },
+  { name: "Meyveli Soda Hazır", unit: "adet", cost: 30 },
   { name: "Portakal", unit: "gram", cost: 0.18 },
   { name: "Nar", unit: "gram", cost: 0.24 },
   { name: "Hamur Isi Taban", unit: "adet", cost: 42 },
@@ -514,9 +514,9 @@ function buildRestaurantDemoRecipe(categoryName: string, productName: string): R
     add("Bardak Kapak Seti", 1);
   } else if (category === normalizeCatalogName("Soft Icecekler")) {
     if (hasAnyKeyword(name, ["coca", "fanta", "sprite", "fuse", "ginger", "tonic", "salgam"])) add("Gazli Icecek Kutusu", 1);
-    else if (name.includes("ayran")) add("Ayran Hazir", 1);
-    else if (name.includes("meyveli soda")) add("Meyveli Soda Hazir", 1);
-    else if (name.includes("soda")) add("Maden Suyu Hazir", 1);
+    else if (name.includes("ayran")) add("Ayran Hazır", 1);
+    else if (name.includes("meyveli soda")) add("Meyveli Soda Hazır", 1);
+    else if (name.includes("soda")) add("Maden Suyu Hazır", 1);
     else if (name.includes("limonata")) {
       add("Limon", 80);
       add("Su", 220);
@@ -691,7 +691,7 @@ function formatDryRunSummary(input: {
   conflictCount: number;
   errorCount: number;
 }) {
-  return `Dry-run tamam: satir ${input.rowCount}, yeni kategori ${input.newCategoryCount}, yeni urun ${input.newProductCount}, guncellenecek urun ${input.updateProductCount}, cakisma ${input.conflictCount}, hata ${input.errorCount}.`;
+  return `Dry-run tamam: satir ${input.rowCount}, yeni kategori ${input.newCategoryCount}, yeni Ürün ${input.newProductCount}, güncellenecek Ürün ${input.updateProductCount}, cakışma ${input.conflictCount}, hata ${input.errorCount}.`;
 }
 
 async function resolveProductsReturnPath() {
@@ -774,7 +774,7 @@ async function updateCategoryStationAction(formData: FormData) {
   const categoryId = formData.get("categoryId");
   const prepStation = normalizePrepStation(formData.get("prepStation"));
   if (typeof categoryId !== "string") {
-    redirect(await resolveProductsFeedbackPath("error", "Kategori secimi geçersiz."));
+    redirect(await resolveProductsFeedbackPath("error", "Kategori seçimi geçersiz."));
   }
 
   const result = await updateCategoryPrepStation(categoryId, prepStation);
@@ -789,7 +789,7 @@ async function reorderCategoriesAction(ids: string[]) {
   await requireRole(["admin"], "/admin/products");
   const result = await reorderCategories(ids);
   if (!result.ok) {
-    redirect(await resolveProductsFeedbackPath("error", actionErrorMessage(result, "Kategori sirasi güncellenemedi.")));
+    redirect(await resolveProductsFeedbackPath("error", actionErrorMessage(result, "Kategori sırası güncellenemedi.")));
   }
   redirect(await resolveProductsReturnPath());
 }
@@ -800,7 +800,7 @@ async function deleteCategoryAction(formData: FormData) {
 
   const categoryId = formData.get("categoryId");
   if (typeof categoryId !== "string") {
-    redirect(await resolveProductsFeedbackPath("error", "Kategori secimi geçersiz."));
+    redirect(await resolveProductsFeedbackPath("error", "Kategori seçimi geçersiz."));
   }
 
   const result = await deleteCategory(categoryId);
@@ -832,7 +832,7 @@ async function addProductAction(formData: FormData) {
 
   const imageResult = await resolveProductImageUrl({ formData });
   if (!imageResult.ok) {
-    redirect(await resolveProductsFeedbackPath("error", imageResult.error || "Görsel yuklenemedi."));
+    redirect(await resolveProductsFeedbackPath("error", imageResult.error || "Görsel yüklenemedi."));
   }
 
   const result = await createProduct({
@@ -883,7 +883,7 @@ async function updateProductAction(formData: FormData) {
     !Number.isFinite(price) ||
     !Number.isFinite(stockCount)
   ) {
-    redirect(await resolveProductsFeedbackPath("error", "Ürün guncelleme bilgileri geçersiz."));
+    redirect(await resolveProductsFeedbackPath("error", "Ürün güncelleme bilgileri geçersiz."));
   }
 
   if (!isUuidLike(productId)) {
@@ -892,7 +892,7 @@ async function updateProductAction(formData: FormData) {
 
   const imageResult = await resolveProductImageUrl({ formData, currentImageUrl });
   if (!imageResult.ok) {
-    redirect(await resolveProductsFeedbackPath("error", imageResult.error || "Görsel yuklenemedi."));
+    redirect(await resolveProductsFeedbackPath("error", imageResult.error || "Görsel yüklenemedi."));
   }
 
   const result = await updateProduct({
@@ -924,7 +924,7 @@ async function deleteProductAction(formData: FormData) {
 
   const productId = formData.get("productId");
   if (typeof productId !== "string") {
-    redirect(await resolveProductsFeedbackPath("error", "Ürün secimi geçersiz."));
+    redirect(await resolveProductsFeedbackPath("error", "Ürün seçimi geçersiz."));
   }
 
   const result = await deleteProduct(productId);
@@ -946,7 +946,7 @@ async function bulkPriceAction(formData: FormData) {
 
   const result = await bulkUpdateCategoryPrices(categoryId, percent);
   if (!result.ok) {
-    redirect(await resolveProductsFeedbackPath("error", actionErrorMessage(result, "Toplu fiyat guncelleme başarısız.")));
+    redirect(await resolveProductsFeedbackPath("error", actionErrorMessage(result, "Toplu fiyat güncelleme başarısız.")));
   }
   redirect(await resolveProductsReturnPath());
 }
@@ -992,7 +992,7 @@ async function marketImportCommitAction(formData: FormData) {
   if (!result.ok) {
     const summary = result.summary
       ? formatDryRunSummary(result.summary)
-      : result.error ?? "Import commit basarisiz.";
+      : result.error ?? "Import commit başarısız.";
     redirect(await resolveProductsFeedbackPath("error", summary));
   }
 
@@ -1025,12 +1025,12 @@ async function seedRestaurantDemoCatalogAction() {
     redirect(await resolveProductsFeedbackPath("error", "Bu aksiyon sadece restaurant/cafe profili icin kullanilabilir."));
   }
   if (!scope.businessId) {
-    redirect(await resolveProductsFeedbackPath("error", "Aktif isletme bulunamadi."));
+    redirect(await resolveProductsFeedbackPath("error", "Aktif işletme bulunamadı."));
   }
 
   const supabase = getSupabaseServerClient();
   if (!supabase) {
-    redirect(await resolveProductsFeedbackPath("error", "Servis baglantisi bulunamadi."));
+    redirect(await resolveProductsFeedbackPath("error", "Servis bağlantısı bulunamadı."));
   }
 
   let categoryRows:
@@ -1071,11 +1071,11 @@ async function seedRestaurantDemoCatalogAction() {
       .select("id, name, category_id")
       .eq("business_id", scope.businessId);
     if (productFallback.error) {
-      redirect(await resolveProductsFeedbackPath("error", actionErrorMessage({ ok: false, error: productFallback.error.message }, "Urun listesi okunamadi.")));
+      redirect(await resolveProductsFeedbackPath("error", actionErrorMessage({ ok: false, error: productFallback.error.message }, "Ürün listesi okunamadi.")));
     }
     productRows = (productFallback.data ?? []) as Array<{ id: string; name: string; category_id: string }>;
   } else if (productWithScope.error) {
-    redirect(await resolveProductsFeedbackPath("error", actionErrorMessage({ ok: false, error: productWithScope.error.message }, "Urun listesi okunamadi.")));
+    redirect(await resolveProductsFeedbackPath("error", actionErrorMessage({ ok: false, error: productWithScope.error.message }, "Ürün listesi okunamadi.")));
   } else {
     productRows = (productWithScope.data ?? []) as Array<{ id: string; name: string; category_id: string }>;
   }
@@ -1092,7 +1092,7 @@ async function seedRestaurantDemoCatalogAction() {
     }
     const created = await createCategory(category.name, category.sortOrder, category.prepStation, "restaurant");
     if (!created.ok && !isDuplicateError(created.error)) {
-      redirect(await resolveProductsFeedbackPath("error", actionErrorMessage(created, "Hazir kategori yuklenemedi.")));
+      redirect(await resolveProductsFeedbackPath("error", actionErrorMessage(created, "Hazır kategori yüklenemedi.")));
     }
     if (created.ok) {
       if (created.id) {
@@ -1137,7 +1137,7 @@ async function seedRestaurantDemoCatalogAction() {
       isAvailable: true,
     });
     if (!created.ok && !isDuplicateError(created.error)) {
-      redirect(await resolveProductsFeedbackPath("error", actionErrorMessage(created, "Hazir urunler yuklenemedi.")));
+      redirect(await resolveProductsFeedbackPath("error", actionErrorMessage(created, "Hazır Ürünler yüklenemedi.")));
     }
     if (created.ok) {
       existingProductKeys.add(key);
@@ -1213,11 +1213,11 @@ async function seedRestaurantDemoCatalogAction() {
       .select("id, name, category_id")
       .eq("business_id", scope.businessId);
     if (latestProductsFallback.error) {
-      redirect(await resolveProductsFeedbackPath("error", actionErrorMessage({ ok: false, error: latestProductsFallback.error.message }, "Reçete icin urun listesi okunamadi.")));
+      redirect(await resolveProductsFeedbackPath("error", actionErrorMessage({ ok: false, error: latestProductsFallback.error.message }, "Reçete icin Ürün listesi okunamadi.")));
     }
     latestProductRows = (latestProductsFallback.data ?? []) as Array<{ id: string; name: string; category_id: string }>;
   } else if (latestProductsWithScope.error) {
-    redirect(await resolveProductsFeedbackPath("error", actionErrorMessage({ ok: false, error: latestProductsWithScope.error.message }, "Reçete icin urun listesi okunamadi.")));
+    redirect(await resolveProductsFeedbackPath("error", actionErrorMessage({ ok: false, error: latestProductsWithScope.error.message }, "Reçete icin Ürün listesi okunamadi.")));
   } else {
     latestProductRows = (latestProductsWithScope.data ?? []) as Array<{ id: string; name: string; category_id: string }>;
   }
@@ -1273,7 +1273,7 @@ async function seedRestaurantDemoCatalogAction() {
           quantity: row.quantity,
         });
         if (!result.ok) {
-          redirect(await resolveProductsFeedbackPath("error", actionErrorMessage(result, "Recete satirlari yazilamadi.")));
+          redirect(await resolveProductsFeedbackPath("error", actionErrorMessage(result, "Reçete satirlari yazilamadi.")));
         }
       }
       recipeLineCount = recipeRows.length;
@@ -1285,7 +1285,7 @@ async function seedRestaurantDemoCatalogAction() {
   redirect(
     await resolveProductsFeedbackPath(
       "success",
-      `Hazir restoran katalogu yuklendi. Yeni kategori: ${createdCategoryCount}, yeni urun: ${createdProductCount}, yeni malzeme: ${createdIngredientCount}, recete urunu: ${recipeProductCount}, recete satiri: ${recipeLineCount}.`,
+      `Hazır restoran katalogu yuklendi. Yeni kategori: ${createdCategoryCount}, yeni Ürün: ${createdProductCount}, yeni malzeme: ${createdIngredientCount}, reçete ürünü: ${recipeProductCount}, reçete satiri: ${recipeLineCount}.`,
     ),
   );
 }
@@ -1314,7 +1314,7 @@ async function updateIngredientAction(formData: FormData) {
   const unit = formData.get("unit");
   const cost = Number(formData.get("cost") ?? 0);
   if (typeof ingredientId !== "string" || typeof name !== "string" || typeof unit !== "string" || !Number.isFinite(cost)) {
-    redirect(await resolveProductsFeedbackPath("error", "Malzeme guncelleme bilgileri geçersiz."));
+    redirect(await resolveProductsFeedbackPath("error", "Malzeme güncelleme bilgileri geçersiz."));
   }
   const result = await updateIngredient(ingredientId, name, unit, cost);
   if (!result.ok) {
@@ -1328,7 +1328,7 @@ async function deleteIngredientAction(formData: FormData) {
   await requireRole(["admin"], "/admin/products");
   const ingredientId = formData.get("ingredientId");
   if (typeof ingredientId !== "string") {
-    redirect(await resolveProductsFeedbackPath("error", "Malzeme secimi geçersiz."));
+    redirect(await resolveProductsFeedbackPath("error", "Malzeme seçimi geçersiz."));
   }
   const result = await deleteIngredient(ingredientId);
   if (!result.ok) {
@@ -1348,7 +1348,7 @@ async function attachIngredientAction(formData: FormData) {
   }
   const result = await attachIngredientToProduct({ productId, ingredientId, quantity });
   if (!result.ok) {
-    redirect(await resolveProductsFeedbackPath("error", actionErrorMessage(result, "Malzeme urune baglanamadi.")));
+    redirect(await resolveProductsFeedbackPath("error", actionErrorMessage(result, "Malzeme ürüne baglanamadi.")));
   }
   redirect(await resolveProductsReturnPath());
 }
@@ -1363,7 +1363,7 @@ async function detachIngredientAction(formData: FormData) {
   }
   const result = await detachIngredientFromProduct(productId, ingredientId);
   if (!result.ok) {
-    redirect(await resolveProductsFeedbackPath("error", actionErrorMessage(result, "Malzeme urunden ayrilamadi.")));
+    redirect(await resolveProductsFeedbackPath("error", actionErrorMessage(result, "Malzeme üründen ayrilamadi.")));
   }
   redirect(await resolveProductsReturnPath());
 }
@@ -1375,16 +1375,16 @@ async function copyRecipeAction(formData: FormData) {
   const targetProductId = formData.get("targetProductId");
   const sourceProductId = formData.get("sourceProductId");
   if (typeof targetProductId !== "string" || typeof sourceProductId !== "string") {
-    redirect(await resolveProductsFeedbackPath("error", "Recete kopyalama bilgileri gecersiz."));
+    redirect(await resolveProductsFeedbackPath("error", "Reçete kopyalama bilgileri geçersiz."));
   }
   if (targetProductId === sourceProductId) {
-    redirect(await resolveProductsFeedbackPath("error", "Kaynak ve hedef urun ayni olamaz."));
+    redirect(await resolveProductsFeedbackPath("error", "Kaynak ve hedef Ürün ayn? olamaz."));
   }
 
   const data = await getProductManagementData({ tab: "catalog" });
   const sourceRows = data.productIngredients.filter((row) => row.product_id === sourceProductId);
   if (sourceRows.length === 0) {
-    redirect(await resolveProductsFeedbackPath("error", "Kaynak urunde kopyalanacak recete bulunamadi."));
+    redirect(await resolveProductsFeedbackPath("error", "Kaynak üründe kopyalanacak reçete bulunamadı."));
   }
 
   for (const row of sourceRows) {
@@ -1394,11 +1394,11 @@ async function copyRecipeAction(formData: FormData) {
       quantity: row.quantity,
     });
     if (!result.ok) {
-      redirect(await resolveProductsFeedbackPath("error", actionErrorMessage(result, "Recete kopyalanamadi.")));
+      redirect(await resolveProductsFeedbackPath("error", actionErrorMessage(result, "Reçete kopyalanamadi.")));
     }
   }
 
-  redirect(await resolveProductsFeedbackPath("success", "Recete hedef urune kopyalandi."));
+  redirect(await resolveProductsFeedbackPath("success", "Reçete hedef ürüne kopyalandi."));
 }
 
 async function addModifierGroupAction(formData: FormData) {
@@ -1441,7 +1441,7 @@ async function deleteModifierGroupAction(formData: FormData) {
   await requireRole(["admin"], "/admin/products");
   const groupId = formData.get("groupId");
   if (typeof groupId !== "string") {
-    redirect(await resolveProductsFeedbackPath("error", "Modifier grubu secimi geçersiz."));
+    redirect(await resolveProductsFeedbackPath("error", "Modifier grubu seçimi geçersiz."));
   }
   const result = await deleteProductModifierGroup(groupId);
   if (!result.ok) {
@@ -1455,7 +1455,7 @@ async function deleteModifierOptionAction(formData: FormData) {
   await requireRole(["admin"], "/admin/products");
   const optionId = formData.get("optionId");
   if (typeof optionId !== "string") {
-    redirect(await resolveProductsFeedbackPath("error", "Modifier opsiyonu secimi geçersiz."));
+    redirect(await resolveProductsFeedbackPath("error", "Modifier opsiyonu seçimi geçersiz."));
   }
   const result = await deleteProductModifierOption(optionId);
   if (!result.ok) {
@@ -1488,11 +1488,11 @@ export default async function AdminProductsPage({
   const isSelfServiceCoffee = businessScope.activeBusinessType === "self_service_coffee";
   const { tab: tabParam, categoryId: categoryIdParam, productId: productIdParam, q: qParam, feedback, tone } = await searchParams;
   const allowedTabs: string[] = isSelfServiceCoffee
-    ? ["catalog", "menu", "categories"]
-    : ["catalog", "menu", "categories", "bulk", "features", "import", "recipe", "ingredients"];
+    ? ["catalog", "menü", "categories"]
+    : ["catalog", "menü", "categories", "bulk", "features", "import", "recipe", "ingredients"];
   const activeTab = (allowedTabs.includes(tabParam ?? "") ? (tabParam ?? "catalog") : "catalog") as
     | "catalog"
-    | "menu"
+    | "menü"
     | "categories"
     | "bulk"
     | "features"
@@ -1600,8 +1600,8 @@ export default async function AdminProductsPage({
 
   return (
     <BackofficePage
-      title={isSelfServiceCoffee ? "Self Servis Urun Yonetimi" : translateUiText("Ürün ve Kategori Yönetimi", locale)}
-      description={isSelfServiceCoffee ? "Self servis menusu ve urun fiyatlarini yonet." : translateUiText("Katalog, modifier, recete ve stok temel ayarlari", locale)}
+      title={isSelfServiceCoffee ? "Self Servis Ürün Yönetimi" : translateUiText("Ürün ve Kategori Yönetimi", locale)}
+      description={isSelfServiceCoffee ? "Self servis menüsü ve Ürün fiyatlarini yönet." : translateUiText("Katalog, modifier, reçete ve stok temel ayarlari", locale)}
       actions={
         <form action={addProductAction} className="flex flex-wrap items-stretch gap-3">
           <input type="hidden" name="profileScope" value={activeProfileScope} />
@@ -1662,18 +1662,18 @@ export default async function AdminProductsPage({
             isSelfServiceCoffee
               ? [
                   { label: "Self Servis Katalog", active: activeTab === "catalog", href: "/admin/products?tab=catalog" },
-                  { label: "Self Servis Menu", active: activeTab === "menu", href: "/admin/products?tab=menu" },
+                  { label: "Self Servis Menu", active: activeTab === "menü", href: "/admin/products?tab=menü" },
                   { label: "Kategoriler", active: activeTab === "categories", href: "/admin/products?tab=categories" },
                 ]
               : [
                   { label: translateUiText("Ürün & Kategori Yönetimi", locale), active: activeTab === "catalog", href: "/admin/products?tab=catalog" },
-                  { label: translateUiText("Menü Yönetimi", locale), active: activeTab === "menu", href: "/admin/products?tab=menu" },
+                  { label: translateUiText("Menü Yönetimi", locale), active: activeTab === "menü", href: "/admin/products?tab=menü" },
                   { label: "Ana Kategoriler", active: activeTab === "categories", href: "/admin/products?tab=categories" },
                   { label: "Toplu Islemler", active: activeTab === "bulk", href: "/admin/products?tab=bulk" },
                   { label: "Recipe Studio", active: activeTab === "recipe", href: "/admin/products?tab=recipe" },
                   { label: "Malzeme Kutuphanesi", active: activeTab === "ingredients", href: "/admin/products?tab=ingredients" },
                   { label: "Market Import", active: activeTab === "import", href: "/admin/products?tab=import" },
-                  { label: "Ürün Ozellikleri", active: activeTab === "features", href: "/admin/products?tab=features" },
+                  { label: "Ürün Özellikleri", active: activeTab === "features", href: "/admin/products?tab=features" },
                 ]
           }
         />
@@ -1681,9 +1681,9 @@ export default async function AdminProductsPage({
         <form action={updateDemoCatalogFallbackAction} className="mt-4 rounded-2xl border border-slate-200 bg-slate-50 px-4 py-4">
           <div className="flex flex-col gap-3 sm:flex-row sm:items-center sm:justify-between">
             <div>
-              <p className="text-sm font-semibold text-slate-900">Demo menuyu otomatik kullan</p>
+              <p className="text-sm font-semibold text-slate-900">Demo menüyü otomatik kullan</p>
               <p className="mt-1 text-xs text-slate-500">
-                Aciksa urun/kategori bosken gomulu demo katalog otomatik devreye girer.
+                Açıksa Ürün/kategori bosken gomulu demo katalog otomatik devreye girer.
               </p>
             </div>
             <label className="relative inline-flex cursor-pointer items-center">
@@ -1709,13 +1709,13 @@ export default async function AdminProductsPage({
           <form action={seedRestaurantDemoCatalogAction} className="mt-3 rounded-2xl border border-slate-200 bg-white px-4 py-4">
             <div className="flex flex-col gap-3 sm:flex-row sm:items-center sm:justify-between">
               <div>
-                <p className="text-sm font-semibold text-slate-900">Hazir restoran katalogu yukle</p>
+                <p className="text-sm font-semibold text-slate-900">Hazır restoran katalogu yukle</p>
                 <p className="mt-1 text-xs text-slate-500">
-                  Kahve, soguk icecek, firindan, tatli ve atistirmalik urunleri aktif isletmeye ekler.
+                  Kahve, soguk icecek, firindan, tatli ve atistirmalik Ürünleri aktif işletmeye ekler.
                 </p>
               </div>
               <button type="submit" className="rounded-xl bg-[#ff6a3d] px-4 py-2 text-xs font-semibold text-white">
-                Hazir katalogu yukle
+                Hazır katalogu yukle
               </button>
             </div>
           </form>
@@ -1739,7 +1739,7 @@ export default async function AdminProductsPage({
         <div className="mt-6 grid gap-4 md:grid-cols-2 xl:grid-cols-4">
           <SummaryCard label={translateUiText("Kategori", locale)} value={String(orderedCategories.length)} hint={translateUiText("Toplam ana kategori", locale)} tone="accent" />
           <SummaryCard label={translateUiText("Ürün", locale)} value={String(products.length)} hint={translateUiText("Tüm kayitli ürünler", locale)} />
-          <SummaryCard label={translateUiText("Satista", locale)} value={String(availableProducts)} hint={translateUiText("Aktif ve gorunen ürünler", locale)} tone="success" />
+          <SummaryCard label={translateUiText("Satışta", locale)} value={String(availableProducts)} hint={translateUiText("Aktif ve görünen ürünler", locale)} tone="success" />
           <SummaryCard label={translateUiText("Kritik Stok", locale)} value={String(lowStockProducts)} hint={translateUiText("10 ve alti stoklu ürün", locale)} tone={lowStockProducts > 0 ? "danger" : "neutral"} />
         </div>
 
@@ -1794,8 +1794,8 @@ export default async function AdminProductsPage({
             <div className="rounded-[24px] border border-slate-200 bg-[#f6f7f9] p-4">
               <div className="flex flex-wrap items-center justify-between gap-3">
                 <div className="min-w-0">
-                  <h2 className="text-xl font-semibold tracking-tight text-slate-900 sm:text-2xl">Urunler</h2>
-                  <p className="text-sm text-slate-500">Secili kategori: {selectedCategory?.name ?? "Kategori yok"}</p>
+                  <h2 className="text-xl font-semibold tracking-tight text-slate-900 sm:text-2xl">Ürünler</h2>
+                  <p className="text-sm text-slate-500">Seçili kategori: {selectedCategory?.name ?? "Kategori yok"}</p>
                 </div>
                 <form action={bulkPriceAction} className="flex w-full flex-wrap items-stretch gap-3 lg:w-auto">
                   <select name="categoryId" required defaultValue={selectedCategoryId} className="w-full rounded-2xl border border-slate-200 bg-white px-4 py-3 text-sm sm:w-auto">
@@ -1881,7 +1881,7 @@ export default async function AdminProductsPage({
 
               {visibleProducts.length === 0 ? (
                 <div className="mt-4">
-                  <EmptyPanel title="Ürün Yok" description="Secili kategori için ürün kaydı bulunmuyor." />
+                  <EmptyPanel title="Ürün Yok" description="Seçili kategori için ürün kaydı bulunmuyor." />
                 </div>
               ) : (
                 <div className="mt-4 grid gap-4 lg:grid-cols-2 2xl:grid-cols-3">
@@ -1929,7 +1929,7 @@ export default async function AdminProductsPage({
                                 {orderedCategories.find((category) => category.id === product.category_id)?.name ?? "Kategori"}
                               </p>
                               <h3 className="mt-2 text-xl font-semibold tracking-tight text-slate-900 sm:text-2xl">{product.name}</h3>
-                              <p className="mt-2 line-clamp-1 text-sm text-slate-500">{product.description ?? "Aciklama girilmedi."}</p>
+                              <p className="mt-2 line-clamp-1 text-sm text-slate-500">{product.description ?? "Açıklama girilmedi."}</p>
                               
                               {(() => {
                                 const recipeCost = (ingredientsByProduct.get(product.id) ?? []).reduce(
@@ -2060,7 +2060,7 @@ export default async function AdminProductsPage({
                             <textarea name="description" rows={2} defaultValue={product.description ?? ""} className="w-full rounded-2xl border border-slate-200 bg-slate-50 px-4 py-3 text-sm" />
                             <label className="flex items-center gap-2 text-sm font-medium text-slate-700">
                               <input name="isAvailable" type="checkbox" defaultChecked={product.is_available} />
-                              Satisa açık
+                              Satışa açık
                             </label>
                             <button type="submit" className="w-full rounded-2xl bg-[#ff5a34] px-4 py-3 text-sm font-semibold text-white sm:w-auto">
                               Kaydet
@@ -2119,7 +2119,7 @@ export default async function AdminProductsPage({
                             <form action={attachIngredientAction} className="grid gap-2">
                               <input type="hidden" name="productId" value={product.id} />
                               <select name="ingredientId" required className="rounded-xl border border-slate-200 bg-white px-3 py-2 text-sm">
-                                <option value="">Malzeme sec</option>
+                                <option value="">Malzeme seç</option>
                                 {ingredients.map((ingredient) => (
                                   <option key={ingredient.id} value={ingredient.id}>
                                     {ingredient.name} ({ingredient.unit})
@@ -2230,7 +2230,7 @@ export default async function AdminProductsPage({
         </div>
         ) : null}
 
-        {activeTab === "menu" ? (
+        {activeTab === "menü" ? (
           <div className="mt-6 grid gap-5 xl:grid-cols-[320px_1fr]">
             <section className="rounded-[24px] border border-slate-200 bg-[#f6f7f9] p-4">
               <div className="flex items-center justify-between gap-3">
@@ -2243,7 +2243,7 @@ export default async function AdminProductsPage({
                 {orderedCategories.map((category) => (
                   <div key={category.id} className="rounded-[22px] border border-slate-200 bg-white px-4 py-4">
                     <p className="text-lg font-semibold text-slate-900">{category.name}</p>
-                    <p className="mt-1 text-sm text-slate-500">{productCountMap.get(category.id) ?? 0} menü urunu</p>
+                    <p className="mt-1 text-sm text-slate-500">{productCountMap.get(category.id) ?? 0} menü ürünü</p>
                     {!isSelfServiceCoffee ? (
                       <p className="mt-1 text-xs font-semibold uppercase tracking-[0.12em] text-slate-400">{prepStationLabel(category.prep_station)} Istasyonu</p>
                     ) : null}
@@ -2259,7 +2259,7 @@ export default async function AdminProductsPage({
                   return (
                     <Link
                       key={category.id}
-                      href={`/admin/products?tab=menu&categoryId=${category.id}`}
+                      href={`/admin/products?tab=menü&categoryId=${category.id}`}
                       className={`rounded-2xl px-4 py-3 text-sm font-semibold transition ${
                         isActive ? "bg-[#ff5a34] text-white" : "border border-slate-200 bg-white text-slate-700 hover:bg-slate-50"
                       }`}
@@ -2296,7 +2296,7 @@ export default async function AdminProductsPage({
                             : "border-slate-200 bg-slate-100 text-slate-700 hover:bg-slate-200"
                         }`}
                         aria-label={product.is_available ? `${product.name} pasif yap` : `${product.name} aktif yap`}
-                        title={product.is_available ? "Hizli Pasif Yap" : "Hizli Aktif Yap"}
+                        title={product.is_available ? "Hızlı Pasif Yap" : "Hızlı Aktif Yap"}
                       >
                         {product.is_available ? "Aktif" : "Pasif"}
                       </button>
@@ -2314,7 +2314,7 @@ export default async function AdminProductsPage({
                           {orderedCategories.find((category) => category.id === product.category_id)?.name ?? "Kategori"}
                         </p>
                         <p className="mt-1 text-xl font-semibold text-slate-900">{product.name}</p>
-                        <p className="mt-1 text-sm text-slate-500">{product.description ?? "Aciklama girilmedi."}</p>
+                        <p className="mt-1 text-sm text-slate-500">{product.description ?? "Açıklama girilmedi."}</p>
                       </div>
                     </div>
                     <div className="mt-4 flex flex-col items-start justify-between gap-3 text-sm sm:flex-row sm:items-center">
@@ -2338,7 +2338,7 @@ export default async function AdminProductsPage({
                       <input type="hidden" name="description" value={product.description ?? ""} />
                       <input type="hidden" name="currentImageUrl" value={product.image_url ?? ""} />
                       <input type="hidden" name="isAvailable" value={product.is_available ? "on" : "off"} />
-                      <FileDropInput name="imageFile" label="Ürün gorseli" helper="Dosyayi surukleyip bırak veya sec." />
+                      <FileDropInput name="imageFile" label="Ürün gorseli" helper="Dosyayi surukleyip bırak veya seç." />
                       {product.image_url ? (
                         <label className="flex items-center gap-2 text-sm font-medium text-slate-700">
                           <input name="clearImage" type="checkbox" />
@@ -2346,7 +2346,7 @@ export default async function AdminProductsPage({
                         </label>
                       ) : null}
                       <button type="submit" className="w-full rounded-2xl border border-slate-200 bg-slate-50 px-4 py-3 text-sm font-semibold text-slate-700">
-                        Gorseli Kaydet
+                        Görseli Kaydet
                       </button>
                     </form>
                   </article>
@@ -2354,7 +2354,7 @@ export default async function AdminProductsPage({
               </div>
               {visibleProducts.length === 0 ? (
                 <div className="mt-4">
-                  <EmptyPanel title="Menü urunu yok" description="Secilen kategori altinda gosterilecek ürün bulunmuyor." />
+                  <EmptyPanel title="Menü ürünü yok" description="Seçilen kategori altinda gösterilecek ürün bulunmuyor." />
                 </div>
               ) : null}
             </section>
@@ -2419,13 +2419,13 @@ export default async function AdminProductsPage({
 
         {activeTab === "recipe" ? (
           <div className="mt-6 grid gap-5 xl:grid-cols-[280px_minmax(0,1fr)_320px]">
-            <ContentCard title="Urun Secimi">
+            <ContentCard title="Ürün Seçimi">
               <form method="get" className="mb-4 grid gap-2">
                 <input type="hidden" name="tab" value="recipe" />
                 <input
                   name="q"
                   defaultValue={recipeQuery}
-                  placeholder="Urun ara..."
+                  placeholder="Ürün ara..."
                   className="rounded-2xl border border-slate-200 bg-slate-50 px-4 py-3 text-sm"
                 />
                 <button type="submit" className="rounded-2xl border border-slate-200 bg-white px-4 py-3 text-sm font-semibold text-slate-700">
@@ -2464,9 +2464,9 @@ export default async function AdminProductsPage({
               </div>
             </ContentCard>
 
-            <ContentCard title="Recete Editoru">
+            <ContentCard title="Reçete Editoru">
               {!selectedRecipeProduct ? (
-                <EmptyPanel title="Urun secilmedi" description="Soldaki listeden bir urun secerek recete duzenlemeye baslayin." />
+                <EmptyPanel title="Ürün seçilmedi" description="Soldaki listeden bir Ürün seçerek reçete duzenlemeye baslayin." />
               ) : (
                 <div className="space-y-4">
                   <div className="rounded-2xl border border-slate-200 bg-slate-50 p-4">
@@ -2480,7 +2480,7 @@ export default async function AdminProductsPage({
                         <p className="mt-1 text-sm font-semibold text-slate-900">{selectedRecipePrice.toFixed(2)} TL</p>
                       </div>
                       <div className="rounded-xl border border-slate-200 bg-white px-3 py-2">
-                        <p className="text-[10px] font-bold uppercase tracking-wider text-slate-400">Recete</p>
+                        <p className="text-[10px] font-bold uppercase tracking-wider text-slate-400">Reçete</p>
                         <p className="mt-1 text-sm font-semibold text-slate-900">{selectedRecipeTotalCost.toFixed(2)} TL</p>
                       </div>
                       <div className="rounded-xl border border-slate-200 bg-white px-3 py-2">
@@ -2498,11 +2498,11 @@ export default async function AdminProductsPage({
 
                   <div className="rounded-2xl border border-slate-200 bg-white">
                     <div className="border-b border-slate-200 px-4 py-3">
-                      <p className="text-sm font-semibold text-slate-900">Recete Kalemleri</p>
+                      <p className="text-sm font-semibold text-slate-900">Reçete Kalemleri</p>
                     </div>
                     <div className="divide-y divide-slate-100">
                       {selectedRecipeRows.length === 0 ? (
-                        <p className="px-4 py-6 text-center text-sm text-slate-500">Bu urunun henuz recetesi yok.</p>
+                        <p className="px-4 py-6 text-center text-sm text-slate-500">Bu ürünün henuz reçetesi yok.</p>
                       ) : (
                         selectedRecipeRows.map((item) => {
                           const ingredientDetail = ingredients.find((ingredient) => ingredient.id === item.ingredient_id);
@@ -2527,10 +2527,10 @@ export default async function AdminProductsPage({
                                 {(ingredientUnitCost * item.quantity).toFixed(2)} TL
                               </p>
                               <button type="submit" className="rounded-xl border border-slate-200 bg-slate-50 px-3 py-2 text-xs font-semibold text-slate-700">
-                                Guncelle
+                                Güncelle
                               </button>
                               <button formAction={detachIngredientAction} type="submit" className="rounded-xl border border-rose-200 bg-rose-50 px-3 py-2 text-xs font-semibold text-rose-700">
-                                Cikar
+                                Çıkar
                               </button>
                             </form>
                           );
@@ -2542,7 +2542,7 @@ export default async function AdminProductsPage({
                   <form action={attachIngredientAction} className="grid gap-2 rounded-2xl border border-slate-200 bg-slate-50 p-4 sm:grid-cols-[1fr_120px_auto] sm:items-center">
                     <input type="hidden" name="productId" value={selectedRecipeProduct.id} />
                     <select name="ingredientId" required className="rounded-xl border border-slate-200 bg-white px-3 py-2 text-sm">
-                      <option value="">Malzeme sec</option>
+                      <option value="">Malzeme seç</option>
                       {ingredients.map((ingredient) => (
                         <option key={ingredient.id} value={ingredient.id}>
                           {ingredient.name} ({ingredient.unit})
@@ -2566,7 +2566,7 @@ export default async function AdminProductsPage({
                   <form action={copyRecipeAction} className="grid gap-2 rounded-2xl border border-slate-200 bg-white p-4 sm:grid-cols-[1fr_auto] sm:items-center">
                     <input type="hidden" name="targetProductId" value={selectedRecipeProduct.id} />
                     <select name="sourceProductId" required className="rounded-xl border border-slate-200 bg-slate-50 px-3 py-2 text-sm">
-                      <option value="">Recete kopyalanacak urunu sec</option>
+                      <option value="">Reçete kopyalanacak ürünü seç</option>
                       {sourceRecipeCandidates.map((product) => (
                         <option key={product.id} value={product.id}>
                           {product.name}
@@ -2574,17 +2574,17 @@ export default async function AdminProductsPage({
                       ))}
                     </select>
                     <button type="submit" className="rounded-xl border border-slate-200 bg-slate-50 px-4 py-2 text-sm font-semibold text-slate-700">
-                      Receteyi Kopyala
+                      Reçeteyi Kopyala
                     </button>
                   </form>
                 </div>
               )}
             </ContentCard>
 
-            <ContentCard title="Hizli Maliyet Yonetimi">
+            <ContentCard title="Hızlı Maliyet Yönetimi">
               <div className="space-y-3">
                 <div className="rounded-2xl border border-slate-200 bg-slate-50 px-4 py-3 text-sm text-slate-600">
-                  Malzeme birim maliyetini hizli guncelleyin. Recete maliyeti aninda yansir.
+                  Malzeme birim maliyetini hizli güncelleyin. Reçete maliyeti aninda yansir.
                 </div>
                 <div className="max-h-[620px] space-y-2 overflow-y-auto pr-1">
                   {ingredients.map((ingredient) => (
@@ -2647,7 +2647,7 @@ export default async function AdminProductsPage({
               ) : (
                 <EmptyPanel
                   title="Market profile gerekli"
-                  description="Market import yalnizca enterprise_market scope aktifken kullanilabilir."
+                  description="Market import yalnızca enterprise_market scope aktifken kullanilabilir."
                 />
               )}
             </ContentCard>
@@ -2657,8 +2657,8 @@ export default async function AdminProductsPage({
                 <p>JSON array formatinda satirlar beklenir.</p>
                 <p>Zorunlu alanlar: <code>category_name</code> ve <code>name</code>.</p>
                 <p>Opsiyonel alanlar: <code>price</code>, <code>stock_count</code>, <code>barcode</code>, <code>plu_code</code>, <code>product_kind</code>, <code>unit</code>, <code>department</code>, <code>image_url</code>, <code>description</code>, <code>is_available</code>.</p>
-                <p>Dry-run sonucu cakisma/hata varsa commit engellenir.</p>
-                <p>Commit islemi transaction ile calisir; hata durumunda rollback olur.</p>
+                <p>Dry-run sonucu cakışma/hata varsa commit engellenir.</p>
+                <p>Commit işlemi transaction ile calisir; hata durumunda rollback olur.</p>
               </div>
             </ContentCard>
           </div>
@@ -2666,7 +2666,7 @@ export default async function AdminProductsPage({
 
         {activeTab === "features" ? (
           <div className="mt-6">
-            <ContentCard title="Ürün Ozellikleri">
+            <ContentCard title="Ürün Özellikleri">
               <div className="space-y-3">
                 {products.map((product) => (
                   <div key={product.id} className="rounded-2xl border border-slate-200 bg-slate-50 p-4">
@@ -2695,7 +2695,7 @@ export default async function AdminProductsPage({
                       <input name="name" defaultValue={ingredient.name} className="rounded-xl border border-slate-200 bg-slate-50 px-3 py-2 text-sm font-medium text-slate-900" />
                       <input name="unit" defaultValue={ingredient.unit} className="rounded-xl border border-slate-200 bg-slate-50 px-3 py-2 text-sm text-slate-700" />
                       <input name="cost" type="number" step="0.01" defaultValue={Number(ingredient.cost ?? 0).toFixed(2)} className="rounded-xl border border-slate-200 bg-slate-50 px-3 py-2 text-sm text-slate-700" />
-                      <button type="submit" className="rounded-xl border border-slate-200 bg-slate-50 px-3 py-2 text-xs font-semibold text-slate-700">Guncelle</button>
+                      <button type="submit" className="rounded-xl border border-slate-200 bg-slate-50 px-3 py-2 text-xs font-semibold text-slate-700">Güncelle</button>
                       <button formAction={deleteIngredientAction} type="submit" className="rounded-xl border border-rose-200 bg-rose-50 px-3 py-2 text-xs font-semibold text-rose-700">Sil</button>
                     </form>
                   </div>
@@ -2710,13 +2710,13 @@ export default async function AdminProductsPage({
                   <p className="mt-2 text-2xl font-semibold tracking-tight text-slate-900 sm:text-3xl">{ingredients.length}</p>
                 </div>
                 <div className="rounded-2xl border border-slate-200 bg-slate-50 px-4 py-4">
-                  <p className="text-sm text-slate-500">Recetede kullanilan urun</p>
+                  <p className="text-sm text-slate-500">Reçetede kullanilan Ürün</p>
                   <p className="mt-2 text-2xl font-semibold tracking-tight text-slate-900 sm:text-3xl">
                     {products.filter((product) => (ingredientsByProduct.get(product.id) ?? []).length > 0).length}
                   </p>
                 </div>
                 <div className="rounded-2xl border border-slate-200 bg-slate-50 px-4 py-4 text-sm text-slate-600">
-                  Bu sekme yalnizca malzeme kartlarini yonetmek icindir. Recete baglama ve urun bazli maliyet akisi icin Recipe Studio tabini kullanin.
+                  Bu sekme yalnızca malzeme kartlarini yönetmek icindir. Reçete baglama ve Ürün bazli maliyet akışı icin Recipe Studio tabini kullanin.
                 </div>
               </div>
             </ContentCard>

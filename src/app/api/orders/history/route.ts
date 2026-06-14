@@ -56,7 +56,7 @@ export async function GET(request: Request) {
       qrCodeIdentifier,
       businessSlug: businessSlug ?? null,
     });
-    return json({ ok: false, code: "TABLE_NOT_FOUND", message: "Masa bulunamadi." }, { status: 404 });
+    return json({ ok: false, code: "TABLE_NOT_FOUND", message: "Masa bulunamadı." }, { status: 404 });
   }
 
   const { orders } = await getOrderHistoryByTableId(table.id, 8);

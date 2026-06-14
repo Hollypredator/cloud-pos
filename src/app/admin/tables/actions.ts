@@ -58,7 +58,7 @@ export async function addTableAction(formData: FormData) {
     revalidatePath("/tables");
     redirect(feedbackHref("success", "Yeni masa oluşturuldu."));
   } catch {
-    redirect(feedbackHref("error", "Masa oluşturulamadı. Numara zaten kullaniliyor olabilir."));
+    redirect(feedbackHref("error", "Masa oluşturulamadı. Numara zaten kullanılıyor olabilir."));
   }
 }
 
@@ -91,7 +91,7 @@ export async function updateTableStatusAction(formData: FormData) {
   const tableId = String(formData.get("tableId") ?? "").trim();
   const status = String(formData.get("status") ?? "").trim() as "empty" | "reserved";
   if (!tableId || (status !== "empty" && status !== "reserved")) {
-    redirect(feedbackHref("error", "Masa durumu guncellemek için gecerli alanlar gerekli."));
+    redirect(feedbackHref("error", "Masa durumu güncellemek için gecerli alanlar gerekli."));
   }
 
   try {
@@ -112,7 +112,7 @@ export async function deleteTableAction(formData: FormData) {
 
   const tableId = formData.get("tableId");
   if (typeof tableId !== "string") {
-    redirect(feedbackHref("error", "Silinecek masa bulunamadi."));
+    redirect(feedbackHref("error", "Silinecek masa bulunamadı."));
   }
 
   try {
@@ -134,7 +134,7 @@ export async function moveTableOrderAction(formData: FormData) {
   const sourceTableId = String(formData.get("sourceTableId") ?? "");
   const targetTableId = String(formData.get("targetTableId") ?? "");
   if (!sourceTableId || !targetTableId) {
-    redirect(feedbackHref("error", "Adisyonu tasimak için kaynak ve hedef masa secilmeli."));
+    redirect(feedbackHref("error", "Adisyonu taşımak için kaynak ve hedef masa seçilmeli."));
   }
 
   try {
@@ -177,7 +177,7 @@ export async function assignTableZoneAction(formData: FormData) {
   const tableId = String(formData.get("tableId") ?? "");
   const zoneId = readZoneValue(formData, "zoneId");
   if (!tableId) {
-    redirect(feedbackHref("error", "Bölge atamasi için masa bulunamadi."));
+    redirect(feedbackHref("error", "Bölge atamasi için masa bulunamadı."));
   }
 
   try {
@@ -201,7 +201,7 @@ export async function setTableSupervisorAction(formData: FormData) {
   const profileId = !rawProfileId || rawProfileId === "__none__" ? null : rawProfileId;
 
   if (!tableId) {
-    redirect(feedbackHref("error", "Sorumlu atamasi için masa bulunamadi."));
+    redirect(feedbackHref("error", "Sorumlu atamasi için masa bulunamadı."));
   }
 
   try {
@@ -298,13 +298,13 @@ export async function bulkDeleteSelectedTablesAction(formData: FormData) {
   const includeNonEmpty = String(formData.get("includeNonEmpty") ?? "") === "1";
 
   if (tableIds.length === 0) {
-    redirect(feedbackHref("error", "Toplu silme için en az bir masa secin."));
+    redirect(feedbackHref("error", "Toplu silme için en az bir masa seçin."));
   }
 
   try {
     const result = await bulkDeleteTablesByIds({ tableIds, includeNonEmpty });
     if (!result.ok) {
-      redirect(feedbackHref("error", result.error ?? "Secili masalar silinemedi."));
+      redirect(feedbackHref("error", result.error ?? "Seçili masalar silinemedi."));
     }
     revalidatePath("/admin/tables");
     revalidatePath("/tables");
@@ -317,7 +317,7 @@ export async function bulkDeleteSelectedTablesAction(formData: FormData) {
       ),
     );
   } catch {
-    redirect(feedbackHref("error", "Secili masalar silinemedi."));
+    redirect(feedbackHref("error", "Seçili masalar silinemedi."));
   }
 }
 
@@ -326,7 +326,7 @@ export async function deleteZoneAction(formData: FormData) {
 
   const zoneId = String(formData.get("zoneId") ?? "").trim();
   if (!zoneId) {
-    redirect(feedbackHref("error", "Silinecek bölge bulunamadi."));
+    redirect(feedbackHref("error", "Silinecek bölge bulunamadı."));
   }
 
   try {
@@ -356,7 +356,7 @@ export async function bulkDeleteZonesAction(formData: FormData) {
     .filter(Boolean);
 
   if (zoneIds.length === 0) {
-    redirect(feedbackHref("error", "Toplu silme için en az bir bölge secin."));
+    redirect(feedbackHref("error", "Toplu silme için en az bir bölge seçin."));
   }
 
   try {

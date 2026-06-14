@@ -53,12 +53,12 @@ async function assignCourierAction(formData: FormData) {
   const stage = formData.get("stage");
   const stageParam = typeof stage === "string" && stage ? { stage } : undefined;
   if (typeof orderId !== "string" || typeof courierValue !== "string") {
-    redirect(feedbackHref("error", "Sipariş ve kurye secimi zorunludur.", stageParam));
+    redirect(feedbackHref("error", "Sipariş ve kurye seçimi zorunludur.", stageParam));
   }
 
   const [courierId, courierName, courierPhone] = courierValue.split("||");
   if (!courierId || !courierName) {
-    redirect(feedbackHref("error", "Gecerli bir kurye secin.", stageParam));
+    redirect(feedbackHref("error", "Gecerli bir kurye seçin.", stageParam));
   }
 
   try {
@@ -92,7 +92,7 @@ async function updateCourierAction(formData: FormData) {
   const phone = formData.get("phone");
   const isActive = formData.get("isActive") === "on";
   if (typeof courierId !== "string" || typeof fullName !== "string") {
-    redirect(feedbackHref("error", "Guncellenecek kurye bulunamadi."));
+    redirect(feedbackHref("error", "Güncellenecek kurye bulunamadı."));
   }
 
   const result = await updateCourier({
@@ -114,7 +114,7 @@ async function deleteCourierAction(formData: FormData) {
 
   const courierId = formData.get("courierId");
   if (typeof courierId !== "string") {
-    redirect(feedbackHref("error", "Silinecek kurye bulunamadi."));
+    redirect(feedbackHref("error", "Silinecek kurye bulunamadı."));
   }
 
   const result = await deleteCourier(courierId);
@@ -133,7 +133,7 @@ async function completeDeliveryAction(formData: FormData) {
   const stage = formData.get("stage");
   const stageParam = typeof stage === "string" && stage ? { stage } : undefined;
   if (typeof orderId !== "string") {
-    redirect(feedbackHref("error", "Teslimat kapatilacak sipariş bulunamadi.", stageParam));
+    redirect(feedbackHref("error", "Teslimat kapatilacak sipariş bulunamadı.", stageParam));
   }
 
   try {
@@ -228,7 +228,7 @@ function renderOrderCard(
             required
           >
             <option value="" disabled>
-              Kurye sec
+              Kurye seç
             </option>
             {couriers.map((courier) => (
               <option key={courier.id} value={`${courier.id}||${courier.full_name}||${courier.phone ?? ""}`}>
@@ -300,12 +300,12 @@ export default async function DeliveryPage({
   return (
     <BackofficePage
       title="Teslimat Board"
-      description="Dispatch, kurye atama ve teslimat takibini tek operasyonda yonet"
+      description="Dispatch, kurye atama ve teslimat takibini tek operasyonda yönet"
       actions={
         <>
           <LiveOpsBridge tables={["orders", "couriers"]} />
           <Link href="/ops" className="w-full rounded-2xl border border-slate-200 bg-white px-5 py-3 text-center text-sm font-semibold text-slate-800 sm:w-auto">
-            Panele Don
+            Panele Dön
           </Link>
         </>
       }
@@ -320,7 +320,7 @@ export default async function DeliveryPage({
 
       {usingDemoData ? (
         <div className="rounded-[24px] border border-amber-200 bg-amber-50 px-5 py-4 text-sm text-amber-900">
-          Demo veri modu aktif. Dispatch, kurye atama ve teslim akisini bu board uzerinden test edebilirsin.
+          Demo veri modu aktif. Dispatch, kurye atama ve teslim akışını bu board uzerinden test edebilirsin.
         </div>
       ) : null}
 
@@ -345,21 +345,21 @@ export default async function DeliveryPage({
         </div>
 
         <article className="mobile-task-card">
-          <p className="text-[11px] font-bold uppercase tracking-[0.16em] text-slate-500">Aktif Akis</p>
+          <p className="text-[11px] font-bold uppercase tracking-[0.16em] text-slate-500">Aktif Akış</p>
           <h2 className="mt-2 text-xl font-semibold tracking-tight text-slate-900">
-            {activeStage === "dispatch" ? "Kurye Atama" : activeStage === "travel" ? "Yolda Siparisler" : "Kapanan Teslimatlar"}
+            {activeStage === "dispatch" ? "Kurye Atama" : activeStage === "travel" ? "Yolda Siparişler" : "Kapanan Teslimatlar"}
           </h2>
           <p className="mt-1 text-sm text-slate-500">
             {activeStage === "dispatch"
-              ? "Kurye secimini yaparak siparişi aninda yola cikar."
+              ? "Kurye seçimini yaparak siparişi aninda yola Çıkar."
               : activeStage === "travel"
-                ? "Yoldaki siparisleri hızlı kapatma aksiyonuyla tamamla."
-                : "Tamamlanan teslimatlari geçmiş kontrolu için izle."}
+                ? "Yoldaki siparişleri hızlı kapatma aksiyonuyla tamamla."
+                : "Tamamlanan teslimatlari geçmiş kontrol? için izle."}
           </p>
         </article>
 
         {activeMobileOrders.length === 0 ? (
-          <article className="mobile-task-card text-sm text-slate-600">Bu asamada gosterilecek sipariş yok.</article>
+          <article className="mobile-task-card text-sm text-slate-600">Bu asamada gösterilecek sipariş yok.</article>
         ) : (
           <div className="grid gap-3">
             {activeMobileOrders.map((order) => (
@@ -374,7 +374,7 @@ export default async function DeliveryPage({
                   href={`/delivery?stage=${activeStage}&order=${order.id}`}
                   className="mobile-cta-secondary inline-flex w-full items-center justify-center border border-slate-200 bg-white px-4 py-3 text-sm font-semibold text-slate-700"
                 >
-                  Detayi Ac
+                  Detay? A?
                 </Link>
               </div>
             ))}
@@ -390,7 +390,7 @@ export default async function DeliveryPage({
             <div className="space-y-4">
               <div className="flex justify-end">
                 <Link href={showAllColumns ? "/delivery" : "/delivery?showAll=1"} className="rounded-2xl border border-slate-200 bg-white px-4 py-2 text-sm font-semibold text-slate-700">
-                  {showAllColumns ? "Ilk gorunume don" : "Tüm siparisleri göster"}
+                  {showAllColumns ? "Ilk görünume don" : "Tüm siparişleri göster"}
                 </Link>
               </div>
               <div className="grid gap-4 xl:grid-cols-3">
@@ -416,7 +416,7 @@ export default async function DeliveryPage({
                             href={`/delivery?order=${order.id}`}
                             className="mt-2 block rounded-2xl border border-slate-200 bg-white px-4 py-3 text-center text-sm font-semibold text-slate-700"
                           >
-                            Detayi Ac
+                            Detay? A?
                           </Link>
                         </div>
                       ))
@@ -446,7 +446,7 @@ export default async function DeliveryPage({
                           href={`/delivery?order=${order.id}`}
                           className="mt-2 block rounded-2xl border border-slate-200 bg-white px-4 py-3 text-center text-sm font-semibold text-slate-700"
                         >
-                          Detayi Ac
+                          Detay? A?
                         </Link>
                       </div>
                     ))
@@ -476,7 +476,7 @@ export default async function DeliveryPage({
                           href={`/delivery?order=${order.id}`}
                           className="mt-2 block rounded-2xl border border-slate-200 bg-white px-4 py-3 text-center text-sm font-semibold text-slate-700"
                         >
-                          Detayi Ac
+                          Detay? A?
                         </Link>
                       </div>
                     ))
@@ -492,11 +492,11 @@ export default async function DeliveryPage({
           <WorkflowGuide
             className="app-mobile-hide"
             title="Teslimatta 3 Adim"
-            description="Kurye operasyonunu bilmeyen biri de dispatch akisini rahat kullansin."
+            description="Kurye operasyonunu bilmeyen biri de dispatch akışını rahat kullansin."
             steps={[
-              { title: "Dispatch kolonunu kontrol et", description: "Kurye bekleyen sipariş varsa önce o siparise uygun kuryeyi sec ve ata." },
+              { title: "Dispatch kolonunu kontrol et", description: "Kurye bekleyen sipariş varsa önce o siparişe uygun kuryeyi seç ve ata." },
               { title: "Yolda durumunu izle", description: "Kurye ataninca sipariş Yolda kolonuna gecer; aktif dagitimi buradan takip et." },
-              { title: "Teslim edilince kapat", description: "Teslim Edildi butonu ile siparişi kapat; kasa ve raporlar aninda guncellenir." },
+              { title: "Teslim edilince kapat", description: "Teslim Edildi butonu ile siparişi kapat; kasa ve raporlar aninda güncellenir." },
             ]}
           />
 
@@ -574,7 +574,7 @@ export default async function DeliveryPage({
                 <h2 className="font-display mt-2 text-2xl font-semibold tracking-tight text-slate-900 sm:text-3xl">
                   Sipariş #{orderRef(selectedOrder)}
                 </h2>
-                <p className="mt-1 text-sm text-slate-500">Adres, not, ürünler ve teslim akisini ayni sayfada yonet.</p>
+                <p className="mt-1 text-sm text-slate-500">Adres, not, ürünler ve teslim akışını ayn? sayfada yönet.</p>
               </div>
               <Link href="/delivery" className="w-full rounded-2xl border border-slate-200 bg-white px-4 py-3 text-center text-sm font-semibold text-slate-700 sm:w-auto">
                 Kapat
@@ -640,7 +640,7 @@ export default async function DeliveryPage({
                       Kasada Kontrol Et
                     </Link>
                     <Link href={`/delivery?courier=${selectedOrder.courier_id ?? ""}`} className="rounded-2xl border border-slate-200 bg-slate-50 px-4 py-3 text-center text-sm font-semibold text-slate-700">
-                      Kuryeyi Gor
+                      Kuryeyi Gör
                     </Link>
                   </div>
                 </article>
@@ -716,7 +716,7 @@ export default async function DeliveryPage({
                 </article>
 
                 <article className="rounded-[24px] border border-rose-200 bg-rose-50/60 p-5">
-                  <h3 className="font-display text-2xl font-semibold tracking-tight text-slate-900">Kurye Kaldir</h3>
+                  <h3 className="font-display text-2xl font-semibold tracking-tight text-slate-900">Kurye Kaldır</h3>
                   <p className="mt-2 text-sm text-slate-600">
                     Aktif teslimati olmayan kuryeleri kaldirabilirsin. Aktif siparişi varsa sistem silmeye izin vermez.
                   </p>
@@ -731,7 +731,7 @@ export default async function DeliveryPage({
                 </article>
               </div>
 
-              <h3 className="font-display text-2xl font-semibold tracking-tight text-slate-900">Kurye Siparisleri</h3>
+              <h3 className="font-display text-2xl font-semibold tracking-tight text-slate-900">Kurye Siparişleri</h3>
               <div className="mt-4 space-y-3">
                 {deliveryOrders.filter((order) => order.courier_id === selectedCourier.id).length === 0 ? (
                   <EmptyPanel title="Atanan Sipariş Yok" description="Bu kurye için atanmış delivery siparişi bulunmuyor." />
@@ -752,7 +752,7 @@ export default async function DeliveryPage({
                         </div>
                         <div className="mt-4 flex flex-wrap gap-2">
                           <Link href={`/delivery?order=${order.id}`} className="rounded-2xl border border-slate-200 bg-white px-4 py-3 text-sm font-semibold text-slate-700">
-                            Siparisi Ac
+                            Siparişi A?
                           </Link>
                           <Link href="/cashier" className="rounded-2xl border border-slate-200 bg-white px-4 py-3 text-sm font-semibold text-slate-700">
                             Kasaya Git

@@ -77,11 +77,11 @@ export default async function SupportTenantsPage({
                 İşletme tipi: {tenant.business_type === "self_service_coffee" ? "Self-Service Coffee" : "Restaurant / Cafe"}
               </div>
               <div className="rounded-xl border border-slate-200 bg-slate-50 px-4 py-3 text-sm text-slate-700 sm:col-span-2">
-                {translateUiText("Acik destek kaydı", locale)}: {tenant.support_ticket_count}
+                {translateUiText("Açık destek kaydı", locale)}: {tenant.support_ticket_count}
               </div>
             </div>
             <Link href={`/support/tenants/${tenant.business_id}`} className="mt-4 inline-flex rounded-xl border border-slate-200 bg-slate-50 px-4 py-2 text-sm font-semibold text-slate-700">
-              {translateUiText("Detay Ac", locale)}
+              {translateUiText("Detay A?", locale)}
             </Link>
           </article>
         ))}

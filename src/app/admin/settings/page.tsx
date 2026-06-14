@@ -271,7 +271,7 @@ export default async function AdminSettingsPage() {
   return (
     <BackofficePage
       title="İşletme Ayarlari"
-      description="Isletmeye teslim edilecek operasyon, marka ve uygulama ayarlari"
+      description="İşletmeye teslim edilecek operasyon, marka ve uygulama ayarlari"
       sidebar={
         <SidebarPanel title="Ayarlar">
           <div className="space-y-3">
@@ -281,14 +281,14 @@ export default async function AdminSettingsPage() {
             </div>
             <div className="rounded-2xl border border-slate-200 bg-slate-50 px-4 py-4">
               <p className="text-lg font-semibold text-slate-900">Uygulama</p>
-              <p className="mt-1 text-sm text-slate-500">Yazdirma, demo ve sidebar tercihi</p>
+              <p className="mt-1 text-sm text-slate-500">Yazdırma, demo ve sidebar tercihi</p>
               <Link href="/admin/print-center" className="mt-3 inline-flex rounded-xl border border-slate-200 bg-white px-3 py-2 text-xs font-semibold text-slate-700">
-                Yazdirma Merkezi
+                Yazdırma Merkezi
               </Link>
             </div>
             <div className="rounded-2xl border border-slate-200 bg-slate-50 px-4 py-4">
               <p className="text-lg font-semibold text-slate-900">Calisma Modu</p>
-              <p className="mt-1 text-sm text-slate-500">{applicationSettings.demoMode ? "Demo modu açık" : "Canli mod"}</p>
+              <p className="mt-1 text-sm text-slate-500">{applicationSettings.demoMode ? "Demo modu açık" : "Canlı mod"}</p>
             </div>
             <div className="rounded-2xl border border-slate-200 bg-slate-50 px-4 py-4">
               <p className="text-lg font-semibold text-slate-900">Paket</p>
@@ -305,7 +305,7 @@ export default async function AdminSettingsPage() {
     >
       {usingDemoData ? (
         <div className="rounded-[24px] border border-amber-200 bg-amber-50 px-5 py-4 text-sm text-amber-900">
-          Ayarlar tablosu okunamadi. Varsayilan ayarlar gosteriliyor.
+          Ayarlar tablosu okunamadi. Varsayilan ayarlar gösteriliyor.
         </div>
       ) : null}
 
@@ -317,7 +317,7 @@ export default async function AdminSettingsPage() {
               <p className="mt-3 text-2xl font-semibold tracking-tight text-slate-900 sm:text-3xl">{getPlanLabel(planContext.plan)}</p>
               <p className="mt-2 text-sm text-slate-500">{activeFeatureCount} modül açık</p>
               <div className="mt-4 rounded-2xl border border-slate-200 bg-white px-4 py-4 text-sm text-slate-600">
-                Paket degisikligi işletme panelinden yapilamaz. Upgrade veya downgrade islemleri merkez ekip tarafindan yönetilir.
+                Paket degisikligi işletme panelinden yapilamaz. Upgrade veya downgrade işlemleri merkez ekip tarafindan yönetilir.
               </div>
             </div>
             <div className="grid gap-3 sm:grid-cols-2">
@@ -369,7 +369,7 @@ export default async function AdminSettingsPage() {
               </label>
               <div className="flex justify-end">
                 <button type="submit" className="w-full rounded-2xl bg-slate-900 px-5 py-3 text-sm font-semibold text-white sm:w-auto">
-                  Paket Talebi Gonder
+                  Paket Talebi Günder
                 </button>
               </div>
             </div>
@@ -381,8 +381,8 @@ export default async function AdminSettingsPage() {
             <DemoModeToggleForm action={updateApplicationSettingsAction} defaultChecked={applicationSettings.demoMode} />
             <form action={updateApplicationSettingsAction} className="space-y-4">
               <ToggleField
-                title="Yazdirma Yontemi"
-                description="Uygulama tarafindan yazdirma yapilsin."
+                title="Yazdırma Yontemi"
+                description="Uygulama tarafindan yazdırma yapilsin."
                 name="appPrintingEnabled"
                 defaultChecked={applicationSettings.appPrintingEnabled}
               />
@@ -403,14 +403,14 @@ export default async function AdminSettingsPage() {
               <input type="hidden" name="mobileReadOnlyPwaEnabled_present" value="1" />
               <ToggleField
                 title="QR Menü"
-                description="Masa QR kodu okutuldugunda musteri menusu gorunsun."
+                description="Masa QR kodu okutuldugunda müşteri menüsü görünsun."
                 name="qrMenuEnabled"
                 defaultChecked={applicationSettings.qrMenuEnabled}
               />
               <input type="hidden" name="qrMenuEnabled_present" value="1" />
               <ToggleField
-                title="QR Uzerinden Siparis"
-                description="Musteri QR menuden sepet olusturup siparis gonderebilsin."
+                title="QR Uzerinden Sipariş"
+                description="Müşteri QR menüden sepet olusturup sipariş günderebilsin."
                 name="qrOrderingEnabled"
                 defaultChecked={applicationSettings.qrOrderingEnabled}
               />
@@ -437,7 +437,7 @@ export default async function AdminSettingsPage() {
                 />
               </div>
               <div className="rounded-[24px] border border-dashed border-slate-200 bg-white px-5 py-4 text-sm text-slate-500">
-                Demo mod mevcut işletmede ornek kasa oturumu, mutfak siparisleri, ödeme bekleyen adisyon ve paket servis kaydı olusturur.
+                Demo mod mevcut işletmede Örnek kasa oturumu, mutfak siparişleri, ödeme bekleyen adisyon ve paket servis kaydı olusturur.
                 Kapatmak yeni veri uretimini durdurur; mevcut demo kayitlarini otomatik silmez.
               </div>
               <div className="mt-6 flex justify-end">
@@ -457,7 +457,7 @@ export default async function AdminSettingsPage() {
               </div>
               <Field label="Konu" name="subject" defaultValue="" />
               <label className="block">
-                <span className="text-sm font-medium text-slate-700">Aciklama</span>
+                <span className="text-sm font-medium text-slate-700">Açıklama</span>
                 <textarea
                   name="description"
                   rows={5}
@@ -484,8 +484,8 @@ export default async function AdminSettingsPage() {
           <ContentCard title="Operasyon Verisini Sifirla">
             <div className="space-y-4">
               <div className="rounded-[24px] border border-rose-200 bg-rose-50 px-5 py-4 text-sm text-rose-900">
-                Bu işlem aktif isletmedeki adisyonlari, odemeleri, masa taleplerini, kurye ve kasa oturumlarini temizler.
-                Urunler, kategoriler, personel ve ayarlar korunur.
+                Bu işlem aktif işletmedeki adisyonlari, Ödemeleri, masa taleplerini, kurye ve kasa oturumlarini temizler.
+                Ürünler, kategoriler, personel ve ayarlar korunur.
               </div>
               <label className="flex items-center gap-3 rounded-2xl border border-slate-200 bg-slate-50 px-4 py-4 text-sm text-slate-700">
                 <input type="checkbox" name="deleteTables" className="h-4 w-4 rounded border-slate-300" />

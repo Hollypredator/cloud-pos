@@ -34,10 +34,10 @@ export default async function SessionReportPrintPage({
 
         <div className="mt-4 space-y-2 text-sm">
           <p className="flex justify-between"><span>Acilis Nakit</span><span>{openingCash.toFixed(2)} TL</span></p>
-          <p className="flex justify-between"><span>Nakit Satis</span><span>{Number(today.cashSale).toFixed(2)} TL</span></p>
-          <p className="flex justify-between"><span>Kart Satis</span><span>{Number(today.cardSale).toFixed(2)} TL</span></p>
-          <p className="flex justify-between"><span>Karma Satis</span><span>{Number(today.mixedSale).toFixed(2)} TL</span></p>
-          <p className="flex justify-between"><span>Iade</span><span>{Number(today.refunds).toFixed(2)} TL</span></p>
+          <p className="flex justify-between"><span>Nakit Satış</span><span>{Number(today.cashSale).toFixed(2)} TL</span></p>
+          <p className="flex justify-between"><span>Kart Satış</span><span>{Number(today.cardSale).toFixed(2)} TL</span></p>
+          <p className="flex justify-between"><span>Karma Satış</span><span>{Number(today.mixedSale).toFixed(2)} TL</span></p>
+          <p className="flex justify-between"><span>İade</span><span>{Number(today.refunds).toFixed(2)} TL</span></p>
           <p className="mt-3 border-t border-slate-200 pt-3 flex justify-between font-semibold text-slate-900"><span>Beklenen Nakit</span><span>{expectedCash.toFixed(2)} TL</span></p>
           <p className="flex justify-between font-semibold text-slate-900"><span>Net Ciro</span><span>{Number(today.net).toFixed(2)} TL</span></p>
           {session?.note ? <p className="mt-3 text-xs text-slate-500">Not: {session.note}</p> : null}
@@ -60,7 +60,7 @@ export default async function SessionReportPrintPage({
 
         <div className="no-print mt-4">
           <Link href="/cashier/session" className="text-sm font-medium text-slate-700 underline">
-            Gun Islemlerine Don
+            Gün İşlemlerine Don
           </Link>
         </div>
       </main>

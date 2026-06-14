@@ -1,32 +1,32 @@
 # QR Regression Checklist
 
 ## 1) Duplicate Submit Guard
-- Ayni sepetle "Siparisi Onayla" butonuna hizli sekilde 3 kez bas.
-- Beklenen: Tek siparis olusur, ikinci/ucuncu istek conflict veya idempotent handling ile yeni siparis acmaz.
+- Ayn? sepetle "Siparişi Onayla" butonuna hizli sekilde 3 kez bas.
+- Beklenen: Tek sipariş olusur, ikinci/ucuncu istek conflict veya idempotent handling ile yeni sipariş acmaz.
 
 ## 2) Expired Token Retry
-- Gecersiz veya suresi dolmus token ile siparis gondermeyi dene.
-- Beklenen: Ilk istek 403 alir, istemci token refresh endpointini cagirir, ikinci denemede siparis ACK olur.
+- Gecersiz veya süresi dolmus token ile sipariş gündermeyi dene.
+- Beklenen: Ilk istek 403 alir, istemci token refresh endpointini cagirir, ikinci denemede sipariş ACK olur.
 
 ## 3) Network Retry Safety
-- Siparis gonderimi sirasinda agi kes/kapat-ac senaryosu uygula.
-- Beklenen: Kullanici tekrar denediginde ayni idempotency key ile duplicate siparis acilmaz.
+- Sipariş günderimi sırasında agi kes/kapat-ac senaryosu uygula.
+- Beklenen: Kullanici tekrar denediginde ayn? idempotency key ile duplicate sipariş acilmaz.
 
 ## 4) Cart Persistence
-- Sepete urun ekle, sayfayi yenile.
+- Sepete Ürün ekle, sayfayi yenile.
 - Beklenen: Sepet kaybolmaz.
 - Farkli masa slug/identifier ac.
 - Beklenen: Sepet izolasyonu korunur (farkli masada onceki sepet gelmez).
 
 ## 5) QR Badge in Ops
-- QR'dan olusan dine_in siparisi mutfak ve kasa ekranlarinda ac.
-- Beklenen: Siparis kaynak satirinda QR rozeti gorunur.
+- QR'dan oluşan dine_in siparişi mutfak ve kasa ekranlarinda ac.
+- Beklenen: Sipariş kaynak satirinda QR rozeti görünur.
 
 ## 6) Delay Alerts and Observability
-- Pending/preparing siparisleri esik ustune tasiyarak gecikme olustur.
+- Pending/preparing siparişleri esik ustune taşıyarak gecikme olustur.
 - Beklenen: `orders.latest.delay_alert` ve `kitchen.delay.alert` log eventleri uretilir.
 - `x-correlation-id` ve `x-operation-ms` basliklarini API cevaplarinda dogrula.
 
 ## 7) Legacy Route Redirect
 - `/qr/<identifier>` ile acilis yap.
-- Beklenen: `/{defaultSlug}/qr/<identifier>` yoluna yonlenir ve siparis akisi acilir.
+- Beklenen: `/{defaultSlug}/qr/<identifier>` yoluna yonlenir ve sipariş akışı acilir.

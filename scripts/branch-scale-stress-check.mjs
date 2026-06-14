@@ -97,7 +97,7 @@ async function run() {
     .maybeSingle();
 
   if (branchError || !branchRow) {
-    fail(`aktif sube bulunamadi: ${branchError?.message ?? "branch yok"}`);
+    fail(`aktif Şube bulunamadı: ${branchError?.message ?? "branch yok"}`);
   }
 
   const businessId = String(branchRow.business_id);
@@ -119,7 +119,7 @@ async function run() {
     .select("id, table_number");
 
   if (createTablesError || !createdTables || createdTables.length === 0) {
-    fail(`test masalari olusturulamadi: ${createTablesError?.message ?? "unknown"}`);
+    fail(`test masalari oluşturulamad?: ${createTablesError?.message ?? "unknown"}`);
   }
 
   const tableIds = createdTables.map((item) => String(item.id));

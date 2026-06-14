@@ -74,27 +74,27 @@ export function getQrAccessFailurePayload(reason: QrAccessFailureReason) {
     return {
       status: 403,
       code: "QR_TOKEN_MISSING",
-      message: "QR erisim oturumu bulunamadi. Lutfen QR kodu yeniden okutun.",
+      message: "QR erisim oturumu bulunamadı. Lütfen QR kodu yeniden okutun.",
     } as const;
   }
   if (reason === "expired") {
     return {
       status: 403,
       code: "QR_TOKEN_EXPIRED",
-      message: "QR erisim oturumu suresi doldu. Lutfen QR kodu yeniden okutun.",
+      message: "QR erisim oturumu süresi doldu. Lütfen QR kodu yeniden okutun.",
     } as const;
   }
   if (reason === "mismatch") {
     return {
       status: 403,
       code: "QR_TOKEN_MISMATCH",
-      message: "QR erisim dogrulanamadi. Lutfen QR kodu yeniden okutun.",
+      message: "QR erisim dogrulanamadi. Lütfen QR kodu yeniden okutun.",
     } as const;
   }
   return {
     status: 403,
     code: "QR_TOKEN_INVALID",
-    message: "QR erisim token gecersiz.",
+    message: "QR erisim token geçersiz.",
   } as const;
 }
 

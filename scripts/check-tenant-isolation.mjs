@@ -79,7 +79,7 @@ function extractFunctionBody(source, functionName) {
 
 function run() {
   if (!fs.existsSync(targetFile)) {
-    throw new Error(`Dosya bulunamadi: ${targetFile}`);
+    throw new Error(`Dosya bulunamadı: ${targetFile}`);
   }
   const source = fs.readFileSync(targetFile, "utf8");
   const failures = [];
@@ -88,7 +88,7 @@ function run() {
   for (const rule of criticalRules) {
     const body = extractFunctionBody(source, rule.functionName);
     if (!body) {
-      failures.push({ functionName: rule.functionName, reason: "Fonksiyon bulunamadi." });
+      failures.push({ functionName: rule.functionName, reason: "Fonksiyon bulunamadı." });
       console.log(`- ${rule.functionName}: missing`);
       continue;
     }

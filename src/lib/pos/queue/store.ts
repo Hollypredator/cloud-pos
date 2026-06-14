@@ -150,7 +150,7 @@ function asTableStatus(value: unknown): TableStatus | null {
   return null;
 }
 
-function buildCommittedSnapshotsFromAck(command: PosQueueItem, resultData?: Record<string, unknown>) {
+function buildCommittedSnapshotsFromAck(command: PosQueueItem, resultData: Record<string, unknown>) {
   const nextTables: Record<string, TablesCommittedEntry> = {};
   const nextCashier: Record<string, Partial<Omit<CashierCommittedEntry, "updatedAt">>> = {};
   const resolvedAt = Date.now();
@@ -392,7 +392,7 @@ export const usePosCommandQueueStore = create<PosCommandQueueStore>()(
         }
 
         if (result.status === "ACK") {
-          const committed = buildCommittedSnapshotsFromAck(command, result.data);
+          const committed = buildCommittedSnapshotsFromAck(command, result.data ?? {});
           for (const [tableId, entry] of Object.entries(committed.nextTables)) {
             nextCommittedTables[tableId] = entry;
           }

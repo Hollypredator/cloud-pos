@@ -11,7 +11,7 @@ Durum: `template`
 
 ## Senaryolar
 1. Gunluk net tutarlılık:
-- [ ] `/admin/finance?days=1` ekranindaki `Net` degeri, ayni gun `sales - refunds` ile eşit.
+- [ ] `/admin/finance?days=1` ekranindaki `Net` degeri, ayn? gun `sales - refunds` ile eşit.
 
 2. Ödeme yöntemi kırılımı:
 - [ ] Nakit/Kart/Karma net toplamı = `summary.netSales`.
@@ -19,9 +19,9 @@ Durum: `template`
 
 3. Saatlik satış:
 - [ ] Saatlik grafik toplamı = brüt satış toplamı.
-- [ ] Iadeler saatlik satisa eklenmiyor (ayri gider etkisi).
+- [ ] İadeler saatlik satışa eklenmiyor (ayri gider etkisi).
 
-4. Kasa gun sonu mutabakat:
+4. Kasa gün sonu mutabakat:
 - [ ] `/cashier/session` kapanışında `expectedCash` hesaplaması açılış + nakit satış - nakit iade ile uyumlu.
 - [ ] Eşik üstü farkta `cash_reconciliation_mismatch` dispatch kaydı oluşuyor.
 

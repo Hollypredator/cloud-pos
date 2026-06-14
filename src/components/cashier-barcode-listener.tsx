@@ -55,7 +55,7 @@ export function CashierBarcodeListener({
         return;
       }
       if (byCheck.length > 1) {
-        setStatus({ tone: "error", message: `Ayni check numarasinda birden fazla adısyon var: ${raw}` });
+        setStatus({ tone: "error", message: `Ayn? check numarasinda birden fazla adısyon var: ${raw}` });
         return;
       }
 

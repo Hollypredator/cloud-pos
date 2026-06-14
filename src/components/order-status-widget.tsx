@@ -30,8 +30,8 @@ function orderRef(order: Pick<LatestOrder, "id" | "checkNumber">) {
 function statusLabel(status: OrderStatus) {
   if (status === "pending") return "Sipariş alındı";
   if (status === "preparing") return "Hazırlaniyor";
-  if (status === "ready") return "Servise hazir";
-  if (status === "served") return "Servise hazir";
+  if (status === "ready") return "Servise hazır";
+  if (status === "served") return "Servise hazır";
   if (status === "partially_paid") return "Kısmi ödeme";
   if (status === "paid") return "Ödeme tamamlandi";
   if (status === "partially_refunded") return "Kısmi iade";
@@ -127,7 +127,7 @@ export function OrderStatusWidget({
     <section className="rounded-2xl border border-slate-200 bg-white p-4">
       <h2 className="text-sm font-semibold text-slate-900">Sipariş Durumu</h2>
       {loading ? (
-        <p className="mt-2 text-sm text-slate-500">Durum yukleniyor...</p>
+        <p className="mt-2 text-sm text-slate-500">Durum yükleniyor...</p>
       ) : error ? (
         <p className="mt-2 text-sm text-rose-600">{error}</p>
       ) : !order ? (
@@ -142,7 +142,7 @@ export function OrderStatusWidget({
           </div>
           <StatusTimeline status={order.status} />
           <p className="text-xs text-slate-500">{new Date(order.createdAt).toLocaleString("tr-TR")}</p>
-          <p className="text-xs text-slate-500">Tahmini kalan sure: {estimateEta(order.status, order.createdAt)}</p>
+          <p className="text-xs text-slate-500">Tahmini kalan süre: {estimateEta(order.status, order.createdAt)}</p>
           <p className="text-sm text-slate-700">Toplam: {Number(order.finalPrice).toFixed(2)} TL</p>
         </div>
       )}

@@ -361,7 +361,7 @@ export function LandingVisualEditor({
                 label="Sağ alan modu"
                 value={section.heroVisualMode}
                 options={[
-                  { label: "Taslak görünüm", value: "mockup" },
+                  { label: "Taşlak görünüm", value: "mockup" },
                   { label: "Görsel kullan", value: "image" },
                 ]}
                 onChange={(value) =>

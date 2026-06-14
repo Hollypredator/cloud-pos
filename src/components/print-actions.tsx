@@ -53,18 +53,18 @@ export function PrintActions({ baseHref }: PrintActionsProps) {
           href={`${baseHref}?layout=${layout}${hideLogo ? "" : "&logo=0"}`}
           className="rounded-2xl border border-slate-200 bg-white px-4 py-2 text-sm font-semibold text-slate-700 hover:bg-slate-50"
         >
-          {hideLogo ? "Logo Ac" : "Logo Kapat"}
+          {hideLogo ? "Logo A?" : "Logo Kapat"}
         </Link>
         <button
           onClick={() => window.print()}
           className="rounded-2xl bg-gradient-to-r from-[#ff5a34] to-[#f0b14f] px-4 py-2 text-sm font-semibold text-white"
           type="button"
         >
-          Yazdir / PDF
+          Yazdır / PDF
         </button>
       </div>
       <p className="text-xs text-slate-500">
-        Test yazicisi olmadan da bu sayfayi tarayicidan yazdirabilir veya PDF olarak kaydedebilirsin.
+        Test yazicisi olmadan da bu sayfayi tarayicidan yazdırabilir veya PDF olarak kaydedebilirsin.
       </p>
     </div>
   );

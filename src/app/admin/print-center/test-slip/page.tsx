@@ -40,13 +40,13 @@ export default async function TestSlipPage({
 
         <div className="mt-4 border-t border-slate-200 pt-4 text-sm">
           <p className="flex justify-between"><span>Ara Toplam</span><span>420.00 TL</span></p>
-          <p className="mt-1 flex justify-between"><span>Indirim</span><span>-20.00 TL</span></p>
+          <p className="mt-1 flex justify-between"><span>İndirim</span><span>-20.00 TL</span></p>
           <p className="mt-1 flex justify-between"><span>Servis Ucreti</span><span>+30.00 TL</span></p>
           <p className="mt-2 flex justify-between text-base font-semibold text-slate-900"><span>Toplam</span><span>430.00 TL</span></p>
         </div>
 
         <p className="mt-5 text-center text-xs text-slate-500">
-          Bu sayfa yazıcı olmadan satır aralığı, font boyutu ve bosluk kontrolu için kullanılır.
+          Bu sayfa yazıcı olmadan satır aralığı, font boyutu ve bosluk kontrol? için kullanılır.
         </p>
 
         <PrintActions baseHref="/admin/print-center/test-slip" />

@@ -19,7 +19,7 @@ export function DemoModeToggleForm({ defaultChecked, action }: DemoModeToggleFor
         <div>
           <p className="text-base font-semibold text-slate-900">Demo Modu</p>
           <p className="mt-1 text-sm text-slate-500">
-            Acildiginda test verisi hazırlanır. Kapatildiginda yeni demo veri uretimi durur.
+            Acildiginda test verisi hazırlanır. Kapatıldığında yeni demo veri uretimi durur.
           </p>
           <p className="mt-2 text-xs font-semibold uppercase tracking-[0.14em] text-[#ff6a3d]">Aninda kaydolur</p>
         </div>

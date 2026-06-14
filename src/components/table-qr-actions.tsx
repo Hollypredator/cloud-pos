@@ -45,7 +45,7 @@ export function TableQrActions({
               <div>
                 <p className="text-xs font-bold uppercase tracking-[0.2em] text-slate-500">Masa QR</p>
                 <h3 className="mt-2 text-2xl font-semibold tracking-tight text-slate-900">{tableName}</h3>
-                <p className="mt-1 text-sm text-slate-500">Masa {tableNumber} için müşteri deneyimini ayni ekranda onizle.</p>
+                <p className="mt-1 text-sm text-slate-500">Masa {tableNumber} için müşteri deneyimini ayn? ekranda onizle.</p>
               </div>
               <button
                 type="button"
@@ -64,7 +64,7 @@ export function TableQrActions({
                   view === "preview" ? "bg-[#ff5a34] text-white" : "border border-slate-200 bg-slate-50 text-slate-700"
                 }`}
               >
-                Sayfa Onizleme
+                Sayfa Önizleme
               </button>
               <button
                 type="button"
@@ -81,7 +81,7 @@ export function TableQrActions({
               <div className="mt-5 overflow-hidden rounded-[24px] border border-dashed border-slate-200 bg-slate-50">
                 <iframe
                   src={qrTarget}
-                  title={`${tableName} QR onizleme`}
+                  title={`${tableName} QR Önizleme`}
                   className="h-[560px] w-full bg-white"
                 />
               </div>
@@ -109,7 +109,7 @@ export function TableQrActions({
                 download={`masa-${tableNumber}-qr.png`}
                 className="rounded-2xl border border-slate-200 bg-slate-50 px-4 py-3 text-center text-sm font-semibold text-slate-800"
               >
-                QR Indir
+                QR İndir
               </a>
               <a
                 href={printHref}
@@ -117,7 +117,7 @@ export function TableQrActions({
                 rel="noreferrer"
                 className="rounded-2xl border border-slate-200 bg-slate-50 px-4 py-3 text-center text-sm font-semibold text-slate-800"
               >
-                Yazdir
+                Yazdır
               </a>
               <a
                 href={qrTarget}
@@ -125,7 +125,7 @@ export function TableQrActions({
                 rel="noreferrer"
                 className="rounded-2xl bg-gradient-to-r from-[#ff5a34] to-[#f0b14f] px-4 py-3 text-center text-sm font-semibold text-white"
               >
-                Yeni Sekmede Ac
+                Yeni Sekmede A?
               </a>
             </div>
           </div>

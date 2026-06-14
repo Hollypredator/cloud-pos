@@ -2,11 +2,11 @@ import React from "react";
 
 const DEMO_REVIEWS = [
   { name: "Ayse Yilmaz", comment: "Kahveler harikaydi, servis çok hizliydi. Atmosfere bayildim!", rating: 5, time: "2 saat önce" },
-  { name: "Caner Yildiz", comment: "Ozelikle tatlilar efsane. Garsonlar çok ilgiliydi.", rating: 5, time: "1 gun önce" },
-  { name: "Merve Kaya", comment: "Hafta sonu kalabalik olmasina ragmen hic beklemedik. Guler yuzlu bir ekip.", rating: 5, time: "Dun" },
+  { name: "Caner Yildiz", comment: "Özelikle tatlilar efsane. Garsonlar çok ilgiliydi.", rating: 5, time: "1 gun önce" },
+  { name: "Merve Kaya", comment: "Hafta sonu kalabalik olmasina ragmen hic beklemedik. Guler yuzlu bir ekip.", rating: 5, time: "Dön" },
   { name: "Burak Celik", comment: "Çok temiz ve kaliteli bir mekan. Kesinlikle favori yerim oldu.", rating: 5, time: "3 gun önce" },
   { name: "Selin Sahin", comment: "Harika muzikler ve mukemmel kahveler. Herkese tavsiye ederim.", rating: 5, time: "1 hafta önce" },
-  { name: "Kemal Demir", comment: "Ozelikle sunum ve personelin ilgisi çok iyiydi.", rating: 5, time: "2 hafta önce" },
+  { name: "Kemal Demir", comment: "Özelikle sunum ve personelin ilgisi çok iyiydi.", rating: 5, time: "2 hafta önce" },
 ];
 
 export default function ReviewsAdvertisementPage() {
@@ -26,7 +26,7 @@ export default function ReviewsAdvertisementPage() {
         <header className="flex w-full flex-col items-center justify-center pt-20 pb-12 text-center">
           <div className="mb-4 inline-flex items-center gap-2 rounded-full border border-white/10 bg-white/5 px-4 py-2 opacity-0 animate-[fade-in-up_1s_ease-out_forwards]">
             <span className="flex h-2 w-2 rounded-full bg-emerald-500 animate-ping"></span>
-            <span className="text-xs font-semibold uppercase tracking-widest text-emerald-400">Canli Geri Bildirimler</span>
+            <span className="text-xs font-semibold uppercase tracking-widest text-emerald-400">Canlı Geri Bildirimler</span>
           </div>
           <h1 className="text-balance text-5xl font-extrabold tracking-tight text-white sm:text-7xl lg:text-8xl opacity-0 animate-[fade-in-up_1s_ease-out_0.2s_forwards]">
             Misafirlerimizin <br />

@@ -8,7 +8,7 @@ function fail(message) {
 function ensureFile(relPath) {
   const absPath = path.join(process.cwd(), relPath);
   if (!fs.existsSync(absPath)) {
-    fail(`dosya bulunamadi: ${relPath}`);
+    fail(`dosya bulunamadı: ${relPath}`);
   }
   return fs.readFileSync(absPath, "utf8");
 }

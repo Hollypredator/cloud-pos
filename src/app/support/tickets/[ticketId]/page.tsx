@@ -132,7 +132,7 @@ export default async function SupportTicketDetailPage({
             <p className="text-sm font-semibold text-slate-900">{translateUiText("Ticket Yönetimi", locale)}</p>
             <div className="mt-4 grid gap-3 md:grid-cols-2">
               <div className="rounded-xl border border-slate-200 bg-slate-50 px-4 py-3">
-                <p className="text-xs uppercase tracking-[0.18em] text-slate-500">{translateUiText("Atanan kisi", locale)}</p>
+                <p className="text-xs uppercase tracking-[0.18em] text-slate-500">{translateUiText("Atanan kişi", locale)}</p>
                 <p className="mt-2 text-sm font-semibold text-slate-900">{assignedSupportName}</p>
               </div>
               <div className="rounded-xl border border-slate-200 bg-slate-50 px-4 py-3">

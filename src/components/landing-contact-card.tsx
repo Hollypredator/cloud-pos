@@ -13,7 +13,7 @@ export function LandingContactCard({
   supportEmail,
   eyebrow = "Demo Talebi",
   title = "İşletmeniz için uygun kurulumu birlikte planlayalim",
-  body = "Bilgilerinizi birakin. Isterseniz WhatsApp veya telefon uzerinden de doğrudan bize ulasabilirsiniz.",
+  body = "Bilgilerinizi birakin. Isterseniz WhatsApp veya telefon uzerinden de doğrudan bize ulaşabilirsiniz.",
   previewMode = false,
   locale = "tr",
 }: {

@@ -79,7 +79,7 @@ async function sendMailWithResend(
     } catch {
       detail = "";
     }
-    return { ok: false as const, error: `Resend gonderimi başarısız (${response.status})${detail ? `: ${detail}` : ""}` };
+    return { ok: false as const, error: `Resend günderimi başarısız (${response.status})${detail ? `: ${detail}` : ""}` };
   }
 
   return { ok: true as const };

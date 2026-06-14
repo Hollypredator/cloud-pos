@@ -10,7 +10,7 @@
 - [x] `/admin/orders` uzerinden sipariş acma
 - [x] `/kitchen` durum gecisi (`pending -> preparing -> served`)
 - [x] `/cashier` tahsilat, iade ve adisyon kapanış
-- [x] `/cashier/session` gun basi / gun sonu
+- [x] `/cashier/session` gun basi / gün sonu
 - [x] `/admin/tables` masa ekleme/güncelle/silme/taşıma
 - [x] `/service-requests` talep oluşturma ve cozme
 - [x] `/api/health` ve `npm run ops:smoke`

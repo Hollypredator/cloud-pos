@@ -98,7 +98,7 @@ export default async function StudioDemoPage() {
           </Link>
         </header>
 
-        {usingDemoData ? <p className="rounded-lg bg-amber-100 px-3 py-2 text-sm text-amber-900">Varsayilan demo icerigi gosteriliyor.</p> : null}
+        {usingDemoData ? <p className="rounded-lg bg-amber-100 px-3 py-2 text-sm text-amber-900">Varsayilan demo icerigi gösteriliyor.</p> : null}
 
         <DemoVisualEditor content={content} action={updateDemoPageContentAction} />
       </main>

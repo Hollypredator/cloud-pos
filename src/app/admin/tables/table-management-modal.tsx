@@ -280,7 +280,7 @@ export function TableManagementModal({
             onClick={() => setActiveTab("history")}
             className={`min-h-12 rounded-xl px-4 py-3 text-base font-semibold sm:text-sm ${activeTab === "history" ? "bg-gradient-to-r from-[#ff6a3d] to-[#f2b44f] text-white shadow-[0_12px_22px_rgba(255,106,61,0.2)]" : "bg-white text-slate-700"}`}
           >
-            {translateUiText("Son Siparisler", locale)}
+            {translateUiText("Son Siparişler", locale)}
           </button>
           <button
             type="button"
@@ -298,7 +298,7 @@ export function TableManagementModal({
                 {translateUiText("Bu Masada Sipariş Girisi", locale)}
               </h3>
               <p className="mt-1 text-sm text-slate-500">
-                {translateUiText("Popup icinden ürün ekle, cikar ve siparişi mutfaga gonder.", locale)}
+                {translateUiText("Popup icinden ürün ekle, Çıkar ve siparişi mutfaga günder.", locale)}
               </p>
             </div>
             <AdminOrderEntry
@@ -325,15 +325,15 @@ export function TableManagementModal({
           <section className="mt-5 rounded-[28px] border border-slate-200 bg-white p-5">
             <div className="flex flex-wrap items-center justify-between gap-3 border-b border-slate-200 pb-4">
               <div>
-                <h3 className="font-display text-2xl font-semibold tracking-tight text-slate-900">{translateUiText("Son Siparisler", locale)}</h3>
-                <p className="mt-1 text-sm text-slate-500">{translateUiText("Bu masa için son olusan adisyonlar ve tahsilat durumlari", locale)}</p>
+                <h3 className="font-display text-2xl font-semibold tracking-tight text-slate-900">{translateUiText("Son Siparişler", locale)}</h3>
+                <p className="mt-1 text-sm text-slate-500">{translateUiText("Bu masa için son oluşan adisyonlar ve tahsilat durumlari", locale)}</p>
               </div>
               <div className="flex flex-wrap gap-2">
                 <Link href="/cashier" className="inline-flex min-h-11 items-center justify-center rounded-2xl border border-slate-200 bg-slate-50 px-4 py-3 text-base font-semibold text-slate-700 sm:text-sm">
                   {translateUiText("Kasaya Git", locale)}
                 </Link>
                 <Link href="/tables" className="inline-flex min-h-11 items-center justify-center rounded-2xl border border-slate-200 bg-slate-50 px-4 py-3 text-base font-semibold text-slate-700 sm:text-sm">
-                  {translateUiText("Masa Ekrani", locale)}
+                  {translateUiText("Masa Ekranı", locale)}
                 </Link>
               </div>
             </div>
@@ -341,14 +341,14 @@ export function TableManagementModal({
             {previewOrderId ? (
               <div className="mt-4 rounded-2xl border border-slate-200 bg-slate-50 p-3">
                 <div className="mb-3 flex items-center justify-between gap-2">
-                  <p className="text-sm font-semibold text-slate-800">#{orderRef(receiptDetails[previewOrderId] ?? { id: previewOrderId })} {translateUiText("adisyon onizleme", locale)}</p>
+                  <p className="text-sm font-semibold text-slate-800">#{orderRef(receiptDetails[previewOrderId] ?? { id: previewOrderId })} {translateUiText("adisyon Önizleme", locale)}</p>
                   <div className="no-print flex items-center gap-2">
                     <button
                       type="button"
                       onClick={handlePreviewPrint}
                       className="min-h-11 rounded-xl bg-gradient-to-r from-[#ff6a3d] to-[#f2b44f] px-4 py-2.5 text-sm font-semibold text-white"
                     >
-                      Yazdir / PDF
+                      Yazdır / PDF
                     </button>
                     <button
                       type="button"
@@ -390,7 +390,7 @@ export function TableManagementModal({
                         <span>{Number(receiptDetails[previewOrderId].total_price).toFixed(2)} TL</span>
                       </p>
                       <p className="flex justify-between text-slate-600">
-                        <span>Indirim</span>
+                        <span>İndirim</span>
                         <span>-{Number(receiptDetails[previewOrderId].discount_amount ?? 0).toFixed(2)} TL</span>
                       </p>
                       <p className="flex justify-between text-slate-600">
@@ -402,7 +402,7 @@ export function TableManagementModal({
                         <span>{Number(receiptDetails[previewOrderId].final_price ?? receiptDetails[previewOrderId].total_price).toFixed(2)} TL</span>
                       </p>
                       <p className="flex justify-between text-emerald-700">
-                        <span>Odenen</span>
+                        <span>Ödenen</span>
                         <span>{Number(receiptDetails[previewOrderId].amount_paid ?? 0).toFixed(2)} TL</span>
                       </p>
                       <p className="flex justify-between font-semibold text-[#ff5a34]">
@@ -413,11 +413,11 @@ export function TableManagementModal({
                   </div>
                 ) : receiptLoadingOrderId === previewOrderId ? (
                   <div className="rounded-xl border border-slate-200 bg-white px-4 py-6 text-sm text-slate-500">
-                    Adisyon detayi yukleniyor...
+                    Adisyon detayi yükleniyor...
                   </div>
                 ) : (
                   <div className="rounded-xl border border-amber-200 bg-amber-50 px-4 py-3 text-sm text-amber-900">
-                    Adisyon detayi yuklenemedi.
+                    Adisyon detayi yüklenemedi.
                   </div>
                 )}
               </div>
@@ -426,7 +426,7 @@ export function TableManagementModal({
             <div className="mt-4 space-y-3">
               {historyLoading && historyOrders.length === 0 ? (
                 <div className="rounded-2xl border border-slate-200 bg-slate-50 px-4 py-4 text-sm text-slate-600">
-                  Son siparişler guncelleniyor...
+                  Son siparişler güncelleniyor...
                 </div>
               ) : historyOrders.length === 0 ? (
                 <EmptyPanel title={translateUiText("Geçmiş Sipariş Yok", locale)} description={translateUiText("Bu masa için daha önce açılmış sipariş kaydı bulunmuyor.", locale)} />
@@ -451,7 +451,7 @@ export function TableManagementModal({
                           <p className="font-display font-numeric mt-2 text-xl font-semibold text-slate-900">{total.toFixed(2)} TL</p>
                         </div>
                         <div className="rounded-2xl bg-white px-4 py-3">
-                          <p className="text-xs font-bold uppercase tracking-[0.16em] text-slate-500">{translateUiText("Odenen", locale)}</p>
+                          <p className="text-xs font-bold uppercase tracking-[0.16em] text-slate-500">{translateUiText("Ödenen", locale)}</p>
                           <p className="font-display font-numeric mt-2 text-xl font-semibold text-emerald-700">{paid.toFixed(2)} TL</p>
                         </div>
                         <div className="rounded-2xl bg-white px-4 py-3">
@@ -467,7 +467,7 @@ export function TableManagementModal({
                           }}
                           className="min-h-11 w-full rounded-2xl border border-slate-200 bg-white px-4 py-3 text-center text-base font-semibold text-slate-700 sm:w-auto sm:text-sm"
                         >
-                          {translateUiText("Adisyonu Gor", locale)}
+                          {translateUiText("Adisyonu Gör", locale)}
                         </button>
                         <Link href={`/cashier?order=${order.id}`} className="inline-flex min-h-11 w-full items-center justify-center rounded-2xl bg-gradient-to-r from-[#ff6a3d] to-[#f2b44f] px-4 py-3 text-center text-base font-semibold text-white sm:w-auto sm:text-sm">
                           {translateUiText("Popup Tahsilat", locale)}
@@ -502,7 +502,7 @@ export function TableManagementModal({
 
               <article className="rounded-[28px] border border-slate-200 bg-white p-5">
                 <h3 className="font-display text-2xl font-semibold tracking-tight text-slate-900">Bölge Atama</h3>
-                <p className="mt-2 text-sm text-slate-600">Masanin hangi bolgede gorunecegini secin.</p>
+                <p className="mt-2 text-sm text-slate-600">Masanin hangi bolgede görünecegini seçin.</p>
                 <form action={assignTableZoneAction} className="mt-4 grid gap-3">
                   <input type="hidden" name="tableId" value={table.id} />
                   <select name="zoneId" defaultValue={table.zone_id ?? "__none__"} className="min-h-12 rounded-2xl border border-slate-300 px-4 py-3 text-base sm:text-sm">
@@ -515,7 +515,7 @@ export function TableManagementModal({
                   </select>
                   <PendingSubmitButton
                     idleLabel="Bolgeyi Güncelle"
-                    pendingLabel="Guncelleniyor..."
+                    pendingLabel="Güncelleniyor..."
                     className="min-h-12 w-full rounded-2xl bg-slate-900 px-4 py-3 text-base font-semibold text-white sm:w-auto sm:text-sm"
                   />
                 </form>
@@ -524,14 +524,14 @@ export function TableManagementModal({
               <article className="rounded-[28px] border border-slate-200 bg-white p-5">
                 <h3 className="font-display text-2xl font-semibold tracking-tight text-slate-900">Rezervasyon</h3>
                 <p className="mt-2 text-sm text-slate-600">
-                  Bu masayi tek tikla rezerveye alabilir veya tekrar boş duruma getirebilirsin.
+                  Bu masayı tek tikla rezerveye alabilir veya tekrar boş duruma getirebilirsin.
                 </p>
                 <form action={updateTableStatusAction} className="mt-4">
                   <input type="hidden" name="tableId" value={table.id} />
                   <input type="hidden" name="status" value={table.status === "reserved" ? "empty" : "reserved"} />
                   <PendingSubmitButton
-                    idleLabel={table.status === "reserved" ? "Rezerveden Cikar (Bos)" : "Masayi Rezerve Yap"}
-                    pendingLabel="Guncelleniyor..."
+                    idleLabel={table.status === "reserved" ? "Rezerveden Çıkar (Boş)" : "Masayı Rezerve Yap"}
+                    pendingLabel="Güncelleniyor..."
                     disabled={table.status === "occupied"}
                     className="min-h-12 w-full rounded-2xl border border-sky-300 bg-white px-4 py-3 text-base font-semibold text-sky-700 disabled:cursor-not-allowed disabled:opacity-50 sm:w-auto sm:text-sm"
                   />
@@ -543,8 +543,8 @@ export function TableManagementModal({
 
               {liveLatestOrder ? (
                 <article className="rounded-[28px] border border-slate-200 bg-white p-5">
-                  <h3 className="font-display text-2xl font-semibold tracking-tight text-slate-900">{translateUiText("Adisyonu Tas", locale)}</h3>
-                  <p className="mt-2 text-sm text-slate-600">{translateUiText("Aktif adisyonu boş bir masaya tasiyarak eski masayi aninda kapat.", locale)}</p>
+                  <h3 className="font-display text-2xl font-semibold tracking-tight text-slate-900">{translateUiText("Adisyonu Taş", locale)}</h3>
+                  <p className="mt-2 text-sm text-slate-600">{translateUiText("Aktif adisyonu boş bir masaya taşıyarak eski masayı aninda kapat.", locale)}</p>
                   <form action={moveTableOrderAction} className="mt-4 grid gap-3">
                     <input type="hidden" name="sourceTableId" value={table.id} />
                     <select
@@ -554,7 +554,7 @@ export function TableManagementModal({
                       defaultValue=""
                     >
                       <option value="" disabled>
-                        {translateUiText("Hedef masa sec", locale)}
+                        {translateUiText("Hedef masa seç", locale)}
                       </option>
                       {movableTables.map((candidate) => (
                         <option key={candidate.id} value={candidate.id}>
@@ -563,25 +563,25 @@ export function TableManagementModal({
                       ))}
                     </select>
                     <PendingSubmitButton
-                      idleLabel={translateUiText("Adisyonu Bu Masaya Tas", locale)}
-                      pendingLabel="Tasiniyor..."
+                      idleLabel={translateUiText("Adisyonu Bu Masaya Taş", locale)}
+                      pendingLabel="Taşınıyor..."
                       disabled={movableTables.length === 0}
                       className="min-h-12 w-full rounded-2xl border border-slate-200 bg-slate-900 px-4 py-3 text-base font-semibold text-white disabled:cursor-not-allowed disabled:opacity-50 sm:w-auto sm:text-sm"
                     />
                   </form>
                   {movableTables.length === 0 ? (
-                    <p className="mt-3 text-sm text-slate-500">{translateUiText("Tasimak için boş baska masa bulunmuyor.", locale)}</p>
+                    <p className="mt-3 text-sm text-slate-500">{translateUiText("Taşımak için boş baska masa bulunmuyor.", locale)}</p>
                   ) : null}
                 </article>
               ) : null}
 
               <article className="rounded-[28px] border border-rose-200 bg-rose-50/60 p-5">
-                <h3 className="font-display text-2xl font-semibold tracking-tight text-slate-900">{translateUiText("Masayi Kaldir", locale)}</h3>
+                <h3 className="font-display text-2xl font-semibold tracking-tight text-slate-900">{translateUiText("Masayı Kaldır", locale)}</h3>
                 <p className="mt-2 text-sm text-slate-600">{translateUiText("Sadece boş masalar silinebilir. Aktif masada önce operasyon tamamlanmalıdır.", locale)}</p>
                 <form action={deleteTableAction} className="mt-4">
                   <input type="hidden" name="tableId" value={table.id} />
                   <PendingSubmitButton
-                    idleLabel={translateUiText("Masayi Sil", locale)}
+                    idleLabel={translateUiText("Masayı Sil", locale)}
                     pendingLabel="Siliniyor..."
                     disabled={table.status !== "empty"}
                     className="min-h-12 w-full rounded-2xl border border-rose-300 bg-white px-4 py-3 text-base font-semibold text-rose-700 disabled:cursor-not-allowed disabled:opacity-50 sm:w-auto sm:text-sm"
@@ -602,16 +602,16 @@ export function TableManagementModal({
                 </div>
                 <div className="mt-4 grid gap-2 sm:grid-cols-2">
                   <a href={qrImage} download={`masa-${table.table_number}-qr.png`} className="inline-flex min-h-11 items-center justify-center rounded-2xl border border-slate-200 bg-slate-50 px-4 py-3 text-center text-base font-semibold text-slate-700 sm:text-sm">
-                    {translateUiText("QR Indir", locale)}
+                    {translateUiText("QR İndir", locale)}
                   </a>
                   <a href={`/admin/tables/${table.id}/print`} target="_blank" rel="noreferrer" className="inline-flex min-h-11 items-center justify-center rounded-2xl border border-slate-200 bg-slate-50 px-4 py-3 text-center text-base font-semibold text-slate-700 sm:text-sm">
-                    {translateUiText("Yazdir", locale)}
+                    {translateUiText("Yazdır", locale)}
                   </a>
                   <a href={qrTarget} target="_blank" rel="noreferrer" className="inline-flex min-h-11 items-center justify-center rounded-2xl border border-slate-200 bg-slate-50 px-4 py-3 text-center text-base font-semibold text-slate-700 sm:text-sm">
-                    {translateUiText("QR Sayfasini Ac", locale)}
+                    {translateUiText("QR Sayfasını A?", locale)}
                   </a>
                   <Link href="/tables" className="inline-flex min-h-11 items-center justify-center rounded-2xl border border-slate-200 bg-slate-50 px-4 py-3 text-center text-base font-semibold text-slate-700 sm:text-sm">
-                    {translateUiText("Masa Ekrani", locale)}
+                    {translateUiText("Masa Ekranı", locale)}
                   </Link>
                 </div>
               </article>

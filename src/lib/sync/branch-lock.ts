@@ -43,7 +43,7 @@ function isActiveAndNotExpired(lock: BranchLockState | undefined) {
 export async function getBranchLockState(branchId: string): Promise<LockResult> {
   const supabase = getSupabaseServerClient();
   if (!supabase) {
-    return { ok: false, error: "Sunucu Supabase baglantisi kurulamadi." };
+    return { ok: false, error: "Sunucu Supabase bağlantısı kurulamadi." };
   }
 
   const { data, error } = await supabase
@@ -54,7 +54,7 @@ export async function getBranchLockState(branchId: string): Promise<LockResult> 
 
   if (error) {
     if (isMissingTableError(error.message)) {
-      return { ok: false, error: "Sync lock tablosu bulunamadi. Migration çalıştırın." };
+      return { ok: false, error: "Sync lock tablosu bulunamadı. Migration çalıştırın." };
     }
     return { ok: false, error: error.message };
   }
@@ -71,7 +71,7 @@ export async function acquireBranchLock(input: {
 }): Promise<LockResult> {
   const supabase = getSupabaseServerClient();
   if (!supabase) {
-    return { ok: false, error: "Sunucu Supabase baglantisi kurulamadi." };
+    return { ok: false, error: "Sunucu Supabase bağlantısı kurulamadi." };
   }
 
   const ttlSeconds = Math.max(30, Math.floor(input.ttlSeconds ?? DEFAULT_LOCK_TTL_SECONDS));
@@ -112,7 +112,7 @@ export async function acquireBranchLock(input: {
     .maybeSingle();
 
   if (write.error && isMissingTableError(write.error.message)) {
-    return { ok: false, error: "Sync lock tablosu bulunamadi. Migration çalıştırın." };
+    return { ok: false, error: "Sync lock tablosu bulunamadı. Migration çalıştırın." };
   }
 
   if (write.error) {
@@ -136,7 +136,7 @@ export async function renewBranchLock(input: {
 }): Promise<LockResult> {
   const supabase = getSupabaseServerClient();
   if (!supabase) {
-    return { ok: false, error: "Sunucu Supabase baglantisi kurulamadi." };
+    return { ok: false, error: "Sunucu Supabase bağlantısı kurulamadi." };
   }
 
   const ttlSeconds = Math.max(30, Math.floor(input.ttlSeconds ?? DEFAULT_LOCK_TTL_SECONDS));
@@ -150,7 +150,7 @@ export async function renewBranchLock(input: {
 
   const current = currentResult.state;
   if (!current || current.status !== "active") {
-    return { ok: false, error: "Yenilenecek aktif lock bulunamadi." };
+    return { ok: false, error: "Yenilenecek aktif lock bulunamadı." };
   }
   if (current.device_id !== input.deviceId || current.lock_token !== input.lockToken) {
     return { ok: false, error: "Lock yenileme yetkisi yok.", conflict: current };
@@ -172,7 +172,7 @@ export async function renewBranchLock(input: {
 
   if (error) {
     if (isMissingTableError(error.message)) {
-      return { ok: false, error: "Sync lock tablosu bulunamadi. Migration çalıştırın." };
+      return { ok: false, error: "Sync lock tablosu bulunamadı. Migration çalıştırın." };
     }
     return { ok: false, error: error.message };
   }
@@ -193,7 +193,7 @@ export async function releaseBranchLock(input: {
 }): Promise<LockResult> {
   const supabase = getSupabaseServerClient();
   if (!supabase) {
-    return { ok: false, error: "Sunucu Supabase baglantisi kurulamadi." };
+    return { ok: false, error: "Sunucu Supabase bağlantısı kurulamadi." };
   }
 
   const currentResult = await getBranchLockState(input.branchId);
@@ -225,7 +225,7 @@ export async function releaseBranchLock(input: {
 
   if (error) {
     if (isMissingTableError(error.message)) {
-      return { ok: false, error: "Sync lock tablosu bulunamadi. Migration çalıştırın." };
+      return { ok: false, error: "Sync lock tablosu bulunamadı. Migration çalıştırın." };
     }
     return { ok: false, error: error.message };
   }
@@ -242,7 +242,7 @@ export function validateLockForDevice(input: {
   lockToken: string;
 }) {
   if (!input.state) {
-    return { ok: false, error: "Branch lock bulunamadi." };
+    return { ok: false, error: "Branch lock bulunamadı." };
   }
   if (input.state.status !== "active") {
     return { ok: false, error: "Branch lock aktif değil." };

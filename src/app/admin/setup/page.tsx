@@ -5,17 +5,17 @@ import { requireRole } from "@/lib/auth";
 const qaScenarios = [
   {
     title: "Masa ve QR",
-    description: "Masa ac, QR görüntüle, müşteri siparisini masa bazli oluştur.",
+    description: "Masa ac, QR görüntüle, müşteri siparişini masa bazli oluştur.",
     href: "/admin/tables",
   },
   {
     title: "Sipariş ve Mutfak",
-    description: "Siparisi mutfaga dusur, hazırla, servise hazır ve geri al akisini dene.",
+    description: "Siparişi mutfaga dusur, hazırla, servise hazır ve geri al akışını dene.",
     href: "/kitchen",
   },
   {
     title: "Kasa ve Bolunmus Ödeme",
-    description: "Nakit, kart, karma ve split payment akislarini tamamla.",
+    description: "Nakit, kart, karma ve split payment akışlarini tamamla.",
     href: "/cashier",
   },
   {
@@ -41,15 +41,15 @@ export default async function AdminSetupPage() {
   return (
     <BackofficePage
       title="Product Ready Kontrol"
-      description="Canliya cikmadan önce kritik akışları tek tek doğrula."
+      description="Canlıya cikmadan önce kritik akışları tek tek doğrula."
       actions={
         <Link href="/ops" className="w-full rounded-2xl border border-slate-200 bg-white px-5 py-3 text-center text-sm font-semibold text-slate-800 sm:w-auto">
-          Operasyona Don
+          Operasyona Dön
         </Link>
       }
     >
       <section className="grid gap-4 xl:grid-cols-3">
-        <SummaryCard label="Kritik Senaryo" value={String(qaScenarios.length)} hint="Canli oncesi tamamlanacak akış" tone="accent" />
+        <SummaryCard label="Kritik Senaryo" value={String(qaScenarios.length)} hint="Canlı oncesi tamamlanacak akış" tone="accent" />
         <SummaryCard label="Kapsam" value="Uctan Uca" hint="Sipariş, mutfak, kasa, teslimat" />
         <SummaryCard label="Hedef" value="Stabil Yayın" hint="Sessiz fail ve yetki sizintisi kalmasin" tone="success" />
       </section>
@@ -59,8 +59,8 @@ export default async function AdminSetupPage() {
         description="Tek tek ekran bakmak yerine butun operasyon hikayesini test et."
         steps={[
           { title: "Akışı tetikle", description: "Masa, sipariş, mutfak veya teslimat verisini oluştur." },
-          { title: "Sonucu doğrula", description: "Karsilik gelen ekranda branch, rol ve durum akislarini izle." },
-          { title: "Raporu kontrol et", description: "İşlem sonunda kasa, rapor ve finans ozetlerinin doğru guncellendigini gör." },
+          { title: "Sonucu doğrula", description: "Karsilik gelen ekranda branch, rol ve durum akışlarini izle." },
+          { title: "Raporu kontrol et", description: "İşlem sonunda kasa, rapor ve finans ozetlerinin doğru güncellendigini gör." },
         ]}
       />
 

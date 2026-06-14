@@ -6,7 +6,7 @@ Hedef bitiş: `1 hafta`
 
 ## Hedef
 - Staging UAT kapsamını netlestirip release gate'e baglamak.
-- Pilot öncesi teknik hazırlık kontrolunu otomatikleştirmek.
+- Pilot öncesi teknik hazırlık kontrolünü otomatikleştirmek.
 
 ## P0 Görevleri
 1. UAT kapsamindaki kritik operasyon senaryolarini dogrulama

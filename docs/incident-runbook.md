@@ -34,7 +34,7 @@
 - Fix deploy sonrası:
   - `/api/health`
   - kritik ekranlar: `/ops`, `/cashier`, `/kitchen`, `/admin/tables`
-  - alert durumu: `/api/alerts/dispatch` (secret ile)
+  - alert durumu: `/api/alerts/dispatch` (seçret ile)
 
 ## 6. Postmortem
 - 24 saat içinde su maddeleri kaydet:
@@ -61,21 +61,21 @@
   - Gerekli ise timeout/retry limitlerini revize et.
   - Olayi postmortem'e "finans durum uzlasmazligi" basligiyla ekle.
 
-## 8. Ozel Prosedur - QR Siparis Arizasi
+## 8. Özel Prosedur - QR Sipariş Arizasi
 - Semptom:
-  - Musteri QR sayfasinda siparisi tamamlayamiyor.
-  - `403` token hatasi, `404` masa bulunamadi, `503` token misconfigured.
-  - Ayni sepet icin tekrar siparis acildigi bildirimi.
+  - Müşteri QR sayfasinda siparişi tamamlayamiyor.
+  - `403` token hatasi, `404` masa bulunamadı, `503` token misconfigured.
+  - Ayn? sepet icin tekrar sipariş açıldıgi bildirimi.
 - Ilk kontrol:
   - Istekte `x-correlation-id` ve `x-operation-ms` degerlerini not et.
   - `orders.create.qr_token_invalid`, `orders.latest.qr_token_invalid`, `orders.history.qr_token_invalid` eventlerini kontrol et.
   - `orders.create.failed` icinde `commandStatus` ve `resultStatus` alanlarini kontrol et.
   - `qr.token.refresh.*` eventlerini kontrol et (yenileme endpoint sagligi).
 - Acil aksiyon:
-  - Musteriyi ayni QR kodu yeniden okutmaya yonlendir.
+  - Müşteriyi ayn? QR kodu yeniden okutmaya yonlendir.
   - `QR_ACCESS_SECRET` varligini ve ortama dogru yuklendigini dogrula.
   - `TABLE_NOT_FOUND` durumunda ilgili masanin `qr_code_identifier` kaydini kontrol et.
-  - Cift siparis raporunda `x-idempotency-key` tekrarlarini kontrol et.
+  - Cift sipariş raporunda `x-idempotency-key` tekrarlarini kontrol et.
 - Alarm esikleri:
   - `orders.latest.delay_alert` warning: pending >= 15 dk veya preparing >= 20 dk.
   - `orders.latest.delay_alert` critical: pending >= 25 dk veya preparing >= 35 dk.

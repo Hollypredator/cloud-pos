@@ -11,7 +11,7 @@ Hedef bitiş: `1 hafta`
 ## P0 Görevleri
 1. Ödeme ve iade işlemlerinde request-key idempotency
 2. İade tutarı üst limit doğrulaması (over-refund engeli)
-3. Tahsilat alinmis sipariste iptal blokaji
+3. Tahsilat alinmis siparişte iptal blokaji
 
 ## Bu Fazda Yapılanlar
 - [x] `payments.idempotency_key` kolonu ve unique index migration'i eklendi.

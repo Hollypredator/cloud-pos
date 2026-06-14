@@ -9,7 +9,7 @@ export function RouteLoading({ title }: { title: string }) {
           <div className="h-24 rounded-2xl bg-slate-100" />
         </div>
         <div className="rounded-2xl border border-slate-200 bg-white p-5">
-          <p className="text-sm font-semibold text-slate-700">{title} yukleniyor...</p>
+          <p className="text-sm font-semibold text-slate-700">{title} yükleniyor...</p>
         </div>
         <div className="grid gap-4 xl:grid-cols-2">
           <div className="h-64 rounded-2xl bg-slate-100" />

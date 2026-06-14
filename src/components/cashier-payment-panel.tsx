@@ -175,7 +175,7 @@ export function CashierPaymentPanel({
         <div className="rounded-[20px] border border-slate-200 bg-white p-4">
           <div className="flex flex-col items-start gap-1">
             <p className="text-xs font-bold uppercase tracking-[0.16em] text-slate-500">Esit Paylastir</p>
-            <p className="text-sm text-slate-500">Tek dokunusta kisi basi tahsilat oluştur.</p>
+            <p className="text-sm text-slate-500">Tek dokunusta kişi basi tahsilat oluştur.</p>
           </div>
           <div className="mt-3 grid gap-2 sm:grid-cols-3">
             {[2, 3, 4].map((splitCount) => (
@@ -185,14 +185,14 @@ export function CashierPaymentPanel({
                 onClick={() => applySplit(splitCount)}
                 className="min-h-[44px] rounded-2xl border border-slate-200 bg-slate-50 px-3 py-3 text-sm font-semibold text-slate-700 transition hover:border-slate-300 hover:bg-white"
               >
-                {splitCount} Kisi
+                {splitCount} Kişi
               </button>
             ))}
           </div>
           <div className="mt-3 grid gap-2 text-xs text-slate-500">
-            <p>2 kisi: {(defaultAmount / 2).toFixed(2)} TL</p>
-            <p>3 kisi: {(defaultAmount / 3).toFixed(2)} TL</p>
-            <p>4 kisi: {(defaultAmount / 4).toFixed(2)} TL</p>
+            <p>2 kişi: {(defaultAmount / 2).toFixed(2)} TL</p>
+            <p>3 kişi: {(defaultAmount / 3).toFixed(2)} TL</p>
+            <p>4 kişi: {(defaultAmount / 4).toFixed(2)} TL</p>
           </div>
         </div>
 

@@ -157,8 +157,8 @@ function stationHref(station: KitchenStation) {
 }
 
 function statusLabel(status: string) {
-  if (status === "served" || status === "ready") return "Servise Hazir";
-  if (status === "preparing") return "Hazirlaniyor";
+  if (status === "served" || status === "ready") return "Servise Hazır";
+  if (status === "preparing") return "Hazırlanıyor";
   return "Bekliyor";
 }
 
@@ -276,7 +276,7 @@ export default async function MobileKitchenPage({
           <p className="m-value text-orange-700">{orders.length}</p>
         </article>
         <article className="m-card text-center">
-          <p className="m-label">Hazirlanan</p>
+          <p className="m-label">Hazırlanan</p>
           <p className="m-value text-sky-700">{totalPreparing}</p>
         </article>
         <article className="m-card text-center">
@@ -301,7 +301,7 @@ export default async function MobileKitchenPage({
             <p className="m-label">Aktif Istasyon</p>
             <h2 className="mt-1 text-lg font-semibold text-slate-950">{stationLabel(activeBoard.key)}</h2>
             <p className="m-muted mt-1">
-              {activeBoard.pending} bekleyen - {activeBoard.preparing} hazirlanan - {activeBoard.served} hazir
+              {activeBoard.pending} bekleyen - {activeBoard.preparing} hazırlanan - {activeBoard.served} hazır
             </p>
           </div>
           <span className={`m-pill ${activeBoard.critical > 0 ? "m-tone-critical" : activeBoard.delayed > 0 ? "m-tone-warning" : "m-tone-neutral"}`}>
@@ -313,8 +313,8 @@ export default async function MobileKitchenPage({
       <section className="m-stack mt-3">
         {activeBoard.orders.length === 0 ? (
           <article className="m-card">
-            <p className="m-value-sm">Bu istasyonda aktif siparis yok.</p>
-            <p className="m-muted mt-1">Yeni siparis geldiginde burada gorunur.</p>
+            <p className="m-value-sm">Bu istasyonda aktif sipariş yok.</p>
+            <p className="m-muted mt-1">Yeni sipariş geldiginde burada görünur.</p>
           </article>
         ) : (
           activeBoard.orders.map((order) => {
@@ -332,7 +332,7 @@ export default async function MobileKitchenPage({
                 <div className="flex items-start justify-between gap-3">
                   <div className="min-w-0">
                     <p className="m-label">{orderSourceLabel(order)}</p>
-                    <p className="m-value-sm truncate">Siparis #{orderRef(order)}</p>
+                    <p className="m-value-sm truncate">Sipariş #{orderRef(order)}</p>
                     <p className="m-muted mt-1">{new Date(order.created_at).toLocaleTimeString("tr-TR")}</p>
                   </div>
                   <span className={`m-pill ${statusTone(stationStatus)}`}>{statusLabel(stationStatus)}</span>
@@ -364,8 +364,8 @@ export default async function MobileKitchenPage({
                   <input type="hidden" name="station" value={activeBoard.key} />
                   <input type="hidden" name="nextStatus" value={nextStatus} />
                   <PendingSubmitButton
-                    idleLabel={stationStatus === "pending" ? "Hazirlanmaya Al" : stationStatus === "preparing" ? "Servise Hazir" : "Geri Al"}
-                    pendingLabel="Guncelleniyor..."
+                    idleLabel={stationStatus === "pending" ? "Hazırlanmaya Al" : stationStatus === "preparing" ? "Servise Hazır" : "Geri Al"}
+                    pendingLabel="Güncelleniyor..."
                     showToastOnClick={true}
                     className="m-btn-primary w-full"
                   />

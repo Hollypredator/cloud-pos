@@ -100,7 +100,7 @@ async function assignAuthUserAction(formData: FormData) {
   }
 
   if (!roles.includes(role as AppRole)) {
-    redirect(feedbackHref("error", "Secilen rol geçersiz."));
+    redirect(feedbackHref("error", "Seçilen rol geçersiz."));
   }
 
   const result = await assignExistingAuthUserToBusiness({
@@ -116,7 +116,7 @@ async function assignAuthUserAction(formData: FormData) {
   }
 
   revalidatePath("/admin/roles");
-  redirect(feedbackHref("success", "Auth kullanicisi isletmeye baglandi.", result.id));
+  redirect(feedbackHref("success", "Auth kullanicisi işletmeye baglandi.", result.id));
 }
 
 async function updateStaffAction(formData: FormData) {
@@ -137,7 +137,7 @@ async function updateStaffAction(formData: FormData) {
     typeof role !== "string" ||
     typeof accessScope !== "string"
   ) {
-    redirect(feedbackHref("error", "Guncellenecek personel bulunamadi."));
+    redirect(feedbackHref("error", "Güncellenecek personel bulunamadı."));
   }
 
   const result = await updateStaffAccount({
@@ -163,7 +163,7 @@ async function deleteStaffAction(formData: FormData) {
 
   const profileId = formData.get("profileId");
   if (typeof profileId !== "string") {
-    redirect(feedbackHref("error", "Silinecek personel bulunamadi."));
+    redirect(feedbackHref("error", "Silinecek personel bulunamadı."));
   }
 
   const result = await deleteStaffAccount(profileId);
@@ -184,7 +184,7 @@ function roleLabel(role: AppRole) {
 }
 
 function scopeLabel(scope?: StaffAccessScope) {
-  return scope === "business" ? "Tüm Subeler" : "Tek Şube";
+  return scope === "business" ? "Tüm Şubeler" : "Tek Şube";
 }
 
 export default async function AdminRolesPage({
@@ -222,7 +222,7 @@ export default async function AdminRolesPage({
     [profilesResult, branchesResult] = await Promise.all([profilesPromise, branchesPromise]);
   } catch (error) {
     console.error("[admin/roles] data fetch failed", error);
-    fetchFeedback = "Personel verileri gecici olarak yuklenemedi. Lütfen sayfayi yenileyin.";
+    fetchFeedback = "Personel verileri gecici olarak yüklenemedi. Lütfen sayfayi yenileyin.";
     fetchFeedbackTone = "error";
     profilesResult = {
       label: "list_profiles",
@@ -276,13 +276,13 @@ export default async function AdminRolesPage({
             </div>
           </div>
           <div className="rounded-[24px] border border-slate-200 bg-slate-50 px-4 py-4 text-sm text-slate-600">
-            Bu ekranda sadece işletme personeli yönetilir. Demo ekip, sunum akışı ve platform notlari gosterilmez.
+            Bu ekranda sadece işletme personeli yönetilir. Demo ekip, sunum akışı ve platform notlari gösterilmez.
           </div>
         </SidebarPanel>
       }
       actions={
         <Link href="/ops" className="w-full rounded-2xl border border-slate-200 bg-white px-5 py-3 text-center text-sm font-semibold text-slate-800 sm:w-auto">
-          Panele Don
+          Panele Dön
         </Link>
       }
     >
@@ -303,16 +303,16 @@ export default async function AdminRolesPage({
       <section className="grid gap-4 xl:grid-cols-4">
         <SummaryCard label="Patron" value={String(roleCounts.owner)} hint="Tüm şubeler" tone="accent" />
         <SummaryCard label="Yonetici" value={String(roleCounts.admin)} hint="Atanmis şube" />
-        <SummaryCard label="Kasa" value={String(roleCounts.cashier)} hint="Tahsilat ve gun sonu" />
-        <SummaryCard label="Mutfak" value={String(roleCounts.kitchen)} hint="Hazirlama kuyrugu" tone="danger" />
+        <SummaryCard label="Kasa" value={String(roleCounts.cashier)} hint="Tahsilat ve gün sonu" />
+        <SummaryCard label="Mutfak" value={String(roleCounts.kitchen)} hint="Hazırlama kuyrugu" tone="danger" />
       </section>
 
       <WorkflowGuide
-        title="Personeli 3 Adimda Hazirla"
+        title="Personeli 3 Adimda Hazırla"
         description="Yeni biri sisteme eklendiginde ekip yapısı hizla kurulabilsin."
         steps={[
           { title: "Yeni kullaniciyi ekle", description: "Ad soyad, e-posta ve gecici sifre ile personel hesabini oluştur." },
-          { title: "Dogru rolu sec", description: "Patron tüm subeleri, yönetici ise atanmış şubeyi yönetsin." },
+          { title: "Dogru rolu seç", description: "Patron tüm Şubeleri, yönetici ise atanmış şubeyi yönetsin." },
           { title: "Listeden kontrol et", description: "Olusan personeli listeden doğrula ve gerekirse rolu hemen güncelle." },
         ]}
       />
@@ -350,7 +350,7 @@ export default async function AdminRolesPage({
             </select>
             <select name="accessScope" defaultValue="branch" className="rounded-2xl border border-slate-200 bg-slate-50 px-4 py-3 text-sm">
               <option value="branch">Tek Şube Erisimi</option>
-              <option value="business">Tüm Subeler (yalnızca patron)</option>
+              <option value="business">Tüm Şubeler (yalnızca patron)</option>
             </select>
             <select name="branchId" defaultValue={branches[0]?.id ?? ""} className="rounded-2xl border border-slate-200 bg-slate-50 px-4 py-3 text-sm">
               {branches.map((branch) => (
@@ -365,7 +365,7 @@ export default async function AdminRolesPage({
           </form>
         </ContentCard>
 
-        <ContentCard title="Auth Kullanicisini Isletmeye Bagla">
+        <ContentCard title="Auth Kullanicisini İşletmeye Bagla">
           <form action={assignAuthUserAction} className="grid gap-3">
             <input
               type="email"
@@ -388,7 +388,7 @@ export default async function AdminRolesPage({
             </select>
             <select name="accessScope" defaultValue="branch" className="rounded-2xl border border-slate-200 bg-slate-50 px-4 py-3 text-sm">
               <option value="branch">Tek Şube Erisimi</option>
-              <option value="business">Tüm Subeler (yalnızca patron)</option>
+              <option value="business">Tüm Şubeler (yalnızca patron)</option>
             </select>
             <select name="branchId" defaultValue={branches[0]?.id ?? ""} className="rounded-2xl border border-slate-200 bg-slate-50 px-4 py-3 text-sm">
               {branches.map((branch) => (
@@ -407,7 +407,7 @@ export default async function AdminRolesPage({
       <section>
         <ContentCard title="Personel Listesi">
           {staffProfiles.length === 0 ? (
-            <EmptyPanel title="Personel yok" description="Ilk kullaniciyi ekledikten sonra ekip listesi burada gorunecek." />
+            <EmptyPanel title="Personel yok" description="Ilk kullaniciyi ekledikten sonra ekip listesi burada görünecek." />
           ) : (
             <div className="space-y-3">
               {staffProfiles.map((profile) => (
@@ -502,7 +502,7 @@ export default async function AdminRolesPage({
                     className="rounded-2xl border border-slate-200 bg-slate-50 px-4 py-3 text-sm"
                   >
                     <option value="branch">Tek Şube Erisimi</option>
-                    <option value="business">Tüm Subeler (yalnızca patron)</option>
+                    <option value="business">Tüm Şubeler (yalnızca patron)</option>
                   </select>
                   <select
                     name="branchId"
@@ -521,7 +521,7 @@ export default async function AdminRolesPage({
                 </form>
               </ContentCard>
 
-              <ContentCard title="Personeli Kaldir">
+              <ContentCard title="Personeli Kaldır">
                 <div className="space-y-4">
                   <div className="rounded-[22px] border border-slate-200 bg-slate-50 p-4 text-sm text-slate-600">
                     Personel silinince giriş hesabi da kaldirilir. Son patron hesap silinemez.

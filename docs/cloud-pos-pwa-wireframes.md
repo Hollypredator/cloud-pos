@@ -67,7 +67,7 @@ The basket becomes a bottom sheet on mobile. Categories become a horizontal segm
 ├────────────────────────────────────┤
 │ Ara Toplam              505.00 TL  │
 │ Not / servis notu                 │
-│ [ Mutfaga Gonder ]                 │
+│ [ Mutfaga Günder ]                 │
 │ [ Kasa / Tahsilat ]                │
 └────────────────────────────────────┘
 ```
@@ -111,7 +111,7 @@ The basket becomes a bottom sheet on mobile. Categories become a horizontal segm
 │ Burgerler    │ Cappuccino           +       │ Cappuccino x1  │
 │              │ Flat White           +       │ Caramel    x1  │
 │              │                              │                │
-│              │                              │ Mutfaga Gonder │
+│              │                              │ Mutfaga Günder │
 └──────────────┴──────────────────────────────┴────────────────┘
 ```
 

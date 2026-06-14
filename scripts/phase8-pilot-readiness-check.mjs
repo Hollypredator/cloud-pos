@@ -8,7 +8,7 @@ function fail(message) {
 function ensureFile(relPath) {
   const absPath = path.join(process.cwd(), relPath);
   if (!fs.existsSync(absPath)) {
-    fail(`dosya bulunamadi: ${relPath}`);
+    fail(`dosya bulunamadı: ${relPath}`);
   }
   return fs.readFileSync(absPath, "utf8");
 }
@@ -26,7 +26,7 @@ function run() {
     .filter((line) => line.trim().startsWith("- [ ]"));
 
   if (unchecked.length > 0) {
-    fail(`go-live checklist acik maddeler var: ${unchecked.join(" | ")}`);
+    fail(`go-live checklist açık maddeler var: ${unchecked.join(" | ")}`);
   }
 
   console.log("[phase8:pilot] ok");

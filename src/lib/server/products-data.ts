@@ -57,7 +57,7 @@ function fireAndForgetProductAudit(
   void deps.logAuditEvent(input).catch(() => {});
 }
 
-export type ProductManagementTab = "catalog" | "menu" | "categories" | "bulk" | "features" | "import" | "recipe";
+export type ProductManagementTab = "catalog" | "menü" | "categories" | "bulk" | "features" | "import" | "recipe";
 
 function getProductManagementIncludes(tab: ProductManagementTab) {
   if (tab === "catalog" || tab === "features" || tab === "recipe") {
@@ -458,7 +458,7 @@ export async function updateProductImpl(
 ) {
   const supabase = getSupabaseServerClient();
   if (!supabase) {
-    return { ok: false, error: "Demo modda ürün guncelleme pasif." };
+    return { ok: false, error: "Demo modda ürün güncelleme pasif." };
   }
 
   const scope = await deps.getDefaultBusinessScope();
@@ -627,7 +627,7 @@ export async function updateCategoryPrepStationImpl(
 ) {
   const supabase = getSupabaseServerClient();
   if (!supabase) {
-    return { ok: false, error: "Demo modda kategori istasyon guncelleme pasif." };
+    return { ok: false, error: "Demo modda kategori istasyon güncelleme pasif." };
   }
 
   const scope = await deps.getDefaultBusinessScope();
@@ -641,16 +641,16 @@ export async function updateCategoryPrepStationImpl(
     return { ok: false, error: categoryError.message };
   }
   if (!categoryRow) {
-    return { ok: false, error: "Kategori bulunamadi." };
+    return { ok: false, error: "Kategori bulunamadı." };
   }
 
   const categoryBusinessId = (categoryRow as { business_id?: string | null }).business_id ?? null;
   const categoryProfileScope = (categoryRow as { profile_scope?: ProductProfileScope | null }).profile_scope ?? "restaurant";
   if (!scope.useLegacySchema && scope.businessId && categoryBusinessId && categoryBusinessId !== scope.businessId) {
-    return { ok: false, error: "Bu kategori icin istasyon guncelleme yetkin yok." };
+    return { ok: false, error: "Bu kategori icin istasyon güncelleme yetkin yok." };
   }
   if (!scope.useLegacySchema && categoryProfileScope !== activeProfileScope) {
-    return { ok: false, error: "Aktif sube profili disindaki kategori guncellenemez." };
+    return { ok: false, error: "Aktif Şube profili disindaki kategori güncellenemez." };
   }
 
   const { error } = await supabase
@@ -688,7 +688,7 @@ export async function deleteCategoryImpl(categoryId: string, deps: ProductDeps) 
   }
   const { data: linkedProducts } = await linkedProductsQuery;
   if ((linkedProducts ?? []).length > 0) {
-    return { ok: false, error: "Bu kategoriye bagli urunler var." };
+    return { ok: false, error: "Bu kategoriye bagli Ürünler var." };
   }
 
   let deleteQuery = supabase.from("categories").delete().eq("id", categoryId);

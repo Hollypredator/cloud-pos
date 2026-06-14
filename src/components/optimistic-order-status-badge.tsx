@@ -21,7 +21,7 @@ function resolveStatusLabel(status: OrderStatus) {
   if (status === "ready") return "Hazır";
   if (status === "served") return "Teslim edildi";
   if (status === "cancelled") return "İptal";
-  if (status === "paid") return "Kapandi";
+  if (status === "paid") return "Kapand?";
   return status;
 }
 

@@ -93,7 +93,7 @@ export default async function AdminBlogPage({
           </div>
         </header>
 
-        {usingDemoData ? <p className="rounded-lg bg-amber-100 px-3 py-2 text-sm text-amber-900">Demo blog verisi gosteriliyor.</p> : null}
+        {usingDemoData ? <p className="rounded-lg bg-amber-100 px-3 py-2 text-sm text-amber-900">Demo blog verisi gösteriliyor.</p> : null}
         {error ? <p className="rounded-lg bg-rose-100 px-3 py-2 text-sm text-rose-900">{error}</p> : null}
 
         <section className="grid gap-6 xl:grid-cols-[420px_minmax(0,1fr)]">
@@ -176,7 +176,7 @@ export default async function AdminBlogPage({
                       defaultValue={selectedPost?.status ?? "draft"}
                       className="rounded-xl border border-slate-300 px-4 py-3 text-sm"
                     >
-                      <option value="draft">Taslak</option>
+                      <option value="draft">Taşlak</option>
                       <option value="published">Yayinlandi</option>
                     </select>
                   </div>
@@ -215,7 +215,7 @@ export default async function AdminBlogPage({
 
             {selectedPost ? (
               <article className="rounded-[2rem] border border-slate-200 bg-white p-6 shadow-sm">
-                <p className="text-xs font-semibold uppercase tracking-[0.24em] text-slate-500">Onizleme</p>
+                <p className="text-xs font-semibold uppercase tracking-[0.24em] text-slate-500">Önizleme</p>
                 {selectedPost.cover_image_url ? (
                   <img src={selectedPost.cover_image_url} alt={selectedPost.title} className="mt-4 h-64 w-full rounded-[1.5rem] object-cover" />
                 ) : null}

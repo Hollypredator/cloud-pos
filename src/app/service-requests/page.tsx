@@ -77,7 +77,7 @@ export default async function ServiceRequestsPage({
   return (
     <BackofficePage
       title="Masa Talepleri"
-      description="Garson cagri ve hesap isteklerini tek kuyrukta yonet."
+      description="Garson cagri ve hesap isteklerini tek kuyrukta yönet."
       sidebar={
         <SidebarPanel title="Servis Durumu" description="Acil talepleri gecikmeden kapat.">
           <div className="rounded-[24px] bg-gradient-to-br from-slate-900 via-slate-800 to-slate-700 p-5 text-white">
@@ -96,7 +96,7 @@ export default async function ServiceRequestsPage({
           </div>
           <div className="grid gap-3">
             <Link href="/ops" className="rounded-2xl bg-slate-100 px-4 py-4 text-sm font-semibold text-slate-800 transition hover:bg-slate-200">
-              Operasyon Merkezine Don
+              Operasyon Merkezine Dön
             </Link>
             <Link href="/cashier" className="rounded-2xl bg-slate-100 px-4 py-4 text-sm font-semibold text-slate-800 transition hover:bg-slate-200">
               Adisyonlara Git
@@ -118,7 +118,7 @@ export default async function ServiceRequestsPage({
     >
       {usingDemoData ? (
         <div className="rounded-[24px] border border-amber-200 bg-amber-50 px-5 py-4 text-sm text-amber-900">
-          Demo modda masa talebi verisi uretilmiyor. Canli akista QR ve masa ekranindan bu kuyruk dolar.
+          Demo modda masa talebi verisi uretilmiyor. Canlı akışta QR ve masa ekranindan bu kuyruk dolar.
         </div>
       ) : null}
 
@@ -126,7 +126,7 @@ export default async function ServiceRequestsPage({
         <SummaryCard
           label={activeStatus === "open" ? "Toplam Talep" : "Cozulen Talep"}
           value={String(requests.length)}
-          hint={activeStatus === "open" ? "Açık servis kuyrugu" : "Kapanan servis gecmisi"}
+          hint={activeStatus === "open" ? "Açık servis kuyrugu" : "Kapanan servis geçmişi"}
           tone="accent"
         />
         <SummaryCard label="Garson" value={String(waiterCalls)} hint="Mudahale isteyen masa" />
@@ -161,7 +161,7 @@ export default async function ServiceRequestsPage({
 
         {requests.length === 0 ? (
           <MobileTaskCard subtitle="Açık talep yok">
-            <p className="text-sm text-slate-500">Garson cagri veya hesap isteği geldikce bu kuyrukta gorunecek.</p>
+            <p className="text-sm text-slate-500">Garson cagri veya hesap isteği geldikce bu kuyrukta görünecek.</p>
           </MobileTaskCard>
         ) : (
           requests.map((request) => (
@@ -192,10 +192,10 @@ export default async function ServiceRequestsPage({
         <div className="grid grid-cols-2 gap-2">
           {hasPreviousPage ? (
             <Link href={statusHref(activeStatus, page - 1)} className="mobile-cta-secondary inline-flex items-center justify-center border border-slate-200 bg-white px-4 py-3 text-sm font-semibold text-slate-700">
-              Onceki
+              önceki
             </Link>
           ) : (
-            <span className="mobile-cta-secondary inline-flex items-center justify-center border border-slate-200 bg-slate-100 px-4 py-3 text-sm font-semibold text-slate-400">Onceki</span>
+            <span className="mobile-cta-secondary inline-flex items-center justify-center border border-slate-200 bg-slate-100 px-4 py-3 text-sm font-semibold text-slate-400">önceki</span>
           )}
           {hasNextPage ? (
             <Link href={statusHref(activeStatus, page + 1)} className="mobile-cta-secondary inline-flex items-center justify-center border border-slate-200 bg-white px-4 py-3 text-sm font-semibold text-slate-700">
@@ -212,7 +212,7 @@ export default async function ServiceRequestsPage({
         description="Servis ekranini ilk kez acan biri hangi talepe nasıl bakacagini hemen anlasin."
         className="app-mobile-hide"
         steps={[
-          { title: "Masa numarasina bak", description: "Kartin ustundeki masa numarasi talebin hangi masadan geldigini gosterir." },
+          { title: "Masa numarasina bak", description: "Kartin ustundeki masa numarasi talebin hangi masadan geldigini gösterir." },
           { title: "Talep tipini ayirt et", description: "Garson Cagir ise masaya git; Hesap Istegi ise gerekirse kasaya veya adisyona yonel." },
           { title: "Is bitince kapat", description: "Talep cozuldugunde Cozuldu Olarak Isaretle butonuna bas; kuyruk temiz kalsin." },
         ]}
@@ -220,7 +220,7 @@ export default async function ServiceRequestsPage({
 
       <ContentCard title="Açık Talepler" className="app-mobile-hide">
         {requests.length === 0 ? (
-          <EmptyPanel title="Açık talep yok" description="Garson cagri veya hesap isteği geldikce bu kuyrukta gorunecek." />
+          <EmptyPanel title="Açık talep yok" description="Garson cagri veya hesap isteği geldikce bu kuyrukta görünecek." />
         ) : (
           <div className="space-y-4">
             <div className="grid gap-4 xl:grid-cols-2">
@@ -263,10 +263,10 @@ export default async function ServiceRequestsPage({
             <div className="flex flex-wrap items-center justify-end gap-2">
               {hasPreviousPage ? (
                 <Link href={statusHref(activeStatus, page - 1)} className="rounded-2xl border border-slate-200 bg-white px-4 py-2 text-sm font-semibold text-slate-700">
-                  Onceki
+                  önceki
                 </Link>
               ) : (
-                <span className="rounded-2xl border border-slate-200 bg-slate-100 px-4 py-2 text-sm font-semibold text-slate-400">Onceki</span>
+                <span className="rounded-2xl border border-slate-200 bg-slate-100 px-4 py-2 text-sm font-semibold text-slate-400">önceki</span>
               )}
               {hasNextPage ? (
                 <Link href={statusHref(activeStatus, page + 1)} className="rounded-2xl border border-slate-200 bg-white px-4 py-2 text-sm font-semibold text-slate-700">

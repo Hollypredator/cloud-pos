@@ -27,7 +27,7 @@ function run() {
   for (const relPath of requiredFiles) {
     const absPath = path.join(process.cwd(), relPath);
     if (!fs.existsSync(absPath)) {
-      fail(`dosya bulunamadi: ${relPath}`);
+      fail(`dosya bulunamadı: ${relPath}`);
     }
 
     const source = fs.readFileSync(absPath, "utf8");

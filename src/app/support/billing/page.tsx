@@ -10,7 +10,7 @@ export default async function SupportBillingPage() {
     <main className="mx-auto w-full max-w-7xl space-y-6 px-4 py-8 md:px-8">
       <header>
         <p className="text-sm text-slate-500">Billing Governance</p>
-        <h1 className="text-3xl font-semibold text-slate-900">Billing ve renewal gorunumu</h1>
+        <h1 className="text-3xl font-semibold text-slate-900">Billing ve renewal görünumu</h1>
       </header>
 
       <section className="grid gap-4 md:grid-cols-2 xl:grid-cols-3">

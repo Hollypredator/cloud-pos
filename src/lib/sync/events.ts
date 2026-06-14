@@ -42,7 +42,7 @@ export async function listSyncEvents(input: {
 }) {
   const supabase = getSupabaseServerClient();
   if (!supabase) {
-    return { ok: false as const, error: "Sunucu Supabase baglantisi kurulamadi.", events: [] as SyncEvent[], nextCursor: String(input.cursor ?? 0) };
+    return { ok: false as const, error: "Sunucu Supabase bağlantısı kurulamadi.", events: [] as SyncEvent[], nextCursor: String(input.cursor ?? 0) };
   }
 
   const cursor = Math.max(0, Math.floor(input.cursor ?? 0));
@@ -67,7 +67,7 @@ export async function listSyncEvents(input: {
     if (isMissingTableError(error.message, "ops_sync_events")) {
       return {
         ok: false as const,
-        error: "ops_sync_events tablosu bulunamadi. Migration çalıştırın.",
+        error: "ops_sync_events tablosu bulunamadı. Migration çalıştırın.",
         events: [] as SyncEvent[],
         nextCursor: String(cursor),
       };
