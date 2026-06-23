@@ -24,7 +24,7 @@ export const operationLinks: SidebarNavItem[] = [
   { href: "/admin/finance", label: "Gelir/Gider", icon: "GG", roles: ["admin"], feature: "finance_dashboard", businessTypes: ["restaurant_cafe"] },
   { href: "/admin/accounting", label: "Muhasebe", icon: "MH", roles: ["admin"], feature: "finance_dashboard", businessTypes: ["restaurant_cafe"] },
   { href: "/admin/stock", label: "Stok", icon: "ST", roles: ["admin"], feature: "inventory_management", businessTypes: ["restaurant_cafe", "self_service_coffee"] },
-  { href: "/admin/settings", label: "İşletme Ayarlar?", icon: "AY", roles: ["owner"], businessTypes: ["restaurant_cafe", "self_service_coffee"] },
+  { href: "/admin/settings", label: "İşletme Ayarları", icon: "AY", roles: ["owner"], businessTypes: ["restaurant_cafe", "self_service_coffee"] },
   { href: "/admin/businesses", label: "Şubeler", icon: "SB", roles: ["owner"], feature: "multi_branch", requiresBusinessScope: true, businessTypes: ["restaurant_cafe", "self_service_coffee"] },
   { href: "/admin/products", label: "Ürünler", icon: "UR", roles: ["admin"] },
   { href: "/admin/tables", label: "Bolge ve Masa", icon: "MS", roles: ["admin"], businessTypes: ["restaurant_cafe"] },

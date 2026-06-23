@@ -120,7 +120,7 @@ export const defaultLandingContent: LandingContent = {
       badge: "Cloud POS",
       title: "Cafe ve restoran operasyonunu tek panelden yönetin.",
       body:
-        "Cloud POS; masa, adisyon, mutfak, kasa ve yönetsel raporlari ayn? sistemde toplar. Müşteri menüyü kendi telefonunda görür, sipariş ve operasyon akışı personel tarafindan yönetilir.",
+        "Cloud POS; masa, adisyon, mutfak, kasa ve yönetsel raporlari aynı sistemde toplar. Müşteri menüyü kendi telefonunda görür, sipariş ve operasyon akışı personel tarafindan yönetilir.",
       primaryCtaLabel: "Panele Giriş",
       primaryCtaHref: "/login",
       secondaryCtaLabel: "Demo Incele",
@@ -142,7 +142,7 @@ export const defaultLandingContent: LandingContent = {
         },
         {
           title: "Canlı Operasyon",
-          body: "Mutfak, kasa ve servis ekipleri ayn? akışı es zamanli izler ve operasyon kopmadan ilerler.",
+          body: "Mutfak, kasa ve servis ekipleri aynı akışı es zamanli izler ve operasyon kopmadan ilerler.",
         },
         {
           title: "Yönetsel Kontrol",
@@ -157,7 +157,7 @@ export const defaultLandingContent: LandingContent = {
       eyebrow: "Nasıl Calisir",
       items: [
         { title: "1. Kurulum", body: "İşletme, şube, masa ve personel yapısı kısa sürede hazırlanır." },
-        { title: "2. Operasyon", body: "Adisyon, mutfak, servis ve kasa akışı ayn? sistemde ilerler." },
+        { title: "2. Operasyon", body: "Adisyon, mutfak, servis ve kasa akışı aynı sistemde ilerler." },
         { title: "3. Takip", body: "Gün sonu, finans ve yönetsel raporlar panel uzerinden izlenir." },
       ],
     },
@@ -214,7 +214,7 @@ export const defaultLandingContent: LandingContent = {
         },
         {
           title: "Ekipler farkli ekran mi kullanir?",
-          body: "Evet. Mutfak, kasa, servis ve yönetim ayn? sistemin rol bazli ayri ekranlarini kullanir.",
+          body: "Evet. Mutfak, kasa, servis ve yönetim aynı sistemin rol bazli ayri ekranlarini kullanir.",
         },
         {
           title: "QR ile sipariş aliniyor mu?",

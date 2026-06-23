@@ -106,7 +106,7 @@ export async function POST(request: NextRequest) {
     const firstAttempt = await withTimeout(
       supabase.auth.signInWithPassword({ email, password }),
       LOGIN_TIMEOUT_MS,
-      "Giriş isteği zaman a??m?na u?rad?.",
+      "Giriş isteği zaman aşımına uğradı.",
     );
 
     let signInError = firstAttempt.error ?? null;
@@ -118,7 +118,7 @@ export async function POST(request: NextRequest) {
       const retryAttempt = await withTimeout(
         supabase.auth.signInWithPassword({ email: retryEmail, password: retryPassword }),
         LOGIN_TIMEOUT_MS,
-        "Giriş isteği zaman a??m?na u?rad?.",
+        "Giriş isteği zaman aşımına uğradı.",
       );
       signInError = retryAttempt.error ?? null;
     }

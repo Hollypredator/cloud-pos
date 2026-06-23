@@ -686,7 +686,7 @@ export async function assignTableZoneImpl(
   const { error } = await updateQuery;
   if (error) {
     if (isDuplicateTableNumberError(error.message)) {
-      return { ok: false, error: "Hedef bolgede ayn? masa numarasi oldugu için atama yapilamadi." };
+      return { ok: false, error: "Hedef bolgede aynı masa numarasi oldugu için atama yapilamadi." };
     }
     return { ok: false, error: error.message };
   }
@@ -1197,7 +1197,7 @@ export async function updateTableDetailsImpl(input: { tableId: string; tableNumb
   const { error } = await query;
   if (error) {
     if (isDuplicateTableNumberError(error.message)) {
-      return { ok: false, error: "Bu bolgede ayn? masa numarasi oldugu için güncellenemedi." };
+      return { ok: false, error: "Bu bolgede aynı masa numarasi oldugu için güncellenemedi." };
     }
     return { ok: false, error: error.message };
   }
@@ -1354,7 +1354,7 @@ export async function moveTableOrderImpl(
   }
 
   if (input.sourceTableId === input.targetTableId) {
-    return { ok: false, error: "Adisyon ayn? masaya tasinamaz." };
+    return { ok: false, error: "Adisyon aynı masaya tasinamaz." };
   }
 
   const scope = await deps.getDefaultBusinessScope();

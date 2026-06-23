@@ -1,8 +1,6 @@
 @import "tailwindcss";
 
 :root {
-  --font-sora: "Avenir Next", "Segoe UI", sans-serif;
-  --font-space-grotesk: "Avenir Next", "Segoe UI", "Inter", "Arial", sans-serif;
   --font-geist-mono: "Consolas", "SFMono-Regular", "Menlo", monospace;
   --background: #f3f5f8;
   --foreground: #0f172a;
@@ -13,9 +11,9 @@
   --brand-1: #ff6a3d;
   --brand-2: #f2b44f;
   --brand-3: #0f766e;
-  --font-sans-base: var(--font-sora);
-  --font-display: var(--font-space-grotesk);
-  --font-numeric: var(--font-space-grotesk);
+  --font-sans-base: var(--font-sora, "Avenir Next", "Segoe UI", sans-serif);
+  --font-display: var(--font-space-grotesk, "Avenir Next", "Segoe UI", "Inter", "Arial", sans-serif);
+  --font-numeric: var(--font-sora, "Avenir Next", "Segoe UI", sans-serif);
   --safe-area-top: env(safe-area-inset-top, 0px);
   --safe-area-bottom: env(safe-area-inset-bottom, 0px);
   --safe-area-left: env(safe-area-inset-left, 0px);
@@ -1010,3 +1008,306 @@ button:disabled {
   }
 
 }
+
+/* UI/UX Pro Max Enhancements */
+
+/* Hyper-Realistic Landing Page Styles */
+.uupm-glass-header {
+  background: rgba(255, 255, 255, 0.7);
+  backdrop-filter: blur(24px) saturate(190%);
+  border-bottom: 1px solid rgba(255, 255, 255, 0.4);
+  box-shadow: 0 4px 30px rgba(0, 0, 0, 0.03);
+}
+
+.uupm-glowing-aurora {
+  position: relative;
+  overflow: hidden;
+}
+
+.uupm-glowing-aurora::before {
+  content: "";
+  position: absolute;
+  top: -50%;
+  left: -50%;
+  width: 200%;
+  height: 200%;
+  background: radial-gradient(circle, rgba(255, 106, 61, 0.08) 0%, rgba(242, 180, 79, 0.05) 50%, transparent 80%);
+  animation: aurora-spin 25s infinite linear;
+  pointer-events: none;
+  z-index: -1;
+}
+
+@keyframes aurora-spin {
+  from { transform: rotate(0deg); }
+  to { transform: rotate(360deg); }
+}
+
+.uupm-tactile-card {
+  background: rgba(255, 255, 255, 0.65);
+  backdrop-filter: blur(12px);
+  border: 1px solid rgba(255, 255, 255, 0.5);
+  box-shadow: 
+    0 4px 6px -1px rgba(0, 0, 0, 0.03),
+    0 2px 4px -1px rgba(0, 0, 0, 0.02),
+    inset 0 1px 0 0 rgba(255, 255, 255, 0.6);
+  transition: all 300ms cubic-bezier(0.16, 1, 0.3, 1);
+}
+
+.uupm-tactile-card:hover {
+  transform: translateY(-4px) scale(1.01);
+  border-color: rgba(255, 106, 61, 0.25);
+  box-shadow: 
+    0 20px 25px -5px rgba(255, 106, 61, 0.06),
+    0 10px 10px -5px rgba(0, 0, 0, 0.02),
+    inset 0 1px 0 0 rgba(255, 255, 255, 0.8);
+}
+
+.uupm-glow-btn {
+  position: relative;
+  transition: all 200ms ease;
+}
+
+.uupm-glow-btn:hover {
+  box-shadow: 0 0 20px rgba(255, 106, 61, 0.35);
+  transform: translateY(-1px);
+}
+
+/* Data-Dense Operations Dashboard Styles */
+.uupm-dense-container {
+  display: grid;
+  gap: 10px !important;
+  padding: 12px !important;
+}
+
+.uupm-dense-card {
+  padding: 12px !important;
+  border-radius: 12px !important;
+  box-shadow: 0 2px 4px rgba(15, 23, 42, 0.04) !important;
+  border: 1px solid rgba(148, 163, 184, 0.15) !important;
+  transition: background-color 150ms ease, border-color 150ms ease;
+}
+
+.uupm-dense-card:hover {
+  border-color: rgba(148, 163, 184, 0.3) !important;
+  background-color: rgba(255, 255, 255, 0.6);
+}
+
+.uupm-dense-table {
+  width: 100%;
+  border-collapse: collapse;
+}
+
+.uupm-dense-table th {
+  padding: 6px 10px !important;
+  font-size: 11px !important;
+  text-transform: uppercase;
+  letter-spacing: 0.05em;
+  color: #64748b;
+  border-bottom: 1px solid rgba(148, 163, 184, 0.15);
+  text-align: left;
+}
+
+.uupm-dense-table td {
+  padding: 8px 10px !important;
+  font-size: 13px !important;
+  border-bottom: 1px solid rgba(148, 163, 184, 0.1);
+}
+
+.uupm-dense-table tr:hover td {
+  background-color: rgba(15, 23, 42, 0.02);
+}
+
+.uupm-monospace-num {
+  font-family: var(--font-sans-base), sans-serif !important;
+  font-variant-numeric: tabular-nums;
+  letter-spacing: -0.02em;
+}
+
+.uupm-dense-badge {
+  padding: 2px 8px !important;
+  font-size: 11px !important;
+  font-weight: 700 !important;
+  border-radius: 9999px !important;
+  text-transform: uppercase;
+  letter-spacing: 0.02em;
+}
+
+/* 3D Perspective & Glare Effects */
+.uupm-3d-scene {
+  perspective: 1200px;
+}
+
+.uupm-3d-card {
+  transform-style: preserve-3d;
+  position: relative;
+  transition: transform 0.1s ease-out, box-shadow 0.2s ease-out;
+}
+
+.uupm-glare-overlay {
+  position: absolute;
+  inset: 0;
+  background: radial-gradient(circle at var(--uupm-glare-x, 50%) var(--uupm-glare-y, 50%), rgba(255, 255, 255, 0.15) 0%, transparent 60%);
+  pointer-events: none;
+  z-index: 10;
+  mix-blend-mode: overlay;
+  border-radius: inherit;
+}
+
+/* Real-Time Flow Pipeline Animation */
+@keyframes uupm-flow {
+  0% { stroke-dashoffset: 216; }
+  100% { stroke-dashoffset: 0; }
+}
+
+.uupm-flow-line {
+  animation: uupm-flow 4s infinite linear;
+}
+
+.uupm-flow-line-2 {
+  animation: uupm-flow 4s infinite linear;
+  animation-delay: 2s;
+}
+
+/* Station-Specific Theme: Dark Kitchen Monitor */
+body.theme-kitchen-dark {
+  --m-bg: #070d19;
+  --m-card: #0f172a;
+  --m-text: #f8fafc;
+  --m-muted: #94a3b8;
+  --m-border: #334155;
+  --m-primary: #e11d48;
+  --m-primary-text: #ffffff;
+  background-color: #070d19 !important;
+  color: #f8fafc !important;
+}
+
+body.theme-kitchen-dark main,
+body.theme-kitchen-dark .backoffice-page-shell,
+body.theme-kitchen-dark .m-ops-shell {
+  background-color: #070d19 !important;
+  color: #f8fafc !important;
+}
+
+body.theme-kitchen-dark .bg-white {
+  background-color: #0f172a !important;
+}
+
+body.theme-kitchen-dark .text-slate-900,
+body.theme-kitchen-dark .text-slate-950,
+body.theme-kitchen-dark .text-slate-800,
+body.theme-kitchen-dark h1,
+body.theme-kitchen-dark h2,
+body.theme-kitchen-dark h3,
+body.theme-kitchen-dark h4 {
+  color: #f1f5f9 !important;
+}
+
+body.theme-kitchen-dark .text-slate-500,
+body.theme-kitchen-dark .text-slate-600 {
+  color: #94a3b8 !important;
+}
+
+body.theme-kitchen-dark .bg-slate-50 {
+  background-color: #1e293b !important;
+}
+
+body.theme-kitchen-dark .border-slate-100,
+body.theme-kitchen-dark .border-slate-200,
+body.theme-kitchen-dark .border-slate-300 {
+  border-color: #334155 !important;
+}
+
+body.theme-kitchen-dark .m-segment-pill {
+  background-color: #0f172a !important;
+  color: #cbd5e1 !important;
+  border-color: #334155 !important;
+}
+
+body.theme-kitchen-dark .m-segment-pill[data-active="true"] {
+  background-color: #e11d48 !important;
+  border-color: #e11d48 !important;
+  color: #ffffff !important;
+}
+
+body.theme-kitchen-dark .mobile-task-card,
+body.theme-kitchen-dark .m-card {
+  background-color: #0f172a !important;
+  border-color: #334155 !important;
+}
+
+body.theme-kitchen-dark .mobile-task-tab {
+  background-color: #0f172a !important;
+  color: #cbd5e1 !important;
+  border-color: #334155 !important;
+}
+
+body.theme-kitchen-dark .mobile-task-tab[data-active="true"] {
+  background-color: #e11d48 !important;
+  border-color: #e11d48 !important;
+  color: #ffffff !important;
+}
+
+
+/* Station-Specific Theme: High-Contrast Light Cashier Station */
+body.theme-cashier-light {
+  --m-bg: #ffffff;
+  --m-card: #ffffff;
+  --m-text: #000000;
+  --m-muted: #0f172a;
+  --m-border: #334155;
+  --m-primary: #000000;
+  --m-primary-text: #ffffff;
+  background-color: #ffffff !important;
+  color: #000000 !important;
+}
+
+body.theme-cashier-light main,
+body.theme-cashier-light .backoffice-page-shell,
+body.theme-cashier-light .m-ops-shell {
+  background-color: #ffffff !important;
+  color: #000000 !important;
+}
+
+body.theme-cashier-light .bg-slate-50,
+body.theme-cashier-light .bg-slate-100 {
+  background-color: #f1f5f9 !important;
+  border: 1.5px solid #334155 !important;
+}
+
+body.theme-cashier-light .text-slate-900,
+body.theme-cashier-light .text-slate-950,
+body.theme-cashier-light .text-slate-800,
+body.theme-cashier-light h1,
+body.theme-cashier-light h2,
+body.theme-cashier-light h3,
+body.theme-cashier-light h4 {
+  color: #000000 !important;
+  font-weight: 700 !important;
+}
+
+body.theme-cashier-light .text-slate-500,
+body.theme-cashier-light .text-slate-600 {
+  color: #0f172a !important;
+  font-weight: 600 !important;
+}
+
+body.theme-cashier-light .border-slate-200,
+body.theme-cashier-light .border-slate-300 {
+  border-color: #334155 !important;
+  border-width: 1.5px !important;
+}
+
+body.theme-cashier-light .m-card {
+  border-color: #000000 !important;
+  border-width: 1.5px !important;
+  box-shadow: 0 4px 12px rgba(0, 0, 0, 0.08) !important;
+}
+
+body.theme-cashier-light .m-btn-secondary {
+  border-color: #000000 !important;
+  border-width: 1.5px !important;
+  color: #000000 !important;
+  font-weight: 800 !important;
+}
+
+

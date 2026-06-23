@@ -6841,7 +6841,7 @@ function normalizeEnterpriseMarketImportPayload(jsonText: string) {
       conflicts.push({
         row: rowNumber,
         field: "name",
-        message: `Ayn? kategori+ürün tekrarli (onceki satir: ${seenProductKeys.get(productKey)}).`,
+        message: `Aynı kategori+ürün tekrarli (onceki satir: ${seenProductKeys.get(productKey)}).`,
       });
     } else {
       seenProductKeys.set(productKey, rowNumber);
@@ -6851,7 +6851,7 @@ function normalizeEnterpriseMarketImportPayload(jsonText: string) {
         conflicts.push({
           row: rowNumber,
           field: "barcode",
-          message: `Ayn? barkod tekrarli (onceki satir: ${seenBarcodes.get(barcode)}).`,
+          message: `Aynı barkod tekrarli (onceki satir: ${seenBarcodes.get(barcode)}).`,
         });
       } else {
         seenBarcodes.set(barcode, rowNumber);
@@ -6862,7 +6862,7 @@ function normalizeEnterpriseMarketImportPayload(jsonText: string) {
         conflicts.push({
           row: rowNumber,
           field: "plu_code",
-          message: `Ayn? PLU kodu tekrarli (onceki satir: ${seenPluCodes.get(pluCode)}).`,
+          message: `Aynı PLU kodu tekrarli (onceki satir: ${seenPluCodes.get(pluCode)}).`,
         });
       } else {
         seenPluCodes.set(pluCode, rowNumber);
@@ -8234,7 +8234,7 @@ export async function createStaffAccount(input: {
 
     const businessIds = [...new Set((existingAccessRows as Array<{ business_id: string }>).map((row) => row.business_id))];
     if (businessIds.some((businessId) => businessId !== businessScope.businessId)) {
-      return { ok: false, error: "Bu e-posta başka bir işletmede kullanılıyor. Tenant guvenligi için ayn? hesap yeniden baglanamaz." };
+      return { ok: false, error: "Bu e-posta başka bir işletmede kullanılıyor. Tenant guvenligi için aynı hesap yeniden baglanamaz." };
     }
   }
 
@@ -10130,7 +10130,7 @@ const demoBlogPosts: BlogPost[] = [
     title: "Cafe operasyonunda ilk dijital kurulum nasıl yapilir?",
     slug: "cafe-operasyonunda-ilk-dijital-kurulum",
     excerpt: "Masa, ürün, ekip ve raporlama akışlarini tek gunde nasıl toparlayabilecegini anlatiyor.",
-    body: "Cloud POS ile ilk kurulumda önce işletme yapisini, sonra masa planini, ardindan ürün ve personel rollerini tanimlayin. Bu akışı takip ettiginizde landing, demo ve operasyon paneli ayn? veri modelini kullanir.",
+    body: "Cloud POS ile ilk kurulumda önce işletme yapisini, sonra masa planini, ardindan ürün ve personel rollerini tanimlayin. Bu akışı takip ettiginizde landing, demo ve operasyon paneli aynı veri modelini kullanir.",
     cover_image_url: "https://images.unsplash.com/photo-1556740749-887f6717d7e4?auto=format&fit=crop&w=1200&q=80",
     status: "published",
     published_at: minutesAgo(1440),

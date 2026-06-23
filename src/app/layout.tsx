@@ -3,6 +3,7 @@ import { cookies } from "next/headers";
 import { headers } from "next/headers";
 import { Analytics } from "@vercel/analytics/next";
 import { SpeedInsights } from "@vercel/speed-insights/next";
+import { Sora, Space_Grotesk } from "next/font/google";
 import "./globals.css";
 import { getGeneralSettings, getSeoSettings } from "@/lib/data";
 import { getCurrentLocale } from "@/lib/i18n-server";
@@ -10,6 +11,18 @@ import { Toaster } from "react-hot-toast";
 import { getAppShellPayload } from "@/lib/server/app-shell";
 import { AppRuntimeWrapper } from "@/components/app-runtime-wrapper";
 import { absoluteUrl, getSiteBaseUrl, publicSeo } from "@/lib/seo";
+
+const sora = Sora({
+  subsets: ["latin", "latin-ext"],
+  variable: "--font-sora",
+  display: "swap",
+});
+
+const spaceGrotesk = Space_Grotesk({
+  subsets: ["latin", "latin-ext"],
+  variable: "--font-space-grotesk",
+  display: "swap",
+});
 
 const APP_SHELL_FETCH_BUDGET_MS = 220;
 
@@ -105,7 +118,7 @@ export default async function RootLayout({
   const initialShellData = hasAuthCookie ? await getAppShellPayloadWithBudget() : null;
 
   return (
-    <html lang={locale}>
+    <html lang={locale} className={`${sora.variable} ${spaceGrotesk.variable}`}>
       <body className="antialiased">
         <AppRuntimeWrapper initialShellData={initialShellData}>
           {children}

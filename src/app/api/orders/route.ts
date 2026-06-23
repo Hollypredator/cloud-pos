@@ -56,7 +56,7 @@ type Body = {
 
 function resolveOrderCreateFailureMessage(commandStatus: "ACK" | "RETRY" | "CONFLICT" | "REJECT", message?: string | null) {
   if (commandStatus === "CONFLICT") {
-    return message ?? "Ayn? sipariş istegi zaten islenmis. Lütfen sipariş durumunu kontrol edin.";
+    return message ?? "Aynı sipariş istegi zaten islenmis. Lütfen sipariş durumunu kontrol edin.";
   }
   if (commandStatus === "RETRY") {
     return message ?? "Sipariş gecici olarak islenemedi. Lütfen tekrar deneyin.";
