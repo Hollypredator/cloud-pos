@@ -222,7 +222,7 @@ function mobileOrderCard(
       ) : null}
 
       <Link href={`/m/delivery?stage=${stage}&order=${order.id}`} className="m-btn-secondary mt-2 inline-flex w-full items-center justify-center">
-        Detay? A?
+        Detayı Aç
       </Link>
     </article>
   );

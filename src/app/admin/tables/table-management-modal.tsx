@@ -608,7 +608,7 @@ export function TableManagementModal({
                     {translateUiText("Yazdır", locale)}
                   </a>
                   <a href={qrTarget} target="_blank" rel="noreferrer" className="inline-flex min-h-11 items-center justify-center rounded-2xl border border-slate-200 bg-slate-50 px-4 py-3 text-center text-base font-semibold text-slate-700 sm:text-sm">
-                    {translateUiText("QR Sayfasını A?", locale)}
+                    {translateUiText("QR Sayfasını Aç", locale)}
                   </a>
                   <Link href="/tables" className="inline-flex min-h-11 items-center justify-center rounded-2xl border border-slate-200 bg-slate-50 px-4 py-3 text-center text-base font-semibold text-slate-700 sm:text-sm">
                     {translateUiText("Masa Ekranı", locale)}

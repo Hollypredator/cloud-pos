@@ -1,4 +1,5 @@
 import Link from "next/link";
+import { headers } from "next/headers";
 import { AdminOrderEntry } from "@/components/admin-order-entry";
 import { BackofficePage, SidebarPanel, SummaryCard } from "@/components/backoffice-ui";
 import { requireRole } from "@/lib/auth";
@@ -15,6 +16,10 @@ export default async function AdminOrdersPage({
   searchParams: Promise<{ table?: string; mode?: string }>;
 }) {
   await requireRole(["owner", "admin", "cashier", "waiter"], "/admin/orders");
+  const headersList = await headers();
+  const userAgent = headersList.get("user-agent") || "";
+  const isMobileUA = /mobile|android|iphone|ipad|phone/i.test(userAgent);
+
   const locale = await getCurrentLocale();
   const { table: preselectedTableId, mode } = await searchParams;
   const isTabletMode = mode === "tablet";
@@ -49,15 +54,20 @@ export default async function AdminOrdersPage({
       tables={tables}
       initialTableId={preselectedTableId}
       entryMode={isSelfServiceCoffee ? "classic" : "table_first"}
-      layoutMode={entryLayoutMode}
+      layoutMode={isMobileUA ? "mobile_stack" : entryLayoutMode}
       initialView={operatingCapabilities.hide_table_ui ? "composer" : preselectedTableId ? "composer" : "table_picker"}
       operatingProfile={operatingProfile}
       operatingCapabilities={operatingCapabilities}
+      mobilePresentation={isMobileUA ? "stack" : "default"}
     />
   );
 
   if (isSelfServiceCoffee) {
     return <main className="coffee-pos-mode h-screen w-screen overflow-hidden bg-slate-950">{orderEntry}</main>;
+  }
+
+  if (isMobileUA) {
+    return <main className="h-screen w-screen overflow-hidden bg-slate-50">{orderEntry}</main>;
   }
 
   return (

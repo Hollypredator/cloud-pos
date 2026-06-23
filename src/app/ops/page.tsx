@@ -38,7 +38,7 @@ function statusLabel(status: string, locale: "tr" | "en" | "fr") {
   if (status === "ready") return translateUiText("Servise Hazır", locale);
   if (status === "served") return translateUiText("Servise Hazır", locale);
   if (status === "partially_paid") return translateUiText("Kısmi Ödeme", locale);
-  if (status === "paid") return translateUiText("Kapand?", locale);
+  if (status === "paid") return translateUiText("Kapandı", locale);
   if (status === "partially_refunded") return translateUiText("Kısmi İade", locale);
   return status;
 }
@@ -430,7 +430,7 @@ export default async function OpsPage({
       hint: `${metrics.emptyTables} ${translateUiText("boş masa", locale).toLowerCase()}`,
       href: "/tables",
       tone: metrics.occupiedTables > metrics.emptyTables ? "mobile-tone-warning" : "mobile-tone-success",
-      cta: translateUiText("Masalar? A?", locale),
+      cta: translateUiText("Masaları Aç", locale),
     },
   ].filter((item): item is PriorityQueueItem => item !== null);
 
@@ -466,39 +466,39 @@ export default async function OpsPage({
           <SidebarPanel title={translateUiText("Anlık Durum", locale)} description={translateUiText("Günluk operasyon nabzi ve risk odaklari.", locale)}>
             <div className="rounded-2xl bg-slate-950 p-4 text-white shadow-sm sm:p-5">
               <p className="text-xs font-bold uppercase tracking-[0.18em] text-slate-300">{translateUiText("Günluk Ciro", locale)}</p>
-              <p className="mt-3 text-2xl font-semibold tracking-tight sm:text-3xl">{formatCurrency(metrics.todayRevenue)}</p>
-              <div className="mt-4 grid gap-2 sm:grid-cols-2">
-                <div className="rounded-xl bg-white/10 p-3">
+              <p className="mt-2.5 text-2xl font-semibold tracking-tight sm:text-3xl uupm-monospace-num">{formatCurrency(metrics.todayRevenue)}</p>
+              <div className="mt-4 grid gap-2 grid-cols-2">
+                <div className="rounded-xl bg-white/10 p-2.5">
                   <p className="text-xs uppercase tracking-[0.16em] text-slate-300">{translateUiText("Dolu Masa", locale)}</p>
-                  <p className="mt-2 text-2xl font-semibold">{metrics.occupiedTables}</p>
+                  <p className="mt-1 text-2xl font-semibold uupm-monospace-num">{metrics.occupiedTables}</p>
                 </div>
-                <div className="rounded-xl bg-white/10 p-3">
+                <div className="rounded-xl bg-white/10 p-2.5">
                   <p className="text-xs uppercase tracking-[0.16em] text-slate-300">{translateUiText("Boş Masa", locale)}</p>
-                  <p className="mt-2 text-2xl font-semibold">{metrics.emptyTables}</p>
+                  <p className="mt-1 text-2xl font-semibold uupm-monospace-num">{metrics.emptyTables}</p>
                 </div>
               </div>
             </div>
 
-            <div className="space-y-3">
+            <div className="space-y-2.5">
               {priorityWarnings
                 .filter((item) => (item.key === "kitchen_delay" ? canKitchen || canAdmin : item.key === "cashier_queue" ? canCashier : canWaiterOps))
                 .map((item) => (
-                  <div key={item.key} className="rounded-xl border border-slate-200 bg-slate-50 p-3 transition-colors hover:bg-white">
-                    <div className="flex flex-col items-start justify-between gap-3 sm:flex-row">
+                  <div key={item.key} className="uupm-dense-card rounded-xl border border-slate-200 bg-slate-50 transition-colors hover:bg-white">
+                    <div className="flex flex-col items-start justify-between gap-2 sm:flex-row">
                       <div>
                         <p className="text-xs font-bold uppercase tracking-[0.16em] text-slate-500">{item.label}</p>
-                        <p className="mt-3 text-2xl font-semibold tracking-tight text-slate-900 sm:text-3xl">{item.value}</p>
-                        <p className="mt-2 text-sm text-slate-500">{item.hint}</p>
+                        <p className="mt-2 text-2xl font-semibold tracking-tight text-slate-900 uupm-monospace-num">{item.value}</p>
+                        <p className="mt-1 text-xs text-slate-500">{item.hint}</p>
                       </div>
                       <span
                         className={
                           item.tone === "danger"
-                            ? "inline-flex w-full justify-center rounded-xl bg-rose-100 px-3 py-2 text-xs font-semibold text-rose-700 sm:w-auto"
+                            ? "uupm-dense-badge inline-flex w-full justify-center bg-rose-100 text-rose-700 sm:w-auto"
                             : item.tone === "accent"
-                              ? "inline-flex w-full justify-center rounded-xl bg-orange-100 px-3 py-2 text-xs font-semibold text-orange-700 sm:w-auto"
+                              ? "uupm-dense-badge inline-flex w-full justify-center bg-orange-100 text-orange-700 sm:w-auto"
                               : item.tone === "success"
-                                ? "inline-flex w-full justify-center rounded-xl bg-emerald-100 px-3 py-2 text-xs font-semibold text-emerald-700 sm:w-auto"
-                                : "inline-flex w-full justify-center rounded-xl bg-slate-200 px-3 py-2 text-xs font-semibold text-slate-700 sm:w-auto"
+                                ? "uupm-dense-badge inline-flex w-full justify-center bg-emerald-100 text-emerald-700 sm:w-auto"
+                                : "uupm-dense-badge inline-flex w-full justify-center bg-slate-200 text-slate-700 sm:w-auto"
                         }
                       >
                         {item.value}
@@ -617,18 +617,18 @@ export default async function OpsPage({
           ) : (
             <div className="space-y-3">
               {pagedRecentOrders.map((order) => (
-                <div key={order.id} className="rounded-2xl border border-slate-200 bg-white px-4 py-3 shadow-sm transition-colors hover:border-slate-300">
-                  <div className="flex flex-col items-start justify-between gap-4 sm:flex-row">
+                <div key={order.id} className="uupm-dense-card rounded-xl border border-slate-200 bg-white p-3 shadow-sm transition-colors hover:border-slate-300">
+                  <div className="flex flex-col items-start justify-between gap-3 sm:flex-row">
                     <div className="min-w-0">
                       <p className="text-xs font-bold uppercase tracking-[0.16em] text-slate-500">{orderSourceLabel(order, locale)}</p>
-                      <h3 className="mt-2 text-xl font-semibold tracking-tight text-slate-900">Sipariş #{orderRef(order)}</h3>
-                      <p className="mt-2 text-sm text-slate-500">{formatClock(order.created_at, locale)} {translateUiText("oluşturuldu", locale)}</p>
+                      <h3 className="mt-1.5 text-lg font-semibold tracking-tight text-slate-900">Sipariş #<span className="uupm-monospace-num">{orderRef(order)}</span></h3>
+                      <p className="mt-1 text-xs text-slate-500"><span className="uupm-monospace-num">{formatClock(order.created_at, locale)}</span> {translateUiText("oluşturuldu", locale)}</p>
                     </div>
                     <div className="w-full text-left sm:w-auto sm:text-right">
-                      <span className={`inline-flex w-full justify-center rounded-full px-3 py-2 text-xs font-semibold uppercase sm:w-auto ${statusTone(order.status)}`}>
+                      <span className={`uupm-dense-badge inline-flex w-full justify-center sm:w-auto ${statusTone(order.status)}`}>
                         {statusLabel(order.status, locale)}
                       </span>
-                      <p className="mt-4 text-2xl font-semibold tracking-tight text-slate-900">
+                      <p className="mt-2 text-xl font-semibold tracking-tight text-slate-900 uupm-monospace-num">
                         {formatCurrency(Number(order.final_price ?? order.total_price))}
                       </p>
                     </div>
@@ -685,15 +685,15 @@ export default async function OpsPage({
         <div className="space-y-4">
         <ContentCard title={translateUiText("Masa Durumu", locale)}>
             <div className="grid gap-3 sm:grid-cols-2">
-              <div className="rounded-2xl bg-amber-50 p-4">
+              <div className="rounded-xl bg-amber-50 p-3">
                 <p className="text-xs font-bold uppercase tracking-[0.16em] text-amber-700">{translateUiText("Dolu", locale)}</p>
-                <p className="mt-3 text-4xl font-semibold tracking-tight text-amber-900">{metrics.occupiedTables}</p>
-                <p className="mt-2 text-sm text-amber-700">{translateUiText("Aktif servis alan masalar", locale)}</p>
+                <p className="mt-2 text-3xl font-semibold tracking-tight text-amber-900 uupm-monospace-num">{metrics.occupiedTables}</p>
+                <p className="mt-1 text-xs text-amber-700">{translateUiText("Aktif servis alan masalar", locale)}</p>
               </div>
-              <div className="rounded-2xl bg-emerald-50 p-4">
+              <div className="rounded-xl bg-emerald-50 p-3">
                 <p className="text-xs font-bold uppercase tracking-[0.16em] text-emerald-700">{translateUiText("Boş", locale)}</p>
-                <p className="mt-3 text-4xl font-semibold tracking-tight text-emerald-900">{metrics.emptyTables}</p>
-                <p className="mt-2 text-sm text-emerald-700">{translateUiText("Yeni oturum için hazır masalar", locale)}</p>
+                <p className="mt-2 text-3xl font-semibold tracking-tight text-emerald-900 uupm-monospace-num">{metrics.emptyTables}</p>
+                <p className="mt-1 text-xs text-emerald-700">{translateUiText("Yeni oturum için hazır masalar", locale)}</p>
               </div>
             </div>
             <Link href="/admin/tables" className="mt-4 inline-flex w-full rounded-2xl bg-slate-100 px-4 py-3 text-center text-sm font-semibold text-slate-800 transition hover:bg-slate-200 sm:w-auto">
@@ -727,9 +727,9 @@ export default async function OpsPage({
 
                   <div className="mt-4 grid grid-cols-2 gap-2">
                     {stockKpis.map((item) => (
-                      <div key={item.label} className={`rounded-2xl px-3 py-3 ${item.className}`}>
+                      <div key={item.label} className={`rounded-xl px-2.5 py-2.5 ${item.className}`}>
                         <p className="text-[11px] font-bold uppercase tracking-[0.12em] opacity-80">{item.label}</p>
-                        <p className="mt-2 text-2xl font-semibold tracking-tight">{item.value}</p>
+                        <p className="mt-1.5 text-2xl font-semibold tracking-tight uupm-monospace-num">{item.value}</p>
                       </div>
                     ))}
                   </div>
@@ -741,20 +741,20 @@ export default async function OpsPage({
               ) : (
                 <div className="space-y-2">
                   {stockWatchItems.map((product) => (
-                    <div key={product.id} className={`rounded-2xl border px-4 py-3 ${product.risk.rowClassName}`}>
+                    <div key={product.id} className={`uupm-dense-card rounded-xl border px-3 py-2.5 ${product.risk.rowClassName}`}>
                       <div className="flex items-start justify-between gap-3">
                         <div className="min-w-0">
                           <div className="flex items-center gap-2">
-                            <span className={`h-2.5 w-2.5 rounded-full ${product.risk.dotClassName}`} />
+                            <span className={`h-2 w-2 rounded-full ${product.risk.dotClassName}`} />
                             <p className="truncate text-sm font-semibold text-slate-950">{product.name}</p>
                           </div>
                           <p className="mt-1 text-xs leading-5 text-slate-600">{product.risk.hint}</p>
                         </div>
                         <div className="shrink-0 text-right">
-                          <span className={`inline-flex min-w-12 justify-center rounded-full px-3 py-1.5 text-sm font-bold ${product.risk.badgeClassName}`}>
+                          <span className={`inline-flex min-w-10 justify-center rounded-full px-2 py-1 text-sm font-bold uupm-monospace-num ${product.risk.badgeClassName}`}>
                             {product.stockCount}
                           </span>
-                          <p className="mt-1 text-[11px] font-semibold uppercase tracking-[0.12em] text-slate-500">{product.risk.label}</p>
+                          <p className="mt-1 text-[10px] font-semibold uppercase tracking-[0.12em] text-slate-500">{product.risk.label}</p>
                         </div>
                       </div>
                     </div>
@@ -779,26 +779,26 @@ export default async function OpsPage({
 
       <section className="app-mobile-hide grid gap-5 xl:grid-cols-[0.95fr_1.05fr]">
         <ContentCard title={translateUiText("Operasyon Isaretleri", locale)}>
-          <div className="grid gap-3 sm:grid-cols-2">
-            <div className="rounded-2xl border border-slate-200 bg-slate-50 p-4 transition-colors hover:bg-white">
+          <div className="grid gap-2.5 sm:grid-cols-2">
+            <div className="uupm-dense-card rounded-xl border border-slate-200 bg-slate-50 p-3 transition-colors hover:bg-white">
               <p className="text-xs font-bold uppercase tracking-[0.16em] text-slate-500">{translateUiText("Servis Talepleri", locale)}</p>
-              <p className="mt-3 text-4xl font-semibold tracking-tight text-slate-900">{ops.openServiceRequests}</p>
-              <p className="mt-2 text-sm text-slate-500">{translateUiText("Garson cagir, hesap iste ve benzeri talepler", locale)}</p>
+              <p className="mt-2 text-3xl font-semibold tracking-tight text-slate-900 uupm-monospace-num">{ops.openServiceRequests}</p>
+              <p className="mt-1 text-xs text-slate-500">{translateUiText("Garson cagir, hesap iste ve benzeri talepler", locale)}</p>
             </div>
-            <div className="rounded-2xl border border-slate-200 bg-slate-50 p-4 transition-colors hover:bg-white">
+            <div className="uupm-dense-card rounded-xl border border-slate-200 bg-slate-50 p-3 transition-colors hover:bg-white">
               <p className="text-xs font-bold uppercase tracking-[0.16em] text-slate-500">{translateUiText("Kritik Mutfak", locale)}</p>
-              <p className="mt-3 text-4xl font-semibold tracking-tight text-slate-900">{ops.criticalKitchenOrders}</p>
-              <p className="mt-2 text-sm text-slate-500">{translateUiText("Eşik üstü gecikmiş sipariş sayısı", locale)}</p>
+              <p className="mt-2 text-3xl font-semibold tracking-tight text-slate-900 uupm-monospace-num">{ops.criticalKitchenOrders}</p>
+              <p className="mt-1 text-xs text-slate-500">{translateUiText("Eşik üstü gecikmiş sipariş sayısı", locale)}</p>
             </div>
-            <div className="rounded-2xl border border-slate-200 bg-slate-50 p-4 transition-colors hover:bg-white">
+            <div className="uupm-dense-card rounded-xl border border-slate-200 bg-slate-50 p-3 transition-colors hover:bg-white">
               <p className="text-xs font-bold uppercase tracking-[0.16em] text-slate-500">{translateUiText("Bugünku Açık Sipariş", locale)}</p>
-              <p className="mt-3 text-4xl font-semibold tracking-tight text-slate-900">{ops.openOrders}</p>
-              <p className="mt-2 text-sm text-slate-500">{translateUiText("Operasyonda halen kapanmamis siparişler", locale)}</p>
+              <p className="mt-2 text-3xl font-semibold tracking-tight text-slate-900 uupm-monospace-num">{ops.openOrders}</p>
+              <p className="mt-1 text-xs text-slate-500">{translateUiText("Operasyonda halen kapanmamis siparişler", locale)}</p>
             </div>
-            <div className="rounded-2xl border border-slate-200 bg-slate-50 p-4 transition-colors hover:bg-white">
+            <div className="uupm-dense-card rounded-xl border border-slate-200 bg-slate-50 p-3 transition-colors hover:bg-white">
               <p className="text-xs font-bold uppercase tracking-[0.16em] text-slate-500">{isSelfServiceCoffee ? translateUiText("Sipariş Yönetimi", locale) : translateUiText("Kasa Bekleyen", locale)}</p>
-              <p className="mt-3 text-4xl font-semibold tracking-tight text-slate-900">{ops.servedOrders}</p>
-              <p className="mt-2 text-sm text-slate-500">{isSelfServiceCoffee ? translateUiText("Durum güncelleme bekleyen pickup siparişler", locale) : translateUiText("Tahsilat bekleyen servisler", locale)}</p>
+              <p className="mt-2 text-3xl font-semibold tracking-tight text-slate-900 uupm-monospace-num">{ops.servedOrders}</p>
+              <p className="mt-1 text-xs text-slate-500">{isSelfServiceCoffee ? translateUiText("Durum güncelleme bekleyen pickup siparişler", locale) : translateUiText("Tahsilat bekleyen servisler", locale)}</p>
             </div>
           </div>
         </ContentCard>

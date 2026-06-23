@@ -39,6 +39,7 @@ import { logServerPerf, measureAsync } from "@/lib/perf";
 import { getWebPerfProfile } from "@/lib/web-perf-profile";
 import { isLikelyMobileUserAgent } from "@/lib/device";
 import type { Order, OrderItem, OrderStatus, PaymentMethod } from "@/lib/types";
+import { ThemeForcer } from "@/components/theme-forcer";
 
 function buildReceiptLink(orderId: string) {
   const base = getAppBaseUrl();
@@ -209,7 +210,7 @@ async function completePaymentAction(formData: FormData) {
     }
     if (result.data?.idempotent === true) {
       const remaining = typeof result.data?.remaining === "number" ? result.data.remaining : 0;
-      redirect(feedbackHref("success", `Ayn? ödeme daha önce kaydedilmis. Kalan bakiye: ${remaining.toFixed(2)} TL.`, returnOrderId ?? orderId));
+      redirect(feedbackHref("success", `Aynı ödeme daha önce kaydedilmis. Kalan bakiye: ${remaining.toFixed(2)} TL.`, returnOrderId ?? orderId));
     }
     const remaining = typeof result.data?.remaining === "number" ? result.data.remaining : 0;
     redirect(feedbackHref("success", `Ödeme kaydedildi. Kalan bakiye: ${remaining.toFixed(2)} TL.`, returnOrderId ?? orderId));
@@ -372,7 +373,7 @@ async function refundOrderAction(formData: FormData) {
       redirect(feedbackHref("error", result.message ?? "İade tamamlanamadi.", returnOrderId ?? orderId));
     }
     if (result.data?.idempotent === true) {
-      redirect(feedbackHref("success", "Ayn? iade daha önce kaydedilmis.", returnOrderId ?? orderId));
+      redirect(feedbackHref("success", "Aynı iade daha önce kaydedilmis.", returnOrderId ?? orderId));
     }
     redirect(feedbackHref("success", "İade işlemi kaydedildi.", returnOrderId ?? orderId));
   } catch {
@@ -448,16 +449,227 @@ export default async function CashierPage({
   if (isSelfServiceCoffee) {
     const readyCount = activePickupOrders.filter((order) => order.status === "ready").length;
     return (
+      <>
+        <ThemeForcer theme="cashier-light" />
+        <BackofficePage
+          title="Sipariş Yönetimi"
+          description="Aktif pickup siparişlerini güncelle, geçmiş siparişleri takip et"
+          minimal={isTabletMode}
+          actions={
+            <>
+              <LiveOpsBridge tables={["orders", "order_items", "payments"]} fallbackIntervalMs={1200} />
+              <LiveRouteRefresh tables={["orders", "order_items", "payments"]} debounceMs={220} minIntervalMs={900} />
+              <Link href="/pickup-board" className="w-full rounded-2xl border border-slate-200 bg-white px-5 py-3 text-center text-sm font-semibold text-slate-800 sm:w-auto">
+                Pickup Board
+              </Link>
+              <Link href={opsPath} className="w-full rounded-2xl border border-slate-200 bg-white px-5 py-3 text-center text-sm font-semibold text-slate-800 sm:w-auto">
+                Panele Dön
+              </Link>
+            </>
+          }
+        >
+          {feedback ? (
+            <NoticeBanner
+              tone={tone === "error" ? "error" : "success"}
+              title={tone === "error" ? "Islem tamamlanamadi" : "Islem tamamlandi"}
+              description={feedback}
+            />
+          ) : null}
+
+          {usingDemoData ? (
+            <div className="rounded-[24px] border border-amber-200 bg-amber-50 px-5 py-4 text-sm text-amber-900">
+              Demo veri modu aktif. Durum, iptal ve geçmiş akışlarini bu ekran uzerinden test edebilirsin.
+            </div>
+          ) : null}
+
+          <section className="grid gap-4 md:grid-cols-3">
+            <SummaryCard label="Aktif Pickup" value={String(activePickupOrders.length)} hint="Güncelleme bekleyen siparişler" tone="accent" />
+            <SummaryCard label="Hazır Bekleyen" value={String(readyCount)} hint="Teslim edilmeyi bekleyenler" tone="success" />
+            <SummaryCard label="Geçmiş Sipariş" value={String(historyPickupOrders.length)} hint="Tum pickup geçmişi" />
+          </section>
+
+          <ContentCard title="Geçmiş Filtreleri">
+            <form method="get" action={cashierPath} className="grid gap-3 md:grid-cols-[1fr_1fr_1fr_auto_auto] md:items-end">
+              <label className="grid gap-1 text-xs font-semibold text-slate-600">
+                Durum
+                <select name="historyStatus" defaultValue={historyStatusFilter} className="rounded-xl border border-slate-300 bg-white px-3 py-2 text-sm text-slate-700">
+                  <option value="all">Tum Durumlar</option>
+                  <option value="pending">Bekliyor</option>
+                  <option value="preparing">Hazırlanıyor</option>
+                  <option value="ready">Hazır</option>
+                  <option value="served">Teslim Edildi</option>
+                  <option value="partially_paid">Kismi Ödeme</option>
+                  <option value="paid">Kapandı</option>
+                  <option value="partially_refunded">Kismi İade</option>
+                  <option value="cancelled">İptal</option>
+                  <option value="refunded">İade</option>
+                </select>
+              </label>
+              <label className="grid gap-1 text-xs font-semibold text-slate-600">
+                Baslangic
+                <input type="date" name="historyFrom" defaultValue={historyFromFilter} className="rounded-xl border border-slate-300 bg-white px-3 py-2 text-sm text-slate-700" />
+              </label>
+              <label className="grid gap-1 text-xs font-semibold text-slate-600">
+                Bitis
+                <input type="date" name="historyTo" defaultValue={historyToFilter} className="rounded-xl border border-slate-300 bg-white px-3 py-2 text-sm text-slate-700" />
+              </label>
+              <button type="submit" className="rounded-xl bg-slate-900 px-4 py-2 text-sm font-semibold text-white">
+                Filtrele
+              </button>
+              <Link href={cashierPath} className="rounded-xl border border-slate-300 bg-white px-4 py-2 text-center text-sm font-semibold text-slate-700">
+                Temizle
+              </Link>
+            </form>
+          </ContentCard>
+
+          <section className="grid gap-5 xl:grid-cols-[1.15fr_0.85fr]">
+            <ContentCard title="Aktif Siparişler">
+              {activePickupOrders.length === 0 ? (
+                <EmptyPanel title="Aktif sipariş yok" description="Yeni sipariş geldiginde burada listelenecek." />
+              ) : (
+                <div className="space-y-3">
+                  {activePickupOrders.map((order) => {
+                    const nextActionLabel = resolveNextPickupActionLabel(order.status);
+                    return (
+                      <article key={order.id} className="rounded-[22px] border border-slate-200 bg-slate-50 p-4">
+                        <div className="flex flex-wrap items-start justify-between gap-3">
+                          <div>
+                            <p className="text-xs font-bold uppercase tracking-[0.16em] text-slate-500">Pickup</p>
+                            <h3 className="mt-2 text-xl font-semibold tracking-tight text-slate-900">Sipariş #{orderRef(order)}</h3>
+                            <p className="mt-1 text-sm text-slate-500">{order.customer_name ?? "Misafir"}</p>
+                            <p className="mt-1 text-xs text-slate-500">{new Date(order.created_at).toLocaleTimeString(localeCode)}</p>
+                            <p className="mt-2 text-xs text-slate-500">{summarizeOrderItems(order)}</p>
+                          </div>
+                          <div className="text-right">
+                            <OptimisticOrderStatusBadge
+                              orderId={order.id}
+                              baseStatus={order.status}
+                              className="inline-flex rounded-full px-3 py-1 text-xs font-semibold uppercase"
+                            />
+                            <p className="mt-2 text-lg font-semibold text-emerald-700">{Number(order.final_price ?? order.total_price).toFixed(2)} TL</p>
+                          </div>
+                        </div>
+                        <div className="mt-3 flex flex-wrap gap-2">
+                          <Link href={`${cashierPath}?order=${order.id}`} className="rounded-2xl border border-slate-200 bg-white px-4 py-2 text-sm font-semibold text-slate-700">
+                            Detay
+                          </Link>
+                          {nextActionLabel ? (
+                            POS_CLIENT_QUEUE_CASHIER_ENABLED ? (
+                              <CashierAdvancePickupStatusQueueButton
+                                orderId={order.id}
+                                nextStatus={resolveNextPickupStatus(order.status) ?? "served"}
+                                label={nextActionLabel}
+                                className="rounded-2xl bg-slate-900 px-4 py-2 text-sm font-semibold text-white disabled:cursor-not-allowed disabled:opacity-70"
+                              />
+                            ) : (
+                              <form action={advancePickupStatusAction}>
+                                <input type="hidden" name="orderId" value={order.id} />
+                                <input type="hidden" name="returnOrderId" value={order.id} />
+                                <input type="hidden" name="currentStatus" value={order.status} />
+                                <button type="submit" className="rounded-2xl bg-slate-900 px-4 py-2 text-sm font-semibold text-white">
+                                  {nextActionLabel}
+                                </button>
+                              </form>
+                            )
+                          ) : null}
+                          <form action={cancelOrderAction} className="flex items-center gap-2">
+                            <input type="hidden" name="orderId" value={order.id} />
+                            <input type="hidden" name="returnOrderId" value={order.id} />
+                            <input type="hidden" name="requestKey" value={crypto.randomUUID()} />
+                            <input name="note" placeholder="İptal notu" className="rounded-xl border border-slate-300 bg-white px-3 py-2 text-xs" />
+                            <button type="submit" className="rounded-2xl border border-rose-300 bg-white px-3 py-2 text-xs font-semibold text-rose-700">
+                              İptal
+                            </button>
+                          </form>
+                        </div>
+                      </article>
+                    );
+                  })}
+                </div>
+              )}
+            </ContentCard>
+
+            <ContentCard title="Geçmiş Siparişler">
+              {historyPickupOrders.length === 0 ? (
+                <EmptyPanel title="Geçmiş yok" description="Tamamlanan ve iptal edilen siparişler burada listelenecek." />
+              ) : (
+                <div className="space-y-2">
+                  {historyPickupOrders.map((order) => (
+                    <article key={`history-${order.id}`} className="rounded-2xl border border-slate-200 bg-white px-4 py-3">
+                      <div className="flex items-center justify-between gap-2">
+                        <p className="text-sm font-semibold text-slate-900">#{orderRef(order)} - {order.customer_name ?? "Misafir"}</p>
+                        <OptimisticOrderStatusBadge
+                          orderId={order.id}
+                          baseStatus={order.status}
+                          className="rounded-full px-2 py-1 text-[11px] font-semibold uppercase"
+                        />
+                      </div>
+                      <div className="mt-1 flex items-center justify-between text-xs text-slate-500">
+                        <span>{new Date(order.created_at).toLocaleString(localeCode)}</span>
+                        <span>{Number(order.final_price ?? order.total_price).toFixed(2)} TL</span>
+                      </div>
+                      <p className="mt-2 text-xs text-slate-500">{summarizeOrderItems(order)}</p>
+                    </article>
+                  ))}
+                </div>
+              )}
+            </ContentCard>
+          </section>
+
+          {selectedOrder && selectedOrder.channel === "pickup" ? (
+            <ContentCard title={`Sipariş Detayi #${orderRef(selectedOrder)}`}>
+              <div className="space-y-3">
+                <div className="flex flex-wrap items-center justify-between gap-3 rounded-2xl bg-slate-50 px-4 py-3">
+                  <div>
+                    <p className="text-sm font-semibold text-slate-900">{selectedOrder.customer_name ?? "Misafir"}</p>
+                    <p className="text-xs text-slate-500">{new Date(selectedOrder.created_at).toLocaleString(localeCode)}</p>
+                  </div>
+                  <OptimisticOrderStatusBadge
+                    orderId={selectedOrder.id}
+                    baseStatus={selectedOrder.status}
+                    className="rounded-full px-3 py-1 text-xs font-semibold uppercase"
+                  />
+                </div>
+
+                <div className="space-y-2">
+                  {(selectedOrder.items as OrderItem[]).map((item, index) => (
+                    <article key={`detail-item-${item.product_id}-${index}`} className="flex items-center justify-between gap-2 rounded-2xl border border-slate-200 bg-white px-3 py-3">
+                      <div>
+                        <p className="text-sm font-semibold text-slate-900">{item.quantity}x {item.name}</p>
+                        <p className="text-xs text-slate-500">{Number(item.line_total).toFixed(2)} TL</p>
+                      </div>
+                      <form action={cancelOrderItemAction}>
+                        <input type="hidden" name="orderId" value={selectedOrder.id} />
+                        <input type="hidden" name="returnOrderId" value={selectedOrder.id} />
+                        <input type="hidden" name="productId" value={item.product_id} />
+                        <button type="submit" className="rounded-xl border border-rose-300 bg-rose-50 px-3 py-2 text-xs font-semibold text-rose-700">
+                          Kalem İptal
+                        </button>
+                      </form>
+                    </article>
+                  ))}
+                </div>
+              </div>
+            </ContentCard>
+          ) : null}
+        </BackofficePage>
+      </>
+    );
+  }
+
+  return (
+    <>
+      <ThemeForcer theme="cashier-light" />
       <BackofficePage
-        title="Sipariş Yönetimi"
-        description="Aktif pickup siparişlerini güncelle, geçmiş siparişleri takip et"
+        title="Kasa Ekranı"
+        description="Tahsilat, split bill, iade ve adisyon kapanış operasyonu"
         minimal={isTabletMode}
         actions={
           <>
-            <LiveOpsBridge tables={["orders", "order_items", "payments"]} fallbackIntervalMs={1200} />
-            <LiveRouteRefresh tables={["orders", "order_items", "payments"]} debounceMs={220} minIntervalMs={900} />
-            <Link href="/pickup-board" className="w-full rounded-2xl border border-slate-200 bg-white px-5 py-3 text-center text-sm font-semibold text-slate-800 sm:w-auto">
-              Pickup Board
+            <LiveOpsBridge tables={["orders", "order_items", "tables", "payments", "cash_register_sessions"]} fallbackIntervalMs={1400} />
+            <LiveRouteRefresh tables={["orders", "order_items", "payments", "cash_register_sessions"]} debounceMs={240} minIntervalMs={1200} />
+            <Link href={cashierSessionPath} className="w-full rounded-2xl border border-slate-200 bg-white px-5 py-3 text-center text-sm font-semibold text-slate-800 sm:w-auto">
+              Gün İşlemleri
             </Link>
             <Link href={opsPath} className="w-full rounded-2xl border border-slate-200 bg-white px-5 py-3 text-center text-sm font-semibold text-slate-800 sm:w-auto">
               Panele Dön
@@ -468,372 +680,110 @@ export default async function CashierPage({
         {feedback ? (
           <NoticeBanner
             tone={tone === "error" ? "error" : "success"}
-            title={tone === "error" ? "Islem tamamlanamadi" : "Islem tamamlandi"}
+            title={tone === "error" ? "Kasa işlemi tamamlanamadi" : "Kasa işlemi tamamlandı"}
             description={feedback}
           />
         ) : null}
 
         {usingDemoData ? (
           <div className="rounded-[24px] border border-amber-200 bg-amber-50 px-5 py-4 text-sm text-amber-900">
-            Demo veri modu aktif. Durum, iptal ve geçmiş akışlarini bu ekran uzerinden test edebilirsin.
+            Demo veri modu aktif. Split, ödeme ve iade akışlarini bu ekran uzerinden test edebilirsin.
           </div>
         ) : null}
 
-        <section className="grid gap-4 md:grid-cols-3">
-          <SummaryCard label="Aktif Pickup" value={String(activePickupOrders.length)} hint="Güncelleme bekleyen siparişler" tone="accent" />
-          <SummaryCard label="Hazır Bekleyen" value={String(readyCount)} hint="Teslim edilmeyi bekleyenler" tone="success" />
-          <SummaryCard label="Geçmiş Sipariş" value={String(historyPickupOrders.length)} hint="Tum pickup geçmişi" />
+        <QuerySnapshotSeed queryKey={posQueryKeys.cashierSnapshot} data={cashierSnapshotSeed} />
+
+        <section className="app-mobile-hide grid gap-4 xl:grid-cols-4">
+          <SummaryCard label="Bekleyen Adisyon" value={String(servedOrders.length)} hint="Acilikta bekleyen tüm hesaplar" tone="accent" className="bg-[linear-gradient(130deg,rgba(255,106,61,0.14),rgba(255,255,255,0.9)_65%)]" />
+          <SummaryCard label="Bekleyen Bakiye" value={`${servedTotals.remaining.toFixed(2)} TL`} hint="Tahsil edilmemis toplam tutar" tone="danger" className="bg-[linear-gradient(130deg,rgba(251,113,133,0.12),rgba(255,255,255,0.9)_65%)]" />
+          <SummaryCard label="Bugün Tahsil" value={`${paidTotals.paid.toFixed(2)} TL`} hint={`${paidOrders.length} kapanan adisyon`} tone="success" className="bg-[linear-gradient(130deg,rgba(16,185,129,0.12),rgba(255,255,255,0.9)_65%)]" />
+          <SummaryCard label="Açık Ciro" value={`${servedTotals.final.toFixed(2)} TL`} hint="Acilikta kalan adisyon hacmi" className="bg-[linear-gradient(130deg,rgba(59,130,246,0.1),rgba(255,255,255,0.9)_65%)]" />
         </section>
 
-        <ContentCard title="Geçmiş Filtreleri">
-            <form method="get" action={cashierPath} className="grid gap-3 md:grid-cols-[1fr_1fr_1fr_auto_auto] md:items-end">
-            <label className="grid gap-1 text-xs font-semibold text-slate-600">
-              Durum
-              <select name="historyStatus" defaultValue={historyStatusFilter} className="rounded-xl border border-slate-300 bg-white px-3 py-2 text-sm text-slate-700">
-                <option value="all">Tum Durumlar</option>
-                <option value="pending">Bekliyor</option>
-                <option value="preparing">Hazırlanıyor</option>
-                <option value="ready">Hazır</option>
-                <option value="served">Teslim Edildi</option>
-                <option value="partially_paid">Kismi Ödeme</option>
-                <option value="paid">Kapand?</option>
-                <option value="partially_refunded">Kismi İade</option>
-                <option value="cancelled">İptal</option>
-                <option value="refunded">İade</option>
-              </select>
-            </label>
-            <label className="grid gap-1 text-xs font-semibold text-slate-600">
-              Baslangic
-              <input type="date" name="historyFrom" defaultValue={historyFromFilter} className="rounded-xl border border-slate-300 bg-white px-3 py-2 text-sm text-slate-700" />
-            </label>
-            <label className="grid gap-1 text-xs font-semibold text-slate-600">
-              Bitis
-              <input type="date" name="historyTo" defaultValue={historyToFilter} className="rounded-xl border border-slate-300 bg-white px-3 py-2 text-sm text-slate-700" />
-            </label>
-            <button type="submit" className="rounded-xl bg-slate-900 px-4 py-2 text-sm font-semibold text-white">
-              Filtrele
-            </button>
-            <Link href={cashierPath} className="rounded-xl border border-slate-300 bg-white px-4 py-2 text-center text-sm font-semibold text-slate-700">
-              Temizle
-            </Link>
-          </form>
-        </ContentCard>
-
-        <section className="grid gap-5 xl:grid-cols-[1.15fr_0.85fr]">
-          <ContentCard title="Aktif Siparişler">
-            {activePickupOrders.length === 0 ? (
-              <EmptyPanel title="Aktif sipariş yok" description="Yeni sipariş geldiginde burada listelenecek." />
-            ) : (
-              <div className="space-y-3">
-                {activePickupOrders.map((order) => {
-                  const nextActionLabel = resolveNextPickupActionLabel(order.status);
-                  return (
-                    <article key={order.id} className="rounded-[22px] border border-slate-200 bg-slate-50 p-4">
-                      <div className="flex flex-wrap items-start justify-between gap-3">
+        <section className="app-mobile-only space-y-3">
+          <article className="mobile-task-card">
+            <p className="text-[11px] font-bold uppercase tracking-[0.16em] text-slate-500">Tahsilat Kuyrugu</p>
+            <h2 className="mt-2 text-xl font-semibold tracking-tight text-slate-900">Listeyi seç, tam ekranda tamamla</h2>
+            <p className="mt-1 text-sm text-slate-500">Ödeme, split ve iade adimlari seçilen adisyon detayinda ilerler.</p>
+          </article>
+          {servedOrders.length === 0 ? (
+            <article className="mobile-task-card">
+              <p className="text-sm font-semibold text-slate-800">Bekleyen adisyon yok.</p>
+            </article>
+          ) : (
+            <div className="grid gap-2">
+              {servedOrders.map((order) => {
+                const remaining = Number(order.remaining_balance ?? order.final_price ?? order.total_price);
+                const active = selectedOrder?.id === order.id;
+                return (
+                  <OptimisticVisibility key={`mobile-queue-${order.id}`} orderId={order.id}>
+                    <article className="mobile-task-card">
+                      <div className="flex items-start justify-between gap-3">
                         <div>
-                          <p className="text-xs font-bold uppercase tracking-[0.16em] text-slate-500">Pickup</p>
-                          <h3 className="mt-2 text-xl font-semibold tracking-tight text-slate-900">Sipariş #{orderRef(order)}</h3>
-                          <p className="mt-1 text-sm text-slate-500">{order.customer_name ?? "Misafir"}</p>
-                          <p className="mt-1 text-xs text-slate-500">{new Date(order.created_at).toLocaleTimeString(localeCode)}</p>
-                          <p className="mt-2 text-xs text-slate-500">{summarizeOrderItems(order)}</p>
+                          <p className="text-[11px] font-semibold uppercase tracking-[0.14em] text-slate-500">{orderSourceLabel(order)}</p>
+                          <p className="mt-1 text-lg font-semibold text-slate-900">Sipariş #{orderRef(order)}</p>
                         </div>
-                        <div className="text-right">
-                          <OptimisticOrderStatusBadge
-                            orderId={order.id}
-                            baseStatus={order.status}
-                            className="inline-flex rounded-full px-3 py-1 text-xs font-semibold uppercase"
-                          />
-                          <p className="mt-2 text-lg font-semibold text-emerald-700">{Number(order.final_price ?? order.total_price).toFixed(2)} TL</p>
-                        </div>
+                        <span className={`rounded-full px-3 py-1 text-xs font-semibold ${statusTone(order.status)}`}>{order.status}</span>
                       </div>
-                      <div className="mt-3 flex flex-wrap gap-2">
-                        <Link href={`${cashierPath}?order=${order.id}`} className="rounded-2xl border border-slate-200 bg-white px-4 py-2 text-sm font-semibold text-slate-700">
-                          Detay
+                      <div className="mt-3 flex items-center justify-between gap-3">
+                        <div>
+                          <p className="text-xs text-slate-500">Kalan</p>
+                          <p className="text-xl font-semibold text-emerald-700">
+                            <OptimisticMoney orderId={order.id} baseAmount={remaining} field="remaining" />
+                          </p>
+                        </div>
+                        <Link
+                          href={`${cashierPath}?order=${order.id}`}
+                          className={`mobile-cta-primary inline-flex items-center justify-center px-4 py-3 text-sm ${active ? "opacity-90" : ""}`}
+                        >
+                          {active ? "Açık Detay" : "Tahsilata Gec"}
                         </Link>
-                        {nextActionLabel ? (
-                          POS_CLIENT_QUEUE_CASHIER_ENABLED ? (
-                            <CashierAdvancePickupStatusQueueButton
-                              orderId={order.id}
-                              nextStatus={resolveNextPickupStatus(order.status) ?? "served"}
-                              label={nextActionLabel}
-                              className="rounded-2xl bg-slate-900 px-4 py-2 text-sm font-semibold text-white disabled:cursor-not-allowed disabled:opacity-70"
-                            />
-                          ) : (
-                            <form action={advancePickupStatusAction}>
-                              <input type="hidden" name="orderId" value={order.id} />
-                              <input type="hidden" name="returnOrderId" value={order.id} />
-                              <input type="hidden" name="currentStatus" value={order.status} />
-                              <button type="submit" className="rounded-2xl bg-slate-900 px-4 py-2 text-sm font-semibold text-white">
-                                {nextActionLabel}
-                              </button>
-                            </form>
-                          )
-                        ) : null}
-                        <form action={cancelOrderAction} className="flex items-center gap-2">
-                          <input type="hidden" name="orderId" value={order.id} />
-                          <input type="hidden" name="returnOrderId" value={order.id} />
-                          <input type="hidden" name="requestKey" value={crypto.randomUUID()} />
-                          <input name="note" placeholder="İptal notu" className="rounded-xl border border-slate-300 bg-white px-3 py-2 text-xs" />
-                          <button type="submit" className="rounded-2xl border border-rose-300 bg-white px-3 py-2 text-xs font-semibold text-rose-700">
-                            İptal
-                          </button>
-                        </form>
                       </div>
                     </article>
-                  );
-                })}
-              </div>
-            )}
-          </ContentCard>
-
-          <ContentCard title="Geçmiş Siparişler">
-            {historyPickupOrders.length === 0 ? (
-              <EmptyPanel title="Geçmiş yok" description="Tamamlanan ve iptal edilen siparişler burada listelenecek." />
-            ) : (
-              <div className="space-y-2">
-                {historyPickupOrders.map((order) => (
-                  <article key={`history-${order.id}`} className="rounded-2xl border border-slate-200 bg-white px-4 py-3">
-                    <div className="flex items-center justify-between gap-2">
-                      <p className="text-sm font-semibold text-slate-900">#{orderRef(order)} - {order.customer_name ?? "Misafir"}</p>
-                      <OptimisticOrderStatusBadge
-                        orderId={order.id}
-                        baseStatus={order.status}
-                        className="rounded-full px-2 py-1 text-[11px] font-semibold uppercase"
-                      />
-                    </div>
-                    <div className="mt-1 flex items-center justify-between text-xs text-slate-500">
-                      <span>{new Date(order.created_at).toLocaleString(localeCode)}</span>
-                      <span>{Number(order.final_price ?? order.total_price).toFixed(2)} TL</span>
-                    </div>
-                    <p className="mt-2 text-xs text-slate-500">{summarizeOrderItems(order)}</p>
-                  </article>
-                ))}
-              </div>
-            )}
-          </ContentCard>
+                  </OptimisticVisibility>
+                );
+              })}
+            </div>
+          )}
         </section>
 
-        {selectedOrder && selectedOrder.channel === "pickup" ? (
-          <ContentCard title={`Sipariş Detayi #${orderRef(selectedOrder)}`}>
-            <div className="space-y-3">
-              <div className="flex flex-wrap items-center justify-between gap-3 rounded-2xl bg-slate-50 px-4 py-3">
-                <div>
-                  <p className="text-sm font-semibold text-slate-900">{selectedOrder.customer_name ?? "Misafir"}</p>
-                  <p className="text-xs text-slate-500">{new Date(selectedOrder.created_at).toLocaleString(localeCode)}</p>
-                </div>
-                <OptimisticOrderStatusBadge
-                  orderId={selectedOrder.id}
-                  baseStatus={selectedOrder.status}
-                  className="rounded-full px-3 py-1 text-xs font-semibold uppercase"
-                />
-              </div>
-
-              <div className="space-y-2">
-                {(selectedOrder.items as OrderItem[]).map((item, index) => (
-                  <article key={`detail-item-${item.product_id}-${index}`} className="flex items-center justify-between gap-2 rounded-2xl border border-slate-200 bg-white px-3 py-3">
-                    <div>
-                      <p className="text-sm font-semibold text-slate-900">{item.quantity}x {item.name}</p>
-                      <p className="text-xs text-slate-500">{Number(item.line_total).toFixed(2)} TL</p>
-                    </div>
-                    <form action={cancelOrderItemAction}>
-                      <input type="hidden" name="orderId" value={selectedOrder.id} />
-                      <input type="hidden" name="returnOrderId" value={selectedOrder.id} />
-                      <input type="hidden" name="productId" value={item.product_id} />
-                      <button type="submit" className="rounded-xl border border-rose-300 bg-rose-50 px-3 py-2 text-xs font-semibold text-rose-700">
-                        Kalem İptal
-                      </button>
-                    </form>
-                  </article>
-                ))}
-              </div>
-            </div>
-          </ContentCard>
-        ) : null}
-      </BackofficePage>
-    );
-  }
-
-  return (
-    <BackofficePage
-      title="Kasa Ekranı"
-      description="Tahsilat, split bill, iade ve adisyon kapanış operasyonu"
-      minimal={isTabletMode}
-      actions={
-        <>
-          <LiveOpsBridge tables={["orders", "order_items", "tables", "payments", "cash_register_sessions"]} fallbackIntervalMs={1400} />
-          <LiveRouteRefresh tables={["orders", "order_items", "payments", "cash_register_sessions"]} debounceMs={240} minIntervalMs={1200} />
-          <Link href={cashierSessionPath} className="w-full rounded-2xl border border-slate-200 bg-white px-5 py-3 text-center text-sm font-semibold text-slate-800 sm:w-auto">
-            Gün İşlemleri
-          </Link>
-          <Link href={opsPath} className="w-full rounded-2xl border border-slate-200 bg-white px-5 py-3 text-center text-sm font-semibold text-slate-800 sm:w-auto">
-            Panele Dön
-          </Link>
-        </>
-      }
-    >
-      {feedback ? (
-        <NoticeBanner
-          tone={tone === "error" ? "error" : "success"}
-          title={tone === "error" ? "Kasa işlemi tamamlanamadi" : "Kasa işlemi tamamlandı"}
-          description={feedback}
-        />
-      ) : null}
-
-      {usingDemoData ? (
-        <div className="rounded-[24px] border border-amber-200 bg-amber-50 px-5 py-4 text-sm text-amber-900">
-          Demo veri modu aktif. Split, ödeme ve iade akışlarini bu ekran uzerinden test edebilirsin.
-        </div>
-      ) : null}
-
-      <QuerySnapshotSeed queryKey={posQueryKeys.cashierSnapshot} data={cashierSnapshotSeed} />
-
-      <section className="app-mobile-hide grid gap-4 xl:grid-cols-4">
-        <SummaryCard label="Bekleyen Adisyon" value={String(servedOrders.length)} hint="Acilikta bekleyen tüm hesaplar" tone="accent" className="bg-[linear-gradient(130deg,rgba(255,106,61,0.14),rgba(255,255,255,0.9)_65%)]" />
-        <SummaryCard label="Bekleyen Bakiye" value={`${servedTotals.remaining.toFixed(2)} TL`} hint="Tahsil edilmemis toplam tutar" tone="danger" className="bg-[linear-gradient(130deg,rgba(251,113,133,0.12),rgba(255,255,255,0.9)_65%)]" />
-        <SummaryCard label="Bugün Tahsil" value={`${paidTotals.paid.toFixed(2)} TL`} hint={`${paidOrders.length} kapanan adisyon`} tone="success" className="bg-[linear-gradient(130deg,rgba(16,185,129,0.12),rgba(255,255,255,0.9)_65%)]" />
-        <SummaryCard label="Açık Ciro" value={`${servedTotals.final.toFixed(2)} TL`} hint="Acilikta kalan adisyon hacmi" className="bg-[linear-gradient(130deg,rgba(59,130,246,0.1),rgba(255,255,255,0.9)_65%)]" />
-      </section>
-
-      <section className="app-mobile-only space-y-3">
-        <article className="mobile-task-card">
-          <p className="text-[11px] font-bold uppercase tracking-[0.16em] text-slate-500">Tahsilat Kuyrugu</p>
-          <h2 className="mt-2 text-xl font-semibold tracking-tight text-slate-900">Listeyi seç, tam ekranda tamamla</h2>
-          <p className="mt-1 text-sm text-slate-500">Ödeme, split ve iade adimlari seçilen adisyon detayinda ilerler.</p>
-        </article>
-        {servedOrders.length === 0 ? (
-          <article className="mobile-task-card">
-            <p className="text-sm font-semibold text-slate-800">Bekleyen adisyon yok.</p>
-          </article>
-        ) : (
-          <div className="grid gap-2">
-            {servedOrders.map((order) => {
-              const remaining = Number(order.remaining_balance ?? order.final_price ?? order.total_price);
-              const active = selectedOrder?.id === order.id;
-              return (
-                <OptimisticVisibility key={`mobile-queue-${order.id}`} orderId={order.id}>
-                  <article className="mobile-task-card">
-                    <div className="flex items-start justify-between gap-3">
-                      <div>
-                        <p className="text-[11px] font-semibold uppercase tracking-[0.14em] text-slate-500">{orderSourceLabel(order)}</p>
-                        <p className="mt-1 text-lg font-semibold text-slate-900">Sipariş #{orderRef(order)}</p>
-                      </div>
-                      <span className={`rounded-full px-3 py-1 text-xs font-semibold ${statusTone(order.status)}`}>{order.status}</span>
-                    </div>
-                    <div className="mt-3 flex items-center justify-between gap-3">
-                      <div>
-                        <p className="text-xs text-slate-500">Kalan</p>
-                        <p className="text-xl font-semibold text-emerald-700">
-                          <OptimisticMoney orderId={order.id} baseAmount={remaining} field="remaining" />
-                        </p>
-                      </div>
-                      <Link
-                        href={`${cashierPath}?order=${order.id}`}
-                        className={`mobile-cta-primary inline-flex items-center justify-center px-4 py-3 text-sm ${active ? "opacity-90" : ""}`}
-                      >
-                        {active ? "Açık Detay" : "Tahsilata Gec"}
-                      </Link>
-                    </div>
-                  </article>
-                </OptimisticVisibility>
-              );
-            })}
-          </div>
-        )}
-      </section>
-
-
-
-      <ContentCard title="Masa ve Adisyon Seçimi" className="app-mobile-hide bg-[linear-gradient(140deg,rgba(255,255,255,0.96),rgba(255,255,255,0.84))]">
-        {servedOrders.length === 0 ? (
-          <EmptyPanel title="Seçilecek Adisyon Yok" description="Açık adisyon bulunmuyor." />
-        ) : (
-          <div className="grid gap-3 md:grid-cols-2 xl:grid-cols-4">
-            {servedOrders.map((order) => {
-              const remaining = Number(order.remaining_balance ?? order.final_price ?? order.total_price);
-              const active = selectedOrder?.id === order.id;
-              return (
-                <OptimisticVisibility key={order.id} orderId={order.id}>
-                <Link
-                  href={`${cashierPath}?order=${order.id}`}
-                  className={`panel-hover rounded-[24px] border p-4 ${
-                    active
-                      ? "border-[#ff8b73] bg-[linear-gradient(135deg,rgba(255,106,61,0.10)_0%,rgba(255,255,255,0.92)_60%)] shadow-[0_18px_32px_rgba(255,106,61,0.14)]"
-                      : "border-slate-200 bg-slate-50"
-                  }`}
-                >
-                  <div className="flex flex-col items-start justify-between gap-3 sm:flex-row">
-                    <div>
-                      <p className="text-xs font-bold uppercase tracking-[0.16em] text-slate-500">{orderSourceLabel(order)}</p>
-                      <p className="font-display mt-2 text-xl font-semibold tracking-tight text-slate-900">
-                        {order.channel === "dine_in" ? formatOrderTableLabel(order) : order.customer_name ?? "Adisyon"}
-                      </p>
-                    </div>
-                    <span className={`inline-flex w-full justify-center rounded-full px-3 py-1 text-xs font-semibold uppercase sm:w-auto ${statusTone(order.status)}`}>{order.status}</span>
-                  </div>
-                  <div className="mt-4 flex flex-col items-start gap-3 sm:flex-row sm:items-end sm:justify-between">
-                    <div>
-                      <p className="text-xs uppercase tracking-[0.16em] text-slate-500">Kalan</p>
-                      <p className="font-display font-numeric mt-1 text-2xl font-semibold text-emerald-700">
-                        <OptimisticMoney orderId={order.id} baseAmount={remaining} field="remaining" />
-                      </p>
-                    </div>
-                      <span className="inline-flex w-full justify-center rounded-2xl bg-white px-3 py-2 text-xs font-semibold text-slate-700 sm:w-auto">Popup A?</span>
-                  </div>
-                </Link>
-                </OptimisticVisibility>
-              );
-            })}
-          </div>
-        )}
-      </ContentCard>
-
-        <section className="app-mobile-hide grid gap-5 xl:grid-cols-[1.3fr_0.7fr]">
-        <ContentCard title="Ödeme Bekleyen Adisyonlar" className="bg-[linear-gradient(160deg,rgba(255,255,255,0.96),rgba(248,250,252,0.88))]">
+        <ContentCard title="Masa ve Adisyon Seçimi" className="app-mobile-hide bg-[linear-gradient(140deg,rgba(255,255,255,0.96),rgba(255,255,255,0.84))]">
           {servedOrders.length === 0 ? (
-            <EmptyPanel title="Adisyon Yok" description="Açık sipariş bulunmuyor." />
+            <EmptyPanel title="Seçilecek Adisyon Yok" description="Açık adisyon bulunmuyor." />
           ) : (
-            <div className="space-y-4">
+            <div className="grid gap-3 md:grid-cols-2 xl:grid-cols-4">
               {servedOrders.map((order) => {
-                const subtotal = Number(order.total_price);
-                const final = Number(order.final_price ?? subtotal);
-                const remaining = Number(order.remaining_balance ?? final);
-
+                const remaining = Number(order.remaining_balance ?? order.final_price ?? order.total_price);
+                const active = selectedOrder?.id === order.id;
                 return (
                   <OptimisticVisibility key={order.id} orderId={order.id}>
-                  <article className="rounded-[24px] border border-slate-200 bg-[#fbfbfc] p-4">
-                    <div className="flex flex-wrap items-start justify-between gap-3">
-                      <div>
-                        <p className="text-xs font-bold uppercase tracking-[0.16em] text-slate-500">{orderSourceLabel(order)}</p>
-                        <h3 className="mt-2 text-2xl font-semibold tracking-tight text-slate-900">Sipariş #{orderRef(order)}</h3>
-                        <p className="mt-1 text-sm text-slate-500">{new Date(order.created_at).toLocaleTimeString(localeCode)}</p>
-                        {order.delivery_address ? <p className="mt-1 break-words text-sm text-slate-500">{order.delivery_address}</p> : null}
-                      </div>
-                      <div className="flex w-full flex-col items-start gap-2 sm:w-auto sm:items-end">
+                    <Link
+                      href={`${cashierPath}?order=${order.id}`}
+                      className={`panel-hover rounded-[24px] border p-4 ${
+                        active
+                          ? "border-[#ff8b73] bg-[linear-gradient(135deg,rgba(255,106,61,0.10)_0%,rgba(255,255,255,0.92)_60%)] shadow-[0_18px_32px_rgba(255,106,61,0.14)]"
+                          : "border-slate-200 bg-slate-50"
+                      }`}
+                    >
+                      <div className="flex flex-col items-start justify-between gap-3 sm:flex-row">
+                        <div>
+                          <p className="text-xs font-bold uppercase tracking-[0.16em] text-slate-500">{orderSourceLabel(order)}</p>
+                          <p className="font-display mt-2 text-xl font-semibold tracking-tight text-slate-900">
+                            {order.channel === "dine_in" ? formatOrderTableLabel(order) : order.customer_name ?? "Adisyon"}
+                          </p>
+                        </div>
                         <span className={`inline-flex w-full justify-center rounded-full px-3 py-1 text-xs font-semibold uppercase sm:w-auto ${statusTone(order.status)}`}>{order.status}</span>
-                        <p className="text-2xl font-semibold tracking-tight text-emerald-700">
-                          <OptimisticMoney orderId={order.id} baseAmount={remaining} field="remaining" />
-                        </p>
-                        <p className="text-xs text-slate-500">Kalan bakiye</p>
                       </div>
-                    </div>
-
-                    <div className="mt-4 flex flex-wrap items-stretch gap-2">
-                      <Link
-                        href={`${cashierPath}?order=${order.id}`}
-                        className="w-full rounded-2xl bg-gradient-to-r from-[#ff6a3d] to-[#f2b44f] px-4 py-3 text-center text-sm font-semibold text-white shadow-[0_12px_24px_rgba(255,106,61,0.22)] sm:w-auto"
-                      >
-                        Buyut ve Tahsilata Gec
-                      </Link>
-                      <div className="w-full sm:w-auto">
-                        <ReceiptPreviewLauncher
-                          order={order}
-                          receiptLink={buildReceiptLink(order.id)}
-                          showShareLink={false}
-                          compactButtons
-                        />
+                      <div className="mt-4 flex flex-col items-start gap-3 sm:flex-row sm:items-end sm:justify-between">
+                        <div>
+                          <p className="text-xs uppercase tracking-[0.16em] text-slate-500">Kalan</p>
+                          <p className="font-display font-numeric mt-1 text-2xl font-semibold text-emerald-700">
+                            <OptimisticMoney orderId={order.id} baseAmount={remaining} field="remaining" />
+                          </p>
+                        </div>
+                        <span className="inline-flex w-full justify-center rounded-2xl bg-white px-3 py-2 text-xs font-semibold text-slate-700 sm:w-auto">Popup Aç</span>
                       </div>
-                    </div>
-                  </article>
+                    </Link>
                   </OptimisticVisibility>
                 );
               })}
@@ -841,367 +791,421 @@ export default async function CashierPage({
           )}
         </ContentCard>
 
-        <ContentCard title="Son Kapanan Adisyonlar" className="bg-[linear-gradient(160deg,rgba(255,255,255,0.96),rgba(245,252,248,0.86))]">
-          {paidOrders.length === 0 ? (
-            <EmptyPanel title="Kayıt Yok" description="Bugün kapanan adisyon bulunmuyor." />
-          ) : (
-            <div className="space-y-4">
-              {paidOrders.slice(0, 8).map((order) => (
-                <article key={order.id} className="rounded-[24px] border border-slate-200 bg-[#fbfbfc] p-4">
-                  <div className="flex flex-col items-start justify-between gap-3 sm:flex-row">
-                    <div>
-                      <p className="text-xs font-bold uppercase tracking-[0.16em] text-slate-500">{orderSourceLabel(order)}</p>
-                      <h3 className="mt-2 text-xl font-semibold tracking-tight text-slate-900">Sipariş #{orderRef(order)}</h3>
-                      <p className="mt-1 text-sm text-slate-500">{new Date(order.created_at).toLocaleTimeString(localeCode)}</p>
-                    </div>
-                    <span className={`inline-flex w-full justify-center rounded-full px-3 py-1 text-xs font-semibold uppercase sm:w-auto ${statusTone(order.status)}`}>{order.status}</span>
-                  </div>
+        <section className="app-mobile-hide grid gap-5 xl:grid-cols-[1.3fr_0.7fr]">
+          <ContentCard title="Ödeme Bekleyen Adisyonlar" className="bg-[linear-gradient(160deg,rgba(255,255,255,0.96),rgba(248,250,252,0.88))]">
+            {servedOrders.length === 0 ? (
+              <EmptyPanel title="Adisyon Yok" description="Açık sipariş bulunmuyor." />
+            ) : (
+              <div className="space-y-4">
+                {servedOrders.map((order) => {
+                  const subtotal = Number(order.total_price);
+                  const final = Number(order.final_price ?? subtotal);
+                  const remaining = Number(order.remaining_balance ?? final);
 
-                  <div className="mt-4 grid gap-3">
-                    <div className="rounded-2xl bg-white px-4 py-4">
-                      <p className="text-xs font-bold uppercase tracking-[0.16em] text-slate-500">Net Tahsilat</p>
-                      <p className="mt-2 text-2xl font-semibold tracking-tight text-slate-900">
-                        {Number(order.amount_paid ?? order.final_price ?? order.total_price).toFixed(2)} TL
-                      </p>
-                    </div>
-
-                    <div className="rounded-2xl bg-white px-4 py-4">
-                      <p className="text-xs font-bold uppercase tracking-[0.16em] text-slate-500">Adisyon Paylasimi</p>
-                      <ReceiptPreviewLauncher order={order} receiptLink={buildReceiptLink(order.id)} />
-                      <div className="mt-4 flex justify-center rounded-[20px] border border-dashed border-slate-200 bg-slate-50 p-4">
-                        <Image
-                          src={buildReceiptQr(order.id)}
-                          alt="Adisyon QR"
-                          className="h-24 w-24 rounded-xl border border-slate-200 bg-white"
-                          width={96}
-                          height={96}
-                          unoptimized
-                        />
-                      </div>
-                    </div>
-
-                    {POS_CLIENT_QUEUE_CASHIER_ENABLED ? (
-                      <CashierRefundQueueForm
-                        orderId={order.id}
-                        returnOrderId={selectedOrder?.id}
-                        defaultAmount={Number(order.final_price ?? order.total_price)}
-                        className="grid gap-2 rounded-[20px] border border-rose-200 bg-rose-50/60 p-4"
-                      />
-                    ) : (
-                      <form action={refundOrderAction} className="grid gap-2 rounded-[20px] border border-rose-200 bg-rose-50/60 p-4">
-                        <input type="hidden" name="orderId" value={order.id} />
-                        <input type="hidden" name="requestKey" value={crypto.randomUUID()} />
-                        <select name="method" className="rounded-2xl border border-slate-300 px-4 py-3 text-sm">
-                          <option value="cash">Nakit</option>
-                          <option value="card">Kart</option>
-                          <option value="mixed">Karma</option>
-                        </select>
-                        <input
-                          name="amount"
-                          type="number"
-                          min="0"
-                          step="0.01"
-                          defaultValue={Number(order.final_price ?? order.total_price)}
-                          className="rounded-2xl border border-slate-300 px-4 py-3 text-sm"
-                        />
-                        <input
-                          name="note"
-                          placeholder="İade notu"
-                          className="rounded-2xl border border-slate-300 px-4 py-3 text-sm"
-                        />
-                        <button type="submit" className="rounded-2xl border border-rose-300 px-4 py-3 text-sm font-semibold text-rose-700">
-                          İade Başlat
-                        </button>
-                      </form>
-                    )}
-                  </div>
-                </article>
-              ))}
-            </div>
-          )}
-        </ContentCard>
-        </section>
-
-      {selectedOrder ? (
-        <OptimisticVisibility orderId={selectedOrder.id}>
-        <div className="fixed inset-0 z-50 flex items-end justify-center bg-slate-950/42 p-0 backdrop-blur-[2px] sm:items-center sm:p-4">
-          <div className="panel-surface cashier-detail-sheet h-[100dvh] w-full max-w-[1320px] overflow-auto rounded-none p-4 sm:max-h-[92vh] sm:h-auto sm:rounded-[32px] sm:p-6">
-            <div className="mb-5 flex flex-wrap items-start justify-between gap-4 border-b border-slate-200 pb-5">
-              <div>
-                <p className="text-xs font-bold uppercase tracking-[0.16em] text-slate-500">{orderSourceLabel(selectedOrder)}</p>
-                <h2 className="font-display mt-2 text-2xl font-semibold tracking-tight text-slate-900 sm:text-3xl">
-                  {selectedOrder.channel === "dine_in"
-                    ? `${formatOrderTableLabel(selectedOrder)} Adisyonu`
-                    : `Sipariş #${orderRef(selectedOrder)}`}
-                </h2>
-                <p className="mt-1 text-sm text-slate-500">Popup tahsilat akışı. Ekrandan ayrilmadan ödeme, split ve iptal yap.</p>
-                <div className="app-mobile-only mt-3 flex gap-2 text-[11px] font-semibold uppercase tracking-[0.12em]">
-                  <span className="rounded-full bg-slate-900 px-3 py-1 text-white">1 Liste</span>
-                  <span className="rounded-full bg-amber-100 px-3 py-1 text-amber-800">2 Ödeme</span>
-                  <span className="rounded-full bg-emerald-100 px-3 py-1 text-emerald-800">3 Kapat</span>
-                </div>
-              </div>
-              <Link href={cashierPath} className="w-full rounded-2xl border border-slate-200 bg-white px-4 py-3 text-center text-sm font-semibold text-slate-700 sm:w-auto">
-                Kapat
-              </Link>
-            </div>
-            {feedback ? (
-              <NoticeBanner
-                tone={tone === "error" ? "error" : "success"}
-                title={tone === "error" ? "Islemde hata oluştu" : "İşlem kaydedildi"}
-                description={feedback}
-              />
-            ) : null}
-
-            {(() => {
-              const order = selectedOrder;
-              const subtotal = Number(order.total_price);
-              const discount = Number(order.discount_amount ?? 0);
-              const service = Number(order.service_fee ?? 0);
-              const final = Number(order.final_price ?? subtotal);
-              const paid = Number(order.amount_paid ?? 0);
-              const remaining = Number(order.remaining_balance ?? final);
-              const paymentRequestKey = crypto.randomUUID();
-              const cancelRequestKey = crypto.randomUUID();
-
-              return (
-                <div className="space-y-4">
-                  <div className="app-mobile-only mobile-wizard-nav">
-                    <a href="#wizard-finance" className="mobile-wizard-step">
-                      1 Finans
-                    </a>
-                    <a href="#wizard-payment" className="mobile-wizard-step">
-                      2 Ödeme
-                    </a>
-                    <a href="#wizard-close" className="mobile-wizard-step">
-                      3 Kapat
-                    </a>
-                  </div>
-
-                  <section id="wizard-finance" className="scroll-mt-[130px] grid gap-4 xl:grid-cols-[0.95fr_1.05fr]">
-                    <div className="space-y-4">
-                      <div className="rounded-[24px] border border-slate-200 bg-slate-50 p-4">
-                        <div className="flex flex-col items-start justify-between gap-3 sm:flex-row">
+                  return (
+                    <OptimisticVisibility key={order.id} orderId={order.id}>
+                      <article className="rounded-[24px] border border-slate-200 bg-[#fbfbfc] p-4">
+                        <div className="flex flex-wrap items-start justify-between gap-3">
                           <div>
-                            <p className="text-xs font-bold uppercase tracking-[0.16em] text-slate-500">Sipariş Bilgisi</p>
-                            <p className="font-display mt-2 text-2xl font-semibold tracking-tight text-slate-900">Sipariş #{orderRef(order)}</p>
+                            <p className="text-xs font-bold uppercase tracking-[0.16em] text-slate-500">{orderSourceLabel(order)}</p>
+                            <h3 className="mt-2 text-2xl font-semibold tracking-tight text-slate-900">Sipariş #{orderRef(order)}</h3>
                             <p className="mt-1 text-sm text-slate-500">{new Date(order.created_at).toLocaleTimeString(localeCode)}</p>
                             {order.delivery_address ? <p className="mt-1 break-words text-sm text-slate-500">{order.delivery_address}</p> : null}
                           </div>
-                          <span className={`rounded-full px-3 py-1 text-xs font-semibold uppercase ${statusTone(order.status)}`}>{order.status}</span>
-                        </div>
-                      </div>
-
-                      <div className="rounded-[24px] border border-slate-200 bg-white p-4">
-                        <p className="text-xs font-bold uppercase tracking-[0.16em] text-slate-500">Sipariş Kalemleri</p>
-                        <ul className="mt-3 space-y-2 text-sm text-slate-700">
-                                                    {(order.items as OrderItem[]).map((item, index) => (
-                            <li key={`${order.id}-${item.product_id}-${index}`} className="group rounded-2xl bg-slate-50 px-3 py-3 hover:bg-slate-100 transition">
-                              <div className="flex items-center justify-between gap-3">
-                                <div className="min-w-0 break-words">
-                                  <span className="font-semibold text-slate-900">
-                                    {item.quantity}x {item.name}
-                                  </span>
-                                  {item.modifiers?.length ? (
-                                    <div className="mt-1 text-xs text-slate-500">
-                                      {item.modifiers.map((modifier) => `${modifier.group_name}: ${modifier.option_name}`).join(" / ")}
-                                    </div>
-                                  ) : null}
-                                </div>
-                                <div className="flex shrink-0 items-center gap-3">
-                                  <span className="font-numeric pt-1">{Number(item.line_total).toFixed(2)} TL</span>
-                                  {POS_CLIENT_QUEUE_CASHIER_ENABLED ? (
-                                    <CashierOrderItemCancelQueueButton
-                                      orderId={order.id}
-                                      returnOrderId={order.id}
-                                      productId={item.product_id}
-                                      className="flex h-7 w-7 items-center justify-center rounded-lg border border-slate-200 bg-white text-rose-500 opacity-20 transition hover:bg-rose-50 hover:border-rose-200 group-hover:opacity-100 focus:opacity-100 disabled:cursor-not-allowed disabled:opacity-40"
-                                    />
-                                  ) : (
-                                    <form action={cancelOrderItemAction}>
-                                      <input type="hidden" name="orderId" value={order.id} />
-                                      <input type="hidden" name="returnOrderId" value={order.id} />
-                                      <input type="hidden" name="productId" value={item.product_id} />
-                                      <button
-                                        type="submit"
-                                        title="ürünü dus veya iptal et"
-                                        className="flex h-7 w-7 items-center justify-center rounded-lg border border-slate-200 bg-white text-rose-500 opacity-20 transition hover:bg-rose-50 hover:border-rose-200 group-hover:opacity-100 focus:opacity-100"
-                                      >
-                                        <svg className="h-4 w-4" fill="none" viewBox="0 0 24 24" stroke="currentColor">
-                                          <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2.5} d="M20 12H4" />
-                                        </svg>
-                                      </button>
-                                    </form>
-                                  )}
-                                </div>
-                              </div>
-                            </li>
-                          ))}
-                        </ul>
-                      </div>
-                    </div>
-
-                    <div className="space-y-4">
-                      <div className="grid gap-4 md:grid-cols-2">
-                        <div className="rounded-[24px] border border-slate-200 bg-white p-4">
-                          <p className="text-xs font-bold uppercase tracking-[0.16em] text-slate-500">Finans Özet</p>
-                          <div className="mt-3 grid gap-2 text-sm">
-                            <div className="flex justify-between rounded-xl bg-slate-50 px-3 py-3">
-                              <span>Ara Toplam</span>
-                              <span className="font-numeric">{subtotal.toFixed(2)} TL</span>
-                            </div>
-                            <div className="flex justify-between rounded-xl bg-slate-50 px-3 py-3">
-                              <span>İndirim</span>
-                              <span className="font-numeric">-{discount.toFixed(2)} TL</span>
-                            </div>
-                            <div className="flex justify-between rounded-xl bg-slate-50 px-3 py-3">
-                              <span>Servis Ucreti</span>
-                              <span className="font-numeric">+{service.toFixed(2)} TL</span>
-                            </div>
-                            <div className="flex justify-between rounded-xl bg-[#fff2ee] px-3 py-3 font-semibold text-slate-900">
-                              <span>Toplam</span>
-                              <span className="font-display font-numeric">{final.toFixed(2)} TL</span>
-                            </div>
-                            <div className="flex justify-between rounded-xl bg-emerald-50 px-3 py-3">
-                              <span>Ödenen</span>
-                              <span className="font-display font-numeric">{paid.toFixed(2)} TL</span>
-                            </div>
-                            <div className="flex justify-between rounded-xl bg-amber-50 px-3 py-3">
-                              <span>Kalan</span>
-                              <span className="font-display font-numeric text-amber-800">{remaining.toFixed(2)} TL</span>
-                            </div>
+                          <div className="flex w-full flex-col items-start gap-2 sm:w-auto sm:items-end">
+                            <span className={`inline-flex w-full justify-center rounded-full px-3 py-1 text-xs font-semibold uppercase sm:w-auto ${statusTone(order.status)}`}>{order.status}</span>
+                            <p className="text-2xl font-semibold tracking-tight text-emerald-700">
+                              <OptimisticMoney orderId={order.id} baseAmount={remaining} field="remaining" />
+                            </p>
+                            <p className="text-xs text-slate-500">Kalan bakiye</p>
                           </div>
                         </div>
 
-                        <div className="rounded-[24px] border border-slate-200 bg-white p-4">
-                          <p className="text-xs font-bold uppercase tracking-[0.16em] text-slate-500">Adisyon Paylasimi</p>
-                          <ReceiptPreviewLauncher order={order} receiptLink={buildReceiptLink(order.id)} />
-                          <div className="mt-4 flex justify-center rounded-[20px] border border-dashed border-slate-200 bg-slate-50 p-4">
-                            <Image
-                              src={buildReceiptQr(order.id)}
-                              alt="Adisyon QR"
-                              className="h-24 w-24 rounded-xl border border-slate-200 bg-white sm:h-28 sm:w-28"
-                              width={112}
-                              height={112}
-                              unoptimized
+                        <div className="mt-4 flex flex-wrap items-stretch gap-2">
+                          <Link
+                            href={`${cashierPath}?order=${order.id}`}
+                            className="w-full rounded-2xl bg-gradient-to-r from-[#ff6a3d] to-[#f2b44f] px-4 py-3 text-center text-sm font-semibold text-white shadow-[0_12px_24px_rgba(255,106,61,0.22)] sm:w-auto"
+                          >
+                            Buyut ve Tahsilata Gec
+                          </Link>
+                          <div className="w-full sm:w-auto">
+                            <ReceiptPreviewLauncher
+                              order={order}
+                              receiptLink={buildReceiptLink(order.id)}
+                              showShareLink={false}
+                              compactButtons
                             />
                           </div>
+                        </div>
+                      </article>
+                    </OptimisticVisibility>
+                  );
+                })}
+              </div>
+            )}
+          </ContentCard>
+
+          <ContentCard title="Son Kapanan Adisyonlar" className="bg-[linear-gradient(160deg,rgba(255,255,255,0.96),rgba(245,252,248,0.86))]">
+            {paidOrders.length === 0 ? (
+              <EmptyPanel title="Kayıt Yok" description="Bugün kapanan adisyon bulunmuyor." />
+            ) : (
+              <div className="space-y-4">
+                {paidOrders.slice(0, 8).map((order) => (
+                  <article key={order.id} className="rounded-[24px] border border-slate-200 bg-[#fbfbfc] p-4">
+                    <div className="flex flex-col items-start justify-between gap-3 sm:flex-row">
+                      <div>
+                        <p className="text-xs font-bold uppercase tracking-[0.16em] text-slate-500">{orderSourceLabel(order)}</p>
+                        <h3 className="mt-2 text-xl font-semibold tracking-tight text-slate-900">Sipariş #{orderRef(order)}</h3>
+                        <p className="mt-1 text-sm text-slate-500">{new Date(order.created_at).toLocaleTimeString(localeCode)}</p>
+                      </div>
+                      <span className={`inline-flex w-full justify-center rounded-full px-3 py-1 text-xs font-semibold uppercase sm:w-auto ${statusTone(order.status)}`}>{order.status}</span>
+                    </div>
+
+                    <div className="mt-4 grid gap-3">
+                      <div className="rounded-2xl bg-white px-4 py-4">
+                        <p className="text-xs font-bold uppercase tracking-[0.16em] text-slate-500">Net Tahsilat</p>
+                        <p className="mt-2 text-2xl font-semibold tracking-tight text-slate-900">
+                          {Number(order.amount_paid ?? order.final_price ?? order.total_price).toFixed(2)} TL
+                        </p>
+                      </div>
+
+                      <div className="rounded-2xl bg-white px-4 py-4">
+                        <p className="text-xs font-bold uppercase tracking-[0.16em] text-slate-500">Adisyon Paylasimi</p>
+                        <ReceiptPreviewLauncher order={order} receiptLink={buildReceiptLink(order.id)} />
+                        <div className="mt-4 flex justify-center rounded-[20px] border border-dashed border-slate-200 bg-slate-50 p-4">
+                          <Image
+                            src={buildReceiptQr(order.id)}
+                            alt="Adisyon QR"
+                            className="h-24 w-24 rounded-xl border border-slate-200 bg-white"
+                            width={96}
+                            height={96}
+                            unoptimized
+                          />
                         </div>
                       </div>
 
                       {POS_CLIENT_QUEUE_CASHIER_ENABLED ? (
-                        <CashierFinancialsQueueForm
+                        <CashierRefundQueueForm
                           orderId={order.id}
-                          returnOrderId={order.id}
-                          defaultDiscountAmount={discount}
-                          defaultServiceFee={service}
-                          className="grid gap-2 rounded-[20px] border border-slate-200 bg-white p-4 md:grid-cols-3"
+                          returnOrderId={selectedOrder?.id}
+                          defaultAmount={Number(order.final_price ?? order.total_price)}
+                          className="grid gap-2 rounded-[20px] border border-rose-200 bg-rose-50/60 p-4"
                         />
                       ) : (
-                        <form action={applyFinancialsAction} className="grid gap-2 rounded-[20px] border border-slate-200 bg-white p-4 md:grid-cols-3">
+                        <form action={refundOrderAction} className="grid gap-2 rounded-[20px] border border-rose-200 bg-rose-50/60 p-4">
                           <input type="hidden" name="orderId" value={order.id} />
-                          <input type="hidden" name="returnOrderId" value={order.id} />
+                          <input type="hidden" name="requestKey" value={crypto.randomUUID()} />
+                          <select name="method" className="rounded-2xl border border-slate-300 px-4 py-3 text-sm">
+                            <option value="cash">Nakit</option>
+                            <option value="card">Kart</option>
+                            <option value="mixed">Karma</option>
+                          </select>
                           <input
-                            name="discountAmount"
+                            name="amount"
                             type="number"
                             min="0"
                             step="0.01"
-                            defaultValue={discount}
-                            placeholder="İndirim"
+                            defaultValue={Number(order.final_price ?? order.total_price)}
                             className="rounded-2xl border border-slate-300 px-4 py-3 text-sm"
                           />
                           <input
-                            name="serviceFee"
-                            type="number"
-                            min="0"
-                            step="0.01"
-                            defaultValue={service}
-                            placeholder="Servis"
+                            name="note"
+                            placeholder="İade notu"
                             className="rounded-2xl border border-slate-300 px-4 py-3 text-sm"
                           />
-                          <button
-                            type="submit"
-                            className="rounded-2xl border border-slate-200 bg-slate-50 px-4 py-3 text-sm font-semibold text-slate-800"
-                          >
-                            Finans Güncelle
+                          <button type="submit" className="rounded-2xl border border-rose-300 px-4 py-3 text-sm font-semibold text-rose-700">
+                            İade Başlat
                           </button>
                         </form>
                       )}
                     </div>
-                  </section>
+                  </article>
+                ))}
+              </div>
+            )}
+          </ContentCard>
+        </section>
 
-                  <section id="wizard-payment" className="scroll-mt-[130px] grid gap-4 xl:grid-cols-[1.1fr_0.9fr]">
-                    {POS_CLIENT_QUEUE_CASHIER_ENABLED ? (
-                      <CashierPaymentQueuePanel
-                        orderId={order.id}
-                        returnOrderId={order.id}
-                        defaultAmount={remaining}
-                        items={order.items as OrderItem[]}
-                      />
-                    ) : (
-                      <CashierPaymentPanel
-                        orderId={order.id}
-                        returnOrderId={order.id}
-                        defaultAmount={remaining}
-                        items={order.items as OrderItem[]}
-                        requestKey={paymentRequestKey}
-                        action={completePaymentAction}
-                      />
-                    )}
-
-                    {POS_CLIENT_QUEUE_CASHIER_ENABLED ? (
-                      <CashierCancelOrderQueueForm
-                        id="wizard-close"
-                        orderId={order.id}
-                        returnOrderId={order.id}
-                        className="scroll-mt-[130px] grid gap-2 rounded-[20px] border border-rose-200 bg-rose-50/60 p-4 content-start"
-                      />
-                    ) : (
-                      <div id="wizard-close" className="scroll-mt-[130px] grid gap-2 rounded-[20px] border border-slate-200 bg-slate-50 p-4 content-start">
-                        {operatingCapabilities.order_ready_board && remaining <= 0.009 ? (
-                          <form action={serveOrderAction} className="w-full">
-                            <input type="hidden" name="orderId" value={order.id} />
-                            <input type="hidden" name="returnOrderId" value={order.id} />
-                            <button
-                              type="submit"
-                              className="w-full rounded-2xl bg-emerald-600 px-4 py-3 text-sm font-semibold text-white shadow-[0_12px_24px_rgba(16,185,129,0.22)]"
-                            >
-                              Teslim Edildi
-                            </button>
-                            <p className="mt-2 text-center text-xs text-slate-500">
-                              Hesap ödendi. Müsteriye teslim edildiginde siparişi kapatin.
-                            </p>
-                          </form>
-                        ) : (
-                          <form action={cancelOrderAction} className="w-full grid gap-2">
-                            <input type="hidden" name="orderId" value={order.id} />
-                            <input type="hidden" name="returnOrderId" value={order.id} />
-                            <input type="hidden" name="requestKey" value={cancelRequestKey} />
-                            <p className="text-xs font-bold uppercase tracking-[0.16em] text-rose-700">Adisyon İptal</p>
-                            <input
-                              name="note"
-                              placeholder="İptal nedeni"
-                              className="rounded-2xl border border-slate-300 bg-white px-4 py-3 text-sm"
-                            />
-                            <button
-                              type="submit"
-                              className="w-full rounded-2xl border border-rose-300 bg-white px-4 py-3 text-sm font-semibold text-rose-700 transition hover:bg-rose-50"
-                            >
-                              İptal
-                            </button>
-                          </form>
-                        )}
-                      </div>
-                    )}
-                  </section>
+        {selectedOrder ? (
+          <OptimisticVisibility orderId={selectedOrder.id}>
+            <div className="fixed inset-0 z-50 flex items-end justify-center bg-slate-950/42 p-0 backdrop-blur-[2px] sm:items-center sm:p-4">
+              <div className="panel-surface cashier-detail-sheet h-[100dvh] w-full max-w-[1320px] overflow-auto rounded-none p-4 sm:max-h-[92vh] sm:h-auto sm:rounded-[32px] sm:p-6">
+                <div className="mb-5 flex flex-wrap items-start justify-between gap-4 border-b border-slate-200 pb-5">
+                  <div>
+                    <p className="text-xs font-bold uppercase tracking-[0.16em] text-slate-500">{orderSourceLabel(selectedOrder)}</p>
+                    <h2 className="font-display mt-2 text-2xl font-semibold tracking-tight text-slate-900 sm:text-3xl">
+                      {selectedOrder.channel === "dine_in"
+                        ? `${formatOrderTableLabel(selectedOrder)} Adisyonu`
+                        : `Sipariş #${orderRef(selectedOrder)}`}
+                    </h2>
+                    <p className="mt-1 text-sm text-slate-500">Popup tahsilat akışı. Ekrandan ayrilmadan ödeme, split ve iptal yap.</p>
+                    <div className="app-mobile-only mt-3 flex gap-2 text-[11px] font-semibold uppercase tracking-[0.12em]">
+                      <span className="rounded-full bg-slate-900 px-3 py-1 text-white">1 Liste</span>
+                      <span className="rounded-full bg-amber-100 px-3 py-1 text-amber-800">2 Ödeme</span>
+                      <span className="rounded-full bg-emerald-100 px-3 py-1 text-emerald-800">3 Kapat</span>
+                    </div>
+                  </div>
+                  <Link href={cashierPath} className="w-full rounded-2xl border border-slate-200 bg-white px-4 py-3 text-center text-sm font-semibold text-slate-700 sm:w-auto">
+                    Kapat
+                  </Link>
                 </div>
-              );
-            })()}
-          </div>
-        </div>
-        </OptimisticVisibility>
-      ) : null}
-    </BackofficePage>
+                {feedback ? (
+                  <NoticeBanner
+                    tone={tone === "error" ? "error" : "success"}
+                    title={tone === "error" ? "Islemde hata oluştu" : "İşlem kaydedildi"}
+                    description={feedback}
+                  />
+                ) : null}
+
+                {(() => {
+                  const order = selectedOrder;
+                  const subtotal = Number(order.total_price);
+                  const discount = Number(order.discount_amount ?? 0);
+                  const service = Number(order.service_fee ?? 0);
+                  const final = Number(order.final_price ?? subtotal);
+                  const paid = Number(order.amount_paid ?? 0);
+                  const remaining = Number(order.remaining_balance ?? final);
+                  const paymentRequestKey = crypto.randomUUID();
+                  const cancelRequestKey = crypto.randomUUID();
+
+                  return (
+                    <div className="space-y-4">
+                      <div className="app-mobile-only mobile-wizard-nav">
+                        <a href="#wizard-finance" className="mobile-wizard-step">
+                          1 Finans
+                        </a>
+                        <a href="#wizard-payment" className="mobile-wizard-step">
+                          2 Ödeme
+                        </a>
+                        <a href="#wizard-close" className="mobile-wizard-step">
+                          3 Kapat
+                        </a>
+                      </div>
+
+                      <section id="wizard-finance" className="scroll-mt-[130px] grid gap-4 xl:grid-cols-[0.95fr_1.05fr]">
+                        <div className="space-y-4">
+                          <div className="rounded-[24px] border border-slate-200 bg-slate-50 p-4">
+                            <div className="flex flex-col items-start justify-between gap-3 sm:flex-row">
+                              <div>
+                                <p className="text-xs font-bold uppercase tracking-[0.16em] text-slate-500">Sipariş Bilgisi</p>
+                                <p className="font-display mt-2 text-2xl font-semibold tracking-tight text-slate-900">Sipariş #{orderRef(order)}</p>
+                                <p className="mt-1 text-sm text-slate-500">{new Date(order.created_at).toLocaleTimeString(localeCode)}</p>
+                                {order.delivery_address ? <p className="mt-1 break-words text-sm text-slate-500">{order.delivery_address}</p> : null}
+                              </div>
+                              <span className={`rounded-full px-3 py-1 text-xs font-semibold uppercase ${statusTone(order.status)}`}>{order.status}</span>
+                            </div>
+                          </div>
+
+                          <div className="rounded-[24px] border border-slate-200 bg-white p-4">
+                            <p className="text-xs font-bold uppercase tracking-[0.16em] text-slate-500">Sipariş Kalemleri</p>
+                            <ul className="mt-3 space-y-2 text-sm text-slate-700">
+                              {(order.items as OrderItem[]).map((item, index) => (
+                                <li key={`${order.id}-${item.product_id}-${index}`} className="group rounded-2xl bg-slate-50 px-3 py-3 hover:bg-slate-100 transition">
+                                  <div className="flex items-center justify-between gap-3">
+                                    <div className="min-w-0 break-words">
+                                      <span className="font-semibold text-slate-900">
+                                        {item.quantity}x {item.name}
+                                      </span>
+                                      {item.modifiers?.length ? (
+                                        <div className="mt-1 text-xs text-slate-500">
+                                          {item.modifiers.map((modifier) => `${modifier.group_name}: ${modifier.option_name}`).join(" / ")}
+                                        </div>
+                                      ) : null}
+                                    </div>
+                                    <div className="flex shrink-0 items-center gap-3">
+                                      <span className="font-numeric pt-1">{Number(item.line_total).toFixed(2)} TL</span>
+                                      {POS_CLIENT_QUEUE_CASHIER_ENABLED ? (
+                                        <CashierOrderItemCancelQueueButton
+                                          orderId={order.id}
+                                          returnOrderId={order.id}
+                                          productId={item.product_id}
+                                          className="flex h-7 w-7 items-center justify-center rounded-lg border border-slate-200 bg-white text-rose-500 opacity-20 transition hover:bg-rose-50 hover:border-rose-200 group-hover:opacity-100 focus:opacity-100 disabled:cursor-not-allowed disabled:opacity-40"
+                                        />
+                                      ) : (
+                                        <form action={cancelOrderItemAction}>
+                                          <input type="hidden" name="orderId" value={order.id} />
+                                          <input type="hidden" name="returnOrderId" value={order.id} />
+                                          <input type="hidden" name="productId" value={item.product_id} />
+                                          <button
+                                            type="submit"
+                                            title="ürünü dus veya iptal et"
+                                            className="flex h-7 w-7 items-center justify-center rounded-lg border border-slate-200 bg-white text-rose-500 opacity-20 transition hover:bg-rose-50 hover:border-rose-200 group-hover:opacity-100 focus:opacity-100"
+                                          >
+                                            <svg className="h-4 w-4" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+                                              <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2.5} d="M20 12H4" />
+                                            </svg>
+                                          </button>
+                                        </form>
+                                      )}
+                                    </div>
+                                  </div>
+                                </li>
+                              ))}
+                            </ul>
+                          </div>
+                        </div>
+
+                        <div className="space-y-4">
+                          <div className="grid gap-4 md:grid-cols-2">
+                            <div className="rounded-[24px] border border-slate-200 bg-white p-4">
+                              <p className="text-xs font-bold uppercase tracking-[0.16em] text-slate-500">Finans Özet</p>
+                              <div className="mt-3 grid gap-2 text-sm">
+                                <div className="flex justify-between rounded-xl bg-slate-50 px-3 py-3">
+                                  <span>Ara Toplam</span>
+                                  <span className="font-numeric">{subtotal.toFixed(2)} TL</span>
+                                </div>
+                                <div className="flex justify-between rounded-xl bg-slate-50 px-3 py-3">
+                                  <span>İndirim</span>
+                                  <span className="font-numeric">-{discount.toFixed(2)} TL</span>
+                                </div>
+                                <div className="flex justify-between rounded-xl bg-slate-50 px-3 py-3">
+                                  <span>Servis Ucreti</span>
+                                  <span className="font-numeric">+{service.toFixed(2)} TL</span>
+                                </div>
+                                <div className="flex justify-between rounded-xl bg-[#fff2ee] px-3 py-3 font-semibold text-slate-900">
+                                  <span>Toplam</span>
+                                  <span className="font-display font-numeric">{final.toFixed(2)} TL</span>
+                                </div>
+                                <div className="flex justify-between rounded-xl bg-emerald-50 px-3 py-3">
+                                  <span>Ödenen</span>
+                                  <span className="font-display font-numeric">{paid.toFixed(2)} TL</span>
+                                </div>
+                                <div className="flex justify-between rounded-xl bg-amber-50 px-3 py-3">
+                                  <span>Kalan</span>
+                                  <span className="font-display font-numeric text-amber-800">{remaining.toFixed(2)} TL</span>
+                                </div>
+                              </div>
+                            </div>
+
+                            <div className="rounded-[24px] border border-slate-200 bg-white p-4">
+                              <p className="text-xs font-bold uppercase tracking-[0.16em] text-slate-500">Adisyon Paylasimi</p>
+                              <ReceiptPreviewLauncher order={order} receiptLink={buildReceiptLink(order.id)} />
+                              <div className="mt-4 flex justify-center rounded-[20px] border border-dashed border-slate-200 bg-slate-50 p-4">
+                                <Image
+                                  src={buildReceiptQr(order.id)}
+                                  alt="Adisyon QR"
+                                  className="h-24 w-24 rounded-xl border border-slate-200 bg-white sm:h-28 sm:w-28"
+                                  width={112}
+                                  height={112}
+                                  unoptimized
+                                />
+                              </div>
+                            </div>
+                          </div>
+
+                          {POS_CLIENT_QUEUE_CASHIER_ENABLED ? (
+                            <CashierFinancialsQueueForm
+                              orderId={order.id}
+                              returnOrderId={order.id}
+                              defaultDiscountAmount={discount}
+                              defaultServiceFee={service}
+                              className="grid gap-2 rounded-[20px] border border-slate-200 bg-white p-4 md:grid-cols-3"
+                            />
+                          ) : (
+                            <form action={applyFinancialsAction} className="grid gap-2 rounded-[20px] border border-slate-200 bg-white p-4 md:grid-cols-3">
+                              <input type="hidden" name="orderId" value={order.id} />
+                              <input type="hidden" name="returnOrderId" value={order.id} />
+                              <input
+                                name="discountAmount"
+                                type="number"
+                                min="0"
+                                step="0.01"
+                                defaultValue={discount}
+                                placeholder="İndirim"
+                                className="rounded-2xl border border-slate-300 px-4 py-3 text-sm"
+                              />
+                              <input
+                                name="serviceFee"
+                                type="number"
+                                min="0"
+                                step="0.01"
+                                defaultValue={service}
+                                placeholder="Servis"
+                                className="rounded-2xl border border-slate-300 px-4 py-3 text-sm"
+                              />
+                              <button
+                                type="submit"
+                                className="rounded-2xl border border-slate-200 bg-slate-50 px-4 py-3 text-sm font-semibold text-slate-800"
+                              >
+                                Finans Güncelle
+                              </button>
+                            </form>
+                          )}
+                        </div>
+                      </section>
+
+                      <section id="wizard-payment" className="scroll-mt-[130px] grid gap-4 xl:grid-cols-[1.1fr_0.9fr]">
+                        {POS_CLIENT_QUEUE_CASHIER_ENABLED ? (
+                          <CashierPaymentQueuePanel
+                            orderId={order.id}
+                            returnOrderId={order.id}
+                            defaultAmount={remaining}
+                            items={order.items as OrderItem[]}
+                          />
+                        ) : (
+                          <CashierPaymentPanel
+                            orderId={order.id}
+                            returnOrderId={order.id}
+                            defaultAmount={remaining}
+                            items={order.items as OrderItem[]}
+                            requestKey={paymentRequestKey}
+                            action={completePaymentAction}
+                          />
+                        )}
+
+                        {POS_CLIENT_QUEUE_CASHIER_ENABLED ? (
+                          <CashierCancelOrderQueueForm
+                            id="wizard-close"
+                            orderId={order.id}
+                            returnOrderId={order.id}
+                            className="scroll-mt-[130px] grid gap-2 rounded-[20px] border border-rose-200 bg-rose-50/60 p-4 content-start"
+                          />
+                        ) : (
+                          <div id="wizard-close" className="scroll-mt-[130px] grid gap-2 rounded-[20px] border border-slate-200 bg-slate-50 p-4 content-start">
+                            {operatingCapabilities.order_ready_board && remaining <= 0.009 ? (
+                              <form action={serveOrderAction} className="w-full">
+                                <input type="hidden" name="orderId" value={order.id} />
+                                <input type="hidden" name="returnOrderId" value={order.id} />
+                                <button
+                                  type="submit"
+                                  className="w-full rounded-2xl bg-emerald-600 px-4 py-3 text-sm font-semibold text-white shadow-[0_12px_24px_rgba(16,185,129,0.22)]"
+                                >
+                                  Teslim Edildi
+                                </button>
+                                <p className="mt-2 text-center text-xs text-slate-500">
+                                  Hesap ödendi. Müsteriye teslim edildiginde siparişi kapatin.
+                                </p>
+                              </form>
+                            ) : (
+                              <form action={cancelOrderAction} className="w-full grid gap-2">
+                                <input type="hidden" name="orderId" value={order.id} />
+                                <input type="hidden" name="returnOrderId" value={order.id} />
+                                <input type="hidden" name="requestKey" value={cancelRequestKey} />
+                                <p className="text-xs font-bold uppercase tracking-[0.16em] text-rose-700">Adisyon İptal</p>
+                                <input
+                                  name="note"
+                                  placeholder="İptal nedeni"
+                                  className="rounded-2xl border border-slate-300 bg-white px-4 py-3 text-sm"
+                                />
+                                <button
+                                  type="submit"
+                                  className="w-full rounded-2xl border border-rose-300 bg-white px-4 py-3 text-sm font-semibold text-rose-700 transition hover:bg-rose-50"
+                                >
+                                  İptal
+                                </button>
+                              </form>
+                            )}
+                          </div>
+                        )}
+                      </section>
+                    </div>
+                  );
+                })()}
+              </div>
+            </div>
+          </OptimisticVisibility>
+        ) : null}
+      </BackofficePage>
+    </>
   );
 }
-

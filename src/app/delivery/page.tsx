@@ -374,7 +374,7 @@ export default async function DeliveryPage({
                   href={`/delivery?stage=${activeStage}&order=${order.id}`}
                   className="mobile-cta-secondary inline-flex w-full items-center justify-center border border-slate-200 bg-white px-4 py-3 text-sm font-semibold text-slate-700"
                 >
-                  Detay? A?
+                  Detayı Aç
                 </Link>
               </div>
             ))}
@@ -416,7 +416,7 @@ export default async function DeliveryPage({
                             href={`/delivery?order=${order.id}`}
                             className="mt-2 block rounded-2xl border border-slate-200 bg-white px-4 py-3 text-center text-sm font-semibold text-slate-700"
                           >
-                            Detay? A?
+                            Detayı Aç
                           </Link>
                         </div>
                       ))
@@ -446,7 +446,7 @@ export default async function DeliveryPage({
                           href={`/delivery?order=${order.id}`}
                           className="mt-2 block rounded-2xl border border-slate-200 bg-white px-4 py-3 text-center text-sm font-semibold text-slate-700"
                         >
-                          Detay? A?
+                          Detayı Aç
                         </Link>
                       </div>
                     ))
@@ -476,7 +476,7 @@ export default async function DeliveryPage({
                           href={`/delivery?order=${order.id}`}
                           className="mt-2 block rounded-2xl border border-slate-200 bg-white px-4 py-3 text-center text-sm font-semibold text-slate-700"
                         >
-                          Detay? A?
+                          Detayı Aç
                         </Link>
                       </div>
                     ))
@@ -574,7 +574,7 @@ export default async function DeliveryPage({
                 <h2 className="font-display mt-2 text-2xl font-semibold tracking-tight text-slate-900 sm:text-3xl">
                   Sipariş #{orderRef(selectedOrder)}
                 </h2>
-                <p className="mt-1 text-sm text-slate-500">Adres, not, ürünler ve teslim akışını ayn? sayfada yönet.</p>
+                <p className="mt-1 text-sm text-slate-500">Adres, not, ürünler ve teslim akışını aynı sayfada yönet.</p>
               </div>
               <Link href="/delivery" className="w-full rounded-2xl border border-slate-200 bg-white px-4 py-3 text-center text-sm font-semibold text-slate-700 sm:w-auto">
                 Kapat
@@ -752,7 +752,7 @@ export default async function DeliveryPage({
                         </div>
                         <div className="mt-4 flex flex-wrap gap-2">
                           <Link href={`/delivery?order=${order.id}`} className="rounded-2xl border border-slate-200 bg-white px-4 py-3 text-sm font-semibold text-slate-700">
-                            Siparişi A?
+                            Siparişi Aç
                           </Link>
                           <Link href="/cashier" className="rounded-2xl border border-slate-200 bg-white px-4 py-3 text-sm font-semibold text-slate-700">
                             Kasaya Git

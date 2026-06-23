@@ -591,7 +591,7 @@ export default async function AdminTablesPage({
                         {latestOrder ? (
                           <div className="grid gap-2 sm:grid-cols-2">
                             <Link href={`/cashier?order=${latestOrder.id}`} className="inline-flex min-h-11 items-center justify-center rounded-xl border border-slate-200 bg-slate-50 px-3 py-3 text-center text-base font-semibold text-slate-700 sm:text-sm">
-                              Kasada A?
+                              Kasada Aç
                             </Link>
                             <Link href={`/receipt/${latestOrder.id}`} className="inline-flex min-h-11 items-center justify-center rounded-xl border border-slate-200 bg-slate-50 px-3 py-3 text-center text-base font-semibold text-slate-700 sm:text-sm">
                               Adisyon

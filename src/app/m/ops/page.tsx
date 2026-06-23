@@ -34,7 +34,7 @@ function statusLabel(status: string) {
   if (status === "ready") return "Servise Hazır";
   if (status === "served") return "Servise Hazır";
   if (status === "partially_paid") return "Kısmi Ödeme";
-  if (status === "paid") return "Kapand?";
+  if (status === "paid") return "Kapandı";
   return status;
 }
 
@@ -90,13 +90,13 @@ export default async function MobileOpsPage() {
       value: metrics.occupiedTables,
       description: `${metrics.emptyTables} boş masa hazır`,
       href: "/m/tables",
-      cta: "Masalar? A?",
+      cta: "Masaları Aç",
       tone: metrics.occupiedTables > metrics.emptyTables ? "m-tone-warning" : "m-tone-success",
     },
   ];
 
   const quickActions = [
-    { href: "/m/tables?flow=new-order", label: "Sipariş A?" },
+    { href: "/admin/orders", label: "Sipariş Aç" },
     { href: "/m/cashier", label: isSelfServiceCoffee ? "Sipariş Yönetimi" : "Tahsilat" },
     { href: "/m/kitchen", label: "Mutfak" },
     { href: "/m/delivery", label: "Teslimat" },

@@ -1,12 +1,10 @@
 import { revalidatePath } from "next/cache";
 import Link from "next/link";
 import { redirect } from "next/navigation";
-import { AdminOrderEntry } from "@/components/admin-order-entry";
 import { LiveOpsBridge } from "@/components/live-ops-bridge";
 import { MobileAuthRedirect } from "@/components/mobile-auth-redirect";
 import { PendingSubmitButton } from "@/components/pending-submit-button";
 import { getCurrentUserWithRole, hasRoleAccess, requireRole } from "@/lib/auth";
-import { getMenu } from "@/lib/domains/orders";
 import {
   getTableMap,
   getTableZones,
@@ -93,7 +91,7 @@ function orderStatusLabel(status: string) {
   if (status === "ready") return "Servise Hazır";
   if (status === "served") return "Servise Hazır";
   if (status === "partially_paid") return "Kısmi Ödeme";
-  if (status === "paid") return "Kapand?";
+  if (status === "paid") return "Kapandı";
   if (status === "partially_refunded") return "Kısmi İade";
   if (status === "cancelled") return "İptal";
   if (status === "refunded") return "İade";
@@ -221,22 +219,7 @@ export default async function MobileTablesPage({
     : null;
   const selectedTable = selectedTableId ? sortedTables.find((table) => table.id === selectedTableId) ?? null : null;
 
-  const orderEntryData = openOrderFlow
-    ? await (async () => {
-        const businessScope = await getBusinessScopeContext();
-        const { categories, products, modifierGroups, modifierOptions, usingDemoData: usingMenuDemo } = await getMenu(
-          businessScope.activeSlug,
-        );
-        return {
-          businessSlug: businessScope.activeSlug,
-          categories,
-          products,
-          modifierGroups,
-          modifierOptions,
-          usingMenuDemo,
-        };
-      })()
-    : null;
+  const orderEntryData = null;
 
   return (
     <>
@@ -251,7 +234,6 @@ export default async function MobileTablesPage({
       {usingDemoData ? (
         <div className="m-card m-banner-warning">Demo veri modu aktif.</div>
       ) : null}
-      {orderEntryData?.usingMenuDemo ? <div className="m-card m-banner-warning">Menü demo verisi kullanılıyor.</div> : null}
 
       <section className="m-grid-3 mt-3">
         <article className="m-card text-center">
@@ -286,13 +268,6 @@ export default async function MobileTablesPage({
         <p className="m-muted mt-2">Açık adisyon: {openOrderCount} - Açık servis talebi: {openRequestCountLabel}</p>
       </section>
 
-      {openOrderFlow && !selectedTable ? (
-        <section className="m-card mt-3 border-orange-200 bg-orange-50">
-          <p className="m-label text-orange-700">Sipariş akışı</p>
-          <p className="mt-2 text-base font-semibold text-slate-900">Once masa seçin.</p>
-          <p className="mt-1 text-sm text-slate-600">Sipariş acmak icin asagidaki masa kartlarindan birini kullanin.</p>
-        </section>
-      ) : null}
 
       <section className="m-stack mt-3">
         {filteredTables.length === 0 ? (
@@ -351,8 +326,8 @@ export default async function MobileTablesPage({
 
                 <div className="mt-3 grid gap-2">
                   {canOpenOrders ? (
-                    <Link href={flowHref(activeFilter, table.id)} className="m-btn-primary inline-flex items-center justify-center">
-                      {latestOrder && hasOpenOrder ? "Siparişe Ekle" : "Sipariş Ac"}
+                    <Link href={`/admin/orders?table=${table.id}`} className="m-btn-primary inline-flex items-center justify-center">
+                      {latestOrder && hasOpenOrder ? "Siparişe Ekle" : "Sipariş Aç"}
                     </Link>
                   ) : null}
 
@@ -404,39 +379,6 @@ export default async function MobileTablesPage({
         )}
       </section>
 
-      {openOrderFlow && selectedTable && orderEntryData ? (
-        <div className="m-flow-overlay">
-          <div className="m-flow-shell">
-            <header className="m-flow-header">
-              <div>
-                <p className="m-label">Sipariş Akışı</p>
-                <h2 className="text-lg font-semibold text-slate-900">
-                  {selectedTable ? `${selectedTable.name || `Masa ${selectedTable.table_number}`} Siparişi` : "Yeni Sipariş"}
-                </h2>
-              </div>
-              <Link href={baseHref(activeFilter)} className="m-btn-secondary inline-flex items-center justify-center px-3">
-                Kapat
-              </Link>
-            </header>
-
-            <div className="mt-3">
-              <AdminOrderEntry
-                businessSlug={orderEntryData.businessSlug}
-                categories={orderEntryData.categories}
-                products={orderEntryData.products}
-                modifierGroups={orderEntryData.modifierGroups}
-                modifierOptions={orderEntryData.modifierOptions}
-                tables={sortedTables}
-                initialTableId={selectedTableId ?? undefined}
-                mobilePresentation="stack"
-                entryMode="table_first"
-                layoutMode="mobile_stack"
-                initialView="composer"
-              />
-            </div>
-          </div>
-        </div>
-      ) : null}
     </>
   );
 }

@@ -11,6 +11,7 @@ import { executeWebOpsCommand } from "@/lib/ops/server-action";
 import { logServerPerf, measureAsync } from "@/lib/perf";
 import { shouldUseMobileClientAuthRedirect } from "@/lib/server/mobile-auth-guard";
 import type { Order, OrderItem, PaymentMethod } from "@/lib/types";
+import { ThemeForcer } from "@/components/theme-forcer";
 
 type MobileCashierSearchParams = {
   order?: string;
@@ -58,7 +59,7 @@ function orderSourceLabel(order: {
 function statusLabel(status: string) {
   if (status === "served") return "Tahsilat";
   if (status === "partially_paid") return "Kismi Ödeme";
-  if (status === "paid") return "Kapand?";
+  if (status === "paid") return "Kapandı";
   if (status === "ready") return "Hazır";
   return status;
 }
@@ -143,7 +144,7 @@ async function completeMobilePaymentAction(formData: FormData) {
   const remaining = typeof result.data?.remaining === "number" ? result.data.remaining : 0;
   const message =
     result.data?.idempotent === true
-      ? `Ayn? Ödeme daha once kaydedildi. Kalan bakiye: ${remaining.toFixed(2)} TL.`
+      ? `Aynı Ödeme daha once kaydedildi. Kalan bakiye: ${remaining.toFixed(2)} TL.`
       : `Ödeme kaydedildi. Kalan bakiye: ${remaining.toFixed(2)} TL.`;
   redirect(feedbackHref("success", message, returnOrderId ?? orderId));
 }
@@ -207,6 +208,7 @@ export default async function MobileCashierPage({
 
   return (
     <>
+      <ThemeForcer theme="cashier-light" />
       <LiveOpsBridge tables={["orders", "order_items", "payments", "cash_register_sessions"]} fallbackIntervalMs={1400} />
       <LiveRouteRefresh tables={["orders", "order_items", "payments", "cash_register_sessions"]} debounceMs={240} minIntervalMs={1200} />
 

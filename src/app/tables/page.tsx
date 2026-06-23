@@ -43,7 +43,7 @@ function orderStatusLabel(status: string) {
   if (status === "ready") return "Servise Hazır";
   if (status === "served") return "Servise Hazır";
   if (status === "partially_paid") return "Kısmi Ödeme";
-  if (status === "paid") return "Kapand?";
+  if (status === "paid") return "Kapandı";
   if (status === "partially_refunded") return "Kısmi İade";
   if (status === "cancelled") return "İptal";
   if (status === "refunded") return "İade";
@@ -509,7 +509,7 @@ export default async function TablesPage({
                         href="/service-requests"
                         className="mobile-cta-secondary inline-flex min-h-11 items-center justify-center rounded-2xl border border-slate-200 bg-slate-50 px-4 py-3 text-center text-sm font-semibold text-slate-800"
                       >
-                        Talepleri A?
+                        Talepleri Aç
                       </Link>
                     ) : null}
 
