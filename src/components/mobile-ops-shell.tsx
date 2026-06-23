@@ -50,7 +50,7 @@ const mobileIcons = {
 function resolveMobileActions(activeBusinessType: AppShellPayload["activeBusinessType"]): MobileAction[] {
   if (activeBusinessType === "self_service_coffee") {
     return [
-      { href: "/m/tables?flow=new-order", label: "Sipariş Ac", icon: "plus", roles: ["owner", "admin", "cashier", "waiter"], group: "order" },
+      { href: "/admin/orders", label: "Sipariş Aç", icon: "plus", roles: ["owner", "admin", "cashier", "waiter"], group: "order" },
       { href: "/m/cashier", label: "Sipariş Yönetimi", icon: "receipt", roles: ["admin", "cashier", "waiter"], group: "order" },
       { href: "/m/kitchen", label: "Mutfak", icon: "chefHat", roles: ["admin", "kitchen"], group: "ops", feature: "kitchen_display" },
       { href: "/m/cashier/session", label: "Gün İşlemleri", icon: "settings", roles: ["admin", "cashier"], group: "management" },
@@ -59,7 +59,7 @@ function resolveMobileActions(activeBusinessType: AppShellPayload["activeBusines
 
   return [
     { href: "/m/tables", label: "Masa Akışi", icon: "table", roles: ["admin", "cashier"], group: "order" },
-    { href: "/m/tables?flow=new-order", label: "Sipariş Ac", icon: "plus", roles: ["owner", "admin", "cashier"], group: "order" },
+    { href: "/admin/orders", label: "Sipariş Aç", icon: "plus", roles: ["owner", "admin", "cashier"], group: "order" },
     { href: "/m/cashier", label: "Adisyon", icon: "receipt", roles: ["admin", "cashier", "waiter"], group: "order" },
     { href: "/m/kitchen", label: "Mutfak", icon: "chefHat", roles: ["admin", "kitchen"], group: "ops", feature: "kitchen_display" },
     { href: "/m/delivery", label: "Teslimat", icon: "packageCheck", roles: ["admin", "cashier"], group: "ops", feature: "delivery_dispatch" },
@@ -209,7 +209,7 @@ export function MobileOpsShell({
     );
     const preferredHrefs =
       activeBusinessType === "self_service_coffee"
-        ? ["/m/tables?flow=new-order", "/m/cashier", "/m/kitchen"]
+        ? ["/admin/orders", "/m/cashier", "/m/kitchen"]
         : ["/m/tables", "/m/cashier", "/m/kitchen"];
 
     return [

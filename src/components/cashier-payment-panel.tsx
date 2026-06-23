@@ -4,6 +4,16 @@ import { useEffect, useMemo, useRef, useState, type FormEvent } from "react";
 import { PendingSubmitButton } from "@/components/pending-submit-button";
 import type { OrderItem } from "@/lib/types";
 
+function triggerHaptic(pattern: number | number[] = 40) {
+  if (typeof window !== "undefined" && typeof navigator !== "undefined" && typeof navigator.vibrate === "function") {
+    try {
+      navigator.vibrate(pattern);
+    } catch (e) {
+      console.warn("Haptic feedback failed", e);
+    }
+  }
+}
+
 function buildSplitSummary(items: OrderItem[], selectedQuantities: number[]) {
   return items
     .map((item, index) => ({ item, quantity: selectedQuantities[index] ?? 0 }))
@@ -14,6 +24,7 @@ function buildSplitSummary(items: OrderItem[], selectedQuantities: number[]) {
 
 function VirtualNumpad({ value, onChange }: { value: string; onChange: (val: string) => void }) {
   const handlePress = (key: string) => {
+    triggerHaptic(30);
     if (key === "DEL") {
       onChange(value.length > 1 ? value.slice(0, -1) : "0");
     } else if (key === ".") {
@@ -145,6 +156,7 @@ export function CashierPaymentPanel({
   const pending = forcePending || isClientSubmitting;
 
   async function handleClientSubmit(event: FormEvent<HTMLFormElement>) {
+    triggerHaptic([50, 30, 50]);
     if (!onSubmit) {
       return;
     }
@@ -182,7 +194,10 @@ export function CashierPaymentPanel({
               <button
                 key={splitCount}
                 type="button"
-                onClick={() => applySplit(splitCount)}
+                onClick={() => {
+                  triggerHaptic(40);
+                  applySplit(splitCount);
+                }}
                 className="min-h-[44px] rounded-2xl border border-slate-200 bg-slate-50 px-3 py-3 text-sm font-semibold text-slate-700 transition hover:border-slate-300 hover:bg-white"
               >
                 {splitCount} Kişi
@@ -216,7 +231,10 @@ export function CashierPaymentPanel({
               <button
                 key={preset.label}
                 type="button"
-                onClick={() => setAmount(Math.max(0.01, preset.value).toFixed(2))}
+                onClick={() => {
+                  triggerHaptic(40);
+                  setAmount(Math.max(0.01, preset.value).toFixed(2));
+                }}
                 className="min-h-[44px] rounded-2xl border border-slate-200 bg-slate-50 px-3 py-3 text-sm font-semibold text-slate-700 transition hover:border-slate-300 hover:bg-white"
               >
                 {preset.label}
@@ -234,7 +252,10 @@ export function CashierPaymentPanel({
           </div>
           <button
             type="button"
-            onClick={applySelectedItems}
+            onClick={() => {
+              triggerHaptic(40);
+              applySelectedItems();
+            }}
             className="min-h-[44px] w-full rounded-2xl border border-slate-200 bg-slate-50 px-3 py-2 text-sm font-semibold text-slate-700 sm:w-auto"
           >
             Seçilenleri Tutarla
@@ -287,7 +308,10 @@ export function CashierPaymentPanel({
               <button
                 key={value}
                 type="button"
-                onClick={() => setMethod(value as "cash" | "card" | "mixed")}
+                onClick={() => {
+                  triggerHaptic(40);
+                  setMethod(value as "cash" | "card" | "mixed");
+                }}
                 className={`min-h-[44px] rounded-2xl px-3 py-3 text-sm font-semibold transition ${
                   method === value
                     ? "bg-gradient-to-r from-[#ff5a34] to-[#f0b14f] text-white shadow-[0_10px_20px_rgba(255,111,60,0.24)]"

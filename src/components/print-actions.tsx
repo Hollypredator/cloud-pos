@@ -53,7 +53,7 @@ export function PrintActions({ baseHref }: PrintActionsProps) {
           href={`${baseHref}?layout=${layout}${hideLogo ? "" : "&logo=0"}`}
           className="rounded-2xl border border-slate-200 bg-white px-4 py-2 text-sm font-semibold text-slate-700 hover:bg-slate-50"
         >
-          {hideLogo ? "Logo A?" : "Logo Kapat"}
+          {hideLogo ? "Logo Aç" : "Logo Kapat"}
         </Link>
         <button
           onClick={() => window.print()}

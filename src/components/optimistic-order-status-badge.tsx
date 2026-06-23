@@ -1,5 +1,6 @@
 "use client";
 
+import { useState, useEffect } from "react";
 import { usePosCommandQueueStore } from "@/lib/pos/queue/store";
 import type { OrderStatus } from "@/lib/types";
 
@@ -21,7 +22,7 @@ function resolveStatusLabel(status: OrderStatus) {
   if (status === "ready") return "Hazır";
   if (status === "served") return "Teslim edildi";
   if (status === "cancelled") return "İptal";
-  if (status === "paid") return "Kapand?";
+  if (status === "paid") return "Kapandı";
   return status;
 }
 
@@ -34,6 +35,11 @@ export function OptimisticOrderStatusBadge({
   baseStatus: OrderStatus;
   className: string;
 }) {
+  const [mounted, setMounted] = useState(false);
+  useEffect(() => {
+    setMounted(true);
+  }, []);
+
   const optimisticStatus = usePosCommandQueueStore(
     (state) => state.cashierOptimisticState[orderId]?.status as OrderStatus | undefined,
   );
@@ -42,7 +48,9 @@ export function OptimisticOrderStatusBadge({
     committedEntry && Date.now() - committedEntry.updatedAt <= COMMITTED_STATUS_TTL_MS
       ? (committedEntry.status as OrderStatus | undefined)
       : undefined;
-  const resolvedStatus = optimisticStatus ?? committedStatus ?? baseStatus;
+  const resolvedStatus = mounted
+    ? optimisticStatus ?? committedStatus ?? baseStatus
+    : baseStatus;
 
   return (
     <span className={`${className} ${resolveStatusTone(resolvedStatus)}`}>

@@ -1,5 +1,6 @@
 "use client";
 
+import { useState, useEffect } from "react";
 import { usePosCommandQueueStore } from "@/lib/pos/queue/store";
 
 const COMMITTED_MONEY_TTL_MS = 45_000;
@@ -13,12 +14,21 @@ export function OptimisticMoney({
   baseAmount: number;
   field?: "remaining" | "paid" | "final";
 }) {
+  const [mounted, setMounted] = useState(false);
+  useEffect(() => {
+    setMounted(true);
+  }, []);
+
   const patch = usePosCommandQueueStore((state) => state.cashierOptimisticState[orderId]);
   const committedEntry = usePosCommandQueueStore((state) => state.cashierCommittedState[orderId]);
   const committed =
     committedEntry && Date.now() - committedEntry.updatedAt <= COMMITTED_MONEY_TTL_MS
       ? committedEntry
       : null;
+
+  if (!mounted) {
+    return <>{Math.max(0, baseAmount).toFixed(2)} TL</>;
+  }
 
   let val = baseAmount;
   if (field === "remaining" && typeof committed?.remaining === "number") {

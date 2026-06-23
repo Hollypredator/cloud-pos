@@ -45,7 +45,7 @@ export function TableQrActions({
               <div>
                 <p className="text-xs font-bold uppercase tracking-[0.2em] text-slate-500">Masa QR</p>
                 <h3 className="mt-2 text-2xl font-semibold tracking-tight text-slate-900">{tableName}</h3>
-                <p className="mt-1 text-sm text-slate-500">Masa {tableNumber} için müşteri deneyimini ayn? ekranda onizle.</p>
+                <p className="mt-1 text-sm text-slate-500">Masa {tableNumber} için müşteri deneyimini aynı ekranda onizle.</p>
               </div>
               <button
                 type="button"
@@ -125,7 +125,7 @@ export function TableQrActions({
                 rel="noreferrer"
                 className="rounded-2xl bg-gradient-to-r from-[#ff5a34] to-[#f0b14f] px-4 py-3 text-center text-sm font-semibold text-white"
               >
-                Yeni Sekmede A?
+                Yeni Sekmede Aç
               </a>
             </div>
           </div>

@@ -180,7 +180,7 @@ function getHumanErrorMessage(input?: QrApiFailure) {
     return "Masa kaydı bulunamadı. QR kodunu yeniden okutup tekrar deneyin.";
   }
   if (input.resultStatus === "CONFLICT") {
-    return "Ayn? sipariş daha once alinmis görünuyor. Durum panelinden kontrol edin.";
+    return "Aynı sipariş daha once alinmis görünuyor. Durum panelinden kontrol edin.";
   }
   return input.message ?? "Sipariş gönderilemedi. Internet bağlantınizi kontrol edip tekrar deneyin.";
 }
@@ -264,6 +264,15 @@ function parseRecentOrderSnapshot(raw: string): RecentOrderSnapshot | null {
   } catch {
     return null;
   }
+}
+
+function normalizeTurkishSearch(text: string): string {
+  if (!text) return "";
+  return text
+    .replace(/İ/g, "i")
+    .replace(/I/g, "ı")
+    .toLocaleLowerCase("tr-TR")
+    .replace(/ı/g, "i");
 }
 
 export function QrOrderingClient({
@@ -389,11 +398,11 @@ export function QrOrderingClient({
   }, [modifierOptions]);
 
   const visibleProductsRaw = useMemo(() => grouped.get(activeCategoryId) ?? [], [grouped, activeCategoryId]);
-  const normalizedSearch = productSearchTerm.trim().toLocaleLowerCase("tr-TR");
+  const normalizedSearch = normalizeTurkishSearch(productSearchTerm);
   const visibleProducts = normalizedSearch
     ? visibleProductsRaw.filter((item) => {
-        const name = item.name.toLocaleLowerCase("tr-TR");
-        const description = (item.description ?? "").toLocaleLowerCase("tr-TR");
+        const name = normalizeTurkishSearch(item.name);
+        const description = normalizeTurkishSearch(item.description ?? "");
         return name.includes(normalizedSearch) || description.includes(normalizedSearch);
       })
     : visibleProductsRaw;
@@ -689,7 +698,7 @@ export function QrOrderingClient({
   const currentClock = new Date().toLocaleTimeString("tr-TR", { hour: "2-digit", minute: "2-digit" });
 
   const getProductEmoji = (name: string) => {
-    const label = name.toLocaleLowerCase("tr-TR");
+    const label = normalizeTurkishSearch(name);
     if (label.includes("espresso") || label.includes("kahve") || label.includes("americano") || label.includes("cappuccino")) return "☕";
     if (label.includes("latte")) return "🥛";
     if (label.includes("mocha") || label.includes("cikolata") || label.includes("çikolata")) return "🍫";
@@ -703,7 +712,7 @@ export function QrOrderingClient({
     return "🍽️";
   };
   const getPrepTimeLabel = (product: Product) => {
-    const label = `${product.name} ${product.description ?? ""}`.toLocaleLowerCase("tr-TR");
+    const label = normalizeTurkishSearch(`${product.name} ${product.description ?? ""}`);
     if (label.includes("frapp") || label.includes("sandvic") || label.includes("sandvi")) return "6-8 dk";
     if (label.includes("tatli") || label.includes("cake") || label.includes("cookie")) return "3-5 dk";
     return "2-4 dk";
@@ -715,16 +724,16 @@ export function QrOrderingClient({
     }
     const inCartIds = new Set(cartItems.map((item) => item.product.id));
     const hasCoffee = cartItems.some((item) => {
-      const name = item.product.name.toLocaleLowerCase("tr-TR");
+      const name = normalizeTurkishSearch(item.product.name);
       return name.includes("kahve") || name.includes("espresso") || name.includes("latte");
     });
     const candidates = products.filter((product) => !inCartIds.has(product.id));
     const dessertFirst = candidates.filter((product) => {
-      const name = product.name.toLocaleLowerCase("tr-TR");
+      const name = normalizeTurkishSearch(product.name);
       return name.includes("cookie") || name.includes("croissant") || name.includes("cake") || name.includes("tiramisu");
     });
     const addonFirst = candidates.filter((product) => {
-      const name = product.name.toLocaleLowerCase("tr-TR");
+      const name = normalizeTurkishSearch(product.name);
       return name.includes("shot") || name.includes("syrup") || name.includes("add-on");
     });
     const selected = hasCoffee ? [...addonFirst, ...dessertFirst] : [...dessertFirst, ...addonFirst];

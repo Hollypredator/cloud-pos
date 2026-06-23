@@ -2,6 +2,8 @@
 
 import { useCallback, useMemo, useState, useRef, useEffect } from "react";
 import Link from "next/link";
+import { useRouter } from "next/navigation";
+import { motion } from "framer-motion";
 import {
   clearActiveCustomerDisplaySession,
   createCustomerDisplaySession,
@@ -10,6 +12,16 @@ import {
   publishCustomerDisplaySnapshot,
   type CustomerDisplaySessionRecord,
 } from "@/lib/customer-display";
+
+function triggerHaptic(pattern: number | number[] = 40) {
+  if (typeof window !== "undefined" && typeof navigator !== "undefined" && typeof navigator.vibrate === "function") {
+    try {
+      navigator.vibrate(pattern);
+    } catch (e) {
+      console.warn("Haptic feedback failed", e);
+    }
+  }
+}
 import type {
   Category,
   CustomerDisplaySnapshot,
@@ -76,6 +88,15 @@ function toDisplayItems(cart: CartMap) {
   });
 }
 
+function normalizeTurkishSearch(text: string): string {
+  if (!text) return "";
+  return text
+    .replace(/İ/g, "i")
+    .replace(/I/g, "ı")
+    .toLocaleLowerCase("tr")
+    .replace(/ı/g, "i");
+}
+
 export function AdminOrderEntry({
   businessSlug,
   categories,
@@ -86,6 +107,7 @@ export function AdminOrderEntry({
   initialTableId,
   lockedTableId,
   onOrderCreated,
+  onTableChange,
   mobilePresentation = "default",
   entryMode = "classic",
   layoutMode = "auto",
@@ -102,6 +124,7 @@ export function AdminOrderEntry({
   initialTableId?: string;
   lockedTableId?: string;
   onOrderCreated?: (orderId: string) => void;
+  onTableChange?: (tableId: string) => void;
   mobilePresentation?: "default" | "stack";
   entryMode?: EntryMode;
   layoutMode?: LayoutMode;
@@ -109,6 +132,7 @@ export function AdminOrderEntry({
   operatingProfile?: OperatingProfile;
   operatingCapabilities?: OperatingProfileCapabilities;
 }) {
+  const router = useRouter();
   const isTableLocked = Boolean(lockedTableId);
   const [channel, setChannel] = useState<OrderChannel>(
     operatingCapabilities?.channels.includes("pickup") && operatingCapabilities.channels.length === 1
@@ -120,7 +144,7 @@ export function AdminOrderEntry({
       ? lockedTableId
       : (initialTableId && tables.some((table) => table.id === initialTableId))
         ? initialTableId
-        : (tables[0]?.id ?? ""),
+        : (entryMode === "table_first" ? "" : (tables[0]?.id ?? "")),
   );
   const [customerName, setCustomerName] = useState("");
   const [customerPhone, setCustomerPhone] = useState("");
@@ -179,6 +203,35 @@ export function AdminOrderEntry({
     window.addEventListener("storage", handleStorage);
     return () => window.removeEventListener("storage", handleStorage);
   }, [isSelfServiceCoffee]);
+
+  // Synchronize state when initialTableId or lockedTableId changes (e.g. browser navigation)
+  useEffect(() => {
+    const nextTableId = lockedTableId || initialTableId || "";
+    setSelectedTableId(nextTableId);
+    if (!nextTableId && entryMode === "table_first") {
+      setTablePickerView("table_picker");
+    } else {
+      setTablePickerView("composer");
+    }
+  }, [initialTableId, lockedTableId, entryMode]);
+
+  // Notify parent of table changes from local user interactions
+  useEffect(() => {
+    if (selectedTableId !== (initialTableId || "")) {
+      if (onTableChange) {
+        onTableChange(selectedTableId);
+      } else if (typeof window !== "undefined" && window.location.pathname.startsWith("/admin/orders")) {
+        const params = new URLSearchParams(window.location.search);
+        if (selectedTableId) {
+          params.set("table", selectedTableId);
+        } else {
+          params.delete("table");
+        }
+        router.replace(`/admin/orders?${params.toString()}`);
+      }
+    }
+  }, [selectedTableId, initialTableId, onTableChange, router]);
+
   const [tablePickerView, setTablePickerView] = useState<InitialView>(() => {
     if (operatingCapabilities?.hide_table_ui) {
       return "composer";
@@ -252,13 +305,13 @@ export function AdminOrderEntry({
   const activeCategory = orderedCategories.find((category) => category.id === activeCategoryId) ?? null;
   const visibleProducts = useMemo(() => groupedProducts.get(activeCategoryId) ?? [], [activeCategoryId, groupedProducts]);
   const filteredVisibleProducts = useMemo(() => {
-    const query = productSearchQuery.trim().toLocaleLowerCase("tr");
+    const query = normalizeTurkishSearch(productSearchQuery);
     if (!query) {
       return visibleProducts;
     }
     return visibleProducts.filter((product) => {
-      const name = product.name.toLocaleLowerCase("tr");
-      const description = (product.description ?? "").toLocaleLowerCase("tr");
+      const name = normalizeTurkishSearch(product.name);
+      const description = normalizeTurkishSearch(product.description ?? "");
       return name.includes(query) || description.includes(query);
     });
   }, [productSearchQuery, visibleProducts]);
@@ -275,7 +328,7 @@ export function AdminOrderEntry({
     };
   }, [tables]);
   const filteredTables = useMemo(() => {
-    const query = tablePickerQuery.trim().toLocaleLowerCase("tr");
+    const query = normalizeTurkishSearch(tablePickerQuery);
     const base = [...tables]
       .sort((left, right) => left.table_number - right.table_number)
       .filter((table) => tablePickerFilter === "all" || table.status === tablePickerFilter);
@@ -283,7 +336,7 @@ export function AdminOrderEntry({
       return base;
     }
     return base.filter((table) => {
-      const name = table.name?.toLocaleLowerCase("tr") ?? "";
+      const name = normalizeTurkishSearch(table.name ?? "");
       return name.includes(query) || `masa ${table.table_number}`.includes(query);
     });
   }, [tablePickerFilter, tablePickerQuery, tables]);
@@ -445,6 +498,7 @@ export function AdminOrderEntry({
   }
 
   function addConfiguredProductWithQuantity(product: Product, modifiers: OrderItemModifierSelection[], quantity: number) {
+    triggerHaptic(40);
     const key = buildCartKey(product.id, modifiers);
     const safeQuantity = Math.max(1, Math.min(99, Math.round(quantity)));
     setCart((prev) => ({
@@ -483,6 +537,7 @@ export function AdminOrderEntry({
   }
 
   function removeProduct(key: string) {
+    triggerHaptic(30);
     setCart((prev) => {
       const current = prev[key];
       if (!current) {
@@ -504,6 +559,7 @@ export function AdminOrderEntry({
   }
 
   function increaseProduct(key: string) {
+    triggerHaptic(40);
     setCart((prev) => {
       const current = prev[key];
       if (!current) {
@@ -563,6 +619,7 @@ export function AdminOrderEntry({
   }
 
   async function submitOrder() {
+    triggerHaptic([50, 30, 50]);
     const items = Object.values(cart).map((entry) => {
       const modifierTotal = entry.modifiers.reduce((sum, modifier) => sum + Number(modifier.price_delta), 0);
       const unitPrice = Number(entry.product.price) + modifierTotal;
@@ -668,7 +725,11 @@ export function AdminOrderEntry({
       setMessage(resolvedCheckNumber ? `Sipariş açıldı: #${resolvedCheckNumber}` : "Sipariş açıldı.");
       window.dispatchEvent(new Event("live-ops:update"));
       if (data.orderId) {
-        onOrderCreated?.(data.orderId);
+        if (onOrderCreated) {
+          onOrderCreated(data.orderId);
+        } else if (isStackMobile || layoutMode === "mobile_stack") {
+          router.push("/m/cashier");
+        }
       }
     } catch {
       setMessageTone("error");
@@ -706,13 +767,13 @@ export function AdminOrderEntry({
         ? products
         : products.filter((product) => product.category_id === selectedCategoryId);
     const onlyActive = base.filter((product) => product.is_available);
-    const query = productSearchQuery.trim().toLocaleLowerCase("tr");
+    const query = normalizeTurkishSearch(productSearchQuery);
     if (!query) {
       return onlyActive;
     }
     return onlyActive.filter((product) => {
-      const name = product.name.toLocaleLowerCase("tr");
-      const description = (product.description ?? "").toLocaleLowerCase("tr");
+      const name = normalizeTurkishSearch(product.name);
+      const description = normalizeTurkishSearch(product.description ?? "");
       return name.includes(query) || description.includes(query);
     });
   }, [allCategoryId, orderedCategories, productSearchQuery, products, selectedCategoryId]);
@@ -986,16 +1047,227 @@ export function AdminOrderEntry({
         </section>
 
         <div className={`app-mobile-only space-y-3 ${isStackMobile ? "pb-[calc(190px+var(--safe-area-bottom))]" : "pb-[calc(164px+var(--safe-area-bottom))]"}`}>
-          <p className="rounded-2xl border border-slate-700 bg-slate-900 px-4 py-4 text-sm text-slate-200">
-            Self servis mobil akışta ürün seçimi soldaki dark masaustu tasarimla eslenik çalışır.
-          </p>
+          {/* Mobile Self-Service: Search */}
+          <div className="rounded-2xl border border-slate-700/80 bg-slate-900 p-1">
+            <input
+              ref={searchInputRef}
+              value={productSearchQuery}
+              onChange={(event) => setProductSearchQuery(event.target.value)}
+              placeholder="Ürün ara..."
+              className="h-11 w-full rounded-xl border-0 bg-slate-800 px-4 text-sm text-slate-100 placeholder:text-slate-500 focus:outline-none focus:ring-1 focus:ring-rose-400/60"
+            />
+          </div>
+
+          {/* Mobile Self-Service: Category Chips */}
+          <div className="ss-mobile-category-rail overflow-x-auto pb-1" style={{ scrollbarWidth: "none" }}>
+            <div className="flex min-w-max gap-2">
+              <button
+                type="button"
+                onClick={() => setSelectedCategoryId(allCategoryId)}
+                className={`whitespace-nowrap rounded-full px-4 py-2.5 text-sm font-bold transition ${
+                  selectedCategoryId === allCategoryId
+                    ? "bg-gradient-to-r from-rose-500 to-orange-400 text-white shadow-[0_8px_18px_rgba(244,63,94,0.28)]"
+                    : "border border-slate-700 bg-slate-800 text-slate-300"
+                }`}
+              >
+                Tümü
+              </button>
+              {orderedCategories.map((category) => {
+                const selected = selectedCategoryId === category.id;
+                return (
+                  <button
+                    key={`ss-mobile-cat-${category.id}`}
+                    type="button"
+                    onClick={() => setSelectedCategoryId(category.id)}
+                    className={`whitespace-nowrap rounded-full px-4 py-2.5 text-sm font-bold transition ${
+                      selected
+                        ? "bg-gradient-to-r from-rose-500 to-orange-400 text-white shadow-[0_8px_18px_rgba(244,63,94,0.28)]"
+                        : "border border-slate-700 bg-slate-800 text-slate-300"
+                    }`}
+                  >
+                    {category.name}
+                  </button>
+                );
+              })}
+            </div>
+          </div>
+
+          {/* Mobile Self-Service: Product Grid */}
+          {selfServiceProducts.length === 0 ? (
+            <div className="rounded-2xl border border-slate-700 bg-slate-900/80 px-4 py-8 text-center text-sm text-slate-400">
+              Bu filtrede aktif ürün yok.
+            </div>
+          ) : (
+            <div className="grid grid-cols-2 gap-2.5">
+              {selfServiceProducts.map((product) => (
+                <article
+                  key={`ss-mobile-product-${product.id}`}
+                  role="button"
+                  tabIndex={0}
+                  onClick={() => openModifierPicker(product)}
+                  onKeyDown={(event) => {
+                    if (event.key === "Enter" || event.key === " ") {
+                      event.preventDefault();
+                      openModifierPicker(product);
+                    }
+                  }}
+                  className="cursor-pointer rounded-2xl border border-slate-700/60 bg-gradient-to-b from-slate-800 to-slate-900 p-3.5 transition active:scale-[0.98] hover:border-rose-400/40 focus:outline-none focus-visible:ring-2 focus-visible:ring-rose-400"
+                >
+                  <div className="mb-3 inline-flex h-10 w-10 items-center justify-center rounded-full bg-slate-700/70 text-[11px] font-black text-slate-200">
+                    {product.name.slice(0, 2).toUpperCase()}
+                  </div>
+                  <p className="line-clamp-2 text-[0.92rem] font-semibold leading-tight text-white">{product.name}</p>
+                  <p className="mt-2 text-xl font-black tracking-tight text-rose-400">₺{Number(product.price).toFixed(2)}</p>
+                </article>
+              ))}
+            </div>
+          )}
+
+          {/* Mobile Self-Service: Message */}
+          {message ? (
+            <div
+              className={`rounded-2xl border px-4 py-3 text-sm font-medium ${
+                messageTone === "success"
+                  ? "border-emerald-600/50 bg-emerald-900/40 text-emerald-300"
+                  : messageTone === "error"
+                    ? "border-rose-600/50 bg-rose-900/40 text-rose-300"
+                    : "border-slate-600 bg-slate-800 text-slate-300"
+              }`}
+            >
+              {message}
+            </div>
+          ) : null}
+        </div>
+
+        {/* Mobile Self-Service: Cart Panel (full screen) */}
+        {mobileCartOpen ? (
+          <div className="app-mobile-only fixed inset-0 z-[70] bg-slate-950/60">
+            <div className="absolute inset-0 overflow-y-auto bg-slate-950 px-3 pb-[calc(96px+var(--safe-area-bottom))] pt-[calc(72px+var(--safe-area-top))]">
+              <header className="sticky top-0 z-10 rounded-2xl border border-slate-700 bg-slate-900/98 px-4 py-3 shadow-[0_8px_20px_rgba(0,0,0,0.3)]">
+                <div className="flex items-center justify-between gap-3">
+                  <div>
+                    <p className="text-[10px] font-bold uppercase tracking-[0.16em] text-slate-400">Siparişim</p>
+                    <h2 className="mt-1 text-lg font-bold text-white">{cartCount} ürün</h2>
+                  </div>
+                  <button
+                    type="button"
+                    onClick={() => setMobileCartOpen(false)}
+                    className="inline-flex min-h-[44px] items-center justify-center rounded-xl border border-slate-600 bg-slate-800 px-4 text-sm font-semibold text-slate-200"
+                  >
+                    Kapat
+                  </button>
+                </div>
+              </header>
+
+              <div className="mt-3 space-y-2">
+                {cartEntries.length === 0 ? (
+                  <p className="rounded-xl border border-slate-700 bg-slate-900 px-4 py-6 text-center text-sm text-slate-400">Sepet boş.</p>
+                ) : (
+                  cartEntries.map((entry) => {
+                    const modifierTotal = entry.modifiers.reduce((sum, modifier) => sum + Number(modifier.price_delta), 0);
+                    return (
+                      <div key={`ss-mobile-cart-${entry.key}`} className="relative overflow-hidden rounded-xl bg-rose-600">
+                        <div className="absolute inset-y-0 right-4 flex items-center text-white font-bold text-xs pointer-events-none">
+                          <span>Sil</span>
+                        </div>
+                        <motion.div
+                          drag="x"
+                          dragConstraints={{ left: -100, right: 0 }}
+                          dragElastic={{ left: 0.2, right: 0 }}
+                          onDragEnd={(event, info) => {
+                            if (info.offset.x < -70) {
+                              removeProduct(entry.key);
+                            }
+                          }}
+                          className="rounded-xl border border-slate-700 bg-slate-800 px-4 py-3 relative z-10 w-full"
+                        >
+                          <div className="flex items-start justify-between gap-3">
+                            <div className="min-w-0">
+                              <p className="font-semibold text-white">{entry.product.name}</p>
+                              <p className="mt-1 text-sm text-slate-400">₺{(Number(entry.product.price) + modifierTotal).toFixed(2)}</p>
+                              {entry.modifiers.length > 0 ? (
+                                <p className="mt-1 text-xs text-slate-500">{entry.modifiers.map((m) => m.option_name).join(", ")}</p>
+                              ) : null}
+                            </div>
+                            <div className="flex items-center gap-2">
+                              <button
+                                type="button"
+                                onClick={() => removeProduct(entry.key)}
+                                className="inline-flex h-9 w-9 items-center justify-center rounded-lg bg-slate-700 text-sm font-bold text-white"
+                              >
+                                -
+                              </button>
+                              <span className="w-7 text-center text-sm font-bold text-white">{entry.quantity}</span>
+                              <button
+                                type="button"
+                                onClick={() => increaseProduct(entry.key)}
+                                className="inline-flex h-9 w-9 items-center justify-center rounded-lg bg-slate-700 text-sm font-bold text-white"
+                              >
+                                +
+                              </button>
+                            </div>
+                          </div>
+                        </motion.div>
+                      </div>
+                    );
+                  })
+                )}
+              </div>
+
+              {cartEntries.length > 0 ? (
+                <div className="mt-4 rounded-2xl border border-slate-700 bg-slate-900 px-4 py-4">
+                  <div className="flex items-center justify-between text-sm text-slate-400">
+                    <span>Ara Toplam</span>
+                    <span>₺{total.toFixed(2)}</span>
+                  </div>
+                  <div className="mt-2 flex items-end justify-between">
+                    <p className="text-2xl font-black tracking-tight text-rose-400">Toplam</p>
+                    <p className="text-2xl font-black tracking-tight text-rose-400">₺{total.toFixed(2)}</p>
+                  </div>
+                  <div className="mt-4 grid grid-cols-2 gap-3">
+                    <button type="button" onClick={submitOrder} disabled={submitting} className="rounded-2xl bg-rose-500 px-4 py-3.5 text-sm font-bold text-white shadow-[0_8px_16px_rgba(244,63,94,0.3)] disabled:opacity-60">
+                      {submitting ? "İşleniyor..." : "Nakit"}
+                    </button>
+                    <button type="button" onClick={submitOrder} disabled={submitting} className="rounded-2xl bg-violet-600 px-4 py-3.5 text-sm font-bold text-white shadow-[0_8px_16px_rgba(139,92,246,0.3)] disabled:opacity-60">
+                      {submitting ? "İşleniyor..." : "Kart"}
+                    </button>
+                  </div>
+                  <button type="button" onClick={clearCart} className="mt-3 w-full rounded-xl border border-slate-600 bg-slate-800 px-4 py-2.5 text-xs font-semibold text-slate-300">
+                    Sepeti Temizle
+                  </button>
+                </div>
+              ) : null}
+            </div>
+          </div>
+        ) : null}
+
+        {/* Mobile Self-Service: Floating Cart Dock */}
+        <div
+          className={`app-mobile-only fixed inset-x-0 z-40 px-3`}
+          style={{ bottom: isStackMobile ? "calc(74px + var(--safe-area-bottom))" : "calc(72px + var(--safe-area-bottom))" }}
+        >
+          <div className="rounded-2xl border border-slate-700 bg-slate-900/98 p-3 shadow-[0_12px_30px_rgba(0,0,0,0.4)] backdrop-blur">
+            <div className="flex items-center justify-between gap-3">
+              <div>
+                <p className="text-[10px] font-semibold uppercase tracking-[0.14em] text-slate-400">Sipariş</p>
+                <p className="mt-1 text-sm font-bold text-white">{cartCount} kalem • ₺{total.toFixed(2)}</p>
+              </div>
+              <button
+                type="button"
+                onClick={() => setMobileCartOpen(true)}
+                className="rounded-xl bg-rose-500 px-4 py-2.5 text-sm font-bold text-white shadow-[0_6px_14px_rgba(244,63,94,0.3)]"
+              >
+                Sepeti Aç
+              </button>
+            </div>
+          </div>
         </div>
       </>
     );
   }
 
   if (entryMode === "table_first") {
-    const isTerminal = layoutMode === "tablet_3pane";
+    const isTerminal = layoutMode === "tablet_3pane" || layoutMode === "mobile_stack";
     const isModalThreePane = layoutMode === "modal_3pane";
     const useThreePaneLayout = isTerminal || isModalThreePane;
     const tableFirstSectionClassName = isTerminal
@@ -1360,7 +1632,7 @@ export function AdminOrderEntry({
                          onClick={() => setMobileCartOpen(true)}
                          className="mobile-terminal-cart-button mobile-terminal-cart-button-secondary h-12 px-4 rounded-xl bg-slate-900 text-white font-bold text-sm shadow-md active:scale-95 transition-transform"
                       >
-                         Sepeti A?
+                         Sepeti Aç
                       </button>
                       <button
                          type="button"
@@ -1409,40 +1681,55 @@ export function AdminOrderEntry({
                                   const modifierTotal = entry.modifiers.reduce((sum, modifier) => sum + Number(modifier.price_delta), 0);
                                   const itemTotal = (Number(entry.product.price) + modifierTotal) * entry.quantity;
                                   return (
-                                     <div key={`mobile-drawer-cart-${entry.key}`} className="border-b border-slate-200 border-dashed pb-4">
-                                        <div className="flex justify-between items-start gap-2">
-                                           <div className="flex-1">
-                                              <h4 className="font-bold text-slate-900 text-sm leadıng-tight">{entry.product.name}</h4>
-                                              <div className="mt-1 flex items-center gap-2 text-xs text-slate-500">
-                                                 <span className="font-bold text-slate-900">x{entry.quantity}</span>
-                                                 <span>@ {(Number(entry.product.price) + modifierTotal).toFixed(2)} TL</span>
+                                     <div key={`mobile-drawer-cart-${entry.key}`} className="relative overflow-hidden rounded-xl bg-rose-600 my-1">
+                                        <div className="absolute inset-y-0 right-4 flex items-center text-white font-bold text-xs pointer-events-none">
+                                           <span>Sil</span>
+                                        </div>
+                                        <motion.div
+                                           drag="x"
+                                           dragConstraints={{ left: -100, right: 0 }}
+                                           dragElastic={{ left: 0.2, right: 0 }}
+                                           onDragEnd={(event, info) => {
+                                              if (info.offset.x < -70) {
+                                                 removeProduct(entry.key);
+                                              }
+                                           }}
+                                           className="bg-white p-3 rounded-xl border border-slate-200 relative z-10 w-full"
+                                        >
+                                           <div className="flex justify-between items-start gap-2">
+                                              <div className="flex-1">
+                                                 <h4 className="font-bold text-slate-900 text-sm leadıng-tight">{entry.product.name}</h4>
+                                                 <div className="mt-1 flex items-center gap-2 text-xs text-slate-500">
+                                                    <span className="font-bold text-slate-900">x{entry.quantity}</span>
+                                                    <span>@ {(Number(entry.product.price) + modifierTotal).toFixed(2)} TL</span>
+                                                 </div>
                                               </div>
+                                              <span className="font-bold text-slate-900 text-sm">{itemTotal.toFixed(2)}</span>
                                            </div>
-                                           <span className="font-bold text-slate-900 text-sm">{itemTotal.toFixed(2)}</span>
-                                        </div>
-                                        {entry.modifiers.length > 0 && (
-                                           <div className="mt-1 pl-2 border-l-2 border-slate-200 space-y-0.5">
-                                              {entry.modifiers.map(m => (
-                                                 <p key={m.option_id} className="text-[10px] text-slate-500">+ {m.option_name}</p>
-                                              ))}
+                                           {entry.modifiers.length > 0 && (
+                                              <div className="mt-1 pl-2 border-l-2 border-slate-200 space-y-0.5">
+                                                 {entry.modifiers.map(m => (
+                                                    <p key={m.option_id} className="text-[10px] text-slate-500">+ {m.option_name}</p>
+                                                 ))}
+                                              </div>
+                                           )}
+                                           <div className="mt-3 flex items-center gap-2">
+                                              <button 
+                                                 type="button"
+                                                 onClick={() => removeProduct(entry.key)} 
+                                                 className="h-9 w-9 rounded-lg bg-slate-200/80 flex items-center justify-center text-slate-700 font-bold active:scale-90 transition-transform"
+                                              >
+                                                 -
+                                              </button>
+                                              <button 
+                                                 type="button"
+                                                 onClick={() => increaseProduct(entry.key)} 
+                                                 className="h-9 w-9 rounded-lg bg-slate-200/80 flex items-center justify-center text-slate-700 font-bold active:scale-90 transition-transform"
+                                              >
+                                                 +
+                                              </button>
                                            </div>
-                                        )}
-                                        <div className="mt-3 flex items-center gap-2">
-                                           <button 
-                                              type="button"
-                                              onClick={() => removeProduct(entry.key)} 
-                                              className="h-9 w-9 rounded-lg bg-slate-200/80 flex items-center justify-center text-slate-700 font-bold active:scale-90 transition-transform"
-                                           >
-                                              -
-                                           </button>
-                                           <button 
-                                              type="button"
-                                              onClick={() => increaseProduct(entry.key)} 
-                                              className="h-9 w-9 rounded-lg bg-slate-200/80 flex items-center justify-center text-slate-700 font-bold active:scale-90 transition-transform"
-                                           >
-                                              +
-                                           </button>
-                                        </div>
+                                        </motion.div>
                                      </div>
                                   );
                                })}
@@ -1691,36 +1978,51 @@ export function AdminOrderEntry({
                     cartEntries.map((entry) => {
                       const modifierTotal = entry.modifiers.reduce((sum, modifier) => sum + Number(modifier.price_delta), 0);
                       return (
-                        <div key={`table-first-cart-${entry.key}`} className="rounded-xl border border-slate-200 bg-slate-50 px-3 py-3">
-                          <p className="text-sm font-semibold text-slate-900">{entry.product.name}</p>
-                          <p className="mt-1 text-xs text-slate-600">
-                            {entry.quantity} x {(Number(entry.product.price) + modifierTotal).toFixed(2)} TL
-                          </p>
-                          <div className="mt-2 flex flex-wrap items-center gap-2">
-                            <button
-                              type="button"
-                              onClick={() => removeProduct(entry.key)}
-                              className="inline-flex min-h-[40px] min-w-[40px] items-center justify-center rounded-lg border border-slate-300 bg-white px-2 text-sm font-semibold text-slate-700"
-                            >
-                              -
-                            </button>
-                            <input
-                              type="number"
-                              min={1}
-                              max={99}
-                              inputMode="numeric"
-                              value={entry.quantity}
-                              onChange={(event) => setCartEntryQuantity(entry.key, Number(event.target.value))}
-                              className="min-h-[40px] w-16 rounded-lg border border-slate-300 px-2 text-center text-sm"
-                            />
-                            <button
-                              type="button"
-                              onClick={() => increaseProduct(entry.key)}
-                              className="inline-flex min-h-[40px] min-w-[40px] items-center justify-center rounded-lg border border-slate-300 bg-white px-2 text-sm font-semibold text-slate-700"
-                            >
-                              +
-                            </button>
+                        <div key={`table-first-cart-wrapper-${entry.key}`} className="relative overflow-hidden rounded-xl bg-rose-600">
+                          <div className="absolute inset-y-0 right-4 flex items-center text-white font-bold text-xs pointer-events-none">
+                            <span>Sil</span>
                           </div>
+                          <motion.div
+                            drag="x"
+                            dragConstraints={{ left: -100, right: 0 }}
+                            dragElastic={{ left: 0.2, right: 0 }}
+                            onDragEnd={(event, info) => {
+                              if (info.offset.x < -70) {
+                                removeProduct(entry.key);
+                              }
+                            }}
+                            className="rounded-xl border border-slate-200 bg-slate-50 px-3 py-3 relative z-10 w-full"
+                          >
+                            <p className="text-sm font-semibold text-slate-900">{entry.product.name}</p>
+                            <p className="mt-1 text-xs text-slate-600">
+                              {entry.quantity} x {(Number(entry.product.price) + modifierTotal).toFixed(2)} TL
+                            </p>
+                            <div className="mt-2 flex flex-wrap items-center gap-2">
+                              <button
+                                type="button"
+                                onClick={() => removeProduct(entry.key)}
+                                className="inline-flex min-h-[40px] min-w-[40px] items-center justify-center rounded-lg border border-slate-300 bg-white px-2 text-sm font-semibold text-slate-700"
+                              >
+                                -
+                              </button>
+                              <input
+                                type="number"
+                                min={1}
+                                max={99}
+                                inputMode="numeric"
+                                value={entry.quantity}
+                                onChange={(event) => setCartEntryQuantity(entry.key, Number(event.target.value))}
+                                className="min-h-[40px] w-16 rounded-lg border border-slate-300 px-2 text-center text-sm"
+                              />
+                              <button
+                                type="button"
+                                onClick={() => increaseProduct(entry.key)}
+                                className="inline-flex min-h-[40px] min-w-[40px] items-center justify-center rounded-lg border border-slate-300 bg-white px-2 text-sm font-semibold text-slate-700"
+                              >
+                                +
+                              </button>
+                            </div>
+                          </motion.div>
                         </div>
                       );
                     })
@@ -2344,9 +2646,23 @@ export function AdminOrderEntry({
 
           {channel === "dine_in" ? (
             <div>
-              <label className="text-xs font-semibold uppercase tracking-[0.14em] text-slate-500" htmlFor="mobile-table-select">
-                Masa
-              </label>
+              <div className="flex items-center justify-between gap-2">
+                <label className="text-xs font-semibold uppercase tracking-[0.14em] text-slate-500" htmlFor="mobile-table-select">
+                  Masa
+                </label>
+                {(entryMode as string) === "table_first" && !isTableLocked && (
+                  <button
+                    type="button"
+                    onClick={() => {
+                      setSelectedTableId("");
+                      setTablePickerView("table_picker");
+                    }}
+                    className="text-xs font-bold text-[#ff5a34]"
+                  >
+                    Masaları Değiştir
+                  </button>
+                )}
+              </div>
               <select
                 id="mobile-table-select"
                 className="mt-2 w-full rounded-xl border border-slate-300 bg-white px-3 py-3 text-sm"
@@ -2557,36 +2873,51 @@ export function AdminOrderEntry({
                 cartEntries.map((entry) => {
                   const modifierTotal = entry.modifiers.reduce((sum, modifier) => sum + Number(modifier.price_delta), 0);
                   return (
-                    <div key={`mobile-cart-${entry.key}`} className="rounded-xl border border-slate-200 bg-white px-3 py-3">
-                      <p className="text-sm font-semibold text-slate-900">{entry.product.name}</p>
-                      <p className="mt-1 text-xs text-slate-600">
-                        {entry.quantity} x {(Number(entry.product.price) + modifierTotal).toFixed(2)} TL
-                      </p>
-                      <div className="mt-2 flex items-center gap-2">
-                        <button
-                          type="button"
-                          onClick={() => removeProduct(entry.key)}
-                          className="inline-flex h-9 w-9 items-center justify-center rounded-lg border border-slate-300 text-xs text-slate-700"
-                        >
-                          -
-                        </button>
-                        <input
-                          type="number"
-                          min={1}
-                          max={99}
-                          inputMode="numeric"
-                          value={entry.quantity}
-                          onChange={(event) => setCartEntryQuantity(entry.key, Number(event.target.value))}
-                          className="h-9 w-16 rounded-lg border border-slate-300 px-2 text-center text-xs"
-                        />
-                        <button
-                          type="button"
-                          onClick={() => increaseProduct(entry.key)}
-                          className="inline-flex h-9 w-9 items-center justify-center rounded-lg border border-slate-300 text-xs text-slate-700"
-                        >
-                          +
-                        </button>
+                    <div key={`mobile-cart-wrapper-${entry.key}`} className="relative overflow-hidden rounded-xl bg-rose-600">
+                      <div className="absolute inset-y-0 right-4 flex items-center text-white font-bold text-xs pointer-events-none">
+                        <span>Sil</span>
                       </div>
+                      <motion.div
+                        drag="x"
+                        dragConstraints={{ left: -100, right: 0 }}
+                        dragElastic={{ left: 0.2, right: 0 }}
+                        onDragEnd={(event, info) => {
+                          if (info.offset.x < -70) {
+                            removeProduct(entry.key);
+                          }
+                        }}
+                        className="rounded-xl border border-slate-200 bg-white px-3 py-3 relative z-10 w-full"
+                      >
+                        <p className="text-sm font-semibold text-slate-900">{entry.product.name}</p>
+                        <p className="mt-1 text-xs text-slate-600">
+                          {entry.quantity} x {(Number(entry.product.price) + modifierTotal).toFixed(2)} TL
+                        </p>
+                        <div className="mt-2 flex items-center gap-2">
+                          <button
+                            type="button"
+                            onClick={() => removeProduct(entry.key)}
+                            className="inline-flex h-9 w-9 items-center justify-center rounded-lg border border-slate-300 text-xs text-slate-700"
+                          >
+                            -
+                          </button>
+                          <input
+                            type="number"
+                            min={1}
+                            max={99}
+                            inputMode="numeric"
+                            value={entry.quantity}
+                            onChange={(event) => setCartEntryQuantity(entry.key, Number(event.target.value))}
+                            className="h-9 w-16 rounded-lg border border-slate-300 px-2 text-center text-xs"
+                          />
+                          <button
+                            type="button"
+                            onClick={() => increaseProduct(entry.key)}
+                            className="inline-flex h-9 w-9 items-center justify-center rounded-lg border border-slate-300 text-xs text-slate-700"
+                          >
+                            +
+                          </button>
+                        </div>
+                      </motion.div>
                     </div>
                   );
                 })
@@ -2619,7 +2950,7 @@ export function AdminOrderEntry({
             onClick={() => setMobileCartOpen(true)}
             className="mobile-cta-primary mt-3 w-full rounded-xl px-4 py-3 text-sm font-semibold text-white"
           >
-            Sepeti A?
+            Sepeti Aç
           </button>
         </div>
       </div>
