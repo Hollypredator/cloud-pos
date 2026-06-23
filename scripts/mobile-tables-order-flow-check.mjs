@@ -1,21 +1,20 @@
 import { readFileSync } from "node:fs";
 
 const mobileTables = readFileSync("src/app/m/tables/page.tsx", "utf8");
-const promptIndex = mobileTables.indexOf("Once masa seçin.");
-const listIndex = mobileTables.indexOf('<section className="m-stack mt-3">');
+const adminOrders = readFileSync("src/app/admin/orders/page.tsx", "utf8");
 
 const checks = [
   {
-    name: "new order flow does not render tablet terminal mode on mobile",
-    pass: mobileTables.includes('layoutMode="mobile_stack"') && !mobileTables.includes('layoutMode="tablet_3pane"'),
+    name: "mobile tables links to admin orders with table id",
+    pass: mobileTables.includes('href={`/admin/orders?table=${table.id}`}'),
   },
   {
-    name: "new order flow instruction appears before the table list",
-    pass: promptIndex >= 0 && listIndex >= 0 && promptIndex < listIndex,
+    name: "admin orders layout uses mobile_stack on mobile User-Agent",
+    pass: adminOrders.includes('layoutMode={isMobileUA ? "mobile_stack" : entryLayoutMode}'),
   },
   {
-    name: "new order flow still avoids defaulting to the first table",
-    pass: mobileTables.includes(": null;") && mobileTables.includes("selectedTableId"),
+    name: "mobile tables avoids default preselection without table",
+    pass: mobileTables.includes("selectedTableId ?"),
   },
 ];
 
