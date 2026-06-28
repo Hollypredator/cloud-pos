@@ -2162,9 +2162,9 @@ export async function createSupportTenantProvision(input: {
 
   // Invalidate app-context caches so the new owner can immediately access /ops
   // without waiting for the 30-60 second unstable_cache TTL to expire.
-  revalidateTag("businesses");
-  revalidateTag("staff-branch-access");
-  revalidateTag("profiles");
+  revalidateTag("businesses", "max");
+  revalidateTag("staff-branch-access", "max");
+  revalidateTag("profiles", "max");
 
   return {
     ok: true,
