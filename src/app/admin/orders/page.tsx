@@ -63,7 +63,7 @@ export default async function AdminOrdersPage({
   );
 
   if (isSelfServiceCoffee) {
-    return <main className="coffee-pos-mode h-screen w-screen overflow-hidden bg-slate-950">{orderEntry}</main>;
+    return <main className="coffee-pos-mode h-screen w-full overflow-hidden bg-slate-950">{orderEntry}</main>;
   }
 
   if (isMobileUA) {
@@ -118,7 +118,7 @@ export default async function AdminOrdersPage({
     >
       {!isTabletMode ? (
         <>
-          <section className="app-mobile-hide grid gap-4 xl:grid-cols-3">
+          <section className="app-mobile-hide shrink-0 grid gap-4 xl:grid-cols-3">
             <SummaryCard label={translateUiText("Kategori", locale)} value={String(categories.length)} hint={translateUiText("Menu kategorileri", locale)} tone="accent" />
             <SummaryCard label={translateUiText("Aktif Ürün", locale)} value={String(availableProducts)} hint={translateUiText("Siparişe açık Ürünler", locale)} />
             {!operatingCapabilities.hide_table_ui ? (
@@ -126,27 +126,29 @@ export default async function AdminOrdersPage({
             ) : null}
           </section>
 
-          <section className="app-mobile-only">
+          <section className="app-mobile-only shrink-0">
             <p className="rounded-2xl border border-slate-200 bg-white px-4 py-3 text-sm text-slate-600">
               {translateUiText("Mobil sipariş modunda ekran doğrudan Ürün seçimi ve sepete odaklanir.", locale)}
             </p>
           </section>
 
           {usingMenuDemo || usingTablesDemo ? (
-            <p className="rounded-[24px] border border-amber-200 bg-amber-50 px-5 py-4 text-sm text-amber-900">
+            <p className="shrink-0 rounded-[24px] border border-amber-200 bg-amber-50 px-5 py-4 text-sm text-amber-900">
               {translateUiText("Demo verisi ile sipariş girisi önizleniyor.", locale)}
             </p>
           ) : null}
 
           {isSelfServiceCoffee ? (
-            <p className="rounded-[24px] border border-orange-200 bg-orange-50 px-5 py-4 text-sm text-orange-900">
+            <p className="shrink-0 rounded-[24px] border border-orange-200 bg-orange-50 px-5 py-4 text-sm text-orange-900">
               Self-service coffee profili aktif: sipariş akışı pickup ve barkod odakli calisir.
             </p>
           ) : null}
         </>
       ) : null}
 
-      {orderEntry}
+      <div className="flex-1 min-h-0 flex flex-col min-w-0">
+        {orderEntry}
+      </div>
     </BackofficePage>
   );
 }

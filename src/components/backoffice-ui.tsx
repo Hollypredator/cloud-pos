@@ -40,9 +40,9 @@ export function BackofficePage({
         minimal ? "max-w-full" : "max-w-[1600px] xl:flex-row"
       )}>
         {sidebar && !minimal ? <aside className="backoffice-page-sidebar min-w-0 w-full xl:w-[320px]">{sidebar}</aside> : null}
-        <section className={cn("backoffice-page-content min-w-0 flex-1", minimal ? "" : "space-y-5")}>
+        <section className={cn("backoffice-page-content min-w-0 flex-1 flex flex-col overflow-x-clip", minimal ? "" : "gap-5")}>
           {!minimal && (
-            <div className="backoffice-page-hero rounded-2xl border border-slate-200 bg-white px-4 py-3 shadow-sm sm:px-6 sm:py-4">
+            <div className="backoffice-page-hero shrink-0 rounded-2xl border border-slate-200 bg-white px-4 py-3 shadow-sm sm:px-6 sm:py-4">
               <div className="flex flex-wrap items-center justify-between gap-4">
                 <div>
                   <p className="text-xs font-semibold text-slate-500">{description ? translateUiText(description, locale) : description}</p>
