@@ -2,6 +2,7 @@
 
 import Link from "next/link";
 import { useSearchParams } from "next/navigation";
+import { useEffect } from "react";
 
 type PrintActionsProps = {
   baseHref: string;
@@ -9,12 +10,58 @@ type PrintActionsProps = {
 
 export function PrintActions({ baseHref }: PrintActionsProps) {
   const searchParams = useSearchParams();
-  const layoutParam = searchParams.get("layout");
+  const layoutParam = searchParams?.get("layout");
   const layout =
     layoutParam === "thermal" || layoutParam === "thermal58"
       ? layoutParam
       : "a4";
-  const hideLogo = searchParams.get("logo") === "0";
+  const hideLogo = searchParams?.get("logo") === "0";
+
+  useEffect(() => {
+    if (typeof document === "undefined") return;
+
+    const styleId = "receipt-print-style-force-global";
+    let styleEl = document.getElementById(styleId) as HTMLStyleElement | null;
+
+    // Clean body classes
+    document.body.classList.remove("receipt-print-80", "receipt-print-58", "receipt-print-a4");
+
+    if (layout === "thermal" || layout === "thermal58") {
+      const sizeValue = layout === "thermal58" ? "58mm" : "80mm";
+      document.body.classList.add(layout === "thermal58" ? "receipt-print-58" : "receipt-print-80");
+      
+      if (!styleEl) {
+        styleEl = document.createElement("style");
+        styleEl.id = styleId;
+        document.head.appendChild(styleEl);
+      }
+      styleEl.innerHTML = `
+        @media print {
+          @page {
+            size: ${sizeValue} auto !important;
+            margin: 0 !important;
+          }
+          html, body {
+            width: ${sizeValue} !important;
+            margin: 0 !important;
+            padding: 0 !important;
+            background: #ffffff !important;
+          }
+        }
+      `;
+    } else {
+      document.body.classList.add("receipt-print-a4");
+      if (styleEl) {
+        styleEl.remove();
+      }
+    }
+
+    return () => {
+      document.body.classList.remove("receipt-print-80", "receipt-print-58", "receipt-print-a4");
+      const el = document.getElementById(styleId);
+      if (el) el.remove();
+    };
+  }, [layout]);
 
   return (
     <div className="no-print mt-5 space-y-3">
@@ -60,7 +107,7 @@ export function PrintActions({ baseHref }: PrintActionsProps) {
           className="rounded-2xl bg-gradient-to-r from-[#ff5a34] to-[#f0b14f] px-4 py-2 text-sm font-semibold text-white"
           type="button"
         >
-          Yazdır / PDF
+          {layout === "a4" ? "Yazdır / PDF" : "Yazdır"}
         </button>
       </div>
       <p className="text-xs text-slate-500">

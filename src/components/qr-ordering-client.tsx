@@ -1143,7 +1143,7 @@ export function QrOrderingClient({
 
   if (isCoffeeSelfService) {
     return (
-      <div className="min-h-screen bg-[radıal-gradient(circle_at_top,#111827_0%,#0b1220_56%,#090f1a_100%)] text-white">
+      <div className="min-h-screen bg-[radial-gradient(circle_at_top,#111827_0%,#0b1220_56%,#090f1a_100%)] text-white">
         <div className="mx-auto grid min-h-screen w-full max-w-[1400px] grid-cols-1 xl:grid-cols-[1fr_350px]">
           <section className="border-b border-white/10 px-5 py-4 xl:col-span-2 xl:border-b">
             <div className="flex items-center justify-between">
@@ -1249,7 +1249,7 @@ export function QrOrderingClient({
                       >
                         <div className="w-full">
                           <div className="mb-2 text-center text-5xl">{getProductEmoji(product.name)}</div>
-                          <p className="text-center text-[1.35rem] font-bold leadıng-tight">{product.name}</p>
+                          <p className="text-center text-[1.35rem] font-bold leading-tight">{product.name}</p>
                           <div className="mt-2 flex items-center justify-center gap-2 text-[11px]">
                             <span className="rounded-full border border-amber-300/40 bg-amber-400/10 px-2 py-1 text-amber-200">Hazırlik: {getPrepTimeLabel(product)}</span>
                             {topPickProductIds.includes(product.id) ? (

@@ -2159,6 +2159,13 @@ export async function createSupportTenantProvision(input: {
   });
 
   const primaryCreatedBranch = createdBranches[0] ?? null;
+
+  // Invalidate app-context caches so the new owner can immediately access /ops
+  // without waiting for the 30-60 second unstable_cache TTL to expire.
+  revalidateTag("businesses");
+  revalidateTag("staff-branch-access");
+  revalidateTag("profiles");
+
   return {
     ok: true,
     businessId: createdBusinessId,
@@ -11409,7 +11416,7 @@ function inferTitleFromFilename(filename: string) {
 export async function uploadMediaFile(file: File) {
   const supabase = getSupabaseServerClient();
   if (!supabase) {
-    return { ok: false, error: "Demo modda dosya yuklenemez." };
+    return { ok: false, error: "Demo modda dosya yüklenemez." };
   }
 
   if (!file || file.size <= 0) {

@@ -85,7 +85,7 @@ function SectionShell({
         <div>
           <p className="text-xs font-semibold uppercase tracking-[0.24em] text-slate-500">{eyebrow}</p>
           <h2 className="mt-2 text-xl font-semibold text-slate-900">{title}</h2>
-          <p className="mt-2 max-w-2xl text-sm leadıng-7 text-slate-600">{description}</p>
+          <p className="mt-2 max-w-2xl text-sm leading-7 text-slate-600">{description}</p>
         </div>
         <button
           type="button"
@@ -226,7 +226,7 @@ export function StudioDemoEditor({
             <div>
               <p className="text-xs font-semibold uppercase tracking-[0.24em] text-slate-500">Bolum Ekle</p>
               <h2 className="mt-2 text-xl font-semibold text-slate-900">Gizlenen bolumleri geri getir</h2>
-              <p className="mt-2 max-w-2xl text-sm leadıng-7 text-slate-600">
+              <p className="mt-2 max-w-2xl text-sm leading-7 text-slate-600">
                 Kaldırdigin demo bolumlerini buradan yeniden ekleyebilirsin.
               </p>
             </div>

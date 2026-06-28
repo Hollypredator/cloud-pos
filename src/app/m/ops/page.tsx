@@ -127,21 +127,24 @@ export default async function MobileOpsPage() {
       </section>
 
       <section className="m-stack mt-3">
-        {queueCards.map((item) => (
-          <article key={item.title} className="m-card">
-            <div className="flex items-start justify-between gap-3">
-              <div>
-                <p className="m-label">{item.title}</p>
-                <p className="m-value">{item.value}</p>
-                <p className="m-muted mt-1">{item.description}</p>
+        {queueCards.map((item) => {
+          const isCritical = item.tone === "m-tone-critical" && item.value > 0;
+          return (
+            <article key={item.title} className={`m-card ${isCritical ? "uupm-pulsing-critical" : ""}`}>
+              <div className="flex items-start justify-between gap-3">
+                <div>
+                  <p className="m-label">{item.title}</p>
+                  <p className="m-value">{item.value}</p>
+                  <p className="m-muted mt-1">{item.description}</p>
+                </div>
+                <span className={`m-pill ${item.tone}`}>{item.value}</span>
               </div>
-              <span className={`m-pill ${item.tone}`}>{item.value}</span>
-            </div>
-            <Link href={item.href} className="m-btn-primary mt-3 inline-flex w-full items-center justify-center">
-              {item.cta}
-            </Link>
-          </article>
-        ))}
+              <Link href={item.href} className="m-btn-primary mt-3 inline-flex w-full items-center justify-center">
+                {item.cta}
+              </Link>
+            </article>
+          );
+        })}
       </section>
 
       <section className="m-card mt-3">

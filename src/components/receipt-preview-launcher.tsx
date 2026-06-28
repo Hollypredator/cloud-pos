@@ -44,15 +44,53 @@ export function ReceiptPreviewLauncher({
   const handlePrint = () => {
     const layoutClass =
       layout === "thermal58" ? "receipt-print-58" : layout === "thermal" ? "receipt-print-80" : "receipt-print-a4";
+    const sizeValue = layout === "thermal58" ? "58mm" : layout === "thermal" ? "80mm" : "auto";
+    const styleId = "receipt-print-style-force-launcher";
+    
+    let styleEl = document.getElementById(styleId) as HTMLStyleElement | null;
+    if (!styleEl) {
+      styleEl = document.createElement("style");
+      styleEl.id = styleId;
+      document.head.appendChild(styleEl);
+    }
+    
+    if (layout === "a4") {
+      styleEl.innerHTML = `
+        @media print {
+          @page {
+            size: auto !important;
+            margin: 8mm !important;
+          }
+        }
+      `;
+    } else {
+      styleEl.innerHTML = `
+        @media print {
+          @page {
+            size: ${sizeValue} auto !important;
+            margin: 0 !important;
+          }
+          html, body {
+            width: ${sizeValue} !important;
+            margin: 0 !important;
+            padding: 0 !important;
+            background: #ffffff !important;
+          }
+        }
+      `;
+    }
+
     const clear = () => {
       document.body.classList.remove("printing-inline-receipt", "receipt-print-a4", "receipt-print-80", "receipt-print-58");
+      const el = document.getElementById(styleId);
+      if (el) el.remove();
     };
 
     clear();
     document.body.classList.add("printing-inline-receipt", layoutClass);
     window.addEventListener("afterprint", clear, { once: true });
     window.print();
-    window.setTimeout(clear, 500);
+    window.setTimeout(clear, 700);
   };
 
   const sheetClass =
@@ -116,7 +154,9 @@ export function ReceiptPreviewLauncher({
                 <button type="button" onClick={() => setLayout("thermal58")} className={`rounded-xl px-3 py-2 text-xs font-semibold ${layout === "thermal58" ? "bg-slate-900 text-white" : "border border-slate-300 bg-white text-slate-700"}`}>58mm</button>
               </div>
               <div className="flex flex-wrap gap-2">
-                <button type="button" onClick={handlePrint} className="rounded-xl bg-gradient-to-r from-[#ff6a3d] to-[#f2b44f] px-3 py-2 text-xs font-semibold text-white">Yazdır / PDF</button>
+                <button type="button" onClick={handlePrint} className="rounded-xl bg-gradient-to-r from-[#ff6a3d] to-[#f2b44f] px-3 py-2 text-xs font-semibold text-white">
+                  {layout === "a4" ? "Yazdır / PDF" : "Yazdır"}
+                </button>
                 <button type="button" onClick={() => setOpen(false)} className="rounded-xl border border-slate-300 bg-white px-3 py-2 text-xs font-semibold text-slate-700">Kapat</button>
               </div>
             </div>

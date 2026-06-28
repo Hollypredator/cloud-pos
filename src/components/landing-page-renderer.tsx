@@ -600,10 +600,10 @@ function renderSection(
             <p className="inline-flex rounded-full border border-indigo-200 bg-indigo-50 px-3 py-1 text-[11px] font-semibold uppercase tracking-[0.28em] text-indigo-700">
               {section.badge}
             </p>
-            <h2 className="mt-5 max-w-2xl text-3xl font-semibold leadıng-tight tracking-tight text-slate-900 sm:mt-6 sm:text-5xl lg:text-[3.85rem]">
+            <h2 className="mt-5 max-w-2xl text-3xl font-semibold leading-tight tracking-tight text-slate-900 sm:mt-6 sm:text-5xl lg:text-[3.85rem]">
               {section.title}
             </h2>
-            <p className="mt-4 max-w-2xl text-base leadıng-8 text-slate-600">{section.body}</p>
+            <p className="mt-4 max-w-2xl text-base leading-8 text-slate-600">{section.body}</p>
             <div className="mt-7 flex flex-wrap gap-3">{renderHeroActions(section, editor?.previewMode)}</div>
 
             <div className="mt-8 grid max-w-xl grid-cols-3 gap-3 border-t border-slate-200 pt-5">
@@ -639,7 +639,7 @@ function renderSection(
                 <div className="flex h-full items-center justify-center rounded-[1.1rem] border border-dashed border-slate-300 bg-slate-50/80 p-6 text-center">
                   <div>
                     <p className="text-sm font-semibold text-slate-700">Hero gorseli bekleniyor</p>
-                    <p className="mt-2 text-xs leadıng-6 text-slate-500">Studio icinde "Görsel URL" alanini doldurdugünüzda burada gösterilir.</p>
+                    <p className="mt-2 text-xs leading-6 text-slate-500">Studio icinde "Görsel URL" alanini doldurdugünüzda burada gösterilir.</p>
                   </div>
                 </div>
               ) : (
@@ -725,7 +725,7 @@ function renderSection(
               </span>
             </div>
             <p className="mt-3 text-xl font-semibold tracking-tight text-slate-900 sm:text-2xl">{item.title}</p>
-            <p className="mt-3 text-sm leadıng-7 text-slate-600">{item.body}</p>
+            <p className="mt-3 text-sm leading-7 text-slate-600">{item.body}</p>
           </article>
         ))}
       </section>,
@@ -774,7 +774,7 @@ function renderSection(
               {index === 1 ? <span className="rounded-full bg-white/10 px-3 py-1 text-[11px] font-semibold uppercase tracking-[0.18em] text-white">{copy.landing.recommendedPlan}</span> : null}
             </div>
             <p className={`mt-3 text-2xl font-semibold tracking-tight sm:text-3xl ${index === 1 ? "text-white" : "text-slate-900"}`}>{item.price}</p>
-            <p className={`mt-3 text-sm leadıng-7 ${index === 1 ? "text-slate-300" : "text-slate-600"}`}>{item.summary}</p>
+            <p className={`mt-3 text-sm leading-7 ${index === 1 ? "text-slate-300" : "text-slate-600"}`}>{item.summary}</p>
           </article>
         ))}
       </section>,
@@ -790,7 +790,7 @@ function renderSection(
         <div className="mt-5 grid gap-4 lg:grid-cols-[0.95fr_1.05fr]">
           <div className="rounded-[1.5rem] bg-[linear-gradient(155deg,#0f172a_0%,#1f2937_100%)] px-5 py-6 text-white shadow-[0_20px_50px_rgba(15,23,42,0.18)]">
             <h3 className="text-2xl font-semibold tracking-tight text-white sm:text-3xl">{section.title}</h3>
-            <p className="mt-3 max-w-2xl text-sm leadıng-7 text-slate-300">{section.body}</p>
+            <p className="mt-3 max-w-2xl text-sm leading-7 text-slate-300">{section.body}</p>
           </div>
           <div className="grid gap-3 sm:grid-cols-2">
             {section.references.map((item, index) => (
@@ -815,7 +815,7 @@ function renderSection(
             className="rounded-[1.25rem] border border-slate-200 bg-white p-4 shadow-[0_14px_35px_rgba(15,23,42,0.06)] sm:rounded-[1.75rem] sm:p-6"
           >
             <p className="text-sm font-semibold text-slate-900">{item.title}</p>
-            <p className="mt-3 text-sm leadıng-7 text-slate-600">{item.body}</p>
+            <p className="mt-3 text-sm leading-7 text-slate-600">{item.body}</p>
           </article>
         ))}
       </section>,
@@ -1017,7 +1017,7 @@ export function LandingPageRenderer({
                         {card.badge}
                       </div>
                       <p className="text-[1.35rem] font-semibold text-slate-900">{card.title}</p>
-                      <p className="mt-2 text-sm leadıng-6 text-slate-600">{card.body}</p>
+                      <p className="mt-2 text-sm leading-6 text-slate-600">{card.body}</p>
                     </article>
                   ))}
                 </div>

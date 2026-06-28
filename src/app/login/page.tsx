@@ -48,7 +48,7 @@ export default async function LoginPage({
               Demo modu
             </p>
             <h1 className="mt-6 text-3xl font-bold tracking-tight text-slate-950 sm:text-4xl">Giriş geçici olarak kapalı.</h1>
-            <p className="mt-4 max-w-2xl text-sm leadıng-7 text-slate-600">
+            <p className="mt-4 max-w-2xl text-sm leading-7 text-slate-600">
               Canlı rol bazlı erişim için Supabase ortam değişkenleri tamamlanmalı.
             </p>
             <div className="mt-7 rounded-2xl border border-amber-200 bg-amber-50 px-4 py-4 text-sm font-semibold text-amber-950">
@@ -66,7 +66,7 @@ export default async function LoginPage({
 
   return (
     <main className="relative min-h-screen overflow-hidden bg-[#f7f8fb] text-slate-950">
-      <div className="absolute inset-0 -z-10 bg-[radıal-gradient(circle_at_16%_18%,rgba(249,115,22,0.18),transparent_28%),radıal-gradient(circle_at_84%_12%,rgba(79,70,229,0.14),transparent_30%),radıal-gradient(circle_at_82%_82%,rgba(16,185,129,0.12),transparent_26%)]" />
+      <div className="absolute inset-0 -z-10 bg-[radial-gradient(circle_at_16%_18%,rgba(249,115,22,0.18),transparent_28%),radial-gradient(circle_at_84%_12%,rgba(79,70,229,0.14),transparent_30%),radial-gradient(circle_at_82%_82%,rgba(16,185,129,0.12),transparent_26%)]" />
 
       <header className="relative z-10 border-b border-slate-200/80 bg-white/90 backdrop-blur-xl">
         <div className="mx-auto flex max-w-7xl items-center gap-4 px-4 py-4 sm:px-6 lg:px-8">
@@ -104,7 +104,7 @@ export default async function LoginPage({
           <h1 className="mt-6 max-w-3xl text-5xl font-bold tracking-tight text-slate-950 sm:text-6xl">
             Operasyon paneline hızlı ve güvenli giriş.
           </h1>
-          <p className="mt-6 max-w-2xl text-lg leadıng-9 text-slate-600">
+          <p className="mt-6 max-w-2xl text-lg leading-9 text-slate-600">
             Cloud POS; self servis, kafe-restoran operasyonu, mutfak, kasa, stok, rapor ve mobil PWA ekranlarını rol bazlı girişten sonra açar.
           </p>
 
@@ -150,7 +150,7 @@ export default async function LoginPage({
               </div>
             </div>
 
-            <p className="mt-5 text-sm leadıng-7 text-slate-600">
+            <p className="mt-5 text-sm leading-7 text-slate-600">
               E-posta ve şifrenizi girin. Girişten sonra rolünüze uygun operasyon ekranı otomatik açılır.
             </p>
 
@@ -171,11 +171,11 @@ export default async function LoginPage({
             <div className="mt-8 grid gap-3 sm:grid-cols-2">
               <div className="rounded-2xl border border-slate-200 bg-[#f7f8fb] p-4">
                 <p className="text-xs font-bold uppercase tracking-[0.18em] text-slate-500">Güvenlik</p>
-                <p className="mt-2 text-sm leadıng-6 text-slate-600">Oturum, rol ve yönlendirme kontrolleri sunucu tarafında korunur.</p>
+                <p className="mt-2 text-sm leading-6 text-slate-600">Oturum, rol ve yönlendirme kontrolleri sunucu tarafında korunur.</p>
               </div>
               <div className="rounded-2xl border border-slate-200 bg-[#f7f8fb] p-4">
                 <p className="text-xs font-bold uppercase tracking-[0.18em] text-slate-500">Hedef</p>
-                <p className="mt-2 text-sm leadıng-6 text-slate-600">Mobil kullanıcılar PWA operasyonuna, masaüstü kullanıcılar yönetim paneline gider.</p>
+                <p className="mt-2 text-sm leading-6 text-slate-600">Mobil kullanıcılar PWA operasyonuna, masaüstü kullanıcılar yönetim paneline gider.</p>
               </div>
             </div>
           </section>

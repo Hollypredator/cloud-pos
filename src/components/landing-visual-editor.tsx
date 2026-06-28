@@ -653,7 +653,7 @@ export function LandingVisualEditor({
           <h2 className="mt-2 text-xl font-semibold text-slate-900">
             {selectedSection ? `${selectedSection.type} ayarları` : "Blok seç"}
           </h2>
-          <p className="mt-2 text-sm leadıng-6 text-slate-600">
+          <p className="mt-2 text-sm leading-6 text-slate-600">
             Soldaki landing canvas üzerinden blok seç. Alanları değiştirdikçe sayfa anında güncellenir.
           </p>
 

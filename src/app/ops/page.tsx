@@ -34,7 +34,7 @@ function statusTone(status: string) {
 
 function statusLabel(status: string, locale: "tr" | "en" | "fr") {
   if (status === "pending") return translateUiText("Bekliyor", locale);
-  if (status === "preparing") return translateUiText("Hazırlaniyor", locale);
+  if (status === "preparing") return translateUiText("Hazırlanıyor", locale);
   if (status === "ready") return translateUiText("Servise Hazır", locale);
   if (status === "served") return translateUiText("Servise Hazır", locale);
   if (status === "partially_paid") return translateUiText("Kısmi Ödeme", locale);
@@ -186,21 +186,21 @@ async function DeferredSetupPrompt({
       description: translateUiText("Kategori, ürün ve modifier kurulumunu tamamla", locale),
       done: setup.counts.products > 0,
       href: "/admin/products",
-      cta: translateUiText("Ürünleri ac", locale),
+      cta: translateUiText("Ürünleri aç", locale),
     },
     {
       label: translateUiText("Salon ve masalar", locale),
       description: translateUiText("Masa isimleri, QR ve aktif salon yapısı", locale),
       done: setup.counts.tables > 0,
       href: "/admin/tables",
-      cta: translateUiText("Masalari ac", locale),
+      cta: translateUiText("Masaları aç", locale),
     },
     {
       label: translateUiText("Ekip ve roller", locale),
       description: translateUiText("Kasiyer, garson ve mutfak hesaplarini hazırla", locale),
       done: setup.counts.staff >= 4,
       href: "/admin/roles",
-      cta: translateUiText("Personeli ac", locale),
+      cta: translateUiText("Personeli aç", locale),
       ownerOnly: true,
     },
     {
@@ -218,17 +218,17 @@ async function DeferredSetupPrompt({
       <div className="flex flex-wrap items-start justify-between gap-6">
         <div className="max-w-3xl">
           <p className="text-xs font-bold uppercase tracking-[0.18em] text-amber-700">{translateUiText("İlk Kurulum", locale)}</p>
-          <h2 className="mt-2 text-xl font-semibold tracking-tight text-slate-900 sm:text-2xl">{translateUiText("Canlı operasyon için tamamlanmasi gereken adımlar var", locale)}</h2>
-          <p className="mt-3 text-sm leadıng-7 text-slate-600">
-            {translateUiText("Ürün, masa, ekip ve ilk test siparişi tamamlanmadan sistem tam operasyon hazır sayilmaz. Eksik kalan adımlari bu merkezden bitir.", locale)}
+          <h2 className="mt-2 text-xl font-semibold tracking-tight text-slate-900 sm:text-2xl">{translateUiText("Canlı operasyon için tamamlanması gereken adımlar var", locale)}</h2>
+          <p className="mt-3 text-sm leading-7 text-slate-600">
+            {translateUiText("Ürün, masa, ekip ve ilk test siparişi tamamlanmadan sistem tam operasyon hazır sayilmaz. Eksik kalan adımları bu merkezden bitir.", locale)}
           </p>
         </div>
         <div className="w-full rounded-[24px] border border-amber-200 bg-white/80 px-5 py-4 sm:w-auto">
-          <p className="text-xs font-bold uppercase tracking-[0.16em] text-amber-700">{translateUiText("Kurulum Ilerlemesi", locale)}</p>
+          <p className="text-xs font-bold uppercase tracking-[0.16em] text-amber-700">{translateUiText("Kurulum İlerlemesi", locale)}</p>
           <p className="mt-3 text-4xl font-semibold tracking-tight text-slate-900">
             {completedSetupSteps}/{setupSteps.length}
           </p>
-          <p className="mt-2 text-sm text-slate-600">{translateUiText("Temel operasyon adımi tamamlandı", locale)}</p>
+          <p className="mt-2 text-sm text-slate-600">{translateUiText("Temel operasyon adımı tamamlandı", locale)}</p>
         </div>
       </div>
 
@@ -398,7 +398,7 @@ export default async function OpsPage({
           hint: translateUiText("Gecikmeyi azaltmak için mutfak istasyonuna gec.", locale),
           href: "/kitchen",
           tone: ops.criticalKitchenOrders > 0 ? "mobile-tone-critical" : "mobile-tone-warning",
-          cta: translateUiText("Mutfaga Git", locale),
+          cta: translateUiText("Mutfak'a Git", locale),
         }
       : null,
     canCashier
@@ -409,7 +409,7 @@ export default async function OpsPage({
           hint: isSelfServiceCoffee ? translateUiText("Durum güncelleme bekleyen pickup siparişler", locale) : translateUiText("Servise hazır adısyonlar kapanis bekliyor.", locale),
           href: "/cashier",
           tone: ops.servedOrders > 0 ? "mobile-tone-warning" : "mobile-tone-neutral",
-          cta: isSelfServiceCoffee ? translateUiText("Sipariş Yönetimine Gec", locale) : translateUiText("Tahsilata Gec", locale),
+          cta: isSelfServiceCoffee ? translateUiText("Sipariş Yönetimine Gec", locale) : translateUiText("Tahsilata Geç", locale),
         }
       : null,
     canWaiterOps
@@ -458,14 +458,14 @@ export default async function OpsPage({
             title={translateUiText("Bugün Nasıl Kullanılır?", locale)}
             description={translateUiText("Sistemi ilk kez kullanan biri için gunluk operasyon sırası.", locale)}
             steps={[
-              { title: translateUiText("Masalari ve ürünleri kontrol et", locale), description: translateUiText("Servise baslamadan önce masa, ürün ve kritik stok durumunu buradan hızlıca kontrol et.", locale) },
+              { title: translateUiText("Masaları ve ürünleri kontrol et", locale), description: translateUiText("Servise başlamadan önce masa, ürün ve kritik stok durumunu buradan hızlıca kontrol et.", locale) },
               { title: translateUiText("Sipariş akışına bak", locale), description: translateUiText("Bekleyen sipariş varsa mutfaga, kasada bekleyen varsa tahsilata yönel.", locale) },
               { title: translateUiText("Gün sonunda rapora don", locale), description: translateUiText("Vardiya sonunda kasa ve rapor ekranlarından tahsilat ve net sonucu kontrol et.", locale) },
             ]}
           />
-          <SidebarPanel title={translateUiText("Anlık Durum", locale)} description={translateUiText("Günluk operasyon nabzi ve risk odaklari.", locale)}>
+          <SidebarPanel title={translateUiText("Anlık Durum", locale)} description={translateUiText("Günlük operasyon nabzi ve risk odakları.", locale)}>
             <div className="rounded-2xl bg-slate-950 p-4 text-white shadow-sm sm:p-5">
-              <p className="text-xs font-bold uppercase tracking-[0.18em] text-slate-300">{translateUiText("Günluk Ciro", locale)}</p>
+              <p className="text-xs font-bold uppercase tracking-[0.18em] text-slate-300">{translateUiText("Günlük Ciro", locale)}</p>
               <p className="mt-2.5 text-2xl font-semibold tracking-tight sm:text-3xl uupm-monospace-num">{formatCurrency(metrics.todayRevenue)}</p>
               <div className="mt-4 grid gap-2 grid-cols-2">
                 <div className="rounded-xl bg-white/10 p-2.5">
@@ -509,7 +509,7 @@ export default async function OpsPage({
             </div>
           </SidebarPanel>
 
-          <SidebarPanel title={translateUiText("Hızlı Aksiyonlar", locale)} description={translateUiText("En sik kullanilan operasyon gecisleri.", locale)}>
+          <SidebarPanel title={translateUiText("Hızlı Aksiyonlar", locale)} description={translateUiText("En sık kullanılan operasyon gecisleri.", locale)}>
             <div className="grid gap-3">
               <Link href="/admin/tables" className="rounded-xl border border-slate-200 bg-slate-50 px-4 py-3 text-center text-sm font-semibold text-slate-800 transition hover:bg-white sm:text-left">
                 {translateUiText("Masa QR Yönetimi", locale)}
@@ -594,8 +594,8 @@ export default async function OpsPage({
 
       <section className="app-mobile-hide grid gap-4 md:grid-cols-2 xl:grid-cols-4">
         <SummaryCard label={translateUiText("Açık Sipariş", locale)} value={String(metrics.openOrders)} hint={translateUiText("Pending, hazırlaniyor ve kasada bekleyen toplam sipariş", locale)} tone="accent" />
-        <SummaryCard label={translateUiText("Bekleyen", locale)} value={String(metrics.pending)} hint={translateUiText("Mutfaga yeni dusen isler", locale)} tone="danger" />
-        <SummaryCard label={translateUiText("Hazırlaniyor", locale)} value={String(metrics.preparing)} hint={translateUiText("Aktif mutfak uretimi", locale)} tone="accent" />
+        <SummaryCard label={translateUiText("Bekleyen", locale)} value={String(metrics.pending)} hint={translateUiText("Mutfak'a yeni dusen isler", locale)} tone="danger" />
+        <SummaryCard label={translateUiText("Hazırlanıyor", locale)} value={String(metrics.preparing)} hint={translateUiText("Aktif mutfak üretimi", locale)} tone="accent" />
         <SummaryCard label={translateUiText("Servise Hazır", locale)} value={String(ops.servedOrders)} hint={translateUiText("Kasada kapanış bekleyen adısyonlar", locale)} tone="success" />
       </section>
 
@@ -803,7 +803,7 @@ export default async function OpsPage({
           </div>
         </ContentCard>
 
-        <ContentCard title={translateUiText("Yönetim Gecisleri", locale)}>
+        <ContentCard title={translateUiText("Yönetim Geçişleri", locale)}>
           <div className="grid gap-3 sm:grid-cols-2">
             {canCashier ? (
               <Link href="/cashier/session" className="rounded-xl border border-slate-200 bg-slate-50 px-4 py-4 text-center text-sm font-semibold text-slate-800 transition hover:border-slate-300 hover:bg-white sm:text-left">

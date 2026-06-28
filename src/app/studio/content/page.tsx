@@ -131,7 +131,7 @@ export default async function AdminContentPage({
             <div>
               <p className="text-xs font-bold uppercase tracking-[0.22em] text-orange-600">Studio CMS</p>
               <h1 className="mt-2 text-3xl font-bold tracking-tight text-slate-950">Ana sayfa yönetimi</h1>
-              <p className="mt-2 max-w-3xl text-sm leadıng-6 text-slate-600">
+              <p className="mt-2 max-w-3xl text-sm leading-6 text-slate-600">
                 Ana sayfa artık yeni Türkçe ürün vitriniyle render ediliyor. Eski visual builder bu sayfa için kapatıldı, çünkü yayındaki ana sayfayı temsil etmiyordu.
               </p>
             </div>
@@ -152,7 +152,7 @@ export default async function AdminContentPage({
             <article className="rounded-[2rem] border border-slate-200 bg-white p-6 shadow-sm">
               <p className="text-xs font-bold uppercase tracking-[0.22em] text-orange-600">Aktif ana sayfa</p>
               <h2 className="mt-3 text-3xl font-bold tracking-tight text-slate-950">Cloud POS ürün vitrini</h2>
-              <p className="mt-4 text-sm leadıng-7 text-slate-600">
+              <p className="mt-4 text-sm leading-7 text-slate-600">
                 Bu sayfa; self servis / QR akışı, kafe-restoran POS modülü, mobil PWA ekranları ve gerçek ürün görselleriyle hazırlanmış özel bir React yüzeyidir.
               </p>
               <div className="mt-6 grid gap-3 sm:grid-cols-2">
@@ -174,7 +174,7 @@ export default async function AdminContentPage({
               </div>
               <div className="mt-6 rounded-3xl border border-amber-200 bg-amber-50 p-4">
                 <p className="text-sm font-bold text-amber-950">Not</p>
-                <p className="mt-2 text-sm leadıng-7 text-amber-900">
+                <p className="mt-2 text-sm leading-7 text-amber-900">
                   Ana sayfanın metin ve section yapısı şu anda CMS builder’dan değil, <code className="rounded bg-white/70 px-1">ProductLandingPage</code> component’inden geliyor. Bu yüzden eski builder burada gösterilmiyor.
                 </p>
               </div>
@@ -206,7 +206,7 @@ export default async function AdminContentPage({
               <div>
                 <p className="text-xs font-bold uppercase tracking-[0.22em] text-slate-500">Alt sayfalar</p>
                 <h2 className="mt-2 text-2xl font-bold tracking-tight text-slate-950">Visual builder sadece ek sayfalar için kullanılır.</h2>
-                <p className="mt-2 text-sm leadıng-6 text-slate-600">
+                <p className="mt-2 text-sm leading-6 text-slate-600">
                   Eski builder; hakkımızda, kampanya veya özel landing gibi ek public sayfalar için aktif kalır.
                 </p>
               </div>

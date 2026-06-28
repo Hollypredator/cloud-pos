@@ -169,7 +169,7 @@ export function CustomerDisplayClient() {
   }
 
   return (
-    <main className="min-h-screen bg-[radıal-gradient(circle_at_top,#1f2937_0%,#0b1220_42%,#050812_100%)] text-white">
+    <main className="min-h-screen bg-[radial-gradient(circle_at_top,#1f2937_0%,#0b1220_42%,#050812_100%)] text-white">
       <div className="mx-auto flex min-h-screen w-full max-w-[1240px] flex-col px-6 py-8">
         <header className="flex flex-wrap items-center justify-between gap-3 rounded-3xl border border-white/10 bg-white/5 px-6 py-4">
           <div>

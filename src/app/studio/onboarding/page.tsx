@@ -17,7 +17,7 @@ export default async function AdminOnboardingPage() {
           <div>
             <p className="text-xs font-bold uppercase tracking-[0.22em] text-orange-300">Studio Wizard</p>
             <h1 className="mt-4 text-4xl font-bold tracking-tight sm:text-5xl">Müşteri kurulum akışı</h1>
-            <p className="mt-5 max-w-2xl text-base leadıng-8 text-slate-300">
+            <p className="mt-5 max-w-2xl text-base leading-8 text-slate-300">
               Marka, SEO, landing, medya, blog ve operasyon kurulumunu tek listeden takip edin.
             </p>
           </div>

@@ -119,7 +119,7 @@ export function DemoPageRenderer({
       </header>
 
       <section className="relative overflow-hidden">
-        <div className="absolute inset-0 -z-10 bg-[radıal-gradient(circle_at_18%_20%,rgba(249,115,22,0.18),transparent_28%),radıal-gradient(circle_at_82%_18%,rgba(79,70,229,0.14),transparent_30%),radıal-gradient(circle_at_80%_78%,rgba(16,185,129,0.13),transparent_26%)]" />
+        <div className="absolute inset-0 -z-10 bg-[radial-gradient(circle_at_18%_20%,rgba(249,115,22,0.18),transparent_28%),radial-gradient(circle_at_82%_18%,rgba(79,70,229,0.14),transparent_30%),radial-gradient(circle_at_80%_78%,rgba(16,185,129,0.13),transparent_26%)]" />
         <div className="mx-auto grid max-w-7xl gap-12 px-4 py-14 sm:px-6 sm:py-20 lg:grid-cols-[0.9fr_1.1fr] lg:px-8">
           <div className="flex flex-col justify-center">
             <p className="inline-flex w-fit rounded-full border border-orange-200 bg-orange-50 px-4 py-2 text-xs font-bold uppercase tracking-[0.18em] text-orange-700">
@@ -128,7 +128,7 @@ export function DemoPageRenderer({
             <h1 className="mt-6 max-w-3xl text-5xl font-bold tracking-tight text-slate-950 sm:text-6xl">
               Cloud POS’u gerçek ekranlarıyla deneyimleyin.
             </h1>
-            <p className="mt-6 max-w-2xl text-lg leadıng-9 text-slate-600">
+            <p className="mt-6 max-w-2xl text-lg leading-9 text-slate-600">
               Self servis / QR akışı, kafe-restoran POS modülü, mutfak, kasa, stok, raporlama ve mobil PWA deneyimini tek ürün türünda görün.
             </p>
             <div className="mt-8 flex flex-col gap-3 sm:flex-row">
@@ -156,7 +156,7 @@ export function DemoPageRenderer({
           <div className="max-w-3xl">
             <p className="text-xs font-bold uppercase tracking-[0.22em] text-orange-600">Demo akışı</p>
             <h2 className="mt-4 text-3xl font-bold tracking-tight text-slate-950 sm:text-5xl">Ürünü modül modül inceleyin.</h2>
-            <p className="mt-4 text-base leadıng-8 text-slate-600">Demo sayfası artık sadece örnek veri değil, ürünün hangi problemi çözdüğünü anlatan kısa bir tur.</p>
+            <p className="mt-4 text-base leading-8 text-slate-600">Demo sayfası artık sadece örnek veri değil, ürünün hangi problemi çözdüğünü anlatan kısa bir tur.</p>
           </div>
           <div className="mt-10 grid gap-4 sm:grid-cols-2 lg:grid-cols-4">
             {demoSteps.map((step) => {
@@ -167,7 +167,7 @@ export function DemoPageRenderer({
                     <Icon size={22} />
                   </div>
                   <h3 className="mt-5 text-lg font-bold tracking-tight text-slate-950">{step.title}</h3>
-                  <p className="mt-3 text-sm leadıng-7 text-slate-600">{step.body}</p>
+                  <p className="mt-3 text-sm leading-7 text-slate-600">{step.body}</p>
                 </article>
               );
             })}
@@ -180,7 +180,7 @@ export function DemoPageRenderer({
           <div className="max-w-3xl">
             <p className="text-xs font-bold uppercase tracking-[0.22em] text-orange-600">Gerçek ekranlar</p>
             <h2 className="mt-4 text-3xl font-bold tracking-tight text-slate-950 sm:text-5xl">Demo, gerçek ürün arayüzlerini gösterir.</h2>
-            <p className="mt-4 text-base leadıng-8 text-slate-600">Sahte dashboard yok. Görseller mevcut ürün ekranlarından alınmış QA görselleridir.</p>
+            <p className="mt-4 text-base leading-8 text-slate-600">Sahte dashboard yok. Görseller mevcut ürün ekranlarından alınmış QA görselleridir.</p>
           </div>
           <div className="mt-10 grid gap-5 lg:grid-cols-2">
             {demoScreens.map((screen) => (
@@ -204,7 +204,7 @@ export function DemoPageRenderer({
             <div>
               <p className="text-xs font-bold uppercase tracking-[0.22em] text-orange-300">Modül kapsamı</p>
               <h2 className="mt-4 text-3xl font-bold tracking-tight sm:text-5xl">Demo turu, satıştan operasyona tüm ürünü anlatır.</h2>
-              <p className="mt-4 text-base leadıng-8 text-slate-300">Self servis ve restoran operasyonu aynı platform içinde nasıl birleşiyor, demo sayfasında net görünür.</p>
+              <p className="mt-4 text-base leading-8 text-slate-300">Self servis ve restoran operasyonu aynı platform içinde nasıl birleşiyor, demo sayfasında net görünür.</p>
             </div>
             <div className="grid gap-3 sm:grid-cols-2">
               {demoModules.map((module) => {
@@ -213,7 +213,7 @@ export function DemoPageRenderer({
                   <article key={module.title} className="rounded-2xl border border-white/10 bg-white/5 p-5">
                     <Icon size={22} className="text-orange-300" />
                     <h3 className="mt-4 text-lg font-bold">{module.title}</h3>
-                    <p className="mt-2 text-sm leadıng-7 text-slate-300">{module.body}</p>
+                    <p className="mt-2 text-sm leading-7 text-slate-300">{module.body}</p>
                   </article>
                 );
               })}

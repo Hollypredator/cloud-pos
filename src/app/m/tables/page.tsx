@@ -281,9 +281,10 @@ export default async function MobileTablesPage({
             const zoneName = table.zone_id ? zoneNameById.get(table.zone_id) ?? "Bölge silinmis" : "Bolgesiz";
             const supervisor = supervisorByTableId.get(table.id);
             const hasOpenOrder = latestOrder ? isOpenOrderStatus(latestOrder.status) : false;
+            const hasRequests = requestCount > 0;
 
             return (
-              <article key={`m-table-${table.id}`} className="m-card">
+              <article key={`m-table-${table.id}`} className={`m-card ${hasRequests ? "uupm-pulsing-warning" : ""}`}>
                 <div className="flex items-start justify-between gap-3">
                   <div>
                     <p className="m-label">Masa {table.table_number}</p>

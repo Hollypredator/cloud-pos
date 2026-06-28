@@ -37,7 +37,8 @@
     "pwa:cashier": "node scripts/mobile-cashier-page-check.mjs",
     "pwa:kitchen": "node scripts/mobile-kitchen-page-check.mjs",
     "pwa:tables": "node scripts/mobile-tables-order-flow-check.mjs",
-    "pwa:delivery-service": "node scripts/mobile-delivery-service-page-check.mjs"
+    "pwa:delivery-service": "node scripts/mobile-delivery-service-page-check.mjs",
+    "pwa:install": "node scripts/mobile-pwa-install-check.mjs"
   },
   "dependencies": {
     "@supabase/ssr": "^0.8.0",

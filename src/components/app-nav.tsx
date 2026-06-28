@@ -56,7 +56,7 @@ const sidebarThemes: Record<
   ocean: {
     asideClassName: "border-[rgba(255,255,255,0.08)]",
     backgroundImage:
-      "radıal-gradient(circle at top left, rgba(34,211,238,0.24), transparent 24%), radıal-gradient(circle at 80% 18%, rgba(59,130,246,0.18), transparent 22%), radıal-gradient(circle at 65% 100%, rgba(16,185,129,0.12), transparent 26%), linear-gradient(180deg, #0f172a 0%, #10263c 38%, #133040 100%)",
+      "radial-gradient(circle at top left, rgba(34,211,238,0.24), transparent 24%), radial-gradient(circle at 80% 18%, rgba(59,130,246,0.18), transparent 22%), radial-gradient(circle at 65% 100%, rgba(16,185,129,0.12), transparent 26%), linear-gradient(180deg, #0f172a 0%, #10263c 38%, #133040 100%)",
     brandBadgeClassName: "bg-[linear-gradient(135deg,#22d3ee_0%,#3b82f6_100%)] shadow-[0_14px_24px_rgba(34,211,238,0.24)]",
     activeItemClassName: "bg-[linear-gradient(90deg,rgba(34,211,238,0.16)_0%,rgba(255,255,255,0.08)_100%)] shadow-[inset_3px_0_0_#22d3ee,0_12px_20px_rgba(8,47,73,0.24)]",
     activeIconClassName: "bg-[linear-gradient(135deg,#22d3ee_0%,#3b82f6_100%)] shadow-[0_12px_24px_rgba(59,130,246,0.22)]",
@@ -65,7 +65,7 @@ const sidebarThemes: Record<
   night: {
     asideClassName: "border-[rgba(255,255,255,0.06)]",
     backgroundImage:
-      "radıal-gradient(circle at top left, rgba(168,85,247,0.18), transparent 20%), radıal-gradient(circle at 85% 20%, rgba(244,114,182,0.1), transparent 18%), radıal-gradient(circle at 70% 100%, rgba(148,163,184,0.12), transparent 24%), linear-gradient(180deg, #111111 0%, #171717 42%, #202020 100%)",
+      "radial-gradient(circle at top left, rgba(168,85,247,0.18), transparent 20%), radial-gradient(circle at 85% 20%, rgba(244,114,182,0.1), transparent 18%), radial-gradient(circle at 70% 100%, rgba(148,163,184,0.12), transparent 24%), linear-gradient(180deg, #111111 0%, #171717 42%, #202020 100%)",
     brandBadgeClassName: "bg-[linear-gradient(135deg,#a855f7_0%,#f472b6_100%)] shadow-[0_14px_24px_rgba(168,85,247,0.22)]",
     activeItemClassName: "bg-[linear-gradient(90deg,rgba(168,85,247,0.16)_0%,rgba(255,255,255,0.08)_100%)] shadow-[inset_3px_0_0_#a855f7,0_12px_20px_rgba(15,15,15,0.22)]",
     activeIconClassName: "bg-[linear-gradient(135deg,#a855f7_0%,#f472b6_100%)] shadow-[0_12px_24px_rgba(168,85,247,0.2)]",
@@ -335,7 +335,7 @@ export function AppNav({
   const accentDark = mixHex(accentBase, -0.18);
   const sidebarBorderClass = isMarketSidebar ? "border-[rgba(122,175,255,0.22)]" : theme.asideClassName;
   const sidebarBackgroundImage = isMarketSidebar
-    ? "radıal-gradient(circle at 0% 0%, rgba(77,142,247,0.3), transparent 28%), radıal-gradient(circle at 100% 12%, rgba(39,86,161,0.28), transparent 24%), linear-gradient(180deg, #0c1728 0%, #0a1322 42%, #0a101c 100%)"
+    ? "radial-gradient(circle at 0% 0%, rgba(77,142,247,0.3), transparent 28%), radial-gradient(circle at 100% 12%, rgba(39,86,161,0.28), transparent 24%), linear-gradient(180deg, #0c1728 0%, #0a1322 42%, #0a101c 100%)"
     : theme.backgroundImage;
   const visibleLinks = useMemo(
     () => {
@@ -570,7 +570,7 @@ export function AppNav({
                     key={link.href}
                     href={link.href}
                     scroll={false}
-                    className={`flex min-h-[56px] flex-col items-center justify-center rounded-2xl px-2 py-1.5 text-center text-[10px] font-semibold leadıng-tight ${
+                    className={`flex min-h-[56px] flex-col items-center justify-center rounded-2xl px-2 py-1.5 text-center text-[10px] font-semibold leading-tight ${
                       activeHref === link.href ? "bg-slate-950 text-white" : "bg-slate-100 text-slate-700"
                     }`}
                   >
@@ -609,7 +609,7 @@ export function AppNav({
                   >
                     {isMarketSidebar ? "M" : brandName.slice(0, 2).toUpperCase()}
                   </span>
-                  {!desktopCollapsed && !isMarketSidebar ? <p className="font-display truncate text-[1.45rem] font-black leadıng-none tracking-tight text-white">{brandName}</p> : null}
+                  {!desktopCollapsed && !isMarketSidebar ? <p className="font-display truncate text-[1.45rem] font-black leading-none tracking-tight text-white">{brandName}</p> : null}
                 </div>
               )}
               {isMarketSidebar ? (
@@ -750,7 +750,7 @@ export function AppNav({
                       <Icon aria-hidden="true" className="h-5 w-5" strokeWidth={2.15} />
                     </span>
                     {isMarketSidebar ? (
-                      <span className="text-center leadıng-tight text-white/55">{translateUiText(link.label, locale)}</span>
+                      <span className="text-center leading-tight text-white/55">{translateUiText(link.label, locale)}</span>
                     ) : !desktopCollapsed ? (
                       <div className="min-w-0 flex-1">
                         <div className="truncate">{translateUiText(link.label, locale)}</div>
@@ -803,7 +803,7 @@ export function AppNav({
                     <Icon aria-hidden="true" className="h-5 w-5" strokeWidth={2.15} />
                   </span>
                   {isMarketSidebar ? (
-                    <span className="line-clamp-2 text-center leadıng-tight">{translateUiText(link.label, locale)}</span>
+                    <span className="line-clamp-2 text-center leading-tight">{translateUiText(link.label, locale)}</span>
                   ) : !desktopCollapsed ? (
                     <span className="truncate">{translateUiText(link.label, locale)}</span>
                   ) : null}

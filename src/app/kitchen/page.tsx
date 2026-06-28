@@ -17,7 +17,6 @@ import { executeWebOpsCommand } from "@/lib/ops/server-action";
 import { logServerPerf, measureAsync } from "@/lib/perf";
 import { getFeatureAccess } from "@/lib/plan-access";
 import type { Order, OrderItem } from "@/lib/types";
-import { ThemeForcer } from "@/components/theme-forcer";
 
 type KitchenStation = "kitchen" | "bar" | "dessert";
 type StationProgress = "pending" | "preparing" | "served";
@@ -149,7 +148,7 @@ function inferStationByItemName(itemName?: string): KitchenStation {
 
 function stationLabel(station: KitchenStation) {
   if (station === "bar") return "Bar";
-  if (station === "dessert") return "Tatli";
+  if (station === "dessert") return "Tatlı";
   return "Mutfak";
 }
 
@@ -253,7 +252,7 @@ export default async function KitchenPage({
   if (!featureAccess.enabled) {
     logServerPerf("/kitchen", [featureAccessResult]);
     return (
-      <BackofficePage title="Mutfak" description="Istasyon bazli hazırlama akışı" minimal={isTabletMode}>
+      <BackofficePage title="Mutfak" description="İstasyon bazlı hazırlama akışı" minimal={isTabletMode}>
         <FeatureLockedState
           title={featureAccess.title}
           description={featureAccess.description}
@@ -296,10 +295,9 @@ export default async function KitchenPage({
 
   return (
     <>
-      <ThemeForcer theme="kitchen-dark" />
       <BackofficePage
         title="Mutfak Board"
-        description="Istasyon bazli hazırlama kuyrugu, gecikmeler ve servis çıkışları"
+        description="İstasyon bazlı hazırlama kuyrugu, gecikmeler ve servis çıkışları"
         minimal={isTabletMode}
         actions={
           <>
@@ -319,8 +317,8 @@ export default async function KitchenPage({
 
         <section className="app-mobile-hide grid gap-4 xl:grid-cols-4">
           <SummaryCard label="Bekleyen" value={String(pendingCount)} hint="Yeni giren siparişler" tone="accent" />
-          <SummaryCard label="Hazırlanıyor" value={String(preparingCount)} hint="Istasyonda islenen sipariş" tone="neutral" />
-          <SummaryCard label="Servise Hazır" value={String(servedCount)} hint="Tamamlandi ama kasaya devredilmedi" tone="success" />
+          <SummaryCard label="Hazırlanıyor" value={String(preparingCount)} hint="İstasyonda islenen sipariş" tone="neutral" />
+          <SummaryCard label="Servise Hazır" value={String(servedCount)} hint="Tamamlandı ama kasaya devredilmedi" tone="success" />
           <SummaryCard label="Kritik" value={String(criticalCount || delayedCount)} hint="Gecikme ve mudahale ihtiyaci" tone="danger" />
         </section>
 
@@ -339,7 +337,7 @@ export default async function KitchenPage({
           </div>
 
           <article className="mobile-task-card">
-            <p className="text-[11px] font-bold uppercase tracking-[0.16em] text-slate-500">Aktif Istasyon</p>
+            <p className="text-[11px] font-bold uppercase tracking-[0.16em] text-slate-500">Aktif İstasyon</p>
             <h2 className="mt-2 text-xl font-semibold tracking-tight text-slate-900">{stationLabel(activeBoard.key)}</h2>
             <p className="mt-1 text-sm text-slate-500">
               {activeBoard.pending} bekleyen - {activeBoard.preparing} hazırlanan - {activeBoard.served} hazır
@@ -399,7 +397,7 @@ export default async function KitchenPage({
                         rel="noreferrer"
                         className="mobile-cta-secondary inline-flex items-center justify-center border border-slate-200 bg-white px-4 py-3 text-sm font-semibold text-slate-700"
                       >
-                        Fis Yazdır
+                        Fiş Yazdır
                       </Link>
                       <form action={moveOrder}>
                         <input type="hidden" name="orderId" value={order.id} />
@@ -430,7 +428,7 @@ export default async function KitchenPage({
           )}
         </section>
 
-        <ContentCard title="Istasyon Board" className="app-mobile-hide">
+        <ContentCard title="İstasyon Board" className="app-mobile-hide">
           {orders.length === 0 ? (
             <EmptyPanel title="Kuyruk Boş" description="Mutfakta islenecek sipariş bulunmuyor." />
           ) : (
@@ -439,7 +437,7 @@ export default async function KitchenPage({
                 <section key={board.key} className="rounded-[24px] border border-slate-200 bg-[#f7f8fa] p-4">
                   <div className="flex flex-wrap items-start justify-between gap-3">
                     <div>
-                      <p className="text-xs font-bold uppercase tracking-[0.16em] text-slate-500">Istasyon</p>
+                      <p className="text-xs font-bold uppercase tracking-[0.16em] text-slate-500">İstasyon</p>
                       <h2 className="mt-2 text-xl font-semibold tracking-tight text-slate-900 sm:text-2xl">{stationLabel(board.key)}</h2>
                       <p className="mt-1 text-sm text-slate-500">
                         {board.pending} bekleyen - {board.preparing} hazırlanan - {board.served} hazır
@@ -524,7 +522,7 @@ export default async function KitchenPage({
 
                             <div className="mt-4 flex flex-col items-start gap-3 sm:flex-row sm:items-center sm:justify-between">
                               <div>
-                                <p className="text-xs font-bold uppercase tracking-[0.16em] text-slate-500">Istasyon Tutari</p>
+                                <p className="text-xs font-bold uppercase tracking-[0.16em] text-slate-500">İstasyon Tutarı</p>
                                 <p className="mt-1 text-xl font-semibold tracking-tight text-emerald-700">
                                   {items.reduce((sum, item) => sum + Number(item.line_total), 0).toFixed(2)} TL
                                 </p>
@@ -536,7 +534,7 @@ export default async function KitchenPage({
                                   rel="noreferrer"
                                   className="w-full rounded-2xl border border-slate-200 bg-white px-4 py-3 text-center text-sm font-semibold text-slate-700 sm:w-auto"
                                 >
-                                  Fis Yazdır
+                                  Fiş Yazdır
                                 </Link>
                                 <form action={moveOrder}>
                                   <input type="hidden" name="orderId" value={order.id} />
@@ -565,7 +563,7 @@ export default async function KitchenPage({
                               <div className="mt-3 flex flex-col items-start gap-3 rounded-2xl border border-emerald-200 bg-emerald-50 px-3 py-3 text-sm sm:flex-row sm:items-center sm:justify-between">
                                 <div>
                                   <p className="font-semibold text-emerald-900">Sipariş tampon alanda tutuluyor</p>
-                                  <p className="mt-1 text-emerald-700">Yanlis basim veya son dakika duzeltmesi icin mutfaktan geri alinabilir.</p>
+                                  <p className="mt-1 text-emerald-700">Yanlış baskı veya son dakika düzeltmesi için mutfaktan geri alınabilir.</p>
                                 </div>
                                 <Link href="/cashier" className="w-full rounded-xl border border-emerald-200 bg-white px-3 py-2 text-center font-semibold text-emerald-800 sm:w-auto">
                                   Kasaya Git

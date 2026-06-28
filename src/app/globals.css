@@ -915,12 +915,12 @@ button:disabled {
   }
 
   @page receipt80 {
-    size: 80mm 200mm;
+    size: 80mm auto;
     margin: 0;
   }
 
   @page receipt58 {
-    size: 58mm 200mm;
+    size: 58mm auto;
     margin: 0;
   }
 
@@ -951,13 +951,25 @@ button:disabled {
     background: #ffffff !important;
   }
 
-  body.printing-inline-receipt * {
-    visibility: hidden !important;
+  /* Collapse all parent wrappers of the inline receipt to prevent blank pages */
+  body.printing-inline-receipt :has(.receipt-inline-sheet) {
+    height: auto !important;
+    min-height: 0 !important;
+    max-height: none !important;
+    margin: 0 !important;
+    padding: 0 !important;
+    border: none !important;
+    box-shadow: none !important;
+    background: transparent !important;
+    display: block !important;
+    position: static !important;
+    width: auto !important;
+    overflow: visible !important;
   }
 
-  body.printing-inline-receipt .receipt-inline-sheet,
-  body.printing-inline-receipt .receipt-inline-sheet * {
-    visibility: visible !important;
+  /* Hide all elements that are NOT parents and NOT descendants of the receipt to fully collapse layout space */
+  body.printing-inline-receipt *:not(:has(.receipt-inline-sheet)):not(.receipt-inline-sheet):not(.receipt-inline-sheet *) {
+    display: none !important;
   }
 
   body.receipt-print-a4 {
@@ -991,13 +1003,13 @@ button:disabled {
   }
 
   body.printing-inline-receipt .receipt-inline-sheet {
-    position: fixed !important;
-    left: 0 !important;
-    top: 0 !important;
+    position: relative !important;
+    left: auto !important;
+    top: auto !important;
     right: auto !important;
     width: var(--receipt-print-width, 80mm) !important;
     max-width: var(--receipt-print-width, 80mm) !important;
-    margin: 0 !important;
+    margin: 0 auto !important;
     padding: var(--receipt-print-padding, 4mm) !important;
     border: 0 !important;
     border-radius: 0 !important;
@@ -1005,6 +1017,37 @@ button:disabled {
     background: #fff !important;
     color: #000 !important;
     font-size: var(--receipt-print-font-size, 11px) !important;
+    box-sizing: border-box !important;
+  }
+
+  /* Full page print rules when in thermal mode */
+  body.receipt-print-80,
+  body.receipt-print-58 {
+    background: #ffffff !important;
+    width: var(--receipt-print-width) !important;
+  }
+
+  body.receipt-print-80 .print-root,
+  body.receipt-print-58 .print-root,
+  body.receipt-print-80 div.min-h-screen,
+  body.receipt-print-58 div.min-h-screen {
+    background: #ffffff !important;
+    padding: 0 !important;
+    margin: 0 !important;
+    min-height: 0 !important;
+    height: auto !important;
+    width: var(--receipt-print-width) !important;
+  }
+
+  body.receipt-print-80 .print-card,
+  body.receipt-print-58 .print-card {
+    border: none !important;
+    border-radius: 0 !important;
+    box-shadow: none !important;
+    margin: 0 !important;
+    padding: var(--receipt-print-padding) !important;
+    width: var(--receipt-print-width) !important;
+    max-width: var(--receipt-print-width) !important;
   }
 
 }
@@ -1168,85 +1211,6 @@ button:disabled {
   animation-delay: 2s;
 }
 
-/* Station-Specific Theme: Dark Kitchen Monitor */
-body.theme-kitchen-dark {
-  --m-bg: #070d19;
-  --m-card: #0f172a;
-  --m-text: #f8fafc;
-  --m-muted: #94a3b8;
-  --m-border: #334155;
-  --m-primary: #e11d48;
-  --m-primary-text: #ffffff;
-  background-color: #070d19 !important;
-  color: #f8fafc !important;
-}
-
-body.theme-kitchen-dark main,
-body.theme-kitchen-dark .backoffice-page-shell,
-body.theme-kitchen-dark .m-ops-shell {
-  background-color: #070d19 !important;
-  color: #f8fafc !important;
-}
-
-body.theme-kitchen-dark .bg-white {
-  background-color: #0f172a !important;
-}
-
-body.theme-kitchen-dark .text-slate-900,
-body.theme-kitchen-dark .text-slate-950,
-body.theme-kitchen-dark .text-slate-800,
-body.theme-kitchen-dark h1,
-body.theme-kitchen-dark h2,
-body.theme-kitchen-dark h3,
-body.theme-kitchen-dark h4 {
-  color: #f1f5f9 !important;
-}
-
-body.theme-kitchen-dark .text-slate-500,
-body.theme-kitchen-dark .text-slate-600 {
-  color: #94a3b8 !important;
-}
-
-body.theme-kitchen-dark .bg-slate-50 {
-  background-color: #1e293b !important;
-}
-
-body.theme-kitchen-dark .border-slate-100,
-body.theme-kitchen-dark .border-slate-200,
-body.theme-kitchen-dark .border-slate-300 {
-  border-color: #334155 !important;
-}
-
-body.theme-kitchen-dark .m-segment-pill {
-  background-color: #0f172a !important;
-  color: #cbd5e1 !important;
-  border-color: #334155 !important;
-}
-
-body.theme-kitchen-dark .m-segment-pill[data-active="true"] {
-  background-color: #e11d48 !important;
-  border-color: #e11d48 !important;
-  color: #ffffff !important;
-}
-
-body.theme-kitchen-dark .mobile-task-card,
-body.theme-kitchen-dark .m-card {
-  background-color: #0f172a !important;
-  border-color: #334155 !important;
-}
-
-body.theme-kitchen-dark .mobile-task-tab {
-  background-color: #0f172a !important;
-  color: #cbd5e1 !important;
-  border-color: #334155 !important;
-}
-
-body.theme-kitchen-dark .mobile-task-tab[data-active="true"] {
-  background-color: #e11d48 !important;
-  border-color: #e11d48 !important;
-  color: #ffffff !important;
-}
-
 
 /* Station-Specific Theme: High-Contrast Light Cashier Station */
 body.theme-cashier-light {
@@ -1271,7 +1235,6 @@ body.theme-cashier-light .m-ops-shell {
 body.theme-cashier-light .bg-slate-50,
 body.theme-cashier-light .bg-slate-100 {
   background-color: #f1f5f9 !important;
-  border: 1.5px solid #334155 !important;
 }
 
 body.theme-cashier-light .text-slate-900,
@@ -1291,23 +1254,66 @@ body.theme-cashier-light .text-slate-600 {
   font-weight: 600 !important;
 }
 
-body.theme-cashier-light .border-slate-200,
+body.theme-cashier-light .border-slate-200 {
+  border-color: #cbd5e1 !important;
+}
+
 body.theme-cashier-light .border-slate-300 {
-  border-color: #334155 !important;
-  border-width: 1.5px !important;
+  border-color: #94a3b8 !important;
 }
 
 body.theme-cashier-light .m-card {
-  border-color: #000000 !important;
-  border-width: 1.5px !important;
-  box-shadow: 0 4px 12px rgba(0, 0, 0, 0.08) !important;
+  border-color: #cbd5e1 !important;
+  box-shadow: 0 2px 8px rgba(15, 23, 42, 0.06) !important;
 }
 
 body.theme-cashier-light .m-btn-secondary {
-  border-color: #000000 !important;
-  border-width: 1.5px !important;
-  color: #000000 !important;
-  font-weight: 800 !important;
+  border-color: #94a3b8 !important;
+  color: #0f172a !important;
+  font-weight: 700 !important;
 }
+
+/* UI/UX Pro Max Dynamic Pulsing Alert Styles */
+@keyframes uupm-border-pulse {
+  0%, 100% {
+    border-color: #fca5a5 !important;
+    box-shadow: 0 0 0 0 rgba(239, 68, 68, 0.2), 0 8px 18px rgba(15, 23, 42, 0.06) !important;
+  }
+  50% {
+    border-color: #ef4444 !important;
+    box-shadow: 0 0 12px 3px rgba(239, 68, 68, 0.4), 0 8px 18px rgba(15, 23, 42, 0.06) !important;
+  }
+}
+
+.uupm-pulsing-critical {
+  animation: uupm-border-pulse 2s infinite ease-in-out !important;
+  border-width: 1.5px !important;
+}
+
+@keyframes uupm-border-pulse-warning {
+  0%, 100% {
+    border-color: #fde047 !important;
+    box-shadow: 0 0 0 0 rgba(234, 179, 8, 0.25), 0 8px 18px rgba(15, 23, 42, 0.06) !important;
+  }
+  50% {
+    border-color: #eab308 !important;
+    box-shadow: 0 0 12px 3px rgba(234, 179, 8, 0.45), 0 8px 18px rgba(15, 23, 42, 0.06) !important;
+  }
+}
+
+.uupm-pulsing-warning {
+  animation: uupm-border-pulse-warning 2s infinite ease-in-out !important;
+  border-width: 1.5px !important;
+}
+
+@media (prefers-reduced-motion: reduce) {
+  .uupm-pulsing-critical,
+  .uupm-pulsing-warning {
+    animation: none !important;
+    border-color: #ef4444 !important;
+    border-width: 1.5px !important;
+  }
+}
+
 
 

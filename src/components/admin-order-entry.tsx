@@ -606,8 +606,34 @@ export function AdminOrderEntry({
     setReceiptPrintLayout(layout);
     window.requestAnimationFrame(() => {
       const layoutClass = layout === "thermal58" ? "receipt-print-58" : "receipt-print-80";
+      const sizeValue = layout === "thermal58" ? "58mm" : "80mm";
+      const styleId = "receipt-print-style-force-composer";
+      
+      let styleEl = document.getElementById(styleId) as HTMLStyleElement | null;
+      if (!styleEl) {
+        styleEl = document.createElement("style");
+        styleEl.id = styleId;
+        document.head.appendChild(styleEl);
+      }
+      styleEl.innerHTML = `
+        @media print {
+          @page {
+            size: ${sizeValue} auto !important;
+            margin: 0 !important;
+          }
+          html, body {
+            width: ${sizeValue} !important;
+            margin: 0 !important;
+            padding: 0 !important;
+            background: #ffffff !important;
+          }
+        }
+      `;
+
       const clearPrintMode = () => {
         document.body.classList.remove("printing-inline-receipt", "receipt-print-80", "receipt-print-58", "receipt-print-a4");
+        const el = document.getElementById(styleId);
+        if (el) el.remove();
       };
 
       clearPrintMode();
@@ -947,7 +973,7 @@ export function AdminOrderEntry({
                           openModifierPicker(product);
                         }
                       }}
-                      className="cursor-pointer rounded-2xl border border-slate-700/70 bg-[radıal-gradient(circle_at_top,#273247_0%,#1e293b_35%,#111827_100%)] p-4 transition hover:border-rose-300/40 active:scale-[0.99] focus:outline-none focus-visible:ring-2 focus-visible:ring-rose-400"
+                      className="cursor-pointer rounded-2xl border border-slate-700/70 bg-[radial-gradient(circle_at_top,#273247_0%,#1e293b_35%,#111827_100%)] p-4 transition hover:border-rose-300/40 active:scale-[0.99] focus:outline-none focus-visible:ring-2 focus-visible:ring-rose-400"
                     >
                       <div className="mb-4 inline-flex h-11 w-11 items-center justify-center rounded-full bg-slate-700/80 text-xs font-black text-slate-100">
                         {product.name.slice(0, 2).toUpperCase()}
@@ -1562,7 +1588,7 @@ export function AdminOrderEntry({
                                   <div key={`term-cart-${entry.key}`} className="relative group border-b border-slate-200 border-dashed pb-4">
                                      <div className="flex justify-between items-start gap-2">
                                         <div className="flex-1">
-                                           <h4 className="font-bold text-slate-900 text-sm leadıng-tight">{entry.product.name}</h4>
+                                           <h4 className="font-bold text-slate-900 text-sm leading-tight">{entry.product.name}</h4>
                                            <div className="mt-1 flex items-center gap-2 text-xs text-slate-500">
                                               <span className="font-bold text-slate-900">x{entry.quantity}</span>
                                               <span>@ {(Number(entry.product.price) + modifierTotal).toFixed(2)} TL</span>
@@ -1698,7 +1724,7 @@ export function AdminOrderEntry({
                                         >
                                            <div className="flex justify-between items-start gap-2">
                                               <div className="flex-1">
-                                                 <h4 className="font-bold text-slate-900 text-sm leadıng-tight">{entry.product.name}</h4>
+                                                 <h4 className="font-bold text-slate-900 text-sm leading-tight">{entry.product.name}</h4>
                                                  <div className="mt-1 flex items-center gap-2 text-xs text-slate-500">
                                                     <span className="font-bold text-slate-900">x{entry.quantity}</span>
                                                     <span>@ {(Number(entry.product.price) + modifierTotal).toFixed(2)} TL</span>
@@ -2215,7 +2241,7 @@ export function AdminOrderEntry({
             const unitPrice = Number(entry.product.price) + modifierTotal;
             const itemTotal = unitPrice * entry.quantity;
             return (
-              <li key={`print-receipt-${entry.key}`} className="text-[11px] leadıng-tight">
+              <li key={`print-receipt-${entry.key}`} className="text-[11px] leading-tight">
                 <div className="flex items-start justify-between gap-2">
                   <span className="min-w-0 break-words font-semibold">{entry.quantity}x {entry.product.name}</span>
                   <span className="shrink-0 font-bold">{itemTotal.toFixed(2)}</span>

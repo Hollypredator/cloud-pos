@@ -16,7 +16,7 @@ function resolveMediaKind(value: string): MediaAsset["kind"] {
 async function hasStudioWriteAccess() {
   const auth = await getCurrentUserWithRole();
   if (auth.usingDemoData) {
-    return { ok: false as const, status: 503, message: "Demo modda medya yukleme kapali." };
+    return { ok: false as const, status: 503, message: "Demo modda medya yükleme kapalı." };
   }
 
   if (!auth.user?.email) {

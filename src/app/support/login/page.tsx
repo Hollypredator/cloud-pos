@@ -17,7 +17,7 @@ export default async function SupportLoginPage({
         <div className="mx-auto max-w-3xl rounded-[2rem] border border-white/10 bg-white/5 p-8">
           <p className="text-xs uppercase tracking-[0.28em] text-slate-400">Support Access</p>
           <h1 className="mt-4 text-4xl font-semibold">Supabase bağlantısı olmadan support açılmaz</h1>
-          <p className="mt-4 text-sm leadıng-7 text-slate-300">Support console canlı auth ve tenant metadata ile çalışır.</p>
+          <p className="mt-4 text-sm leading-7 text-slate-300">Support console canlı auth ve tenant metadata ile çalışır.</p>
         </div>
       </div>
     );
@@ -38,7 +38,7 @@ export default async function SupportLoginPage({
               Support
             </p>
             <h1 className="mt-6 max-w-xl text-5xl font-semibold tracking-tight">Müşteri ve tenant destek konsolu</h1>
-            <p className="mt-5 max-w-xl text-sm leadıng-7 text-slate-300">
+            <p className="mt-5 max-w-xl text-sm leading-7 text-slate-300">
               Bu alan support ekiplerine açıktır. Tenant metadata, destek akışı ve erişim yönetimi burada toplanır.
             </p>
           </section>

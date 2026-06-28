@@ -105,11 +105,39 @@ export function TableManagementModal({
     if (!receiptPreviewRef.current) {
       return;
     }
-    document.body.classList.add("printing-inline-receipt");
-    const clear = () => document.body.classList.remove("printing-inline-receipt");
+    
+    const sizeValue = "80mm";
+    const styleId = "receipt-print-style-force-modal";
+    let styleEl = document.getElementById(styleId) as HTMLStyleElement | null;
+    if (!styleEl) {
+      styleEl = document.createElement("style");
+      styleEl.id = styleId;
+      document.head.appendChild(styleEl);
+    }
+    styleEl.innerHTML = `
+      @media print {
+        @page {
+          size: ${sizeValue} auto !important;
+          margin: 0 !important;
+        }
+        html, body {
+          width: ${sizeValue} !important;
+          margin: 0 !important;
+          padding: 0 !important;
+          background: #ffffff !important;
+        }
+      }
+    `;
+
+    document.body.classList.add("printing-inline-receipt", "receipt-print-80");
+    const clear = () => {
+      document.body.classList.remove("printing-inline-receipt", "receipt-print-80");
+      const el = document.getElementById(styleId);
+      if (el) el.remove();
+    };
     window.addEventListener("afterprint", clear, { once: true });
     window.print();
-    window.setTimeout(clear, 500);
+    window.setTimeout(clear, 700);
   };
 
   const refreshOrderData = useCallback(async (silent = true) => {
@@ -348,7 +376,7 @@ export function TableManagementModal({
                       onClick={handlePreviewPrint}
                       className="min-h-11 rounded-xl bg-gradient-to-r from-[#ff6a3d] to-[#f2b44f] px-4 py-2.5 text-sm font-semibold text-white"
                     >
-                      Yazdır / PDF
+                      {translateUiText("Yazdır", locale)}
                     </button>
                     <button
                       type="button"

@@ -169,7 +169,7 @@ function SectionTitle({
     <div className="max-w-3xl">
       <p className="text-xs font-bold uppercase tracking-[0.22em] text-orange-600">{eyebrow}</p>
       <h2 className="mt-4 text-3xl font-bold tracking-tight text-slate-950 sm:text-4xl lg:text-5xl">{title}</h2>
-      <p className="mt-4 text-base leadıng-8 text-slate-600">{body}</p>
+      <p className="mt-4 text-base leading-8 text-slate-600">{body}</p>
     </div>
   );
 }
@@ -219,7 +219,7 @@ export function ProductLandingPage({ settings, leadStatus, locale = "tr" }: Prod
       </header>
 
       <section id="ürün" className="relative overflow-hidden">
-        <div className="absolute inset-0 -z-10 bg-[radıal-gradient(circle_at_15%_20%,rgba(249,115,22,0.18),transparent_28%),radıal-gradient(circle_at_80%_12%,rgba(79,70,229,0.14),transparent_30%),radıal-gradient(circle_at_82%_76%,rgba(16,185,129,0.14),transparent_26%)]" />
+        <div className="absolute inset-0 -z-10 bg-[radial-gradient(circle_at_15%_20%,rgba(249,115,22,0.18),transparent_28%),radial-gradient(circle_at_80%_12%,rgba(79,70,229,0.14),transparent_30%),radial-gradient(circle_at_82%_76%,rgba(16,185,129,0.14),transparent_26%)]" />
         <div className="mx-auto grid max-w-7xl gap-12 px-4 py-16 sm:px-6 sm:py-20 lg:grid-cols-[0.9fr_1.1fr] lg:px-8 lg:py-24">
           <div className="flex flex-col justify-center">
             <p className="inline-flex w-fit rounded-full border border-orange-200 bg-orange-50 px-4 py-2 text-xs font-bold uppercase tracking-[0.18em] text-orange-700">
@@ -228,7 +228,7 @@ export function ProductLandingPage({ settings, leadStatus, locale = "tr" }: Prod
             <h1 className="mt-6 max-w-3xl text-5xl font-bold tracking-tight text-slate-950 sm:text-6xl lg:text-7xl">
               Self servis ve kafe restoran operasyonu tek POS sisteminde.
             </h1>
-            <p className="mt-6 max-w-2xl text-lg leadıng-9 text-slate-600">
+            <p className="mt-6 max-w-2xl text-lg leading-9 text-slate-600">
               Cloud POS; QR/self servis müşteri deneyimi ile masa, sipariş, mutfak, kasa, stok, personel, çoklu şube ve raporlama modüllerini tek bulut tabanlı üründe birleştirir.
             </p>
             <div className="mt-8 flex flex-col gap-3 sm:flex-row">
@@ -307,7 +307,7 @@ export function ProductLandingPage({ settings, leadStatus, locale = "tr" }: Prod
                     <Icon size={22} />
                   </div>
                   <h3 className="mt-5 text-lg font-bold tracking-tight text-slate-950">{item.title}</h3>
-                  <p className="mt-3 text-sm leadıng-7 text-slate-600">{item.body}</p>
+                  <p className="mt-3 text-sm leading-7 text-slate-600">{item.body}</p>
                 </article>
               );
             })}
@@ -357,7 +357,7 @@ export function ProductLandingPage({ settings, leadStatus, locale = "tr" }: Prod
             <h2 className="mt-4 text-3xl font-bold tracking-tight sm:text-4xl lg:text-5xl">
               Restoran operasyonu kadar self servis kanalı da düşünülmüş bir yapı.
             </h2>
-            <p className="mt-4 text-base leadıng-8 text-slate-300">
+            <p className="mt-4 text-base leading-8 text-slate-300">
               Ürün; personelin kullandığı operasyon ekranları ile müşterinin temas ettiği QR/self servis deneyimini aynı altyapıda birleştirir.
             </p>
           </div>
@@ -379,7 +379,7 @@ export function ProductLandingPage({ settings, leadStatus, locale = "tr" }: Prod
             <h2 className="mt-6 text-3xl font-bold tracking-tight sm:text-4xl">
               Modern, renkli ve ticari görünümlü bir POS vitrini.
             </h2>
-            <p className="mt-5 text-base leadıng-8 text-white/85">
+            <p className="mt-5 text-base leading-8 text-white/85">
               Yeni landing; ürünün modüllerini, gerçek ekranlarını, mobil kullanımını ve operasyon kapsamını daha çekici bir sunumla anlatır.
             </p>
           </div>
@@ -394,7 +394,7 @@ export function ProductLandingPage({ settings, leadStatus, locale = "tr" }: Prod
                   <ShieldCheck className="mt-1 shrink-0 text-emerald-600" size={22} />
                   <div>
                     <h3 className="text-xl font-bold tracking-tight text-slate-950">{title}</h3>
-                    <p className="mt-2 text-sm leadıng-7 text-slate-600">{body}</p>
+                    <p className="mt-2 text-sm leading-7 text-slate-600">{body}</p>
                   </div>
                 </div>
               </div>
@@ -442,7 +442,7 @@ export function ProductLandingPage({ settings, leadStatus, locale = "tr" }: Prod
             {faqs.map((item) => (
               <article key={item.q} className="rounded-3xl border border-slate-200 bg-white p-6 shadow-sm">
                 <h3 className="text-lg font-bold tracking-tight text-slate-950">{item.q}</h3>
-                <p className="mt-3 text-sm leadıng-7 text-slate-600">{item.a}</p>
+                <p className="mt-3 text-sm leading-7 text-slate-600">{item.a}</p>
               </article>
             ))}
           </div>
@@ -457,7 +457,7 @@ export function ProductLandingPage({ settings, leadStatus, locale = "tr" }: Prod
               <h2 className="mt-6 max-w-3xl text-3xl font-bold tracking-tight sm:text-5xl">
                 Cloud POS’u gerçek ürün ekranlarıyla inceleyin.
               </h2>
-              <p className="mt-5 max-w-2xl text-base leadıng-8 text-slate-300">
+              <p className="mt-5 max-w-2xl text-base leading-8 text-slate-300">
                 Self servis, kafe-restoran operasyonu, mobil PWA, mutfak, kasa, stok, rapor ve çoklu şube modüllerini tek platformda görün.
               </p>
               <p className="mt-4 text-sm font-semibold text-slate-400">

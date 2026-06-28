@@ -158,7 +158,7 @@ export default async function AdminSettingsPage({
           <article className="rounded-2xl bg-slate-900 p-6 text-white shadow-sm">
             <p className="text-xs uppercase tracking-[0.28em] text-slate-400">WordPress Benzeri Yapı</p>
             <h2 className="mt-3 text-3xl font-semibold">Marka ve iletişim ayarlarini koddan ayir</h2>
-            <p className="mt-3 text-sm leadıng-7 text-slate-300">
+            <p className="mt-3 text-sm leading-7 text-slate-300">
               Bu ekran logo, telefon, e-posta, footer notu ve SMTP gönderici ayarlarini panelden yönetmek için var.
             </p>
           </article>
@@ -237,7 +237,7 @@ export default async function AdminSettingsPage({
 
             <form action={sendSmtpTestAction} className="rounded-2xl bg-white p-6 shadow-sm">
               <h2 className="text-xl font-semibold text-slate-900">Test E-postasi</h2>
-              <p className="mt-3 text-sm leadıng-7 text-slate-600">
+              <p className="mt-3 text-sm leading-7 text-slate-600">
                 Ayarlari kaydettikten sonra test mesajini doğrudan bu panelden gönder.
               </p>
               <div className="mt-5 grid gap-4">

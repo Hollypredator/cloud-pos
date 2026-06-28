@@ -122,7 +122,7 @@ export default async function AdminBlogPage({
                     </span>
                   </div>
                   <h3 className="mt-3 text-lg font-semibold">{post.title}</h3>
-                  <p className={`mt-2 line-clamp-2 text-sm leadıng-6 ${selectedPost?.id === post.id ? "text-slate-300" : "text-slate-600"}`}>
+                  <p className={`mt-2 line-clamp-2 text-sm leading-6 ${selectedPost?.id === post.id ? "text-slate-300" : "text-slate-600"}`}>
                     {post.excerpt || post.body}
                   </p>
                 </Link>
@@ -220,8 +220,8 @@ export default async function AdminBlogPage({
                   <img src={selectedPost.cover_image_url} alt={selectedPost.title} className="mt-4 h-64 w-full rounded-[1.5rem] object-cover" />
                 ) : null}
                 <h3 className="mt-5 text-3xl font-semibold tracking-tight text-slate-900">{selectedPost.title}</h3>
-                {selectedPost.excerpt ? <p className="mt-3 text-lg leadıng-8 text-slate-600">{selectedPost.excerpt}</p> : null}
-                <div className="mt-6 whitespace-pre-wrap text-base leadıng-8 text-slate-700">{selectedPost.body}</div>
+                {selectedPost.excerpt ? <p className="mt-3 text-lg leading-8 text-slate-600">{selectedPost.excerpt}</p> : null}
+                <div className="mt-6 whitespace-pre-wrap text-base leading-8 text-slate-700">{selectedPost.body}</div>
               </article>
             ) : null}
           </section>

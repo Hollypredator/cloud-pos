@@ -4,6 +4,7 @@ import { LiveOpsBridge } from "@/components/live-ops-bridge";
 import { LiveRouteRefresh } from "@/components/live-route-refresh";
 import { MobileAuthRedirect } from "@/components/mobile-auth-redirect";
 import { PendingSubmitButton } from "@/components/pending-submit-button";
+import { SwipeableActionCard } from "@/components/swipeable-action-card";
 import { requireRole } from "@/lib/auth";
 import { listTableRequests } from "@/lib/domains/tables";
 import { getCurrentLocale } from "@/lib/i18n-server";
@@ -148,34 +149,61 @@ export default async function MobileServiceRequestsPage({
         ) : (
           requests.map((request) => {
             const elapsed = elapsedLabel(request.created_at);
+            const isDelayed = elapsed !== "Yeni";
+
+            if (activeStatus === "open") {
+              return (
+                <SwipeableActionCard
+                  key={request.id}
+                  action={resolveMobileRequestAction}
+                  actionLabel="✓ Çözüldü Olarak İşaretle"
+                  actionBgClass="bg-emerald-600"
+                  hiddenInputs={{ requestId: request.id }}
+                  className={isDelayed ? "uupm-pulsing-critical" : ""}
+                  cardClassName={`m-card ${isDelayed ? "border-amber-300 bg-amber-50/20" : ""}`}
+                >
+                  <div className="flex items-start justify-between gap-3">
+                    <div className="min-w-0">
+                      <p className="m-label">Masa {request.table_number ?? "-"}</p>
+                      <h2 className="mt-1 truncate text-lg font-semibold text-slate-950">{toLabel(request.request_type)}</h2>
+                      <p className="m-muted mt-1">{new Date(request.created_at).toLocaleString(localeCode)}</p>
+                    </div>
+                    <span className={`m-pill ${isDelayed ? "m-tone-warning" : "m-tone-neutral"}`}>{elapsed}</span>
+                  </div>
+
+                  <div className="mt-3 rounded-2xl bg-slate-50 px-3 py-3 text-sm leading-5 text-slate-700">
+                    {request.note?.trim() ? request.note : "Ek not yok."}
+                  </div>
+
+                  <form action={resolveMobileRequestAction} className="mt-3">
+                    <input type="hidden" name="requestId" value={request.id} />
+                    <PendingSubmitButton
+                      idleLabel="Çözüldü Olarak İşaretle (veya sağa kaydır)"
+                      pendingLabel="Kapatılıyor..."
+                      showToastOnClick={true}
+                      className="m-btn-primary w-full"
+                    />
+                  </form>
+                </SwipeableActionCard>
+              );
+            }
+
             return (
-              <article key={request.id} className={`m-card ${elapsed !== "Yeni" && activeStatus === "open" ? "border-amber-300" : ""}`}>
+              <article key={request.id} className="m-card">
                 <div className="flex items-start justify-between gap-3">
                   <div className="min-w-0">
                     <p className="m-label">Masa {request.table_number ?? "-"}</p>
                     <h2 className="mt-1 truncate text-lg font-semibold text-slate-950">{toLabel(request.request_type)}</h2>
                     <p className="m-muted mt-1">{new Date(request.created_at).toLocaleString(localeCode)}</p>
                   </div>
-                  <span className={`m-pill ${elapsed !== "Yeni" ? "m-tone-warning" : "m-tone-neutral"}`}>{elapsed}</span>
+                  <span className="m-pill m-tone-neutral">{elapsed}</span>
                 </div>
 
                 <div className="mt-3 rounded-2xl bg-slate-50 px-3 py-3 text-sm leading-5 text-slate-700">
                   {request.note?.trim() ? request.note : "Ek not yok."}
                 </div>
 
-                {activeStatus === "open" ? (
-                  <form action={resolveMobileRequestAction} className="mt-3">
-                    <input type="hidden" name="requestId" value={request.id} />
-                    <PendingSubmitButton
-                      idleLabel="Cozuldu Olarak Isaretle"
-                      pendingLabel="Kapatiliyor..."
-                      showToastOnClick={true}
-                      className="m-btn-primary w-full"
-                    />
-                  </form>
-                ) : (
-                  <div className="mt-3 rounded-2xl bg-emerald-50 px-3 py-3 text-sm font-semibold text-emerald-700">Talep cozulmus.</div>
-                )}
+                <div className="mt-3 rounded-2xl bg-emerald-50 px-3 py-3 text-sm font-semibold text-emerald-700">Talep çözülmüş.</div>
               </article>
             );
           })

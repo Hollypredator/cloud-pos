@@ -87,8 +87,8 @@ function statusTone(status: string) {
   if (status === "paid") return "bg-emerald-100 text-emerald-700";
   if (status === "partially_paid") return "bg-blue-100 text-blue-700";
   if (status === "partially_refunded") return "bg-rose-100 text-rose-700";
-  if (status === "ready") return "bg-[#fff2ee] text-[#ff5a34]";
-  if (status === "served") return "bg-[#fff2ee] text-[#ff5a34]";
+  if (status === "ready") return "bg-slate-50 text-[#ff5a34]";
+  if (status === "served") return "bg-slate-50 text-[#ff5a34]";
   if (status === "preparing") return "bg-sky-100 text-sky-700";
   return "bg-slate-100 text-slate-700";
 }
@@ -142,7 +142,7 @@ async function requireCashierOrderManagementRole() {
 function summarizeOrderItems(order: Pick<Order, "items">, maxItems = 3) {
   const items = Array.isArray(order.items) ? (order.items as OrderItem[]) : [];
   if (items.length === 0) {
-    return "Kalem ozeti detay ekraninda görüntulenir.";
+    return "Kalem özeti detay ekraninda görüntulenir.";
   }
   const preview = items.slice(0, maxItems).map((item) => `${item.quantity}x ${item.name}`).join(", ");
   const remaining = items.length - maxItems;
@@ -206,16 +206,16 @@ async function completePaymentAction(formData: FormData) {
       },
     });
     if (result.status !== "ACK") {
-      redirect(feedbackHref("error", result.message ?? "Ödeme alinamadi.", returnOrderId ?? orderId));
+      redirect(feedbackHref("error", result.message ?? "Ödeme alınamadı.", returnOrderId ?? orderId));
     }
     if (result.data?.idempotent === true) {
       const remaining = typeof result.data?.remaining === "number" ? result.data.remaining : 0;
-      redirect(feedbackHref("success", `Aynı ödeme daha önce kaydedilmis. Kalan bakiye: ${remaining.toFixed(2)} TL.`, returnOrderId ?? orderId));
+      redirect(feedbackHref("success", `Aynı ödeme daha önce kaydedilmiş. Kalan bakiye: ${remaining.toFixed(2)} TL.`, returnOrderId ?? orderId));
     }
     const remaining = typeof result.data?.remaining === "number" ? result.data.remaining : 0;
     redirect(feedbackHref("success", `Ödeme kaydedildi. Kalan bakiye: ${remaining.toFixed(2)} TL.`, returnOrderId ?? orderId));
   } catch {
-    redirect(feedbackHref("error", "Ödeme alinamadi.", returnOrderId ?? orderId));
+    redirect(feedbackHref("error", "Ödeme alınamadı.", returnOrderId ?? orderId));
   }
 }
 
@@ -306,7 +306,7 @@ async function cancelOrderAction(formData: FormData) {
     redirect(
       feedbackHref(
         "success",
-        result.data?.idempotent === true ? "İptal işlemi daha önce kaydedilmis." : "Sipariş iptal edildi.",
+        result.data?.idempotent === true ? "İptal işlemi daha önce kaydedilmiş." : "Sipariş iptal edildi.",
         returnOrderId ?? orderId,
       ),
     );
@@ -338,7 +338,7 @@ async function cancelOrderItemAction(formData: FormData) {
     if (result.status !== "ACK") {
       redirect(feedbackHref("error", result.message ?? "Ürün iptal edilemedi.", returnOrderId ?? orderId));
     }
-    redirect(feedbackHref("success", "Ürün basariyla iptal edildi/dusuruldu.", returnOrderId ?? orderId));
+    redirect(feedbackHref("success", "Ürün başarıyla iptal edildi/düşürüldü.", returnOrderId ?? orderId));
   } catch {
     redirect(feedbackHref("error", "Ürün iptal edilemedi.", returnOrderId ?? orderId));
   }
@@ -370,14 +370,14 @@ async function refundOrderAction(formData: FormData) {
       },
     });
     if (result.status !== "ACK") {
-      redirect(feedbackHref("error", result.message ?? "İade tamamlanamadi.", returnOrderId ?? orderId));
+      redirect(feedbackHref("error", result.message ?? "İade tamamlanamadı.", returnOrderId ?? orderId));
     }
     if (result.data?.idempotent === true) {
-      redirect(feedbackHref("success", "Aynı iade daha önce kaydedilmis.", returnOrderId ?? orderId));
+      redirect(feedbackHref("success", "Aynı iade daha önce kaydedilmiş.", returnOrderId ?? orderId));
     }
     redirect(feedbackHref("success", "İade işlemi kaydedildi.", returnOrderId ?? orderId));
   } catch {
-    redirect(feedbackHref("error", "İade tamamlanamadi.", returnOrderId ?? orderId));
+    redirect(feedbackHref("error", "İade tamamlanamadı.", returnOrderId ?? orderId));
   }
 }
 
@@ -471,7 +471,7 @@ export default async function CashierPage({
           {feedback ? (
             <NoticeBanner
               tone={tone === "error" ? "error" : "success"}
-              title={tone === "error" ? "Islem tamamlanamadi" : "Islem tamamlandi"}
+              title={tone === "error" ? "İşlem tamamlanamadı" : "İşlem tamamlandı"}
               description={feedback}
             />
           ) : null}
@@ -485,7 +485,7 @@ export default async function CashierPage({
           <section className="grid gap-4 md:grid-cols-3">
             <SummaryCard label="Aktif Pickup" value={String(activePickupOrders.length)} hint="Güncelleme bekleyen siparişler" tone="accent" />
             <SummaryCard label="Hazır Bekleyen" value={String(readyCount)} hint="Teslim edilmeyi bekleyenler" tone="success" />
-            <SummaryCard label="Geçmiş Sipariş" value={String(historyPickupOrders.length)} hint="Tum pickup geçmişi" />
+            <SummaryCard label="Geçmiş Sipariş" value={String(historyPickupOrders.length)} hint="Tüm pickup geçmişi" />
           </section>
 
           <ContentCard title="Geçmiş Filtreleri">
@@ -493,24 +493,24 @@ export default async function CashierPage({
               <label className="grid gap-1 text-xs font-semibold text-slate-600">
                 Durum
                 <select name="historyStatus" defaultValue={historyStatusFilter} className="rounded-xl border border-slate-300 bg-white px-3 py-2 text-sm text-slate-700">
-                  <option value="all">Tum Durumlar</option>
+                  <option value="all">Tüm Durumlar</option>
                   <option value="pending">Bekliyor</option>
                   <option value="preparing">Hazırlanıyor</option>
                   <option value="ready">Hazır</option>
                   <option value="served">Teslim Edildi</option>
-                  <option value="partially_paid">Kismi Ödeme</option>
+                  <option value="partially_paid">Kısmi Ödeme</option>
                   <option value="paid">Kapandı</option>
-                  <option value="partially_refunded">Kismi İade</option>
+                  <option value="partially_refunded">Kısmi İade</option>
                   <option value="cancelled">İptal</option>
                   <option value="refunded">İade</option>
                 </select>
               </label>
               <label className="grid gap-1 text-xs font-semibold text-slate-600">
-                Baslangic
+                Başlangıç
                 <input type="date" name="historyFrom" defaultValue={historyFromFilter} className="rounded-xl border border-slate-300 bg-white px-3 py-2 text-sm text-slate-700" />
               </label>
               <label className="grid gap-1 text-xs font-semibold text-slate-600">
-                Bitis
+                Bitiş
                 <input type="date" name="historyTo" defaultValue={historyToFilter} className="rounded-xl border border-slate-300 bg-white px-3 py-2 text-sm text-slate-700" />
               </label>
               <button type="submit" className="rounded-xl bg-slate-900 px-4 py-2 text-sm font-semibold text-white">
@@ -694,17 +694,17 @@ export default async function CashierPage({
         <QuerySnapshotSeed queryKey={posQueryKeys.cashierSnapshot} data={cashierSnapshotSeed} />
 
         <section className="app-mobile-hide grid gap-4 xl:grid-cols-4">
-          <SummaryCard label="Bekleyen Adisyon" value={String(servedOrders.length)} hint="Acilikta bekleyen tüm hesaplar" tone="accent" className="bg-[linear-gradient(130deg,rgba(255,106,61,0.14),rgba(255,255,255,0.9)_65%)]" />
-          <SummaryCard label="Bekleyen Bakiye" value={`${servedTotals.remaining.toFixed(2)} TL`} hint="Tahsil edilmemis toplam tutar" tone="danger" className="bg-[linear-gradient(130deg,rgba(251,113,133,0.12),rgba(255,255,255,0.9)_65%)]" />
-          <SummaryCard label="Bugün Tahsil" value={`${paidTotals.paid.toFixed(2)} TL`} hint={`${paidOrders.length} kapanan adisyon`} tone="success" className="bg-[linear-gradient(130deg,rgba(16,185,129,0.12),rgba(255,255,255,0.9)_65%)]" />
-          <SummaryCard label="Açık Ciro" value={`${servedTotals.final.toFixed(2)} TL`} hint="Acilikta kalan adisyon hacmi" className="bg-[linear-gradient(130deg,rgba(59,130,246,0.1),rgba(255,255,255,0.9)_65%)]" />
+          <SummaryCard label="Bekleyen Adisyon" value={String(servedOrders.length)} hint="Açıkta bekleyen tüm hesaplar" tone="accent" className="bg-white" />
+          <SummaryCard label="Bekleyen Bakiye" value={`${servedTotals.remaining.toFixed(2)} TL`} hint="Tahsil edilmemis toplam tutar" tone="danger" className="bg-white" />
+          <SummaryCard label="Bugün Tahsil" value={`${paidTotals.paid.toFixed(2)} TL`} hint={`${paidOrders.length} kapanan adisyon`} tone="success" className="bg-white" />
+          <SummaryCard label="Açık Ciro" value={`${servedTotals.final.toFixed(2)} TL`} hint="Açıkta kalan adisyon hacmi" className="bg-white" />
         </section>
 
         <section className="app-mobile-only space-y-3">
           <article className="mobile-task-card">
             <p className="text-[11px] font-bold uppercase tracking-[0.16em] text-slate-500">Tahsilat Kuyrugu</p>
             <h2 className="mt-2 text-xl font-semibold tracking-tight text-slate-900">Listeyi seç, tam ekranda tamamla</h2>
-            <p className="mt-1 text-sm text-slate-500">Ödeme, split ve iade adimlari seçilen adisyon detayinda ilerler.</p>
+            <p className="mt-1 text-sm text-slate-500">Ödeme, split ve iade adımları seçilen adisyon detayinda ilerler.</p>
           </article>
           {servedOrders.length === 0 ? (
             <article className="mobile-task-card">
@@ -736,7 +736,7 @@ export default async function CashierPage({
                           href={`${cashierPath}?order=${order.id}`}
                           className={`mobile-cta-primary inline-flex items-center justify-center px-4 py-3 text-sm ${active ? "opacity-90" : ""}`}
                         >
-                          {active ? "Açık Detay" : "Tahsilata Gec"}
+                          {active ? "Açık Detay" : "Tahsilata Geç"}
                         </Link>
                       </div>
                     </article>
@@ -747,7 +747,7 @@ export default async function CashierPage({
           )}
         </section>
 
-        <ContentCard title="Masa ve Adisyon Seçimi" className="app-mobile-hide bg-[linear-gradient(140deg,rgba(255,255,255,0.96),rgba(255,255,255,0.84))]">
+        <ContentCard title="Masa ve Adisyon Seçimi" className="app-mobile-hide bg-white">
           {servedOrders.length === 0 ? (
             <EmptyPanel title="Seçilecek Adisyon Yok" description="Açık adisyon bulunmuyor." />
           ) : (
@@ -761,7 +761,7 @@ export default async function CashierPage({
                       href={`${cashierPath}?order=${order.id}`}
                       className={`panel-hover rounded-[24px] border p-4 ${
                         active
-                          ? "border-[#ff8b73] bg-[linear-gradient(135deg,rgba(255,106,61,0.10)_0%,rgba(255,255,255,0.92)_60%)] shadow-[0_18px_32px_rgba(255,106,61,0.14)]"
+                          ? "border-slate-950 bg-slate-50 shadow-sm"
                           : "border-slate-200 bg-slate-50"
                       }`}
                     >
@@ -792,7 +792,7 @@ export default async function CashierPage({
         </ContentCard>
 
         <section className="app-mobile-hide grid gap-5 xl:grid-cols-[1.3fr_0.7fr]">
-          <ContentCard title="Ödeme Bekleyen Adisyonlar" className="bg-[linear-gradient(160deg,rgba(255,255,255,0.96),rgba(248,250,252,0.88))]">
+          <ContentCard title="Ödeme Bekleyen Adisyonlar" className="bg-white">
             {servedOrders.length === 0 ? (
               <EmptyPanel title="Adisyon Yok" description="Açık sipariş bulunmuyor." />
             ) : (
@@ -804,7 +804,7 @@ export default async function CashierPage({
 
                   return (
                     <OptimisticVisibility key={order.id} orderId={order.id}>
-                      <article className="rounded-[24px] border border-slate-200 bg-[#fbfbfc] p-4">
+                      <article className="rounded-[24px] border border-slate-200 bg-white p-4">
                         <div className="flex flex-wrap items-start justify-between gap-3">
                           <div>
                             <p className="text-xs font-bold uppercase tracking-[0.16em] text-slate-500">{orderSourceLabel(order)}</p>
@@ -824,9 +824,9 @@ export default async function CashierPage({
                         <div className="mt-4 flex flex-wrap items-stretch gap-2">
                           <Link
                             href={`${cashierPath}?order=${order.id}`}
-                            className="w-full rounded-2xl bg-gradient-to-r from-[#ff6a3d] to-[#f2b44f] px-4 py-3 text-center text-sm font-semibold text-white shadow-[0_12px_24px_rgba(255,106,61,0.22)] sm:w-auto"
+                            className="w-full rounded-2xl bg-slate-950 px-4 py-3 text-center text-sm font-semibold text-white shadow-sm sm:w-auto"
                           >
-                            Buyut ve Tahsilata Gec
+                            Büyüt ve Tahsilata Geç
                           </Link>
                           <div className="w-full sm:w-auto">
                             <ReceiptPreviewLauncher
@@ -845,13 +845,13 @@ export default async function CashierPage({
             )}
           </ContentCard>
 
-          <ContentCard title="Son Kapanan Adisyonlar" className="bg-[linear-gradient(160deg,rgba(255,255,255,0.96),rgba(245,252,248,0.86))]">
+          <ContentCard title="Son Kapanan Adisyonlar" className="bg-white">
             {paidOrders.length === 0 ? (
               <EmptyPanel title="Kayıt Yok" description="Bugün kapanan adisyon bulunmuyor." />
             ) : (
               <div className="space-y-4">
                 {paidOrders.slice(0, 8).map((order) => (
-                  <article key={order.id} className="rounded-[24px] border border-slate-200 bg-[#fbfbfc] p-4">
+                  <article key={order.id} className="rounded-[24px] border border-slate-200 bg-white p-4">
                     <div className="flex flex-col items-start justify-between gap-3 sm:flex-row">
                       <div>
                         <p className="text-xs font-bold uppercase tracking-[0.16em] text-slate-500">{orderSourceLabel(order)}</p>
@@ -870,7 +870,7 @@ export default async function CashierPage({
                       </div>
 
                       <div className="rounded-2xl bg-white px-4 py-4">
-                        <p className="text-xs font-bold uppercase tracking-[0.16em] text-slate-500">Adisyon Paylasimi</p>
+                        <p className="text-xs font-bold uppercase tracking-[0.16em] text-slate-500">Adisyon Paylaşımı</p>
                         <ReceiptPreviewLauncher order={order} receiptLink={buildReceiptLink(order.id)} />
                         <div className="mt-4 flex justify-center rounded-[20px] border border-dashed border-slate-200 bg-slate-50 p-4">
                           <Image
@@ -929,7 +929,7 @@ export default async function CashierPage({
         {selectedOrder ? (
           <OptimisticVisibility orderId={selectedOrder.id}>
             <div className="fixed inset-0 z-50 flex items-end justify-center bg-slate-950/42 p-0 backdrop-blur-[2px] sm:items-center sm:p-4">
-              <div className="panel-surface cashier-detail-sheet h-[100dvh] w-full max-w-[1320px] overflow-auto rounded-none p-4 sm:max-h-[92vh] sm:h-auto sm:rounded-[32px] sm:p-6">
+              <div className="panel-surface h-[100dvh] w-full max-w-[1320px] overflow-auto rounded-none p-4 sm:max-h-[92vh] sm:h-auto sm:rounded-[32px] sm:p-6">
                 <div className="mb-5 flex flex-wrap items-start justify-between gap-4 border-b border-slate-200 pb-5">
                   <div>
                     <p className="text-xs font-bold uppercase tracking-[0.16em] text-slate-500">{orderSourceLabel(selectedOrder)}</p>
@@ -938,7 +938,7 @@ export default async function CashierPage({
                         ? `${formatOrderTableLabel(selectedOrder)} Adisyonu`
                         : `Sipariş #${orderRef(selectedOrder)}`}
                     </h2>
-                    <p className="mt-1 text-sm text-slate-500">Popup tahsilat akışı. Ekrandan ayrilmadan ödeme, split ve iptal yap.</p>
+                    <p className="mt-1 text-sm text-slate-500">Popup tahsilat akışı. Ekrandan ayrılmadan ödeme, split ve iptal yap.</p>
                     <div className="app-mobile-only mt-3 flex gap-2 text-[11px] font-semibold uppercase tracking-[0.12em]">
                       <span className="rounded-full bg-slate-900 px-3 py-1 text-white">1 Liste</span>
                       <span className="rounded-full bg-amber-100 px-3 py-1 text-amber-800">2 Ödeme</span>
@@ -952,7 +952,7 @@ export default async function CashierPage({
                 {feedback ? (
                   <NoticeBanner
                     tone={tone === "error" ? "error" : "success"}
-                    title={tone === "error" ? "Islemde hata oluştu" : "İşlem kaydedildi"}
+                    title={tone === "error" ? "İşlemde hata oluştu" : "İşlem kaydedildi"}
                     description={feedback}
                   />
                 ) : null}
@@ -1059,10 +1059,10 @@ export default async function CashierPage({
                                   <span className="font-numeric">-{discount.toFixed(2)} TL</span>
                                 </div>
                                 <div className="flex justify-between rounded-xl bg-slate-50 px-3 py-3">
-                                  <span>Servis Ucreti</span>
+                                  <span>Servis Ücreti</span>
                                   <span className="font-numeric">+{service.toFixed(2)} TL</span>
                                 </div>
-                                <div className="flex justify-between rounded-xl bg-[#fff2ee] px-3 py-3 font-semibold text-slate-900">
+                                <div className="flex justify-between rounded-xl bg-slate-50 px-3 py-3 font-semibold text-slate-900">
                                   <span>Toplam</span>
                                   <span className="font-display font-numeric">{final.toFixed(2)} TL</span>
                                 </div>
@@ -1078,7 +1078,7 @@ export default async function CashierPage({
                             </div>
 
                             <div className="rounded-[24px] border border-slate-200 bg-white p-4">
-                              <p className="text-xs font-bold uppercase tracking-[0.16em] text-slate-500">Adisyon Paylasimi</p>
+                              <p className="text-xs font-bold uppercase tracking-[0.16em] text-slate-500">Adisyon Paylaşımı</p>
                               <ReceiptPreviewLauncher order={order} receiptLink={buildReceiptLink(order.id)} />
                               <div className="mt-4 flex justify-center rounded-[20px] border border-dashed border-slate-200 bg-slate-50 p-4">
                                 <Image
@@ -1173,7 +1173,7 @@ export default async function CashierPage({
                                   Teslim Edildi
                                 </button>
                                 <p className="mt-2 text-center text-xs text-slate-500">
-                                  Hesap ödendi. Müsteriye teslim edildiginde siparişi kapatin.
+                                  Hesap ödendi. Müşteriye teslim edildiginde siparişi kapatın.
                                 </p>
                               </form>
                             ) : (

@@ -93,7 +93,7 @@ async function networkFirstNavigation(request, url) {
       return fallback;
     }
 
-    return new Response("Offline. Baglanti gerekli.", {
+    return new Response("Offline. Bağlantı gerekli.", {
       status: 503,
       headers: { "Content-Type": "text/plain; charset=utf-8" },
     });

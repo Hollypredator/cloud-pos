@@ -342,7 +342,7 @@ export function DemoVisualEditor({
               Bolumu Kaldır
             </button>
           </div>
-          <div className="rounded-2xl border border-slate-200 bg-slate-50 p-4 text-sm leadıng-7 text-slate-600">
+          <div className="rounded-2xl border border-slate-200 bg-slate-50 p-4 text-sm leading-7 text-slate-600">
             Metrik kartlari simdilik sabit demo veriden geliyor. Bu bolumu kaldirip sonra yeniden ekleyebilirsin.
           </div>
         </div>
@@ -669,7 +669,7 @@ export function DemoVisualEditor({
       <aside className="sticky top-6 h-fit rounded-[2rem] border border-slate-200 bg-white p-5 shadow-[0_20px_60px_rgba(15,23,42,0.10)]">
         <p className="text-xs font-semibold uppercase tracking-[0.24em] text-slate-500">Properties</p>
         <h2 className="mt-2 text-xl font-semibold text-slate-900">{selectedId} ayarlari</h2>
-        <p className="mt-2 text-sm leadıng-6 text-slate-600">
+        <p className="mt-2 text-sm leading-6 text-slate-600">
           Soldaki demo canvas uzerinden blok seç. Alanlari degistirdikce sayfa aninda güncellenir.
         </p>
 

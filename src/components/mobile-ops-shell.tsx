@@ -18,6 +18,7 @@ import {
   UtensilsCrossed,
 } from "lucide-react";
 import { LogoutButton } from "@/components/logout-button";
+import { PwaInstallCard } from "@/components/pwa-install-card";
 import { PwaRuntime } from "@/components/pwa-runtime";
 import { hasFeature, type FeatureKey } from "@/lib/features";
 import type { AppShellPayload } from "@/lib/app-shell";
@@ -289,6 +290,7 @@ export function MobileOpsShell({
   return (
     <>
       <PwaRuntime enabled={pwaEnabled} />
+      <PwaInstallCard enabled={pwaEnabled} />
       <div
         className={`m-ops-shell mobile-app-mode min-h-screen overflow-x-clip ${isOffline ? "offline-mode" : ""} ${
           isOffline && pwaEnabled ? "offline-read-only" : ""
@@ -307,12 +309,12 @@ export function MobileOpsShell({
                 isOffline ? "bg-amber-100 text-amber-800" : "bg-emerald-100 text-emerald-700"
               }`}
             >
-              {isOffline ? "Offline" : "Canlı"}
+              {isOffline ? "Çevrimdışı" : "Canlı"}
             </span>
           </div>
           {isOffline ? (
             <div className="border-t border-amber-200 bg-amber-50 px-4 py-2 text-xs font-medium text-amber-900">
-              Bağlantı gerekli. Offline modda yalnızca okunabilir kullanım açık.
+              Çevrimdışı — önbellekten çalışıyor, salt okunur mod.
             </div>
           ) : null}
         </header>

@@ -2,12 +2,11 @@
 
 import { useEffect } from "react";
 
-export function ThemeForcer({ theme }: { theme: "kitchen-dark" | "cashier-light" }) {
+export function ThemeForcer({ theme }: { theme: "cashier-light" }) {
   useEffect(() => {
-    const className = theme === "kitchen-dark" ? "theme-kitchen-dark" : "theme-cashier-light";
-    document.body.classList.add(className);
+    document.body.classList.add("theme-cashier-light");
     return () => {
-      document.body.classList.remove(className);
+      document.body.classList.remove("theme-cashier-light");
     };
   }, [theme]);
 

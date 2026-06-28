@@ -1285,7 +1285,7 @@ async function seedRestaurantDemoCatalogAction() {
   redirect(
     await resolveProductsFeedbackPath(
       "success",
-      `Hazır restoran katalogu yuklendi. Yeni kategori: ${createdCategoryCount}, yeni Ürün: ${createdProductCount}, yeni malzeme: ${createdIngredientCount}, reçete ürünü: ${recipeProductCount}, reçete satiri: ${recipeLineCount}.`,
+      `Hazır restoran kataloğu yüklendi. Yeni kategori: ${createdCategoryCount}, yeni Ürün: ${createdProductCount}, yeni malzeme: ${createdIngredientCount}, reçete ürünü: ${recipeProductCount}, reçete satiri: ${recipeLineCount}.`,
     ),
   );
 }
@@ -1709,13 +1709,13 @@ export default async function AdminProductsPage({
           <form action={seedRestaurantDemoCatalogAction} className="mt-3 rounded-2xl border border-slate-200 bg-white px-4 py-4">
             <div className="flex flex-col gap-3 sm:flex-row sm:items-center sm:justify-between">
               <div>
-                <p className="text-sm font-semibold text-slate-900">Hazır restoran katalogu yukle</p>
+                <p className="text-sm font-semibold text-slate-900">Hazır restoran kataloğu yükle</p>
                 <p className="mt-1 text-xs text-slate-500">
                   Kahve, soguk icecek, firindan, tatli ve atistirmalik Ürünleri aktif işletmeye ekler.
                 </p>
               </div>
               <button type="submit" className="rounded-xl bg-[#ff6a3d] px-4 py-2 text-xs font-semibold text-white">
-                Hazır katalogu yukle
+                Hazır kataloğu yükle
               </button>
             </div>
           </form>
@@ -2633,7 +2633,7 @@ export default async function AdminProductsPage({
                   />
                   <label className="flex items-center gap-2 text-sm font-medium text-slate-700">
                     <input name="replaceScope" type="checkbox" />
-                    Sadece market scope kayitlarini temizleyip yeniden yukle
+                    Sadece market scope kayıtlarını temizleyip yeniden yükle
                   </label>
                   <div className="flex flex-wrap gap-2">
                     <button type="submit" className="rounded-2xl border border-slate-200 bg-white px-4 py-3 text-sm font-semibold text-slate-800">

@@ -13,7 +13,6 @@ import { logServerPerf, measureAsync } from "@/lib/perf";
 import { getFeatureAccess } from "@/lib/plan-access";
 import { shouldUseMobileClientAuthRedirect } from "@/lib/server/mobile-auth-guard";
 import type { Order, OrderItem } from "@/lib/types";
-import { ThemeForcer } from "@/components/theme-forcer";
 
 type KitchenStation = "kitchen" | "bar" | "dessert";
 type StationProgress = "pending" | "preparing" | "served";
@@ -266,7 +265,6 @@ export default async function MobileKitchenPage({
 
   return (
     <>
-      <ThemeForcer theme="kitchen-dark" />
       <LiveOpsBridge tables={["orders"]} enableSound fallbackIntervalMs={900} />
       <LiveRouteRefresh tables={["orders"]} debounceMs={120} minIntervalMs={700} />
 

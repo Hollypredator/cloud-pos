@@ -17,7 +17,7 @@ export default async function StudioLoginPage({
         <div className="mx-auto max-w-3xl rounded-[2rem] border border-white/10 bg-white/5 p-8">
           <p className="text-xs uppercase tracking-[0.28em] text-slate-400">Studio Access</p>
           <h1 className="mt-4 text-4xl font-semibold">Supabase bağlantısı olmadan studio açılmaz</h1>
-          <p className="mt-4 text-sm leadıng-7 text-slate-300">Backoffice yalnızca canlı auth ve ayarlar verisiyle çalışır.</p>
+          <p className="mt-4 text-sm leading-7 text-slate-300">Backoffice yalnızca canlı auth ve ayarlar verisiyle çalışır.</p>
         </div>
       </div>
     );
@@ -38,7 +38,7 @@ export default async function StudioLoginPage({
               Studio
             </p>
             <h1 className="mt-6 max-w-xl text-5xl font-semibold tracking-tight">Şirket sitesi ve growth backoffice</h1>
-            <p className="mt-5 max-w-xl text-sm leadıng-7 text-slate-300">
+            <p className="mt-5 max-w-xl text-sm leading-7 text-slate-300">
               Bu alan tenant müşterilere değil, ürün sahibine açık. Landing, SEO, medya, blog, SMTP ve lead takibi burada yönetilir.
             </p>
             <div className="mt-8 grid gap-4 sm:grid-cols-3">
