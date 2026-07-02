@@ -825,6 +825,8 @@ async function addProductAction(formData: FormData) {
   const productKind = normalizeProductKind(formData.get("productKind"));
   const unit = normalizeProductUnit(formData.get("unit"));
   const department = normalizeProductDepartment(formData.get("department"));
+  const caloriesVal = formData.get("calories");
+  const calories = caloriesVal ? Number(caloriesVal) : null;
 
   if (typeof categoryId !== "string" || typeof name !== "string" || !Number.isFinite(price) || !Number.isFinite(stockCount)) {
     redirect(await resolveProductsFeedbackPath("error", "Ürün bilgileri geçersiz."));
@@ -850,6 +852,7 @@ async function addProductAction(formData: FormData) {
     unit,
     department,
     cost: Number(formData.get("cost") ?? 0),
+    calories: Number.isFinite(calories) ? calories : null,
   });
   if (!result.ok) {
     redirect(await resolveProductsFeedbackPath("error", actionErrorMessage(result, "Ürün eklenemedi.")));
@@ -875,6 +878,8 @@ async function updateProductAction(formData: FormData) {
   const productKind = normalizeProductKind(formData.get("productKind"));
   const unit = normalizeProductUnit(formData.get("unit"));
   const department = normalizeProductDepartment(formData.get("department"));
+  const caloriesVal = formData.get("calories");
+  const calories = caloriesVal ? Number(caloriesVal) : null;
 
   if (
     typeof productId !== "string" ||
@@ -911,6 +916,7 @@ async function updateProductAction(formData: FormData) {
     unit,
     department,
     cost: Number(formData.get("cost") ?? 0),
+    calories: Number.isFinite(calories) ? calories : null,
   });
   if (!result.ok) {
     redirect(await resolveProductsFeedbackPath("error", actionErrorMessage(result, "Ürün güncellenemedi.")));
@@ -1615,6 +1621,8 @@ export default async function AdminProductsPage({
           <input name="name" required placeholder={translateUiText("Yeni Ürün", locale)} className="w-full min-w-0 rounded-2xl border border-slate-200 bg-slate-50 px-4 py-3 text-sm sm:flex-1" />
           <input name="price" type="number" min="0" step="0.01" required placeholder="Fiyat" className="w-full rounded-2xl border border-slate-200 bg-slate-50 px-4 py-3 text-sm sm:w-28" />
           <input name="stockCount" type="number" min="0" required placeholder="Stok" className="w-full rounded-2xl border border-slate-200 bg-slate-50 px-4 py-3 text-sm sm:w-28" />
+          <input name="calories" type="number" min="0" placeholder="Kalori (kcal)" className="w-full rounded-2xl border border-slate-200 bg-slate-50 px-4 py-3 text-sm sm:w-28" />
+          <input name="calories" type="number" min="0" placeholder="Kalori (kcal)" className="w-full rounded-2xl border border-slate-200 bg-slate-50 px-4 py-3 text-sm sm:w-28" />
           {isMarketScope ? (
             <>
               <input name="barcode" placeholder="Barkod" className="w-full rounded-2xl border border-slate-200 bg-slate-50 px-4 py-3 text-sm sm:w-36" />
@@ -1902,6 +1910,7 @@ export default async function AdminProductsPage({
                       <input type="hidden" name="description" value={product.description ?? ""} />
                       <input type="hidden" name="currentImageUrl" value={product.image_url ?? ""} />
                       <input type="hidden" name="cost" value={String(product.cost ?? 0)} />
+                      <input type="hidden" name="calories" value={product.calories ? String(product.calories) : ""} />
                       <input type="hidden" name="isAvailable" value={product.is_available ? "off" : "on"} />
                       <button
                         type="submit"
@@ -2015,6 +2024,10 @@ export default async function AdminProductsPage({
                               <div className="flex flex-col gap-1 md:col-span-2">
                                 <label className="text-[10px] font-bold uppercase tracking-wider text-slate-400 ml-1">Doğrudan Ek Maliyet / Overhead</label>
                                 <input name="cost" type="number" step="0.01" min="0" defaultValue={product.cost ?? 0} className="rounded-2xl border border-slate-200 bg-slate-50 px-4 py-3 text-sm" />
+                              </div>
+                              <div className="flex flex-col gap-1 md:col-span-2">
+                                <label className="text-[10px] font-bold uppercase tracking-wider text-slate-400 ml-1">Kalori (kcal)</label>
+                                <input name="calories" type="number" min="0" defaultValue={product.calories ?? ""} className="rounded-2xl border border-slate-200 bg-slate-50 px-4 py-3 text-sm" />
                               </div>
                             </div>
                             {isMarketScope ? (
@@ -2287,6 +2300,7 @@ export default async function AdminProductsPage({
                       <input type="hidden" name="description" value={product.description ?? ""} />
                       <input type="hidden" name="currentImageUrl" value={product.image_url ?? ""} />
                       <input type="hidden" name="cost" value={String(product.cost ?? 0)} />
+                      <input type="hidden" name="calories" value={product.calories ? String(product.calories) : ""} />
                       <input type="hidden" name="isAvailable" value={product.is_available ? "off" : "on"} />
                       <button
                         type="submit"
@@ -2337,6 +2351,7 @@ export default async function AdminProductsPage({
                       <input type="hidden" name="department" value={product.department ?? "general"} />
                       <input type="hidden" name="description" value={product.description ?? ""} />
                       <input type="hidden" name="currentImageUrl" value={product.image_url ?? ""} />
+                      <input type="hidden" name="calories" value={product.calories ? String(product.calories) : ""} />
                       <input type="hidden" name="isAvailable" value={product.is_available ? "on" : "off"} />
                       <FileDropInput name="imageFile" label="Ürün gorseli" helper="Dosyayi surukleyip bırak veya seç." />
                       {product.image_url ? (

@@ -522,12 +522,16 @@ export default async function AdminReportsPage({
                 {rows.map((row, index) => {
                   const x = rows.length === 1 ? 0 : (720 / (rows.length - 1)) * index;
                   const y = 20 + (220 - (Math.max(0, row.net) / maxNet) * 220);
+                  const labelInterval = Math.max(1, Math.ceil(rows.length / 8));
+                  const showLabel = index % labelInterval === 0 || index === rows.length - 1;
                   return (
                     <g key={row.day}>
                       <circle cx={x} cy={y} r="7" fill="#ffffff" stroke="#ff5a34" strokeWidth="4" />
-                      <text x={x} y="254" textAnchor="middle" fontSize="14" fill="#64748b">
-                        {dayLabel(row.day)}
-                      </text>
+                      {showLabel && (
+                        <text x={x} y="254" textAnchor="middle" fontSize="14" fill="#64748b">
+                          {dayLabel(row.day)}
+                        </text>
+                      )}
                     </g>
                   );
                 })}

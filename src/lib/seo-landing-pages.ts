@@ -239,27 +239,27 @@ export const seoLandingPages: SeoLandingPage[] = [
     ],
   },
   {
-    slug: "kare-restoran-yonetim-sistemi",
+    slug: "kafe-restoran-yonetim-sistemi",
     locale: "tr",
     market: "turkey",
     cluster: "pos",
-    canonicalSlug: "kare-restoran-yonetim-sistemi",
+    canonicalSlug: "kafe-restoran-yonetim-sistemi",
     hreflangAlternates: {
-      "tr-TR": "kare-restoran-yonetim-sistemi",
+      "tr-TR": "kafe-restoran-yonetim-sistemi",
       "en": "en/restaurant-pos-system",
       "x-default": "en/restaurant-pos-system",
     },
     schemaType: "SoftwareApplication",
-    title: "Kare Restoran Yönetim Sistemi",
-    metaTitle: "Kare Restoran Yönetim Sistemi | Bulut POS Alternatifi",
+    title: "Kafe Restoran Yönetim Sistemi",
+    metaTitle: "Kafe Restoran Yönetim Sistemi | Bulut POS Alternatifi",
     description:
-      "Kare restoran yönetim sistemi arayan işletmeler için Cloud POS; masa, adisyon, QR menü, mutfak, kasa, stok ve raporu bulutta birleştirir.",
-    eyebrow: "Restoran yönetimi",
-    heroTitle: "Kare restoran yönetim sistemi arayanlar için bulut tabanlı operasyon paneli.",
+      "Kafe-restoran yönetim sistemi arayan işletmeler için Cloud POS; masa, adisyon, QR menü, mutfak, kasa, stok ve raporu bulutta birleştirir.",
+    eyebrow: "Kafe-restoran yönetimi",
+    heroTitle: "Kafe-restoran yönetim sistemi arayanlar için bulut tabanlı operasyon paneli.",
     heroLead:
-      "Salon, masa, mutfak, kasa, stok ve rapor süreçlerini tek akışta takip ederek restoran yönetimini daha ölçülebilir hale getirin.",
-    primaryKeyword: "kare restoran yönetim sistemi",
-    relatedKeywords: ["restoran yönetim sistemi", "bulut restoran pos", "kare pos alternatifi", "cafe restoran yazılımı"],
+      "Salon, masa, mutfak, kasa, stok ve rapor süreçlerini tek akışta takip ederek kafe-restoran yönetimini daha ölçülebilir hale getirin.",
+    primaryKeyword: "kafe-restoran yönetim sistemi",
+    relatedKeywords: ["restoran yönetim sistemi", "bulut restoran pos", "kafe pos alternatifi", "cafe restoran yazılımı"],
     sections: [
       {
         title: "Salon ve masa yönetimi",
@@ -279,11 +279,11 @@ export const seoLandingPages: SeoLandingPage[] = [
     ],
     faq: [
       {
-        question: "Cloud POS kare restoran yönetim sistemi yerine kullanılabilir mi?",
-        answer: "Cloud POS; masa, adisyon, mutfak, kasa, stok, QR menü ve raporlama modülleriyle restoran yönetimi için kapsamlı bir bulut POS çözümüdür.",
+        question: "Cloud POS kafe-restoran yönetim sistemi yerine kullanılabilir mi?",
+        answer: "Cloud POS; masa, adisyon, mutfak, kasa, stok, QR menü ve raporlama modülleriyle kafe-restoran yönetimi için kapsamlı bir bulut POS çözümüdür.",
       },
       {
-        question: "Çok şubeli restoranlar için uygun mu?",
+        question: "Çok şubeli kafe ve restoranlar için uygun mu?",
         answer: "Evet. Sistem işletme ve şube kapsamlarıyla çalışacak şekilde tasarlanmıştır.",
       },
     ],

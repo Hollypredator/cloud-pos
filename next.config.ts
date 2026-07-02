@@ -6,6 +6,14 @@ const isProduction = process.env.NODE_ENV === "production";
 const nextConfig: NextConfig = {
   distDir: process.env.NEXT_DIST_DIR || ".next",
   output: process.env.NEXT_OUTPUT_STANDALONE === "1" ? "standalone" : undefined,
+  images: {
+    remotePatterns: [
+      {
+        protocol: "https",
+        hostname: "lh3.googleusercontent.com",
+      },
+    ],
+  },
   async redirects() {
     return [
       { source: '/admin/seo', destination: '/studio/seo', permanent: true },

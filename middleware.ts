@@ -1,4 +1,5 @@
 import { NextResponse, type NextRequest } from "next/server";
+import { createServerClient } from "@supabase/ssr";
 import { withCorrelationId } from "@/lib/observability";
 import { getSecurityHeaders } from "@/lib/security-headers";
 
@@ -212,6 +213,43 @@ export async function middleware(request: NextRequest) {
   requestHeaders.set("x-correlation-id", correlationId);
   requestHeaders.set("x-pathname", request.nextUrl.pathname);
 
+  // Initialize standard NextResponse
+  let response = NextResponse.next({
+    request: {
+      headers: requestHeaders,
+    },
+  });
+
+  // Supabase session refresh flow
+  const supabaseUrl = process.env.NEXT_PUBLIC_SUPABASE_URL;
+  const anonKey = process.env.NEXT_PUBLIC_SUPABASE_ANON_KEY;
+  if (supabaseUrl && anonKey) {
+    try {
+      const supabase = createServerClient(supabaseUrl, anonKey, {
+        cookies: {
+          getAll() {
+            return request.cookies.getAll();
+          },
+          setAll(cookiesToSet) {
+            cookiesToSet.forEach(({ name, value }) => request.cookies.set(name, value));
+            response = NextResponse.next({
+              request: {
+                headers: requestHeaders,
+              },
+            });
+            cookiesToSet.forEach(({ name, value, options }) =>
+              response.cookies.set(name, value, options)
+            );
+          },
+        },
+      });
+      // getUser() automatically triggers token refresh if the token is expired/expiring
+      await supabase.auth.getUser();
+    } catch (e) {
+      console.warn("Supabase middleware auth refresh failed:", e);
+    }
+  }
+
   const rateLimitResponse = checkRateLimit(request, correlationId);
   if (rateLimitResponse) {
     return rateLimitResponse;
@@ -233,18 +271,13 @@ export async function middleware(request: NextRequest) {
   if (mobileOperationRedirectResponse) {
     return mobileOperationRedirectResponse;
   }
-  const response = withSecurityAndCorrelation(
-    NextResponse.next({
-      request: {
-        headers: requestHeaders,
-      },
-    }),
-    correlationId,
-  );
+
+  // Apply correlation & security headers to final response (including any cookies set by Supabase)
+  const finalResponse = withSecurityAndCorrelation(response, correlationId);
   if (request.nextUrl.protocol === "https:") {
-    response.headers.set("Strict-Transport-Security", "max-age=31536000; includeSubDomains; preload");
+    finalResponse.headers.set("Strict-Transport-Security", "max-age=31536000; includeSubDomains; preload");
   }
-  return response;
+  return finalResponse;
 }
 
 export const config = {

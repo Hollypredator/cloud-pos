@@ -768,13 +768,44 @@ async function getTenantDataClient(): Promise<TenantSupabaseClient | null> {
   return getCachedTenantDataClient();
 }
 
+function helperEnrichCalories(p: Product): Product;
+function helperEnrichCalories(p: Product[]): Product[];
+function helperEnrichCalories(p: Product | Product[]): Product | Product[] {
+  if (Array.isArray(p)) {
+    return p.map((x) => helperEnrichCalories(x));
+  }
+  let calories = null;
+  const name = p.name.toLowerCase();
+  if (name.includes("americano")) calories = 15;
+  else if (name.includes("latte")) calories = 135;
+  else if (name.includes("cappuccino")) calories = 120;
+  else if (name.includes("mocha")) calories = 290;
+  else if (name.includes("espresso") || name.includes("doppio") || name.includes("shot")) calories = 5;
+  else if (name.includes("filter") || name.includes("filtre")) calories = 10;
+  else if (name.includes("turk") || name.includes("türk")) calories = 15;
+  else if (name.includes("cold brew")) calories = 5;
+  else if (name.includes("croissant") || name.includes("kruvasan")) calories = 310;
+  else if (name.includes("cake") || name.includes("cheesecake") || name.includes("san sebastian")) calories = 460;
+  else if (name.includes("tiramisu")) calories = 380;
+  else if (name.includes("muffin")) calories = 280;
+  else if (name.includes("cookie")) calories = 220;
+  else if (name.includes("wrap") || name.includes("sandvic") || name.includes("sandwich")) calories = 410;
+  else if (name.includes("protein")) calories = 320;
+  else if (name.includes("shake") || name.includes("smoothie")) calories = 340;
+  else if (name.includes("cola") || name.includes("fanta") || name.includes("sprite")) calories = 140;
+  else if (name.includes("soda") || name.includes("water") || name.includes("su")) calories = 0;
+  else if (name.includes("syrup") || name.includes("sauce")) calories = 80;
+  else if (name.includes("foam")) calories = 45;
+  return { ...p, calories };
+}
+
 const demoCategories: Category[] = [
   { id: "demo-cat-1", name: "Kahveler", sort_order: 1, prep_station: "bar" },
   { id: "demo-cat-2", name: "Soguk Icecekler", sort_order: 2, prep_station: "bar" },
   { id: "demo-cat-3", name: "Tatli ve Firin", sort_order: 3, prep_station: "dessert" },
 ];
 
-const demoProducts: Product[] = [
+const rawDemoProducts: Product[] = [
   {
     id: "demo-prod-1",
     category_id: "demo-cat-1",
@@ -836,6 +867,7 @@ const demoProducts: Product[] = [
     is_available: true,
   },
 ];
+const demoProducts: Product[] = rawDemoProducts.map((p) => helperEnrichCalories(p));
 
 const demoSelfServiceCategories: Category[] = [
   { id: "ss-cat-1", name: "Sicak", sort_order: 1, prep_station: "bar" },
@@ -844,7 +876,8 @@ const demoSelfServiceCategories: Category[] = [
   { id: "ss-cat-4", name: "Ekstra", sort_order: 4, prep_station: "bar" },
 ];
 
-const demoSelfServiceProducts: Product[] = [
+const rawSelfServiceProductsPlaceholder = null; // helper placeholder
+const rawDemoSelfServiceProducts: Product[] = [
   { id: "ss-prod-1", category_id: "ss-cat-1", name: "Espresso", price: 110, stock_count: 999, image_url: null, description: "Single shot espresso", is_available: true },
   { id: "ss-prod-2", category_id: "ss-cat-1", name: "Doppio", price: 125, stock_count: 999, image_url: null, description: "Double shot espresso", is_available: true },
   { id: "ss-prod-3", category_id: "ss-cat-1", name: "Americano", price: 135, stock_count: 999, image_url: null, description: "Hot water + espresso", is_available: true },
@@ -889,6 +922,7 @@ const demoSelfServiceProducts: Product[] = [
   { id: "ss-prod-39", category_id: "ss-cat-4", name: "Caramel Sauce Add-on", price: 110, stock_count: 999, image_url: null, description: "Sweet caramel topping", is_available: true },
   { id: "ss-prod-40", category_id: "ss-cat-4", name: "Cold Foam Add-on", price: 115, stock_count: 999, image_url: null, description: "Silky cold foam layer", is_available: true },
 ];
+const demoSelfServiceProducts: Product[] = rawDemoSelfServiceProducts.map((p) => helperEnrichCalories(p));
 
 function getDemoMenuSeed(businessType?: BusinessType | null) {
   const isSelfService = businessType === "self_service_coffee";
@@ -2525,12 +2559,12 @@ export async function getMenu(businessSlug?: string) {
           useLegacySchema
             ? innerSupabase
                 .from("products")
-                .select("id, category_id, name, price, stock_count, image_url, description, is_available")
+                .select("id, category_id, name, price, stock_count, image_url, description, is_available, calories")
                 .eq("is_available", true)
                 .gt("stock_count", 0)
             : innerSupabase
                 .from("products")
-                .select("id, business_id, category_id, name, price, stock_count, image_url, description, is_available")
+                .select("id, business_id, category_id, name, price, stock_count, image_url, description, is_available, calories")
                 .eq("business_id", business!.id)
                 .eq("is_available", true)
                 .gt("stock_count", 0),
@@ -2565,7 +2599,7 @@ export async function getMenu(businessSlug?: string) {
       return {
         hasError: Boolean(categoryError || productError || modifierGroupError || modifierOptionError),
         categories: (categories ?? []) as Category[],
-        products: (products ?? []) as Product[],
+        products: helperEnrichCalories((products ?? []) as Product[]),
         modifierGroups: (modifierGroups ?? []) as ProductModifierGroup[],
         modifierOptions: (modifierOptions ?? []) as ProductModifierOption[],
       };
@@ -2588,7 +2622,7 @@ export async function getMenu(businessSlug?: string) {
       }
       return {
         categories: demoMenu.categories,
-        products: demoMenu.products,
+        products: helperEnrichCalories(demoMenu.products),
         modifierGroups: demoMenu.modifierGroups,
         modifierOptions: demoMenu.modifierOptions,
         usingDemoData: true,
@@ -2604,7 +2638,7 @@ export async function getMenu(businessSlug?: string) {
     if (shouldUseDemoForEmptyMenu) {
       return {
         categories: demoMenu.categories,
-        products: demoMenu.products,
+        products: helperEnrichCalories(demoMenu.products),
         modifierGroups: demoMenu.modifierGroups,
         modifierOptions: demoMenu.modifierOptions,
         usingDemoData: true,
@@ -2630,7 +2664,7 @@ export async function getMenu(businessSlug?: string) {
     }
     return {
       categories: demoMenu.categories,
-      products: demoMenu.products,
+      products: helperEnrichCalories(demoMenu.products),
       modifierGroups: demoMenu.modifierGroups,
       modifierOptions: demoMenu.modifierOptions,
       usingDemoData: true,
@@ -7176,7 +7210,7 @@ export async function getProductManagementData(
     logAuditEvent,
     revalidateProductManagementCaches,
     demoCategories: demoMenu.categories,
-    demoProducts: demoMenu.products,
+    demoProducts: helperEnrichCalories(demoMenu.products),
     demoIngredients,
     demoModifierGroups: demoMenu.modifierGroups,
     demoModifierOptions: demoMenu.modifierOptions,
@@ -7402,13 +7436,14 @@ export async function createProduct(input: {
   unit?: ProductUnit;
   department?: ProductDepartment;
   cost?: number;
+  calories?: number | null;
 }) {
   return createProductImpl(input, {
     getDefaultBusinessScope,
     logAuditEvent,
     revalidateProductManagementCaches,
     demoCategories,
-    demoProducts,
+    demoProducts: helperEnrichCalories(demoProducts),
     demoIngredients,
     demoModifierGroups,
     demoModifierOptions,
@@ -7432,13 +7467,14 @@ export async function updateProduct(input: {
   unit?: ProductUnit;
   department?: ProductDepartment;
   cost?: number;
+  calories?: number | null;
 }) {
   return updateProductImpl(input, {
     getDefaultBusinessScope,
     logAuditEvent,
     revalidateProductManagementCaches,
     demoCategories,
-    demoProducts,
+    demoProducts: helperEnrichCalories(demoProducts),
     demoIngredients,
     demoModifierGroups,
     demoModifierOptions,
@@ -8778,7 +8814,7 @@ async function getCachedSalesReportSummaryRow(input: {
       };
     },
     [cacheKey],
-    { revalidate: 30, tags: ["sales-report-summary"] },
+    { revalidate: 600, tags: ["sales-report-summary"] },
   );
 
   return reader();
@@ -9155,7 +9191,7 @@ async function getCachedFinancialInsightsRow(input: {
       };
     },
     [cacheKey],
-    { revalidate: 30, tags: ["financial-insights"] },
+    { revalidate: 600, tags: ["financial-insights"] },
   );
 
   return reader();

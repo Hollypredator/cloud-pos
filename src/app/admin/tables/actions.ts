@@ -183,13 +183,13 @@ export async function assignTableZoneAction(formData: FormData) {
   try {
     const result = await assignTableZone({ tableId, zoneId });
     if (!result.ok) {
-      redirect(feedbackHref("error", result.error ?? "Masa bolgesi güncellenemedi."));
+      redirect(feedbackHref("error", result.error ?? "Masa bölgesi güncellenemedi."));
     }
     revalidatePath("/admin/tables");
     revalidatePath("/tables");
-    redirect(feedbackHref("success", "Masa bolgesi güncellendi."));
+    redirect(feedbackHref("success", "Masa bölgesi güncellendi."));
   } catch {
-    redirect(feedbackHref("error", "Masa bolgesi güncellenemedi."));
+    redirect(feedbackHref("error", "Masa bölgesi güncellenemedi."));
   }
 }
 
@@ -339,7 +339,7 @@ export async function deleteZoneAction(formData: FormData) {
     redirect(
       feedbackHref(
         "success",
-        `${result.name} bolgesi silindi${result.affectedTableCount > 0 ? `, ${result.affectedTableCount} masa atanmamış duruma alındı` : ""}.`,
+        `${result.name} bölgesi silindi${result.affectedTableCount > 0 ? `, ${result.affectedTableCount} masa atanmamış duruma alındı` : ""}.`,
       ),
     );
   } catch {

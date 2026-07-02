@@ -451,12 +451,16 @@ export default async function AdminFinancePage({
                   {hourlySales.map((row, index) => {
                     const x = hourlySales.length === 1 ? 0 : (720 / (hourlySales.length - 1)) * index;
                     const y = 20 + (220 - (row.sales / maxHourly) * 220);
+                    const labelInterval = Math.max(1, Math.ceil(hourlySales.length / 8));
+                    const showLabel = index % labelInterval === 0 || index === hourlySales.length - 1;
                     return (
                       <g key={row.hour}>
                         <circle cx={x} cy={y} r="7" fill="#ffffff" stroke="#ff6a3d" strokeWidth="4" />
-                        <text x={x} y="254" textAnchor="middle" fontSize="15" fill="#64748b">
-                          {row.hour}
-                        </text>
+                        {showLabel && (
+                          <text x={x} y="254" textAnchor="middle" fontSize="15" fill="#64748b">
+                            {row.hour}
+                          </text>
+                        )}
                       </g>
                     );
                   })}

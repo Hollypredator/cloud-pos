@@ -890,7 +890,7 @@ export function LandingPageRenderer({
     { href: featureHref, label: headerCopy.tabs.allInOnePos, caption: locale === "tr" ? "CLOUD POS CORE" : "CLOUD POS CORE" },
     { href: credibilityHref, label: headerCopy.tabs.boşsApp, caption: locale === "tr" ? "YONETIM PANELI" : "MANAGEMENT PANEL" },
     { href: processHref, label: headerCopy.tabs.staffManagement, caption: locale === "tr" ? "PERSONEL YONETIMI" : "STAFF MANAGEMENT" },
-    { href: featureHref, label: headerCopy.tabs.qrOrdering, caption: locale === "tr" ? "QR VE SIPARIS" : "QR & ORDERING" },
+    { href: featureHref, label: headerCopy.tabs.qrOrdering, caption: locale === "tr" ? "QR VE SİPARİŞ" : "QR & ORDERING" },
     { href: pricingHref, label: headerCopy.tabs.kioskSolutions, caption: locale === "tr" ? "KIOSK COZUMLERI" : "KIOSK SOLUTIONS" },
   ];
   const megaMenus = useMemo(() => getHeaderMegaMenus(locale), [locale]);

@@ -1,11 +1,11 @@
 import { generateSeoLandingMetadata, SeoLandingRoute } from "@/app/seo-landing-route";
 
-const slug = "kare-restoran-yonetim-sistemi";
+const slug = "kafe-restoran-yonetim-sistemi";
 
 export function generateMetadata() {
   return generateSeoLandingMetadata(slug);
 }
 
-export default function KareRestoranYönetimSistemiPage() {
+export default function KafeRestoranYonetimSistemiPage() {
   return <SeoLandingRoute slug={slug} />;
 }

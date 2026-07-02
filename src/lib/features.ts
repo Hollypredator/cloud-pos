@@ -65,7 +65,7 @@ export const FEATURE_META: Record<
     requiredPlan: "growth",
   },
   audit_logs: {
-    title: "Islem Loglari",
+    title: "İşlem Logları",
     description: "Operasyon geçmişi ve denetim kayitlari Growth paketle açılır.",
     requiredPlan: "growth",
   },

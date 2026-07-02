@@ -1,7 +1,7 @@
 "use client";
 
 import Image from "next/image";
-import { Clock3, Minus, Plus, Search, ShoppingBag, Sparkles, X } from "lucide-react";
+import { Clock3, Flame, Minus, Plus, Search, ShoppingBag, Sparkles, X } from "lucide-react";
 import { useCallback, useEffect, useMemo, useRef, useState } from "react";
 import { OrderHistoryWidget } from "@/components/order-history-widget";
 import { OrderStatusWidget } from "@/components/order-status-widget";
@@ -1250,10 +1250,13 @@ export function QrOrderingClient({
                         <div className="w-full">
                           <div className="mb-2 text-center text-5xl">{getProductEmoji(product.name)}</div>
                           <p className="text-center text-[1.35rem] font-bold leading-tight">{product.name}</p>
-                          <div className="mt-2 flex items-center justify-center gap-2 text-[11px]">
+                          <div className="mt-2 flex items-center justify-center gap-2 text-[11px] flex-wrap">
                             <span className="rounded-full border border-amber-300/40 bg-amber-400/10 px-2 py-1 text-amber-200">Hazırlik: {getPrepTimeLabel(product)}</span>
                             {topPickProductIds.includes(product.id) ? (
                               <span className="rounded-full border border-rose-300/40 bg-rose-500/20 px-2 py-1 text-rose-100">En Çok Tercih</span>
+                            ) : null}
+                            {product.calories ? (
+                              <span className="rounded-full border border-emerald-300/40 bg-emerald-500/20 px-2 py-1 text-emerald-100">{product.calories} kcal</span>
                             ) : null}
                           </div>
                           <p className="mt-2 text-center text-[1.9rem] font-black text-rose-400">{formatPrice(product.price)}</p>
@@ -1278,6 +1281,14 @@ export function QrOrderingClient({
             {selectedProduct ? (
               <div className="mt-4 rounded-2xl border border-white/10 bg-slate-900/65 p-4">
                 <p className="text-lg font-bold">{selectedProduct.name}</p>
+                {selectedProduct.calories ? (
+                  <div className="mt-1">
+                    <span className="inline-flex items-center gap-1 rounded-full bg-emerald-500/20 border border-emerald-500/30 px-2 py-0.5 text-[11px] font-semibold text-emerald-200">
+                      <Flame className="h-3 w-3" />
+                      {selectedProduct.calories} kcal
+                    </span>
+                  </div>
+                ) : null}
                 <p className="mt-1 text-sm text-slate-300">{selectedProduct.description ?? "Açıklama bulunmuyor."}</p>
                 {modifierErrorGroupIds.length > 0 ? (
                   <p className="mt-3 rounded-xl border border-rose-300/50 bg-rose-500/15 px-3 py-2 text-sm text-rose-100">
@@ -1641,6 +1652,12 @@ export function QrOrderingClient({
                           <Clock3 className="h-3 w-3" aria-hidden="true" />
                           {getPrepTimeLabel(product)}
                         </span>
+                        {product.calories ? (
+                          <span className="inline-flex items-center gap-1 rounded-full bg-emerald-50 border border-emerald-200/50 px-2 py-1 text-[11px] font-semibold text-emerald-700">
+                            <Flame className="h-3.5 w-3.5" aria-hidden="true" />
+                            {product.calories} kcal
+                          </span>
+                        ) : null}
                       </div>
                     </div>
                   </button>
@@ -1682,7 +1699,15 @@ export function QrOrderingClient({
           <div className="mt-4 space-y-4 rounded-[24px] border border-slate-200 bg-white p-5 shadow-sm">
             <div>
               <p className="text-xl font-bold text-slate-950">{selectedProduct.name}</p>
-              <p className="mt-1 text-sm text-slate-500">{selectedProduct.description ?? "Açıklama bulunmuyor."}</p>
+              {selectedProduct.calories ? (
+                <div className="mt-1.5 flex items-center gap-1.5">
+                  <span className="inline-flex items-center gap-1 rounded-full bg-emerald-50 border border-emerald-200/60 px-2.5 py-0.5 text-xs font-semibold text-emerald-700">
+                    <Flame className="h-3.5 w-3.5" aria-hidden="true" />
+                    {selectedProduct.calories} kcal
+                  </span>
+                </div>
+              ) : null}
+              <p className="mt-1.5 text-sm text-slate-500">{selectedProduct.description ?? "Açıklama bulunmuyor."}</p>
             </div>
             {modifierErrorGroupIds.length > 0 ? (
               <p className="rounded-xl border border-rose-300/50 bg-rose-500/15 px-3 py-2 text-sm text-rose-100">

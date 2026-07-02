@@ -140,6 +140,7 @@ export type Product = {
   unit?: ProductUnit;
   department?: ProductDepartment;
   cost?: number;
+  calories?: number | null;
 };
 
 export type DiningTable = {

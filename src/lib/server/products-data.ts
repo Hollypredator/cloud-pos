@@ -108,12 +108,12 @@ async function getCachedProductManagementRow(input: {
         categoriesQuery,
         (input.useLegacySchema
           ? supabase.from("products").select(
-              "id, category_id, name, price, stock_count, image_url, description, is_available, profile_scope, barcode, plu_code, product_kind, unit, department, cost",
+              "id, category_id, name, price, stock_count, image_url, description, is_available, profile_scope, barcode, plu_code, product_kind, unit, department, cost, calories",
             )
           : supabase
               .from("products")
               .select(
-                "id, business_id, category_id, name, price, stock_count, image_url, description, is_available, profile_scope, barcode, plu_code, product_kind, unit, department, cost",
+                "id, business_id, category_id, name, price, stock_count, image_url, description, is_available, profile_scope, barcode, plu_code, product_kind, unit, department, cost, calories",
               )
               .eq("business_id", input.businessId!)
               .or(`profile_scope.eq.${input.profileScope},profile_scope.is.null`))
@@ -353,6 +353,7 @@ export async function createProductImpl(
     unit?: ProductUnit;
     department?: ProductDepartment;
     cost?: number;
+    calories?: number | null;
   },
   deps: ProductDeps,
 ) {
@@ -378,6 +379,7 @@ export async function createProductImpl(
     unit: input.unit ?? "adet",
     department: input.department ?? "general",
     cost: input.cost ?? 0,
+    calories: input.calories ?? null,
   };
   const fallbackPayload = {
     category_id: input.categoryId,
@@ -387,6 +389,7 @@ export async function createProductImpl(
     description: input.description ?? null,
     image_url: input.imageUrl ?? null,
     is_available: input.isAvailable ?? true,
+    calories: input.calories ?? null,
   };
 
   let data: { id: string } | null = null;
@@ -429,6 +432,7 @@ export async function createProductImpl(
       unit: input.unit ?? "adet",
       department: input.department ?? "general",
       cost: input.cost ?? 0,
+      calories: input.calories ?? null,
     },
   });
 
@@ -453,6 +457,7 @@ export async function updateProductImpl(
     unit?: ProductUnit;
     department?: ProductDepartment;
     cost?: number;
+    calories?: number | null;
   },
   deps: ProductDeps,
 ) {
@@ -479,6 +484,7 @@ export async function updateProductImpl(
       unit: input.unit ?? "adet",
       department: input.department ?? "general",
       cost: input.cost ?? 0,
+      calories: input.calories ?? null,
     })
     .eq("id", input.productId);
   if (!scope.useLegacySchema && scope.businessId) {
@@ -502,6 +508,7 @@ export async function updateProductImpl(
         description: input.description ?? null,
         image_url: input.imageUrl ?? null,
         is_available: input.isAvailable,
+        calories: input.calories ?? null,
       })
       .eq("id", input.productId);
     if (!scope.useLegacySchema && scope.businessId) {
@@ -531,6 +538,7 @@ export async function updateProductImpl(
       unit: input.unit ?? "adet",
       department: input.department ?? "general",
       cost: input.cost ?? 0,
+      calories: input.calories ?? null,
     },
   });
 

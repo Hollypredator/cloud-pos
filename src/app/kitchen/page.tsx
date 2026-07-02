@@ -210,6 +210,9 @@ function buildStationGroups(
   categoryMap: Map<string, { name: string; prep_station?: string | null }>,
 ) {
   const stationGroups = new Map<KitchenStation, OrderItem[]>();
+  if (!order || !Array.isArray(order.items)) {
+    return stationGroups;
+  }
   for (const item of order.items as OrderItem[]) {
     const categoryId = productCategoryMap.get(item.product_id);
     const category = categoryId ? categoryMap.get(categoryId) : undefined;
@@ -351,8 +354,8 @@ export default async function KitchenPage({
               {activeBoard.orders.map((order) => {
                 const stationStatus = resolveStationStatus(order, activeBoard.key);
                 const delay = getDelayLevel(stationStatus, order.created_at);
-                const stationGroups = stationGroupsByOrder.get(order.id)!;
-                const items = stationGroups.get(activeBoard.key) ?? [];
+                const stationGroups = stationGroupsByOrder.get(order.id);
+                const items = stationGroups?.get(activeBoard.key) ?? [];
                 const nextStatus = stationStatus === "pending" ? "preparing" : stationStatus === "preparing" ? "served" : "preparing";
                 return (
                   <SwipeableOrderCard
@@ -455,8 +458,8 @@ export default async function KitchenPage({
                       board.orders.map((order) => {
                         const stationStatus = resolveStationStatus(order, board.key);
                         const delay = getDelayLevel(stationStatus, order.created_at);
-                        const stationGroups = stationGroupsByOrder.get(order.id)!;
-                        const items = stationGroups.get(board.key) ?? [];
+                        const stationGroups = stationGroupsByOrder.get(order.id);
+                        const items = stationGroups?.get(board.key) ?? [];
 
                         const nextStatus = stationStatus === "pending" ? "preparing" : stationStatus === "preparing" ? "served" : "preparing";
 

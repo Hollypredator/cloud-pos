@@ -283,7 +283,7 @@ const uiTranslationMapEn = new Map<string, string>([
   ["Raporlar", "Reports"],
   ["Gün İşlemleri", "Day Operations"],
   ["Adisyonlar", "Checks"],
-  ["İşlem Loglari", "Audit Logs"],
+  ["İşlem Logları", "Audit Logs"],
   ["Gelir/Gider", "Income/Expense"],
   ["İşletme Ayarlari", "Business Settings"],
   ["Şubeler", "Branches"],

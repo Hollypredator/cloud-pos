@@ -127,7 +127,7 @@ export default async function AdminTablesPage({
       ? "Atanmamis"
       : zoneFilter
         ? zoneById.get(zoneFilter)?.name ?? "Seçili bölge"
-        : "Tüm bolgeler";
+        : "Tüm bölgeler";
   const deleteMode = deleteParam === "1";
   const zoneQueryPart = zoneFilter ? `?zone=${encodeURIComponent(zoneFilter)}` : "";
   const deleteModeHref = zoneFilter
@@ -235,7 +235,7 @@ export default async function AdminTablesPage({
         <div className="mt-6 grid gap-5 xl:grid-cols-[320px_1fr]">
           <section className="rounded-[24px] border border-slate-200 bg-[#f6f7f9] p-4">
             <div className="flex items-center justify-between gap-3">
-              <h2 className="text-xl font-semibold tracking-tight text-slate-900 sm:text-2xl">Bolgeler</h2>
+              <h2 className="text-xl font-semibold tracking-tight text-slate-900 sm:text-2xl">Bölgeler</h2>
               <span className="inline-flex h-10 min-w-10 items-center justify-center rounded-full bg-[#ff5a34] px-3 text-sm font-bold text-white">{zones.length}</span>
             </div>
 
@@ -259,7 +259,7 @@ export default async function AdminTablesPage({
                 href="/admin/tables"
                 className={`block rounded-2xl border px-4 py-4 text-base transition sm:text-sm ${!zoneFilter ? "border-[#ff8b73] bg-[#fff8ee] text-slate-900" : "border-slate-200 bg-white text-slate-600 hover:border-slate-300"}`}
               >
-                <span className="font-semibold">Tüm Bolgeler</span>
+                <span className="font-semibold">Tüm Bölgeler</span>
                 <span className="mt-1 block text-xs text-slate-500">{tables.length} masa</span>
               </Link>
               {zones.map((zone) => (
@@ -305,9 +305,9 @@ export default async function AdminTablesPage({
                     </option>
                   ))}
                 </select>
-                <p className="text-xs text-rose-700">Seçilen bolgeler silinir; bu bolgelerdeki masalar otomatik olarak atanmamış olur.</p>
+                <p className="text-xs text-rose-700">Seçilen bölgeler silinir; bu bölgelerdeki masalar otomatik olarak atanmamış olur.</p>
                 <PendingSubmitButton
-                  idleLabel="Seçili Bolgeleri Sil"
+                  idleLabel="Seçili Bölgeleri Sil"
                   pendingLabel="Siliniyor..."
                   className="min-h-12 w-full rounded-2xl border border-rose-300 bg-white px-4 py-3 text-sm font-semibold text-rose-700"
                 />
@@ -400,7 +400,7 @@ export default async function AdminTablesPage({
                 defaultValue={zoneFilter === "__unassigned__" ? "__none__" : zoneFilter && zoneById.has(zoneFilter) ? zoneFilter : "__all__"}
                 className="min-h-12 rounded-2xl border border-rose-200 bg-white px-4 py-3 text-base sm:text-sm"
               >
-                <option value="__all__">Tüm bolgeler</option>
+                <option value="__all__">Tüm bölgeler</option>
                 <option value="__none__">Sadece atanmamış</option>
                 {zones.map((zone) => (
                   <option key={zone.id} value={zone.id}>
