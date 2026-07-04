@@ -861,7 +861,7 @@ export function AdminOrderEntry({
   if (isSelfServiceCoffee) {
     return (
       <>
-        <section className="app-mobile-hide flex-1 min-h-0 overflow-x-clip rounded-[26px] border border-slate-800 bg-[linear-gradient(180deg,#070d19_0%,#0f172a_100%)] text-slate-100 shadow-[0_30px_60px_rgba(2,6,23,0.45)]">
+        <section className="app-mobile-hide m-card flex-1 min-h-0 overflow-x-clip rounded-[26px] border border-slate-800 text-slate-100 shadow-[0_30px_60px_rgba(2,6,23,0.45)]">
           <header className="flex items-center justify-between border-b border-slate-800 px-6 py-5">
             <div>
               <p className="text-3xl font-black tracking-tight">Self Servis Kahvecim</p>
@@ -924,11 +924,8 @@ export function AdminOrderEntry({
                 <button
                   type="button"
                   onClick={() => setSelectedCategoryId(allCategoryId)}
-                  className={`rounded-full px-5 py-2.5 text-sm font-semibold transition ${
-                    selectedCategoryId === allCategoryId
-                      ? "bg-rose-500 text-white shadow-[0_14px_24px_rgba(244,63,94,0.34)]"
-                      : "bg-slate-700/60 text-slate-200 hover:bg-slate-600"
-                  }`}
+                  data-active={selectedCategoryId === allCategoryId}
+                  className="m-segment-pill rounded-full px-5 py-2.5 text-sm font-semibold transition"
                 >
                   Tümu
                 </button>
@@ -939,9 +936,8 @@ export function AdminOrderEntry({
                       key={`self-service-category-${category.id}`}
                       type="button"
                       onClick={() => setSelectedCategoryId(category.id)}
-                      className={`rounded-full px-5 py-2.5 text-sm font-semibold transition ${
-                        selected ? "bg-rose-500 text-white" : "bg-slate-700/60 text-slate-200 hover:bg-slate-600"
-                      }`}
+                      data-active={selected}
+                      className="m-segment-pill rounded-full px-5 py-2.5 text-sm font-semibold transition"
                     >
                       {category.name}
                     </button>
@@ -960,7 +956,7 @@ export function AdminOrderEntry({
               </div>
 
               {selfServiceProducts.length === 0 ? (
-                <p className="rounded-2xl border border-slate-700 bg-slate-900/70 px-4 py-5 text-sm text-slate-400">
+                <p className="m-card rounded-2xl border border-slate-700 px-4 py-5 text-sm text-slate-400">
                   Bu filtrede aktif ürün yok.
                 </p>
               ) : (
@@ -977,7 +973,7 @@ export function AdminOrderEntry({
                           openModifierPicker(product);
                         }
                       }}
-                      className="cursor-pointer rounded-2xl border border-slate-700/70 bg-[radial-gradient(circle_at_top,#273247_0%,#1e293b_35%,#111827_100%)] p-4 transition hover:border-rose-300/40 active:scale-[0.99] focus:outline-none focus-visible:ring-2 focus-visible:ring-rose-400"
+                      className="m-card cursor-pointer rounded-2xl border border-slate-700/70 p-4 transition hover:border-rose-300/40 active:scale-[0.99] focus:outline-none focus-visible:ring-2 focus-visible:ring-rose-400"
                     >
                       <div className="mb-4 inline-flex h-11 w-11 items-center justify-center rounded-full bg-slate-700/80 text-xs font-black text-slate-100">
                         {product.name.slice(0, 2).toUpperCase()}
@@ -1000,7 +996,7 @@ export function AdminOrderEntry({
               )}
             </div>
 
-            <aside className="flex min-w-0 flex-col border-l border-slate-700/80 bg-[linear-gradient(180deg,#202838_0%,#1a2234_55%,#171f31_100%)]">
+            <aside className="m-card flex min-w-0 flex-col border-l border-slate-700/80">
               <div className="flex items-center justify-between border-b border-slate-700 px-5 py-5">
                 <div>
                   <p className="text-3xl font-black tracking-tight text-white">Siparişim</p>
@@ -1023,7 +1019,7 @@ export function AdminOrderEntry({
                     {cartEntries.map((entry) => {
                       const modifierTotal = entry.modifiers.reduce((sum, modifier) => sum + Number(modifier.price_delta), 0);
                       return (
-                        <article key={`self-service-cart-${entry.key}`} className="rounded-xl border border-slate-600 bg-slate-800/75 p-3">
+                        <article key={`self-service-cart-${entry.key}`} className="m-card rounded-xl border border-slate-600 p-3">
                           <div className="flex items-start justify-between gap-2">
                             <div>
                               <p className="font-semibold text-white">{entry.product.name}</p>
@@ -1078,7 +1074,7 @@ export function AdminOrderEntry({
 
         <div className={`app-mobile-only space-y-3 ${isStackMobile ? "pb-[calc(190px+var(--safe-area-bottom))]" : "pb-[calc(164px+var(--safe-area-bottom))]"}`}>
           {/* Mobile Self-Service: Search */}
-          <div className="rounded-2xl border border-slate-700/80 bg-slate-900 p-1 space-y-1">
+          <div className="m-card rounded-2xl border border-slate-700/80 p-1 space-y-1">
             <input
               ref={searchInputRef}
               value={productSearchQuery}
@@ -1127,11 +1123,8 @@ export function AdminOrderEntry({
               <button
                 type="button"
                 onClick={() => setSelectedCategoryId(allCategoryId)}
-                className={`whitespace-nowrap rounded-full px-4 py-2.5 text-sm font-bold transition ${
-                  selectedCategoryId === allCategoryId
-                    ? "bg-gradient-to-r from-rose-500 to-orange-400 text-white shadow-[0_8px_18px_rgba(244,63,94,0.28)]"
-                    : "border border-slate-700 bg-slate-800 text-slate-300"
-                }`}
+                data-active={selectedCategoryId === allCategoryId}
+                className="m-segment-pill whitespace-nowrap rounded-full px-4 py-2.5 text-sm font-bold transition"
               >
                 Tümü
               </button>
@@ -1142,11 +1135,8 @@ export function AdminOrderEntry({
                     key={`ss-mobile-cat-${category.id}`}
                     type="button"
                     onClick={() => setSelectedCategoryId(category.id)}
-                    className={`whitespace-nowrap rounded-full px-4 py-2.5 text-sm font-bold transition ${
-                      selected
-                        ? "bg-gradient-to-r from-rose-500 to-orange-400 text-white shadow-[0_8px_18px_rgba(244,63,94,0.28)]"
-                        : "border border-slate-700 bg-slate-800 text-slate-300"
-                    }`}
+                    data-active={selected}
+                    className="m-segment-pill whitespace-nowrap rounded-full px-4 py-2.5 text-sm font-bold transition"
                   >
                     {category.name}
                   </button>
@@ -1157,7 +1147,7 @@ export function AdminOrderEntry({
 
           {/* Mobile Self-Service: Product Grid */}
           {selfServiceProducts.length === 0 ? (
-            <div className="rounded-2xl border border-slate-700 bg-slate-900/80 px-4 py-8 text-center text-sm text-slate-400">
+            <div className="m-card rounded-2xl border border-slate-700 px-4 py-8 text-center text-sm text-slate-400">
               Bu filtrede aktif ürün yok.
             </div>
           ) : (
@@ -1174,7 +1164,7 @@ export function AdminOrderEntry({
                       openModifierPicker(product);
                     }
                   }}
-                  className="cursor-pointer rounded-2xl border border-slate-700/60 bg-gradient-to-b from-slate-800 to-slate-900 p-3.5 transition active:scale-[0.98] hover:border-rose-400/40 focus:outline-none focus-visible:ring-2 focus-visible:ring-rose-400"
+                  className="m-card cursor-pointer rounded-2xl border border-slate-700/60 p-3.5 transition active:scale-[0.98] hover:border-rose-400/40 focus:outline-none focus-visible:ring-2 focus-visible:ring-rose-400"
                 >
                   <div className="mb-3 inline-flex h-10 w-10 items-center justify-center rounded-full bg-slate-700/70 text-[11px] font-black text-slate-200">
                     {product.name.slice(0, 2).toUpperCase()}
@@ -1309,7 +1299,7 @@ export function AdminOrderEntry({
           className={`app-mobile-only fixed inset-x-0 z-40 px-3`}
           style={{ bottom: isStackMobile ? "calc(74px + var(--safe-area-bottom))" : "calc(72px + var(--safe-area-bottom))" }}
         >
-          <div className="rounded-2xl border border-slate-700 bg-slate-900/98 p-3 shadow-[0_12px_30px_rgba(0,0,0,0.4)] backdrop-blur">
+          <div className="m-card rounded-2xl border border-slate-700 p-3 shadow-[0_12px_30px_rgba(0,0,0,0.4)] backdrop-blur">
             <div className="flex items-center justify-between gap-3">
               <div>
                 <p className="text-[10px] font-semibold uppercase tracking-[0.14em] text-slate-400">Sipariş</p>
