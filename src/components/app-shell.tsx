@@ -238,6 +238,10 @@ export function AppShell({
   const pwaEnabled = Boolean(shellData?.mobileReadOnlyPwaEnabled);
   const pwaRuntimeEnabled = Boolean(pwaEnabled && mobileAppMode);
   const activeBusinessType = shellData?.activeBusinessType ?? "restaurant_cafe";
+  const isSelfServiceOrders =
+    activeBusinessType === "self_service_coffee" &&
+    !!stablePathname &&
+    stablePathname.startsWith("/admin/orders");
   const mobileTitle = resolveMobileTitle(stablePathname, locale, activeBusinessType);
   const quickActions = useMemo(() => {
     if (!shellData) {
@@ -458,6 +462,8 @@ export function AppShell({
 
         <div
           className={`min-w-0 flex-1 overflow-x-clip ${
+            isSelfServiceOrders ? "bg-[#080d1a]" : ""
+          } ${
             mobileAppMode
               ? "pb-[calc(88px+var(--safe-area-bottom))] pt-[calc(68px+var(--safe-area-top))]"
               : "pb-28 md:pb-0"
