@@ -861,7 +861,7 @@ export function AdminOrderEntry({
   if (isSelfServiceCoffee) {
     return (
       <>
-        <section className="app-mobile-hide m-card flex-1 min-h-0 overflow-x-clip rounded-[26px] border border-slate-800 text-slate-100 shadow-[0_30px_60px_rgba(2,6,23,0.45)]">
+        <section className="app-mobile-hide m-card flex-1 min-h-0 overflow-x-clip rounded-[26px] border border-slate-800 bg-[linear-gradient(180deg,#070d19_0%,#0f172a_100%)] text-slate-100 shadow-[0_30px_60px_rgba(2,6,23,0.45)]">
           <header className="flex items-center justify-between border-b border-slate-800 px-6 py-5">
             <div>
               <p className="text-3xl font-black tracking-tight">Self Servis Kahvecim</p>
@@ -996,7 +996,7 @@ export function AdminOrderEntry({
               )}
             </div>
 
-            <aside className="m-card flex min-w-0 flex-col border-l border-slate-700/80">
+            <aside className="m-card flex min-w-0 flex-col border-l border-slate-700/80 bg-[linear-gradient(180deg,#202838_0%,#1a2234_55%,#171f31_100%)]">
               <div className="flex items-center justify-between border-b border-slate-700 px-5 py-5">
                 <div>
                   <p className="text-3xl font-black tracking-tight text-white">Siparişim</p>

@@ -63,7 +63,7 @@ export default async function AdminOrdersPage({
   );
 
   if (isSelfServiceCoffee) {
-    return <main className="coffee-pos-mode flex h-screen w-full flex-col overflow-hidden">{orderEntry}</main>;
+    return <main className="coffee-pos-mode flex h-screen w-full flex-col overflow-hidden bg-[#080d1a]">{orderEntry}</main>;
   }
 
   if (isMobileUA) {
