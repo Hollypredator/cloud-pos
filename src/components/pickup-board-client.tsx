@@ -122,13 +122,13 @@ export function PickupBoardClient({
     return () => clearInterval(timer);
   }, [readyTotalPages]);
 
-  const preparingNumberClass = "text-[clamp(1rem,1.8vw,2rem)]";
-  const preparingLabelClass = "text-[clamp(0.65rem,1vw,1rem)]";
-  const preparingCardClass = "rounded-xl p-3";
+  const preparingNumberClass = "text-[clamp(1.2rem,2vw,2.2rem)]";
+  const preparingLabelClass = "text-[clamp(0.7rem,1vw,1.1rem)]";
+  const preparingCardClass = "rounded-[1.5rem] p-4 uupm-liquid-glass";
 
-  const readyNumberClass = "text-[clamp(1rem,2vw,2.2rem)]";
-  const readyLabelClass = "text-[clamp(0.65rem,1vw,1rem)]";
-  const readyCardClass = "rounded-xl p-3";
+  const readyNumberClass = "text-[clamp(1.2rem,2.2vw,2.4rem)]";
+  const readyLabelClass = "text-[clamp(0.7rem,1vw,1.1rem)]";
+  const readyCardClass = "rounded-[1.5rem] p-4";
 
   useEffect(() => {
     let disposed = false;
@@ -177,19 +177,27 @@ export function PickupBoardClient({
     };
   }, []);
 
+  const bandGlow = (ageMinutes: number) => {
+    if (ageMinutes >= 10) return "uupm-glow-danger";
+    if (ageMinutes >= 6) return "uupm-glow-warning";
+    return "";
+  };
+
   return (
-    <div className="grid h-screen grid-cols-2">
-      <div className="flex min-h-0 flex-col border-r border-white/5 bg-[#111114] p-6">
-        <div className="mb-4 flex items-center justify-between">
-          <h2 className="text-3xl font-bold tracking-tight text-slate-300">Hazırlaniyor</h2>
-          <div className="rounded-full border border-sky-500/20 bg-sky-500/10 px-3 py-1 text-xs font-bold uppercase tracking-widest text-sky-400">
+    <div className="grid min-h-0 flex-1 grid-cols-2">
+      <div className="flex min-h-0 flex-col border-r border-white/5 p-6">
+        <div className="mb-5 flex items-center justify-between">
+          <h2 className="text-3xl font-bold tracking-tight text-white/80" style={{ fontFamily: "var(--font-sora)" }}>
+            Hazırlaniyor
+          </h2>
+          <div className="rounded-full border border-rose-500/20 bg-rose-500/10 px-3 py-1 text-xs font-bold uppercase tracking-widest text-rose-400">
             Preparing
           </div>
         </div>
 
         <div className="min-h-0 flex-1 overflow-hidden">
           <div
-            className="grid h-full gap-2"
+            className="grid h-full gap-3"
             style={{
               gridTemplateColumns: `repeat(${preparingLayout.cols}, minmax(0, 1fr))`,
               gridTemplateRows: `repeat(${preparingLayout.rows}, minmax(0, 1fr))`,
@@ -201,37 +209,45 @@ export function PickupBoardClient({
               return (
                 <div
                   key={order.id}
-                  className={`${preparingCardClass} h-full border border-white/5 bg-white/5 shadow-[0_6px_16px_rgba(0,0,0,0.2)]`}
+                  className={`${preparingCardClass} ${bandGlow(ageMinutes)} h-full`}
                 >
-                  <div className="mb-1 flex items-center justify-between gap-2">
+                  <div className="mb-1.5 flex items-center justify-between gap-2">
                     <div className={`truncate font-black text-white ${preparingNumberClass}`}>
                       {resolveOrderNumber(order)}
                     </div>
-                    <span className={`rounded-full border px-2 py-1 text-[10px] font-bold uppercase ${band.className}`}>
+                    <span className={`rounded-full border px-2.5 py-1 text-[10px] font-bold uppercase ${band.className}`}>
                       {band.label}
                     </span>
                   </div>
-                  <div className={`truncate font-semibold text-slate-200 ${preparingLabelClass}`}>
+                  <div className={`truncate font-semibold text-white/70 ${preparingLabelClass}`}>
                     {resolveOrderLabel(order, "Sipariş Hazırlaniyor")}
                   </div>
-                  <div className="mt-1 text-[11px] text-slate-400">{ageMinutes} dk bekliyor</div>
+                  <div className="mt-1.5 text-[11px] text-white/40">{ageMinutes} dk bekliyor</div>
                 </div>
               );
             })}
           </div>
-          {prioritizedPreparing.length === 0 ? <div className="mt-12 text-2xl font-medium text-slate-600">Henüz yeni sipariş yok...</div> : null}
+          {prioritizedPreparing.length === 0 ? (
+            <div className="mt-16 text-center">
+              <p className="text-2xl font-medium text-white/20" style={{ fontFamily: "var(--font-sora)" }}>
+                Henüz yeni sipariş yok...
+              </p>
+            </div>
+          ) : null}
         </div>
 
         {preparingTotalPages > 1 ? (
-          <div className="mt-4 text-right text-sm font-semibold text-slate-500">
+          <div className="mt-4 text-right text-sm font-semibold text-white/30">
             {preparingPage + 1}/{preparingTotalPages}
           </div>
         ) : null}
       </div>
 
-      <div className="flex min-h-0 flex-col bg-[#0a0a0c] p-6">
-        <div className="mb-4 flex items-center justify-between">
-          <h2 className="text-3xl font-bold tracking-tight text-emerald-400">Afiyet Olsun!</h2>
+      <div className="flex min-h-0 flex-col bg-[#0a0f1e] p-6">
+        <div className="mb-5 flex items-center justify-between">
+          <h2 className="text-3xl font-bold tracking-tight text-emerald-400" style={{ fontFamily: "var(--font-sora)" }}>
+            Afiyet Olsun!
+          </h2>
           <div className="rounded-full border border-emerald-500/20 bg-emerald-500/10 px-3 py-1 text-xs font-bold uppercase tracking-widest text-emerald-400">
             Ready
           </div>
@@ -239,7 +255,7 @@ export function PickupBoardClient({
 
         <div className="min-h-0 flex-1 overflow-hidden">
           <div
-            className="grid h-full gap-2"
+            className="grid h-full gap-3"
             style={{
               gridTemplateColumns: `repeat(${readyLayout.cols}, minmax(0, 1fr))`,
               gridTemplateRows: `repeat(${readyLayout.rows}, minmax(0, 1fr))`,
@@ -248,23 +264,29 @@ export function PickupBoardClient({
             {readyPageItems.map((order) => (
               <div
                 key={order.id}
-                className={`${readyCardClass} relative h-full overflow-hidden border border-emerald-500/20 bg-[linear-gradient(135deg,rgba(16,185,129,0.1)_0%,rgba(5,150,105,0.05)_100%)] shadow-[0_10px_20px_rgba(16,185,129,0.15)]`}
+                className={`${readyCardClass} relative h-full overflow-hidden bg-[linear-gradient(135deg,rgba(16,185,129,0.12)_0%,rgba(5,150,105,0.06)_100%)] shadow-[0_8px_32px_rgba(0,0,0,0.3)] border border-emerald-500/25`}
               >
-                <div className="absolute right-2 top-2 h-2 w-2 rounded-full bg-emerald-400" />
-                <div className={`mb-1 truncate font-black text-emerald-400 drop-shadow-[0_0_12px_rgba(16,185,129,0.3)] ${readyNumberClass}`}>
+                <div className="absolute right-3 top-3 h-2.5 w-2.5 rounded-full bg-emerald-400 shadow-[0_0_12px_rgba(16,185,129,0.5)]" />
+                <div className={`mb-1.5 truncate font-black drop-shadow-[0_0_16px_rgba(16,185,129,0.35)] text-emerald-400 ${readyNumberClass}`}>
                   {resolveOrderNumber(order)}
                 </div>
-                <div className={`truncate font-bold text-white ${readyLabelClass}`}>
+                <div className={`truncate font-bold text-white/80 ${readyLabelClass}`}>
                   {resolveOrderLabel(order, "Teslim Alabilirsiniz")}
                 </div>
               </div>
             ))}
           </div>
-          {ready.length === 0 ? <div className="mt-12 text-2xl font-medium text-slate-700">Bekleyen hazır sipariş yok.</div> : null}
+          {ready.length === 0 ? (
+            <div className="mt-16 text-center">
+              <p className="text-2xl font-medium text-white/15" style={{ fontFamily: "var(--font-sora)" }}>
+                Bekleyen hazır sipariş yok.
+              </p>
+            </div>
+          ) : null}
         </div>
 
         {readyTotalPages > 1 ? (
-          <div className="mt-4 text-right text-sm font-semibold text-emerald-300/70">
+          <div className="mt-4 text-right text-sm font-semibold text-emerald-300/40">
             {readyPage + 1}/{readyTotalPages}
           </div>
         ) : null}
