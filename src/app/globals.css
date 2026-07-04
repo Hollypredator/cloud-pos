@@ -1425,6 +1425,56 @@ body.theme-cashier-light .m-btn-secondary {
   border-width: 1.5px !important;
 }
 
+.coffee-pos-mode {
+  background: radial-gradient(circle at 15% 10%, rgba(244, 63, 94, 0.08) 0%, transparent 35%),
+              radial-gradient(circle at 85% 5%, rgba(251, 146, 60, 0.06) 0%, transparent 30%),
+              radial-gradient(circle at 50% 90%, rgba(99, 102, 241, 0.04) 0%, transparent 40%),
+              #080d1a;
+  color: #f1f5f9;
+}
+
+.coffee-pos-mode .m-card {
+  border-color: rgba(255, 255, 255, 0.08);
+  background: rgba(255, 255, 255, 0.04);
+  box-shadow: 0 8px 32px rgba(0, 0, 0, 0.2);
+}
+
+.coffee-pos-mode .m-value,
+.coffee-pos-mode .m-value-sm {
+  color: #f1f5f9;
+}
+
+.coffee-pos-mode .m-label {
+  color: rgba(255, 255, 255, 0.5);
+}
+
+.coffee-pos-mode .m-btn-secondary {
+  border-color: rgba(255, 255, 255, 0.1);
+  background: rgba(255, 255, 255, 0.06);
+  color: #f1f5f9;
+}
+
+.coffee-pos-mode .m-segment-pill {
+  border-color: rgba(255, 255, 255, 0.1);
+  background: rgba(255, 255, 255, 0.04);
+  color: rgba(255, 255, 255, 0.7);
+}
+
+.coffee-pos-mode .m-segment-pill[data-active="true"] {
+  background: linear-gradient(135deg, #f43f5e 0%, #fb923c 100%);
+  border-color: transparent;
+  color: #fff;
+}
+
+.coffee-pos-mode .m-tone-neutral {
+  background: rgba(255, 255, 255, 0.06);
+  color: rgba(255, 255, 255, 0.7);
+}
+
+.coffee-pos-mode .m-muted {
+  color: rgba(255, 255, 255, 0.4);
+}
+
 @media (prefers-reduced-motion: reduce) {
   .uupm-pulsing-critical,
   .uupm-pulsing-warning {
