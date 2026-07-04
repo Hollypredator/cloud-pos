@@ -1052,18 +1052,102 @@ export function QrOrderingClient({
     }
   };
 
+  // ── ORDER SUCCESS SCREEN ──────────────────────────────────────────
   if (orderSuccess) {
     return (
-      <div className="mx-auto flex min-h-screen w-full max-w-5xl flex-col gap-4 px-3 py-6 md:px-6">
-        <div className="rounded-3xl border border-emerald-200/40 bg-emerald-900/20 p-5 text-center">
-          <h1 className="text-2xl font-bold text-white">Siparişiniz Alindi</h1>
-          <p className="mt-1 text-sm text-emerald-100">Siparişiniz mutfaga iletildi. Afiyet olsun.</p>
-          {lastOrderId ? <p className="mt-2 text-xs text-emerald-200">Referans: {lastOrderId.slice(0, 8)}</p> : null}
-          {orderConfirmation?.confirmedAt ? (
-            <p className="mt-1 text-xs text-emerald-200">
-              Onay Saati: {new Date(orderConfirmation.confirmedAt).toLocaleString("tr-TR")}
-            </p>
+      <div className="qr-success-screen flex flex-col items-center justify-start px-5 py-10 text-white">
+        {/* Confetti particles */}
+        <div className="pointer-events-none absolute inset-0 overflow-hidden" aria-hidden="true">
+          {[...Array(18)].map((_, i) => (
+            <div
+              key={i}
+              style={{
+                position: "absolute",
+                left: `${(i * 31 + 7) % 100}%`,
+                top: `${(i * 17 + 5) % 60}%`,
+                width: `${4 + (i % 5)}px`,
+                height: `${4 + (i % 5)}px`,
+                borderRadius: i % 3 === 0 ? "9999px" : "2px",
+                background: ["#f43f5e","#fb923c","#10b981","#6366f1","#f59e0b"][i % 5],
+                opacity: 0.5 + (i % 3) * 0.15,
+                animation: `qr-pop-in ${0.4 + (i % 4) * 0.15}s ease both`,
+                animationDelay: `${i * 0.06}s`,
+              }}
+            />
+          ))}
+        </div>
+
+        <div className="relative z-10 flex w-full max-w-sm flex-col items-center gap-6 pt-6">
+          {/* Check icon */}
+          <div className="qr-success-check">
+            <svg width="36" height="36" viewBox="0 0 36 36" fill="none" aria-hidden="true">
+              <path d="M8 18L15 25L28 11" stroke="#10b981" strokeWidth="3" strokeLinecap="round" strokeLinejoin="round"/>
+            </svg>
+          </div>
+
+          <div className="text-center">
+            <h1 className="text-3xl font-black tracking-tight">Siparişiniz Alındı!</h1>
+            <p className="mt-2 text-base text-emerald-300">Mutfağa iletildi. Afiyet olsun.</p>
+            {lastOrderId ? (
+              <p className="mt-1 font-mono text-xs text-slate-400">Ref: #{lastOrderId.slice(0, 8)}</p>
+            ) : null}
+            {orderConfirmation?.confirmedAt ? (
+              <p className="mt-0.5 text-xs text-slate-400">
+                {new Date(orderConfirmation.confirmedAt).toLocaleTimeString("tr-TR")}{"'de onaylandı"}
+              </p>
+            ) : null}
+          </div>
+
+          {/* Status badge */}
+          <div className="flex items-center gap-2 rounded-full border border-emerald-400/20 bg-emerald-500/10 px-4 py-2">
+            <span className="qr-pulse-dot" aria-hidden="true" />
+            <span className="text-sm font-bold text-emerald-300">Hazırlanıyor...</span>
+          </div>
+
+          {/* Order summary card */}
+          <div className="w-full rounded-2xl border border-white/08 bg-white/04 p-4">
+            <div className="mb-3 flex items-center justify-between text-sm">
+              <span className="font-bold text-slate-200">Sipariş Özeti</span>
+              <span className="font-bold text-emerald-400">{formatPrice(lastOrderTotal)}</span>
+            </div>
+            <div className="space-y-2">
+              {lastOrderSummary.map((item, index) => (
+                <div key={`${item.product_id}-${index}`} className="flex items-center justify-between gap-2 text-sm">
+                  <span className="text-slate-300">{item.quantity}× {item.name}</span>
+                  <span className="font-semibold text-white">{formatPrice(item.line_total)}</span>
+                </div>
+              ))}
+            </div>
+          </div>
+
+          {/* Cancel window */}
+          {orderConfirmation?.cancelUntil && cancelSeçondsLeft > 0 ? (
+            <div className="w-full rounded-2xl border border-amber-400/20 bg-amber-500/10 p-4">
+              <div className="mb-2 flex items-center justify-between text-sm">
+                <span className="font-bold text-amber-300">İptal penceresi açık</span>
+                <span className="font-mono font-bold text-amber-200">{formatSeçonds(cancelSeçondsLeft)}</span>
+              </div>
+              <button
+                onClick={cancelOrderByQr}
+                disabled={isCancelling || cancelSeçondsLeft <= 0}
+                className="w-full rounded-xl bg-rose-600/80 px-4 py-2.5 text-sm font-bold text-white transition hover:bg-rose-600 disabled:cursor-not-allowed disabled:opacity-40"
+              >
+                {isCancelling ? "İptal ediliyor..." : "Siparişi İptal Et"}
+              </button>
+              {cancelError ? <p className="mt-2 text-xs text-rose-300">{cancelError}</p> : null}
+              {cancelSuccess ? <p className="mt-2 text-xs text-emerald-300">{cancelSuccess}</p> : null}
+            </div>
           ) : null}
+
+          {/* Order status / history widgets */}
+          {qrCodeIdentifier && activeQrAccessToken ? (
+            <div className="w-full space-y-3">
+              <OrderStatusWidget businessSlug={businessSlug} qrCodeIdentifier={qrCodeIdentifier} qrAccessToken={activeQrAccessToken} />
+              <OrderHistoryWidget businessSlug={businessSlug} qrCodeIdentifier={qrCodeIdentifier} qrAccessToken={activeQrAccessToken} orderIds={customerOrderIds} />
+            </div>
+          ) : null}
+
+          {/* New order button */}
           <button
             onClick={() => {
               setOrderSuccess(false);
@@ -1073,74 +1157,16 @@ export function QrOrderingClient({
               setCancelError(null);
               setCancelSuccess(null);
             }}
-            className="mt-4 rounded-2xl bg-white/10 px-6 py-3 font-semibold text-white transition hover:bg-white/20"
+            className="w-full rounded-2xl border border-white/15 bg-white/08 px-6 py-3.5 font-bold text-white transition hover:bg-white/12"
           >
             Yeni Sipariş Ver
           </button>
         </div>
-
-        <section className="rounded-2xl border border-white/10 bg-slate-900/65 p-4 text-slate-100">
-          <div className="mb-3 flex items-center justify-between text-sm">
-            <span className="font-semibold">Onaylanan Sepet Ozeti</span>
-            <span className="text-emerald-300">Toplam: {formatPrice(lastOrderTotal)}</span>
-          </div>
-          <div className="space-y-2">
-            {lastOrderSummary.map((item, index) => (
-              <div key={`${item.product_id}-${index}`} className="rounded-xl border border-white/10 bg-white/5 px-3 py-2 text-sm">
-                <div className="flex items-center justify-between gap-2">
-                  <span>{item.quantity}x {item.name}</span>
-                  <span>{formatPrice(item.line_total)}</span>
-                </div>
-              </div>
-            ))}
-          </div>
-          {orderConfirmation?.cancelUntil ? (
-            <div className="mt-4 rounded-xl border border-amber-300/30 bg-amber-500/10 px-3 py-3 text-sm">
-              <p>İptal/Duzeltme Suresi: {formatSeçonds(cancelSeçondsLeft)}</p>
-              <p className="text-xs text-amber-100">
-                Son zaman: {new Date(orderConfirmation.cancelUntil).toLocaleTimeString("tr-TR")}
-              </p>
-              <button
-                onClick={cancelOrderByQr}
-                disabled={isCancelling || cancelSeçondsLeft <= 0}
-                className="mt-3 w-full rounded-xl bg-rose-600 px-4 py-2 font-semibold text-white transition hover:bg-rose-500 disabled:cursor-not-allowed disabled:opacity-50"
-              >
-                {isCancelling ? "İptal Ediliyor..." : "Siparişi İptal Et"}
-              </button>
-              {cancelError ? <p className="mt-2 text-xs text-rose-200">{cancelError}</p> : null}
-              {cancelSuccess ? <p className="mt-2 text-xs text-emerald-200">{cancelSuccess}</p> : null}
-            </div>
-          ) : null}
-          {!orderConfirmation && qrConfirmationEnabled ? (
-            <p className="mt-3 text-xs text-amber-200">
-              Onay kaydı oluşturulamadı. İptal talebi icin personele bildirin.
-            </p>
-          ) : null}
-        </section>
-
-        {qrCodeIdentifier && activeQrAccessToken ? (
-          <div className="grid gap-4 md:grid-cols-2">
-            <OrderStatusWidget
-              businessSlug={businessSlug}
-              qrCodeIdentifier={qrCodeIdentifier}
-              qrAccessToken={activeQrAccessToken}
-            />
-            <OrderHistoryWidget
-              businessSlug={businessSlug}
-              qrCodeIdentifier={qrCodeIdentifier}
-              qrAccessToken={activeQrAccessToken}
-              orderIds={customerOrderIds}
-            />
-          </div>
-        ) : (
-          <p className="rounded-2xl border border-amber-300/40 bg-amber-500/10 px-4 py-3 text-sm text-amber-100">
-            Sipariş durumunu gorebilmek icin QR kodu yeniden okutun.
-          </p>
-        )}
       </div>
     );
   }
 
+  // ── COFFEE SELF-SERVICE LAYOUT ────────────────────────────────────
   if (isCoffeeSelfService) {
     return (
       <div className="min-h-screen bg-[radial-gradient(circle_at_top,#111827_0%,#0b1220_56%,#090f1a_100%)] text-white">
@@ -1153,12 +1179,12 @@ export function QrOrderingClient({
                 </div>
                 <div>
                   <p className="text-3xl font-black tracking-tight">Self Servis Kahvecim</p>
-                  <p className="text-sm text-slate-300">Hızlı & Lezzetli</p>
+                  <p className="text-sm text-slate-300">Hızlı &amp; Lezzetli</p>
                 </div>
               </div>
               <div className="text-right">
                 <p className="text-2xl font-black text-rose-400">{currentClock}</p>
-                <p className="text-sm text-slate-300">Sipariş Sayisi: {cartItems.length}</p>
+                <p className="text-sm text-slate-300">Sipariş Sayısı: {cartItems.length}</p>
               </div>
             </div>
           </section>
@@ -1167,7 +1193,7 @@ export function QrOrderingClient({
             <div className="mb-3 grid gap-3 md:grid-cols-[1fr_auto]">
               <input
                 type="search"
-                placeholder="Ürün veya icerik ara..."
+                placeholder="Ürün veya içerik ara..."
                 value={productSearchTerm}
                 onChange={(event) => setProductSearchTerm(event.target.value)}
                 className="w-full rounded-2xl border border-white/10 bg-white/10 px-4 py-3 text-sm text-white placeholder:text-slate-300"
@@ -1175,18 +1201,16 @@ export function QrOrderingClient({
               <button
                 type="button"
                 onClick={() => {
-                  if (topPickProducts.length === 0) {
-                    return;
-                  }
+                  if (topPickProducts.length === 0) return;
                   setSelectedCategoryId(topPickProducts[0].category_id);
                   setProductSearchTerm("");
                 }}
                 className="rounded-2xl border border-rose-300/40 bg-rose-500/15 px-4 py-3 text-sm font-semibold text-rose-100"
               >
-                Sik Sipariş Edilenler
+                Sık Sipariş Edilenler
               </button>
             </div>
-            <div className="mb-4 overflow-x-auto">
+            <div className="mb-4 overflow-x-auto qr-scrollbar-hide">
               <div className="flex min-w-max items-center gap-3">
                 {orderedCategories.map((category) => {
                   const isActive = category.id === activeCategoryId;
@@ -1194,15 +1218,8 @@ export function QrOrderingClient({
                     <button
                       key={category.id}
                       type="button"
-                      onClick={() => {
-                        setSelectedCategoryId(category.id);
-                        setSelectedProductId(null);
-                      }}
-                      className={`rounded-full px-6 py-3 text-lg font-bold transition ${
-                        isActive
-                          ? "bg-[linear-gradient(135deg,#ff5f7a_0%,#ff385c_100%)] text-white shadow-[0_12px_24px_rgba(255,56,92,0.35)]"
-                          : "bg-white/10 text-slate-100 hover:bg-white/15"
-                      }`}
+                      onClick={() => { setSelectedCategoryId(category.id); setSelectedProductId(null); }}
+                      className={`rounded-full px-6 py-3 text-lg font-bold transition ${isActive ? "bg-[linear-gradient(135deg,#ff5f7a_0%,#ff385c_100%)] text-white shadow-[0_12px_24px_rgba(255,56,92,0.35)]" : "bg-white/10 text-slate-100 hover:bg-white/15"}`}
                     >
                       {category.name}
                     </button>
@@ -1212,9 +1229,7 @@ export function QrOrderingClient({
             </div>
 
             {visibleProducts.length === 0 ? (
-              <p className="rounded-2xl border border-white/15 bg-white/5 px-4 py-5 text-sm text-slate-200">
-                Bu kategori icin ürün bulunmuyor.
-              </p>
+              <p className="rounded-2xl border border-white/15 bg-white/5 px-4 py-5 text-sm text-slate-200">Bu kategori için ürün bulunmuyor.</p>
             ) : (
               <div className="max-h-[calc(100vh-190px)] overflow-y-auto pr-1">
                 <div className="grid grid-cols-2 gap-4 lg:grid-cols-3 2xl:grid-cols-4">
@@ -1223,10 +1238,7 @@ export function QrOrderingClient({
                     const handleTilePress = () => {
                       const groups = groupsByProduct.get(product.id) ?? [];
                       const hasRequiredGroups = groups.some((group) => group.is_required);
-                      if (hasRequiredGroups) {
-                        handleProductSelect(product.id);
-                        return;
-                      }
+                      if (hasRequiredGroups) { handleProductSelect(product.id); return; }
                       quickAddProduct(product);
                     };
                     return (
@@ -1235,38 +1247,22 @@ export function QrOrderingClient({
                         role="button"
                         tabIndex={0}
                         onClick={handleTilePress}
-                        onKeyDown={(event) => {
-                          if (event.key === "Enter" || event.key === " ") {
-                            event.preventDefault();
-                            handleTilePress();
-                          }
-                        }}
-                        className={`cursor-pointer rounded-3xl border p-4 transition active:scale-[0.99] focus:outline-none focus-visible:ring-2 focus-visible:ring-rose-400 ${
-                          isSelected
-                            ? "border-rose-400/70 bg-rose-500/10 shadow-[0_14px_35px_rgba(244,63,94,0.3)]"
-                            : "border-white/10 bg-[linear-gradient(145deg,rgba(30,41,59,0.85)_0%,rgba(17,24,39,0.95)_100%)]"
-                        }`}
+                        onKeyDown={(event) => { if (event.key === "Enter" || event.key === " ") { event.preventDefault(); handleTilePress(); } }}
+                        className={`cursor-pointer rounded-3xl border p-4 transition active:scale-[0.99] focus:outline-none focus-visible:ring-2 focus-visible:ring-rose-400 ${isSelected ? "border-rose-400/70 bg-rose-500/10 shadow-[0_14px_35px_rgba(244,63,94,0.3)]" : "border-white/10 bg-[linear-gradient(145deg,rgba(30,41,59,0.85)_0%,rgba(17,24,39,0.95)_100%)]"}`}
                       >
                         <div className="w-full">
                           <div className="mb-2 text-center text-5xl">{getProductEmoji(product.name)}</div>
                           <p className="text-center text-[1.35rem] font-bold leading-tight">{product.name}</p>
-                          <div className="mt-2 flex items-center justify-center gap-2 text-[11px] flex-wrap">
-                            <span className="rounded-full border border-amber-300/40 bg-amber-400/10 px-2 py-1 text-amber-200">Hazırlik: {getPrepTimeLabel(product)}</span>
-                            {topPickProductIds.includes(product.id) ? (
-                              <span className="rounded-full border border-rose-300/40 bg-rose-500/20 px-2 py-1 text-rose-100">En Çok Tercih</span>
-                            ) : null}
-                            {product.calories ? (
-                              <span className="rounded-full border border-emerald-300/40 bg-emerald-500/20 px-2 py-1 text-emerald-100">{product.calories} kcal</span>
-                            ) : null}
+                          <div className="mt-2 flex flex-wrap items-center justify-center gap-2 text-[11px]">
+                            <span className="rounded-full border border-amber-300/40 bg-amber-400/10 px-2 py-1 text-amber-200">Hazırlık: {getPrepTimeLabel(product)}</span>
+                            {topPickProductIds.includes(product.id) ? <span className="rounded-full border border-rose-300/40 bg-rose-500/20 px-2 py-1 text-rose-100">En Çok Tercih</span> : null}
+                            {product.calories ? <span className="rounded-full border border-emerald-300/40 bg-emerald-500/20 px-2 py-1 text-emerald-100">{product.calories} kcal</span> : null}
                           </div>
                           <p className="mt-2 text-center text-[1.9rem] font-black text-rose-400">{formatPrice(product.price)}</p>
                         </div>
                         <button
                           type="button"
-                          onClick={(event) => {
-                            event.stopPropagation();
-                            handleTilePress();
-                          }}
+                          onClick={(event) => { event.stopPropagation(); handleTilePress(); }}
                           className="mt-3 w-full rounded-full bg-white/10 px-3 py-2 text-sm font-semibold text-slate-100 transition hover:bg-white/20"
                         >
                           Ekle
@@ -1282,53 +1278,21 @@ export function QrOrderingClient({
               <div className="mt-4 rounded-2xl border border-white/10 bg-slate-900/65 p-4">
                 <p className="text-lg font-bold">{selectedProduct.name}</p>
                 {selectedProduct.calories ? (
-                  <div className="mt-1">
-                    <span className="inline-flex items-center gap-1 rounded-full bg-emerald-500/20 border border-emerald-500/30 px-2 py-0.5 text-[11px] font-semibold text-emerald-200">
-                      <Flame className="h-3 w-3" />
-                      {selectedProduct.calories} kcal
-                    </span>
-                  </div>
+                  <div className="mt-1"><span className="inline-flex items-center gap-1 rounded-full border border-emerald-500/30 bg-emerald-500/20 px-2 py-0.5 text-[11px] font-semibold text-emerald-200"><Flame className="h-3 w-3" />{selectedProduct.calories} kcal</span></div>
                 ) : null}
                 <p className="mt-1 text-sm text-slate-300">{selectedProduct.description ?? "Açıklama bulunmuyor."}</p>
-                {modifierErrorGroupIds.length > 0 ? (
-                  <p className="mt-3 rounded-xl border border-rose-300/50 bg-rose-500/15 px-3 py-2 text-sm text-rose-100">
-                    Zorunlu seçenekleri tamamlayin.
-                  </p>
-                ) : null}
+                {modifierErrorGroupIds.length > 0 ? <p className="mt-3 rounded-xl border border-rose-300/50 bg-rose-500/15 px-3 py-2 text-sm text-rose-100">Zorunlu seçenekleri tamamlayın.</p> : null}
                 {selectedProductGroups.length > 0 ? (
                   <div className="mt-3 space-y-3">
                     {selectedProductGroups.map((group) => (
-                      <div
-                        key={group.id}
-                        ref={(node) => {
-                          modifierGroupRefs.current[group.id] = node;
-                        }}
-                        className={`rounded-xl border p-3 ${
-                          modifierErrorGroupIds.includes(group.id) ? "border-rose-400 bg-rose-500/10" : "border-white/10 bg-white/5"
-                        }`}
-                      >
-                        <p className="mb-2 text-sm font-bold">
-                          {group.name}
-                          {group.is_required ? <span className="ml-2 text-xs text-amber-300">Zorunlu</span> : null}
-                        </p>
+                      <div key={group.id} ref={(node) => { modifierGroupRefs.current[group.id] = node; }} className={`rounded-xl border p-3 ${modifierErrorGroupIds.includes(group.id) ? "border-rose-400 bg-rose-500/10" : "border-white/10 bg-white/5"}`}>
+                        <p className="mb-2 text-sm font-bold">{group.name}{group.is_required ? <span className="ml-2 text-xs text-amber-300">Zorunlu</span> : null}</p>
                         <div className="grid gap-2 sm:grid-cols-2">
                           {(optionsByGroup.get(group.id) ?? []).map((option) => {
                             const isSelectedOption = selectedModifiers[group.id]?.id === option.id;
                             return (
-                              <button
-                                key={option.id}
-                                type="button"
-                                onClick={() => handleModifierSelect(group.id, option)}
-                                className={`rounded-xl border px-3 py-2 text-left text-sm ${
-                                  isSelectedOption
-                                    ? "border-rose-400 bg-rose-500/10 text-rose-200"
-                                    : "border-white/10 bg-slate-900/50 text-slate-200"
-                                }`}
-                              >
-                                <div className="flex items-center justify-between gap-2">
-                                  <span>{option.name}</span>
-                                  <span>{Number(option.price_delta) > 0 ? `+${Number(option.price_delta).toFixed(2)} TL` : "Dahil"}</span>
-                                </div>
+                              <button key={option.id} type="button" onClick={() => handleModifierSelect(group.id, option)} className={`rounded-xl border px-3 py-2 text-left text-sm ${isSelectedOption ? "border-rose-400 bg-rose-500/10 text-rose-200" : "border-white/10 bg-slate-900/50 text-slate-200"}`}>
+                                <div className="flex items-center justify-between gap-2"><span>{option.name}</span><span>{Number(option.price_delta) > 0 ? `+${Number(option.price_delta).toFixed(2)} TL` : "Dahil"}</span></div>
                               </button>
                             );
                           })}
@@ -1339,16 +1303,11 @@ export function QrOrderingClient({
                 ) : null}
                 <div className="mt-3 flex flex-wrap items-center justify-between gap-3 border-t border-white/10 pt-3">
                   <div className="flex items-center gap-2">
-                    <button onClick={() => setQuantity((q) => Math.max(1, q - 1))} className="h-10 w-10 rounded-xl bg-white/10 text-xl font-bold">-</button>
+                    <button onClick={() => setQuantity((q) => Math.max(1, q - 1))} className="qr-stepper-btn">−</button>
                     <span className="w-8 text-center text-lg font-bold">{quantity}</span>
-                    <button onClick={() => setQuantity((q) => q + 1)} className="h-10 w-10 rounded-xl bg-white/10 text-xl font-bold">+</button>
+                    <button onClick={() => setQuantity((q) => q + 1)} className="qr-stepper-btn">+</button>
                   </div>
-                  <button
-                    onClick={handleAddToCart}
-                    className="rounded-xl bg-[linear-gradient(135deg,#ff5f7a_0%,#ff385c_100%)] px-5 py-2 text-sm font-bold text-white"
-                  >
-                    Sepete Ekle
-                  </button>
+                  <button onClick={handleAddToCart} className="qr-btn-primary sm:w-auto" style={{width: "auto", padding: "0.75rem 1.5rem"}}>Sepete Ekle</button>
                 </div>
               </div>
             ) : null}
@@ -1362,21 +1321,9 @@ export function QrOrderingClient({
               </div>
               <div className="flex items-center gap-2">
                 {recentOrderSnapshot ? (
-                  <button
-                    type="button"
-                    onClick={reOrderLast}
-                    className="rounded-xl bg-emerald-500/20 px-3 py-2 text-xs font-semibold text-emerald-100 hover:bg-emerald-500/30"
-                  >
-                    Son Siparişi Tekrarla
-                  </button>
+                  <button type="button" onClick={reOrderLast} className="rounded-xl bg-emerald-500/20 px-3 py-2 text-xs font-semibold text-emerald-100 hover:bg-emerald-500/30">Son Siparişi Tekrarla</button>
                 ) : null}
-                <button
-                  type="button"
-                  onClick={() => setCartItems([])}
-                  className="rounded-xl bg-white/10 px-3 py-2 text-sm font-semibold text-slate-100 hover:bg-white/20"
-                >
-                  Temizle
-                </button>
+                <button type="button" onClick={() => setCartItems([])} className="rounded-xl bg-white/10 px-3 py-2 text-sm font-semibold text-slate-100 hover:bg-white/20">Temizle</button>
               </div>
             </div>
 
@@ -1384,218 +1331,122 @@ export function QrOrderingClient({
               {cartItems.length === 0 ? (
                 <p className="rounded-xl border border-white/10 bg-white/5 px-3 py-4 text-sm text-slate-300">Sepet boş.</p>
               ) : (
-                cartItems.map((item) => (
-                  <div key={item.id} className="rounded-2xl border border-white/10 bg-white/5 px-3 py-3">
-                    <div className="flex items-center justify-between gap-2">
-                      <div className="min-w-0">
-                        <p className="truncate text-[1rem] font-bold">{item.product.name}</p>
-                        <p className="text-sm text-slate-300">{formatPrice(Number(item.product.price) * item.quantity)}</p>
-                      </div>
-                      <div className="flex items-center gap-2">
-                        <button
-                          type="button"
-                          onClick={() => {
-                            if (item.quantity <= 1) {
-                              setCartItems((prev) => prev.filter((row) => row.id !== item.id));
-                              void trackFunnel("cart_remove", { cartItems: Math.max(0, cartItemCount - 1), cartTotal });
-                              return;
-                            }
-                            updateCartItemQuantity(item.id, item.quantity - 1);
-                          }}
-                          className="h-9 w-9 rounded-xl bg-white/10 text-xl font-bold"
-                        >
-                          -
-                        </button>
-                        <span className="w-5 text-center text-lg font-bold text-rose-400">{item.quantity}</span>
-                        <button
-                          type="button"
-                          onClick={() => updateCartItemQuantity(item.id, item.quantity + 1)}
-                          className="h-9 w-9 rounded-xl bg-white/10 text-xl font-bold"
-                        >
-                          +
-                        </button>
+                cartItems.map((item) => {
+                  let unitTotal = Number(item.product.price);
+                  for (const mod of Object.values(item.selectedModifiers)) unitTotal += Number(mod.price_delta);
+                  return (
+                    <div key={item.id} className="rounded-2xl border border-white/10 bg-white/5 px-3 py-3">
+                      <div className="flex items-center justify-between gap-2">
+                        <div className="min-w-0"><p className="truncate text-[1rem] font-bold">{item.product.name}</p><p className="text-sm text-slate-300">{formatPrice(unitTotal * item.quantity)}</p></div>
+                        <div className="flex items-center gap-2">
+                          <button type="button" onClick={() => { if (item.quantity <= 1) { setCartItems((prev) => prev.filter((row) => row.id !== item.id)); void trackFunnel("cart_remove", { cartItems: Math.max(0, cartItemCount - 1), cartTotal }); } else { updateCartItemQuantity(item.id, item.quantity - 1); } }} className="qr-stepper-btn" style={{width:"1.75rem",height:"1.75rem",fontSize:"1rem"}}>−</button>
+                          <span className="w-5 text-center font-bold">{item.quantity}</span>
+                          <button type="button" onClick={() => updateCartItemQuantity(item.id, item.quantity + 1)} className="qr-stepper-btn" style={{width:"1.75rem",height:"1.75rem",fontSize:"1rem"}}>+</button>
+                        </div>
                       </div>
                     </div>
-                  </div>
-                ))
+                  );
+                })
               )}
             </div>
 
-            {cartItems.length > 0 ? (
-              <div className="mt-3 rounded-xl border border-emerald-300/25 bg-emerald-500/10 p-3">
-                <p className="text-xs font-semibold uppercase tracking-[0.14em] text-emerald-100">Sana Özel Oneri</p>
-                <div className="mt-2 flex flex-wrap gap-2">
-                  {suggestUpsellProducts(2).map((product) => (
-                    <button
-                      key={`upsell-${product.id}`}
-                      type="button"
-                      onClick={() => quickAddProduct(product)}
-                      className="rounded-full border border-emerald-200/40 bg-emerald-500/20 px-3 py-1.5 text-xs font-semibold text-emerald-50"
-                    >
-                      + {product.name}
-                    </button>
-                  ))}
-                </div>
-              </div>
-            ) : null}
-
-            <div className="mt-4 border-t border-white/10 pt-4">
-              <div className="mb-2 flex items-center justify-between text-sm text-slate-300">
-                <span>Ara Toplam</span>
-                <span>{formatPrice(cartTotal)}</span>
-              </div>
-              <div className="mb-4 flex items-center justify-between">
-                <span className="text-4xl font-black text-rose-400">Toplam</span>
-                <span className="text-5xl font-black text-rose-400">{formatPrice(cartTotal)}</span>
-              </div>
-              <div className="mb-3">
-                <label className="mb-1 block text-xs font-bold uppercase tracking-[0.16em] text-slate-300">Pickup Adi</label>
-                <input
-                  type="text"
-                  placeholder="Adiniz veya Sipariş No"
-                  value={customerName}
-                  onChange={(event) => setCustomerName(event.target.value)}
-                  className="w-full rounded-xl border border-white/10 bg-white/5 px-3 py-3 text-sm text-white placeholder:text-slate-400"
-                />
-              </div>
-              {qrConfirmationEnabled ? (
-                <label className="mb-3 flex items-start gap-2 rounded-xl border border-white/10 bg-white/5 px-3 py-3 text-sm text-slate-100">
-                  <input
-                    type="checkbox"
-                    checked={confirmationChecked}
-                    onChange={(event) => setConfirmationChecked(event.target.checked)}
-                    className="mt-0.5 h-4 w-4"
-                  />
-                  <span>Siparişi ve tutarı onayliyorum.</span>
-                </label>
-              ) : null}
-              {submitError ? (
-                <p className="mb-3 rounded-xl border border-rose-300/50 bg-rose-500/15 px-3 py-2 text-sm text-rose-100">
-                  {submitError}
-                </p>
-              ) : null}
-              {activeQrAccessToken || qrCodeIdentifier ? (
-                <div className="space-y-3">
-                  <div className="grid grid-cols-2 gap-2 rounded-xl border border-white/10 bg-white/5 p-2">
-                    <button
-                      type="button"
-                      onClick={() => setPaymentMethod("cash")}
-                      className={`rounded-lg px-3 py-2 text-sm font-semibold ${paymentMethod === "cash" ? "bg-rose-500 text-white" : "bg-transparent text-slate-200"}`}
-                    >
-                      Nakit
-                    </button>
-                    <button
-                      type="button"
-                      onClick={() => setPaymentMethod("card")}
-                      className={`rounded-lg px-3 py-2 text-sm font-semibold ${paymentMethod === "card" ? "bg-indigo-500 text-white" : "bg-transparent text-slate-200"}`}
-                    >
-                      Kart
-                    </button>
+            {cartItems.length > 0 && (
+              <div className="mt-4 border-t border-white/10 pt-4">
+                <div className="mb-3 flex justify-between text-lg font-black"><span>Toplam</span><span className="text-rose-400">{formatPrice(cartTotal)}</span></div>
+                {operatingProfile === "coffee_self_service" && (
+                  <div className="mb-3">
+                    <input type="text" placeholder="Adınız" value={customerName} onChange={(e) => setCustomerName(e.target.value)} className="w-full rounded-xl border border-white/10 bg-white/08 px-4 py-3 text-sm text-white placeholder:text-slate-400 focus:border-rose-400 focus:outline-none" />
                   </div>
-                  <button
-                    type="button"
-                    onClick={() => {
-                      void submitOrder(paymentMethod);
-                    }}
-                    disabled={isSubmitting}
-                    className="w-full rounded-2xl bg-[linear-gradient(135deg,#ff5f7a_0%,#ff385c_100%)] px-4 py-3 text-lg font-bold text-white disabled:opacity-50"
-                  >
-                    {isSubmitting ? "Sipariş Günderiliyor..." : `Siparişi ${paymentMethod === "cash" ? "Nakit" : "Kart"} Olarak Günder`}
-                  </button>
-                </div>
-              ) : (
-                <p className="rounded-xl border border-amber-300/40 bg-amber-500/10 px-3 py-3 text-sm text-amber-100">
-                  Sipariş verebilmek icin gecerli bir masa QR kodu okutmalisiniz.
-                </p>
-              )}
-            </div>
+                )}
+                {submitError ? <p className="mb-3 rounded-xl border border-rose-400/30 bg-rose-500/15 px-3 py-2 text-sm text-rose-200">{submitError}</p> : null}
+                <button onClick={() => { void submitOrder(paymentMethod); }} disabled={isSubmitting || (operatingProfile === "coffee_self_service" && !customerName.trim())} className="qr-btn-primary">
+                  {isSubmitting ? "Gönderiliyor..." : "Siparişi Ver"}
+                </button>
+              </div>
+            )}
           </aside>
         </div>
       </div>
     );
   }
 
+  // ── RESTAURANT / CAFÉ LAYOUT (Liquid Glass) ───────────────────────
+  const upsellProducts = suggestUpsellProducts(2);
+
   return (
-    <div className="mx-auto flex min-h-screen w-full max-w-6xl flex-col gap-4 bg-[#f6f2ea] px-3 py-4 pb-[calc(6.5rem+env(safe-area-inset-bottom))] text-slate-950 md:px-6 md:py-6">
-      <header className="overflow-hidden rounded-[32px] border border-white/70 bg-[#15110c] text-white shadow-[0_24px_80px_rgba(15,23,42,0.20)]">
-        <div className="relative p-5 sm:p-7">
-          <div className="absolute inset-y-0 right-0 hidden w-1/2 bg-[radial-gradient(circle_at_center,#f97316_0%,rgba(249,115,22,0.22)_34%,transparent_68%)] opacity-80 md:block" />
-          <div className="relative flex flex-col gap-5 md:flex-row md:items-end md:justify-between">
+    <div className="qr-shell text-white">
+      {/* ── STICKY HEADER ── */}
+      <header className="qr-header sticky top-0 z-30 px-4 py-3">
+        <div className="mx-auto flex max-w-2xl items-center justify-between">
+          <div className="flex items-center gap-3">
+            <div
+              className="flex h-10 w-10 items-center justify-center rounded-2xl text-lg font-black text-white"
+              style={{ background: "linear-gradient(135deg, #f43f5e 0%, #fb923c 100%)", boxShadow: "0 4px 14px rgba(244,63,94,0.45)" }}
+            >
+              ☕
+            </div>
             <div>
-              <div className="inline-flex items-center gap-2 rounded-full border border-white/15 bg-white/10 px-3 py-1 text-xs font-bold uppercase tracking-[0.18em] text-orange-100">
-                <Sparkles className="h-3.5 w-3.5" aria-hidden="true" />
-                QR Menü
-              </div>
-              <h1 className="mt-4 max-w-2xl text-4xl font-bold tracking-tight sm:text-5xl">Masadan hızlı menü</h1>
-              <p className="mt-3 max-w-xl text-sm leading-6 text-slate-200">
-                Kategorileri gez, ürün detaylarını incele ve işletme izin verdiyse siparişini masadan gönder.
-              </p>
+              <p className="text-sm font-black tracking-tight text-white">Cloud POS Menü</p>
+              {qrCodeIdentifier ? (
+                <p className="text-xs font-semibold text-rose-300">
+                  Masa #{qrCodeIdentifier.split("-").pop()?.toUpperCase() ?? qrCodeIdentifier.slice(0, 6).toUpperCase()}
+                </p>
+              ) : null}
             </div>
-            <div className="grid grid-cols-2 gap-2 text-sm sm:min-w-72">
-              <div className="rounded-2xl border border-white/10 bg-white/10 p-3">
-                <p className="text-xs text-slate-300">Ürün</p>
-                <p className="mt-1 text-2xl font-bold">{products.length}</p>
-              </div>
-              <div className="rounded-2xl border border-white/10 bg-white/10 p-3">
-                <p className="text-xs text-slate-300">Sepet</p>
-                <p className="mt-1 text-2xl font-bold">{cartItemCount}</p>
-              </div>
-            </div>
+          </div>
+          <div className="text-right">
+            <p className="text-lg font-black text-white">{currentClock}</p>
+            {!canOrderFromQr && (
+              <p className="text-xs font-semibold text-amber-400">Sipariş kapalı</p>
+            )}
           </div>
         </div>
       </header>
 
+      {/* ── ORDERING DISABLED BANNER ── */}
       {!canOrderFromQr ? (
-        <div className="rounded-[24px] border border-amber-200 bg-amber-50 px-4 py-4 text-sm font-medium text-amber-950 shadow-sm">
+        <div className="sticky top-[3.75rem] z-20 border-b border-amber-400/20 bg-amber-500/10 px-4 py-2.5 text-center text-xs font-semibold text-amber-200 backdrop-blur">
           {orderingDisabledMessage}
         </div>
       ) : null}
 
-      <section className="rounded-[32px] border border-white/70 bg-white/90 p-3 shadow-[0_18px_50px_rgba(15,23,42,0.10)] backdrop-blur">
-        <div className="sticky top-3 z-20 mb-3 rounded-[24px] border border-slate-200 bg-white/95 px-3 py-3 shadow-[0_12px_30px_rgba(15,23,42,0.10)] backdrop-blur">
-          <div className="mb-3 grid gap-3 md:grid-cols-[1fr_auto]">
-            <label className="relative block">
+      {/* ── CATEGORY TAB BAR ── */}
+      <div className="qr-category-bar sticky z-20 px-4 py-3" style={{ top: canOrderFromQr ? "3.75rem" : "6.25rem" }}>
+        <div className="mx-auto max-w-2xl">
+          {/* Search */}
+          <div className="mb-3 flex items-center gap-2">
+            <label className="relative flex-1">
               <Search className="pointer-events-none absolute left-3 top-1/2 h-4 w-4 -translate-y-1/2 text-slate-400" aria-hidden="true" />
               <input
                 type="search"
-                placeholder="Ürün veya içerik ara"
+                placeholder="Ürün ara..."
                 value={productSearchTerm}
                 onChange={(event) => setProductSearchTerm(event.target.value)}
-                className="w-full rounded-2xl border border-slate-200 bg-slate-50 py-3 pl-10 pr-4 text-sm font-medium text-slate-950 outline-none transition placeholder:text-slate-400 focus:border-orange-300 focus:bg-white focus:ring-4 focus:ring-orange-100"
+                className="w-full rounded-full border border-white/10 bg-white/06 py-2 pl-9 pr-4 text-sm text-white placeholder:text-slate-500 focus:border-rose-400/50 focus:outline-none focus:bg-white/08"
               />
             </label>
-            <button
-              type="button"
-              onClick={() => {
-                if (topPickProducts.length === 0) {
-                  return;
-                }
-                setSelectedCategoryId(topPickProducts[0].category_id);
-                setProductSearchTerm("");
-              }}
-              className="inline-flex items-center justify-center gap-2 rounded-2xl border border-orange-200 bg-orange-50 px-4 py-3 text-sm font-bold text-orange-800 transition hover:bg-orange-100"
-            >
-              <Sparkles className="h-4 w-4" aria-hidden="true" />
-              Öne çıkanlar
-            </button>
+            {recentOrderSnapshot ? (
+              <button
+                type="button"
+                onClick={reOrderLast}
+                className="flex-shrink-0 rounded-full border border-emerald-400/25 bg-emerald-500/12 px-3 py-2 text-xs font-bold text-emerald-300 transition hover:bg-emerald-500/20"
+              >
+                Tekrar Et
+              </button>
+            ) : null}
           </div>
-          <div className="-mx-1 overflow-x-auto px-1 pb-1 scrollbar-hide [scrollbar-width:none] [-ms-overflow-style:none] [scroll-behavior:smooth] [touch-action:pan-x]">
-            <div className="flex min-w-max snap-x snap-mandatory gap-2">
+
+          {/* Category pills */}
+          <div className="overflow-x-auto qr-scrollbar-hide">
+            <div className="flex gap-2 pb-0.5">
               {orderedCategories.map((category) => {
                 const isActive = category.id === activeCategoryId;
                 return (
                   <button
                     key={category.id}
                     type="button"
-                    onClick={() => {
-                      setSelectedCategoryId(category.id);
-                      setSelectedProductId(null);
-                    }}
-                    className={`snap-start rounded-2xl px-4 py-2 text-sm font-semibold transition ${
-                      isActive
-                        ? "bg-slate-950 text-white shadow-[0_10px_20px_rgba(15,23,42,0.18)]"
-                        : "border border-slate-200 bg-slate-50 text-slate-600 hover:bg-slate-100"
-                    }`}
+                    onClick={() => { setSelectedCategoryId(category.id); setSelectedProductId(null); }}
+                    className={`qr-tab-pill flex-shrink-0 ${isActive ? "qr-tab-pill-active" : ""}`}
                   >
                     {category.name}
                   </button>
@@ -1604,366 +1455,441 @@ export function QrOrderingClient({
             </div>
           </div>
         </div>
+      </div>
 
+      {/* ── PRODUCT GRID ── */}
+      <main className="mx-auto max-w-2xl px-4 pb-32 pt-4">
         {visibleProducts.length === 0 ? (
-          <p className="rounded-2xl border border-slate-200 bg-slate-50 px-4 py-5 text-sm text-slate-500">
-            Bu kategori icin ürün bulunmuyor.
-          </p>
+          <div className="mt-8 rounded-2xl border border-white/08 bg-white/03 px-4 py-8 text-center">
+            <p className="text-2xl">🍽️</p>
+            <p className="mt-3 text-sm font-semibold text-slate-400">Bu kategori için ürün bulunamadı.</p>
+          </div>
         ) : (
-          <div className="grid grid-cols-2 gap-3 md:grid-cols-3 lg:grid-cols-4">
+          <div className="grid grid-cols-2 gap-3 sm:grid-cols-3">
             {visibleProducts.map((product) => {
               const isSelected = selectedProductId === product.id;
+              const handlePress = () => {
+                const groups = groupsByProduct.get(product.id) ?? [];
+                const hasRequiredGroups = groups.some((g) => g.is_required);
+                if (hasRequiredGroups) { handleProductSelect(product.id); return; }
+                quickAddProduct(product);
+              };
               return (
                 <article
                   key={product.id}
-                  className={`group overflow-hidden rounded-[22px] border bg-white text-left shadow-sm transition hover:-translate-y-0.5 hover:shadow-xl ${
-                    isSelected
-                      ? "border-orange-300 ring-2 ring-orange-200"
-                      : "border-slate-200 hover:border-orange-200"
-                  }`}
+                  className={`qr-product-card flex flex-col overflow-hidden ${isSelected ? "qr-product-card-selected" : ""}`}
+                  role="button"
+                  tabIndex={0}
+                  onClick={handlePress}
+                  onKeyDown={(e) => { if (e.key === "Enter" || e.key === " ") { e.preventDefault(); handlePress(); } }}
+                  aria-pressed={isSelected}
                 >
-                  <button
-                    type="button"
-                    onClick={() => {
-                      const groups = groupsByProduct.get(product.id) ?? [];
-                      const hasRequiredGroups = groups.some((group) => group.is_required);
-                      if (hasRequiredGroups) {
-                        handleProductSelect(product.id);
-                        return;
-                      }
-                      quickAddProduct(product);
-                    }}
-                    className="w-full text-left"
-                  >
-                    {product.image_url ? (
-                      <div className="relative h-[124px] w-full overflow-hidden bg-slate-100 sm:h-36">
-                        <Image src={product.image_url} alt={product.name} fill sizes="(max-width: 768px) 50vw, 33vw" className="object-cover" />
-                      </div>
-                    ) : (
-                      <div className="flex h-[124px] w-full items-center justify-center bg-[radial-gradient(circle_at_top,#fed7aa_0%,#fff7ed_45%,#f8fafc_100%)] text-5xl sm:h-36">
-                        {getProductEmoji(product.name)}
-                      </div>
-                    )}
-                    <div className="px-3 py-3">
-                      <p className="min-h-10 text-[15px] font-bold leading-5 text-slate-950">{product.name}</p>
-                      <div className="mt-2 flex flex-wrap items-center gap-2">
-                        <span className="text-[16px] font-bold text-orange-700">{formatPrice(product.price)}</span>
-                        <span className="inline-flex items-center gap-1 rounded-full bg-slate-100 px-2 py-1 text-[11px] font-semibold text-slate-500">
-                          <Clock3 className="h-3 w-3" aria-hidden="true" />
-                          {getPrepTimeLabel(product)}
-                        </span>
-                        {product.calories ? (
-                          <span className="inline-flex items-center gap-1 rounded-full bg-emerald-50 border border-emerald-200/50 px-2 py-1 text-[11px] font-semibold text-emerald-700">
-                            <Flame className="h-3.5 w-3.5" aria-hidden="true" />
-                            {product.calories} kcal
-                          </span>
-                        ) : null}
-                      </div>
+                  {/* Image or emoji */}
+                  {product.image_url ? (
+                    <div className="relative h-28 w-full overflow-hidden rounded-t-2xl bg-slate-800">
+                      <Image src={product.image_url} alt={product.name} fill sizes="(max-width: 640px) 50vw, 33vw" className="object-cover" />
                     </div>
-                  </button>
-                  <div className="border-t border-slate-100 px-3 py-3">
-                    <button
-                      type="button"
-                      onClick={() => quickAddProduct(product)}
-                      disabled={!canOrderFromQr}
-                      className="inline-flex w-full items-center justify-center gap-2 rounded-2xl border border-slate-200 bg-slate-950 px-3 py-2.5 text-xs font-bold text-white transition hover:bg-slate-800 disabled:cursor-not-allowed disabled:bg-slate-200 disabled:text-slate-500"
-                    >
-                      <Plus className="h-4 w-4" aria-hidden="true" />
-                      {canOrderFromQr ? "Hızlı Ekle" : "Sipariş Kapalı"}
-                    </button>
+                  ) : (
+                    <div className="flex h-24 w-full items-center justify-center rounded-t-2xl bg-gradient-to-br from-slate-800 to-slate-900 text-4xl">
+                      {getProductEmoji(product.name)}
+                    </div>
+                  )}
+
+                  {/* Info */}
+                  <div className="flex flex-1 flex-col gap-2 p-3">
+                    <p className="text-sm font-bold leading-tight text-white">{product.name}</p>
+                    <div className="flex flex-wrap items-center gap-1">
+                      <span className="inline-flex items-center gap-1 rounded-full bg-white/06 px-1.5 py-0.5 text-[10px] font-semibold text-slate-400">
+                        <Clock3 className="h-2.5 w-2.5" aria-hidden="true" />
+                        {getPrepTimeLabel(product)}
+                      </span>
+                      {product.calories ? (
+                        <span className="inline-flex items-center gap-1 rounded-full bg-emerald-500/12 px-1.5 py-0.5 text-[10px] font-semibold text-emerald-400">
+                          <Flame className="h-2.5 w-2.5" aria-hidden="true" />
+                          {product.calories} kcal
+                        </span>
+                      ) : null}
+                      {topPickProductIds.includes(product.id) ? (
+                        <span className="rounded-full bg-rose-500/15 px-1.5 py-0.5 text-[10px] font-bold text-rose-300">
+                          🔥 Top
+                        </span>
+                      ) : null}
+                    </div>
+                    <div className="mt-auto flex items-center justify-between gap-1">
+                      <span className="text-base font-black text-rose-400">{formatPrice(product.price)}</span>
+                      {canOrderFromQr ? (
+                        <button
+                          type="button"
+                          onClick={(e) => { e.stopPropagation(); handlePress(); }}
+                          className="flex h-7 w-7 items-center justify-center rounded-full bg-rose-500/20 text-rose-300 transition hover:bg-rose-500/35"
+                          aria-label={`${product.name} ekle`}
+                        >
+                          <Plus className="h-4 w-4" />
+                        </button>
+                      ) : null}
+                    </div>
                   </div>
                 </article>
               );
             })}
           </div>
         )}
+      </main>
 
-        {cartItems.length > 0 ? (
-          <section className="mt-4 rounded-[24px] border border-slate-200 bg-slate-50 p-4">
-            <div className="mb-2 flex items-center justify-between">
-              <p className="text-sm font-semibold text-slate-950">Seçilen ürünler</p>
-              <p className="text-xs text-slate-500">Sırayla eklenir</p>
-            </div>
-            <div className="max-h-48 space-y-2 overflow-y-auto pr-1 [scrollbar-gutter:stable]">
-              {cartItems.map((item, index) => (
-                <div key={item.id} className="flex items-center justify-between rounded-xl border border-slate-200 bg-white px-3 py-2 text-sm">
-                  <span className="text-slate-700">{index + 1}. {item.product.name}</span>
-                  <span className="font-semibold text-orange-700">{item.quantity}x</span>
+      {/* ── FLOATING CART FAB ── */}
+      {cartItems.length > 0 && canOrderFromQr ? (
+        <button
+          onClick={() => setIsCartOpen(true)}
+          className="qr-cart-fab"
+          aria-label={`Sepeti aç – ${cartItemCount} ürün`}
+        >
+          <ShoppingBag className="h-5 w-5" aria-hidden="true" />
+          <span>{cartItemCount} Ürün</span>
+          <span className="mx-1 h-4 w-px bg-white/30" aria-hidden="true" />
+          <span>{formatPrice(cartTotal)}</span>
+        </button>
+      ) : null}
+
+      {/* ── PRODUCT DETAIL BOTTOM SHEET ── */}
+      {selectedProduct ? (
+        <>
+          <div className="qr-bottom-sheet-backdrop" onClick={() => setSelectedProductId(null)} aria-hidden="true" />
+          <div className="qr-bottom-sheet" role="dialog" aria-modal="true" aria-label={selectedProduct.name}>
+            <div className="qr-bottom-sheet-handle" />
+            <div className="px-5 pb-8 pt-4">
+              {/* Product header */}
+              <div className="mb-4 flex items-start justify-between gap-3">
+                <div className="flex-1">
+                  <div className="mb-1 text-4xl">{getProductEmoji(selectedProduct.name)}</div>
+                  <h2 className="text-xl font-black text-white">{selectedProduct.name}</h2>
+                  {selectedProduct.calories ? (
+                    <span className="mt-1 inline-flex items-center gap-1 rounded-full border border-emerald-500/25 bg-emerald-500/12 px-2 py-0.5 text-xs font-semibold text-emerald-300">
+                      <Flame className="h-3 w-3" aria-hidden="true" /> {selectedProduct.calories} kcal
+                    </span>
+                  ) : null}
+                  <p className="mt-1.5 text-sm leading-relaxed text-slate-400">{selectedProduct.description ?? "Bu ürün için açıklama bulunmuyor."}</p>
                 </div>
-              ))}
-            </div>
-          </section>
-        ) : null}
+                <button
+                  type="button"
+                  onClick={() => setSelectedProductId(null)}
+                  aria-label="Kapat"
+                  className="flex h-8 w-8 flex-shrink-0 items-center justify-center rounded-full bg-white/08 text-slate-400 transition hover:bg-white/14"
+                >
+                  <X className="h-4 w-4" />
+                </button>
+              </div>
 
-        {selectedProduct && (
-          <div className="mt-4 space-y-4 rounded-[24px] border border-slate-200 bg-white p-5 shadow-sm">
-            <div>
-              <p className="text-xl font-bold text-slate-950">{selectedProduct.name}</p>
-              {selectedProduct.calories ? (
-                <div className="mt-1.5 flex items-center gap-1.5">
-                  <span className="inline-flex items-center gap-1 rounded-full bg-emerald-50 border border-emerald-200/60 px-2.5 py-0.5 text-xs font-semibold text-emerald-700">
-                    <Flame className="h-3.5 w-3.5" aria-hidden="true" />
-                    {selectedProduct.calories} kcal
-                  </span>
+              {/* Modifier error */}
+              {modifierErrorGroupIds.length > 0 ? (
+                <p className="mb-3 rounded-xl border border-rose-400/30 bg-rose-500/12 px-3 py-2 text-sm text-rose-300">
+                  Zorunlu seçenekleri tamamlayın.
+                </p>
+              ) : null}
+
+              {/* Modifier groups */}
+              {selectedProductGroups.length > 0 ? (
+                <div className="mb-4 space-y-4">
+                  {selectedProductGroups.map((group) => {
+                    const hasError = modifierErrorGroupIds.includes(group.id);
+                    return (
+                      <div
+                        key={group.id}
+                        ref={(node) => { modifierGroupRefs.current[group.id] = node; }}
+                        className={`rounded-xl border p-3 ${hasError ? "border-rose-400/40 bg-rose-500/08" : "border-white/06 bg-white/03"}`}
+                      >
+                        <p className="mb-2.5 text-sm font-bold text-white">
+                          {group.name}
+                          {group.is_required ? <span className="ml-2 text-xs font-semibold text-amber-400">Zorunlu</span> : <span className="ml-2 text-xs text-slate-500">Opsiyonel</span>}
+                        </p>
+                        <div className="grid grid-cols-2 gap-2">
+                          {(optionsByGroup.get(group.id) ?? []).map((option) => {
+                            const isOptSelected = selectedModifiers[group.id]?.id === option.id;
+                            return (
+                              <button
+                                key={option.id}
+                                type="button"
+                                onClick={() => handleModifierSelect(group.id, option)}
+                                className={`qr-modifier-btn ${isOptSelected ? "qr-modifier-btn-selected" : ""}`}
+                              >
+                                <div className="flex items-center justify-between gap-1">
+                                  <span>{option.name}</span>
+                                  <span className="text-[11px] opacity-75">
+                                    {Number(option.price_delta) > 0 ? `+${Number(option.price_delta).toFixed(0)} TL` : "Dahil"}
+                                  </span>
+                                </div>
+                              </button>
+                            );
+                          })}
+                        </div>
+                      </div>
+                    );
+                  })}
                 </div>
               ) : null}
-              <p className="mt-1.5 text-sm text-slate-500">{selectedProduct.description ?? "Açıklama bulunmuyor."}</p>
-            </div>
-            {modifierErrorGroupIds.length > 0 ? (
-              <p className="rounded-xl border border-rose-300/50 bg-rose-500/15 px-3 py-2 text-sm text-rose-100">
-                Zorunlu seçenekleri tamamlayin.
-              </p>
-            ) : null}
-            {selectedProductGroups.length > 0 && (
-              <div className="space-y-4">
-                {selectedProductGroups.map((group) => {
-                  const hasError = modifierErrorGroupIds.includes(group.id);
-                  return (
-                    <div
-                      key={group.id}
-                      ref={(node) => {
-                        modifierGroupRefs.current[group.id] = node;
-                      }}
-                      className={`rounded-xl border p-4 ${hasError ? "border-rose-300 bg-rose-50" : "border-slate-200 bg-slate-50"}`}
-                    >
-                      <p className="mb-3 font-bold text-slate-950">
-                        {group.name}
-                        {group.is_required ? <span className="ml-2 text-xs font-medium text-amber-400">Zorunlu</span> : null}
-                      </p>
-                      <div className="grid gap-2 sm:grid-cols-2">
-                        {(optionsByGroup.get(group.id) ?? []).map((option) => {
-                          const isOptSelected = selectedModifiers[group.id]?.id === option.id;
-                          return (
-                            <button
-                              key={option.id}
-                              type="button"
-                              onClick={() => handleModifierSelect(group.id, option)}
-                              className={`flex items-center justify-between rounded-xl border px-3 py-3 text-sm transition ${
-                                isOptSelected
-                                  ? "border-orange-300 bg-orange-50 text-orange-800"
-                                  : "border-slate-200 bg-white text-slate-700 hover:bg-slate-100"
-                              }`}
-                            >
-                              <span className="font-medium">{option.name}</span>
-                              <span className={isOptSelected ? "text-orange-700" : "text-slate-500"}>
-                                {Number(option.price_delta) > 0 ? `+${Number(option.price_delta).toFixed(2)} TL` : "Dahil"}
-                              </span>
-                            </button>
-                          );
-                        })}
-                      </div>
-                    </div>
-                  );
-                })}
-              </div>
-            )}
 
-            <div className="mt-2 flex flex-wrap items-center justify-between gap-3 border-t border-slate-200 pt-4">
-              <div className="flex items-center gap-4">
+              {/* Quantity + add button */}
+              <div className="flex items-center gap-4 border-t border-white/06 pt-4">
+                <div className="flex items-center gap-3">
+                  <button type="button" onClick={() => setQuantity((q) => Math.max(1, q - 1))} className="qr-stepper-btn" aria-label="Adedi azalt">
+                    <Minus className="h-4 w-4" />
+                  </button>
+                  <span className="w-8 text-center text-xl font-black">{quantity}</span>
+                  <button type="button" onClick={() => setQuantity((q) => q + 1)} className="qr-stepper-btn" aria-label="Adedi artır">
+                    <Plus className="h-4 w-4" />
+                  </button>
+                </div>
                 <button
                   type="button"
-                  onClick={() => setQuantity((q) => Math.max(1, q - 1))}
-                  aria-label="Adedi azalt"
-                  className="inline-flex h-10 w-10 items-center justify-center rounded-full border border-slate-200 bg-slate-50 text-slate-800 hover:bg-slate-100"
+                  onClick={handleAddToCart}
+                  disabled={!canOrderFromQr}
+                  className="qr-btn-primary"
+                  style={{ flex: 1 }}
                 >
-                  <Minus className="h-4 w-4" aria-hidden="true" />
-                </button>
-                <span className="w-4 text-center text-lg font-bold text-slate-950">{quantity}</span>
-                <button
-                  type="button"
-                  onClick={() => setQuantity((q) => q + 1)}
-                  aria-label="Adedi artır"
-                  className="inline-flex h-10 w-10 items-center justify-center rounded-full border border-slate-200 bg-slate-50 text-slate-800 hover:bg-slate-100"
-                >
-                  <Plus className="h-4 w-4" aria-hidden="true" />
+                  {canOrderFromQr
+                    ? `Sepete Ekle – ${formatPrice((Number(selectedProduct.price) + Object.values(selectedModifiers).reduce((s, m) => s + Number(m.price_delta), 0)) * quantity)}`
+                    : "Sipariş Kapalı"}
                 </button>
               </div>
-              <button
-                type="button"
-                onClick={handleAddToCart}
-                disabled={!canOrderFromQr}
-                className="w-full rounded-2xl bg-slate-950 px-6 py-3 font-bold text-white shadow-[0_10px_24px_rgba(15,23,42,0.18)] transition hover:bg-slate-800 disabled:cursor-not-allowed disabled:bg-slate-200 disabled:text-slate-500 sm:w-auto"
-              >
-                {canOrderFromQr ? "Sepete Ekle" : "Sipariş Kapalı"}
-              </button>
             </div>
           </div>
-        )}
-      </section>
-
-      {cartItems.length > 0 && (
-        <>
-          <div className="fixed bottom-0 left-0 right-0 z-40 border-t border-slate-200 bg-white/95 p-4 pb-[max(1rem,env(safe-area-inset-bottom))] shadow-[0_-18px_40px_rgba(15,23,42,0.12)] backdrop-blur-xl">
-            <div className="mx-auto flex max-w-6xl flex-wrap items-center justify-between gap-3">
-              <div>
-                <p className="text-sm font-medium text-slate-500">{cartItemCount} ürün</p>
-                <p className="text-lg font-bold text-slate-950">{formatPrice(cartTotal)}</p>
-              </div>
-              <button
-                onClick={() => setIsCartOpen(true)}
-                className="inline-flex w-full items-center justify-center gap-2 rounded-2xl bg-slate-950 px-8 py-3.5 font-bold text-white shadow-[0_10px_24px_rgba(15,23,42,0.18)] transition hover:bg-slate-800 sm:w-auto"
-              >
-                <ShoppingBag className="h-5 w-5" aria-hidden="true" />
-                Sepeti Gör
-              </button>
-            </div>
-          </div>
-
-          {isCartOpen && (
-            <div className="fixed inset-0 z-50 flex flex-col bg-[#f6f2ea]">
-              <div className="flex items-center justify-between border-b border-slate-200 bg-white p-4">
-                <h2 className="text-lg font-bold text-slate-950">Sipariş Sepeti</h2>
-                <button type="button" onClick={() => setIsCartOpen(false)} aria-label="Sepeti kapat" className="rounded-full border border-slate-200 bg-slate-50 p-2 text-slate-700">
-                  <X className="h-5 w-5" aria-hidden="true" />
-                </button>
-              </div>
-
-              <div className="flex-1 overflow-y-auto p-4">
-                <div className="space-y-4">
-                  {cartItems.map((item) => (
-                    <div key={item.id} className="rounded-2xl border border-slate-200 bg-white p-4 shadow-sm">
-                      {(() => {
-                        let unitTotal = Number(item.product.price);
-                        for (const mod of Object.values(item.selectedModifiers)) {
-                          unitTotal += Number(mod.price_delta);
-                        }
-                        return (
-                          <>
-                      <div className="flex items-start justify-between gap-2 font-semibold text-slate-950">
-                        <span className="min-w-0 break-words">
-                          {item.quantity}x {item.product.name}
-                        </span>
-                        <span>{formatPrice(unitTotal * item.quantity)}</span>
-                      </div>
-                      {Object.values(item.selectedModifiers).length > 0 ? (
-                        <div className="mt-2 text-sm text-slate-500">
-                          {Object.values(item.selectedModifiers).map((mod) => (
-                            <div key={mod.id} className="flex justify-between">
-                              <span>+ {mod.name}</span>
-                              {Number(mod.price_delta) > 0 ? <span>{formatPrice(Number(mod.price_delta))}</span> : null}
-                            </div>
-                          ))}
-                        </div>
-                      ) : null}
-                      <div className="mt-3 flex items-center justify-between gap-3">
-                        <div className="flex items-center gap-2">
-                          <button
-                            type="button"
-                            onClick={() => updateCartItemQuantity(item.id, item.quantity - 1)}
-                            aria-label="Adedi azalt"
-                            className="inline-flex h-8 w-8 items-center justify-center rounded-lg border border-slate-200 bg-slate-50 text-slate-700"
-                          >
-                            <Minus className="h-4 w-4" aria-hidden="true" />
-                          </button>
-                          <input
-                            value={item.quantity}
-                            onChange={(event) => updateCartItemQuantity(item.id, Number(event.target.value))}
-                            inputMode="numeric"
-                            className="h-8 w-14 rounded-lg border border-slate-200 bg-slate-50 px-2 text-center text-sm text-slate-950"
-                          />
-                          <button
-                            type="button"
-                            onClick={() => updateCartItemQuantity(item.id, item.quantity + 1)}
-                            aria-label="Adedi artır"
-                            className="inline-flex h-8 w-8 items-center justify-center rounded-lg border border-slate-200 bg-slate-50 text-slate-700"
-                          >
-                            <Plus className="h-4 w-4" aria-hidden="true" />
-                          </button>
-                        </div>
-                      <button
-                        onClick={() => {
-                          setCartItems((prev) => prev.filter((i) => i.id !== item.id));
-                          void trackFunnel("cart_remove", { cartItems: Math.max(0, cartItemCount - item.quantity), cartTotal });
-                        }}
-                        className="text-sm font-medium text-rose-600"
-                      >
-                        Sepetten Çıkar
-                      </button>
-                      </div>
-                          </>
-                        );
-                      })()}
-                    </div>
-                  ))}
-                </div>
-              </div>
-
-              <div className="border-t border-slate-200 bg-white p-6">
-                <div className="mb-4 flex justify-between text-xl font-bold text-slate-950">
-                  <span>Toplam</span>
-                  <span className="text-orange-700">{formatPrice(cartTotal)}</span>
-                </div>
-
-                {submitError ? (
-                  <p className="mb-3 rounded-xl border border-rose-200 bg-rose-50 px-3 py-2 text-sm text-rose-700">
-                    {submitError}
-                  </p>
-                ) : null}
-                {activeQrAccessToken || qrCodeIdentifier ? (
-                  qrConfirmationEnabled ? (
-                    checkoutStep === "review" ? (
-                      <button
-                        onClick={() => {
-                          setCheckoutStep("confirm");
-                          void trackFunnel("checkout_confirm_view", { cartItems: cartItemCount, cartTotal });
-                        }}
-                        className="w-full rounded-2xl bg-slate-950 py-4 text-lg font-bold text-white shadow-[0_10px_24px_rgba(15,23,42,0.18)] transition hover:bg-slate-800"
-                      >
-                        Sipariş Ozetiyle Devam Et
-                      </button>
-                    ) : (
-                      <div className="space-y-3">
-                        <label className="flex items-start gap-2 rounded-xl border border-slate-200 bg-slate-50 px-3 py-3 text-sm text-slate-700">
-                          <input
-                            type="checkbox"
-                            checked={confirmationChecked}
-                            onChange={(event) => setConfirmationChecked(event.target.checked)}
-                            className="mt-0.5 h-4 w-4"
-                          />
-                          <span>Siparişi ve tutarı onayliyorum.</span>
-                        </label>
-                        <div className="flex items-center gap-2">
-                          <button
-                            type="button"
-                            onClick={() => setCheckoutStep("review")}
-                            className="w-full rounded-xl border border-slate-200 bg-white px-4 py-3 text-sm font-semibold text-slate-700"
-                          >
-                            Geri Dön
-                          </button>
-                          <button
-                            onClick={() => {
-                              void trackFunnel("checkout_confirm_ack", { cartItems: cartItemCount, cartTotal });
-                              void submitOrder("cash");
-                            }}
-                            disabled={isSubmitting || !confirmationChecked}
-                            className="w-full rounded-xl bg-slate-950 px-4 py-3 text-sm font-bold text-white shadow-[0_10px_24px_rgba(15,23,42,0.18)] transition hover:bg-slate-800 disabled:opacity-50"
-                          >
-                            {isSubmitting ? "Sipariş Günderiliyor..." : "Son Onayla Günder"}
-                          </button>
-                        </div>
-                      </div>
-                    )
-                  ) : (
-                    <button
-                      onClick={() => {
-                        void submitOrder("cash");
-                      }}
-                      disabled={isSubmitting}
-                      className="w-full rounded-2xl bg-slate-950 py-4 text-lg font-bold text-white shadow-[0_10px_24px_rgba(15,23,42,0.18)] transition hover:bg-slate-800 disabled:opacity-50"
-                    >
-                      {isSubmitting ? "Sipariş Günderiliyor..." : "Siparişi Onayla"}
-                    </button>
-                  )
-                ) : (
-                  <p className="text-center text-sm font-medium text-amber-700">
-                    Sipariş verebilmek icin gecerli bir masa QR kodu okutmalisiniz.
-                  </p>
-                )}
-              </div>
-            </div>
-          )}
         </>
-      )}
+      ) : null}
+
+      {/* ── CART DRAWER + CHECKOUT ── */}
+      {isCartOpen ? (
+        <>
+          <div className="qr-bottom-sheet-backdrop" onClick={() => setIsCartOpen(false)} aria-hidden="true" />
+          <div className="qr-bottom-sheet" role="dialog" aria-modal="true" aria-label="Sepetim">
+            <div className="qr-bottom-sheet-handle" />
+
+            {/* Cart header */}
+            <div className="flex items-center justify-between px-5 py-3">
+              <div>
+                <h2 className="text-xl font-black text-white">Siparişim</h2>
+                <p className="text-xs text-slate-400">{cartItemCount} ürün · {formatPrice(cartTotal)}</p>
+              </div>
+              <div className="flex items-center gap-2">
+                {recentOrderSnapshot && checkoutStep === "review" ? (
+                  <button type="button" onClick={reOrderLast} className="rounded-full border border-emerald-400/20 bg-emerald-500/10 px-3 py-1.5 text-xs font-bold text-emerald-300 hover:bg-emerald-500/20">
+                    Son Siparişi Tekrarla
+                  </button>
+                ) : null}
+                {cartItems.length > 0 && checkoutStep === "review" ? (
+                  <button type="button" onClick={() => setCartItems([])} className="rounded-full border border-white/10 bg-white/05 px-3 py-1.5 text-xs font-semibold text-slate-400 hover:bg-white/10">
+                    Temizle
+                  </button>
+                ) : null}
+                <button type="button" onClick={() => setIsCartOpen(false)} aria-label="Kapat" className="flex h-8 w-8 items-center justify-center rounded-full bg-white/08 text-slate-400 hover:bg-white/14">
+                  <X className="h-4 w-4" />
+                </button>
+              </div>
+            </div>
+
+            {/* Step indicator */}
+            {qrConfirmationEnabled ? (
+              <div className="flex items-center justify-center gap-2 pb-3">
+                <div className={`qr-step-dot ${checkoutStep === "review" ? "qr-step-dot-active" : ""}`} />
+                <div className="h-px w-6 bg-white/15" />
+                <div className={`qr-step-dot ${checkoutStep === "confirm" ? "qr-step-dot-active" : ""}`} />
+              </div>
+            ) : null}
+
+            <div className="overflow-y-auto px-5 pb-6">
+              {/* ── STEP 1: REVIEW ── */}
+              {checkoutStep === "review" ? (
+                <>
+                  {/* Cart items */}
+                  <div className="space-y-2">
+                    {cartItems.map((item) => {
+                      let unitTotal = Number(item.product.price);
+                      for (const mod of Object.values(item.selectedModifiers)) unitTotal += Number(mod.price_delta);
+                      return (
+                        <div key={item.id} className="flex items-start gap-3 rounded-2xl border border-white/06 bg-white/03 p-3">
+                          <div className="flex-1 min-w-0">
+                            <p className="font-bold text-white">{item.product.name}</p>
+                            {Object.values(item.selectedModifiers).length > 0 ? (
+                              <p className="mt-0.5 text-xs text-slate-400">
+                                {Object.values(item.selectedModifiers).map((m) => m.name).join(", ")}
+                              </p>
+                            ) : null}
+                            <p className="mt-1 text-sm font-semibold text-rose-400">{formatPrice(unitTotal * item.quantity)}</p>
+                          </div>
+                          <div className="flex flex-shrink-0 items-center gap-2">
+                            <button
+                              type="button"
+                              onClick={() => { if (item.quantity <= 1) { setCartItems((prev) => prev.filter((r) => r.id !== item.id)); void trackFunnel("cart_remove", { cartItems: Math.max(0, cartItemCount - 1), cartTotal }); } else { updateCartItemQuantity(item.id, item.quantity - 1); } }}
+                              className="qr-stepper-btn"
+                              style={{width:"1.75rem",height:"1.75rem",fontSize:"1rem"}}
+                              aria-label="Adedi azalt"
+                            >
+                              −
+                            </button>
+                            <span className="w-5 text-center text-sm font-bold">{item.quantity}</span>
+                            <button
+                              type="button"
+                              onClick={() => updateCartItemQuantity(item.id, item.quantity + 1)}
+                              className="qr-stepper-btn"
+                              style={{width:"1.75rem",height:"1.75rem",fontSize:"1rem"}}
+                              aria-label="Adedi artır"
+                            >
+                              +
+                            </button>
+                          </div>
+                        </div>
+                      );
+                    })}
+                  </div>
+
+                  {/* Upsell */}
+                  {upsellProducts.length > 0 ? (
+                    <div className="mt-4">
+                      <p className="mb-2 flex items-center gap-1.5 text-xs font-bold text-slate-400">
+                        <Sparkles className="h-3.5 w-3.5 text-amber-400" />
+                        Bunları da dene?
+                      </p>
+                      <div className="flex gap-2">
+                        {upsellProducts.map((product) => (
+                          <button
+                            key={product.id}
+                            type="button"
+                            onClick={() => quickAddProduct(product)}
+                            className="flex flex-1 items-center gap-2 rounded-xl border border-white/08 bg-white/04 px-3 py-2 text-left transition hover:bg-white/08"
+                          >
+                            <span className="text-2xl">{getProductEmoji(product.name)}</span>
+                            <div className="min-w-0">
+                              <p className="truncate text-xs font-bold text-white">{product.name}</p>
+                              <p className="text-xs text-rose-400">{formatPrice(product.price)}</p>
+                            </div>
+                          </button>
+                        ))}
+                      </div>
+                    </div>
+                  ) : null}
+
+                  {/* Name input – not shown in restaurant mode (coffee mode only) */}
+
+                  {/* Summary + CTA */}
+                  <div className="mt-4 border-t border-white/06 pt-4">
+                    <div className="mb-3 flex justify-between text-lg font-black">
+                      <span className="text-slate-300">Toplam</span>
+                      <span className="text-rose-400">{formatPrice(cartTotal)}</span>
+                    </div>
+                    {submitError ? <p className="mb-3 rounded-xl border border-rose-400/25 bg-rose-500/12 px-3 py-2 text-sm text-rose-300">{submitError}</p> : null}
+                    {activeQrAccessToken || qrCodeIdentifier ? (
+                      qrConfirmationEnabled ? (
+                        <button
+                          type="button"
+                          onClick={() => { setCheckoutStep("confirm"); void trackFunnel("checkout_confirm_view", { cartItems: cartItemCount, cartTotal }); }}
+                          className="qr-btn-primary"
+                        >
+                          Devam Et →
+                        </button>
+                      ) : (
+                        <button
+                          type="button"
+                          onClick={() => { void submitOrder(paymentMethod); }}
+                          disabled={isSubmitting}
+                          className="qr-btn-primary"
+                        >
+                          {isSubmitting ? "Gönderiliyor..." : "Siparişi Ver"}
+                        </button>
+                      )
+                    ) : (
+                      <p className="text-center text-sm text-amber-400">Sipariş için geçerli bir masa QR kodu okutun.</p>
+                    )}
+                  </div>
+                </>
+              ) : null}
+
+              {/* ── STEP 2: CONFIRM ── */}
+              {checkoutStep === "confirm" ? (
+                <>
+                  {/* Order summary */}
+                  <div className="mb-4 rounded-2xl border border-white/06 bg-white/03 p-4">
+                    <p className="mb-2 text-xs font-bold text-slate-400">Sipariş Özeti</p>
+                    {cartItems.map((item) => {
+                      let unitTotal = Number(item.product.price);
+                      for (const mod of Object.values(item.selectedModifiers)) unitTotal += Number(mod.price_delta);
+                      return (
+                        <div key={item.id} className="flex justify-between py-1 text-sm">
+                          <span className="text-slate-300">{item.quantity}× {item.product.name}</span>
+                          <span className="font-semibold text-white">{formatPrice(unitTotal * item.quantity)}</span>
+                        </div>
+                      );
+                    })}
+                    <div className="mt-2 flex justify-between border-t border-white/06 pt-2 text-base font-black">
+                      <span>Toplam</span>
+                      <span className="text-rose-400">{formatPrice(cartTotal)}</span>
+                    </div>
+                  </div>
+
+                  {/* Payment method */}
+                  <div className="mb-4">
+                    <p className="mb-2 text-xs font-bold text-slate-400">Ödeme Yöntemi</p>
+                    <div className="flex gap-2">
+                      <button
+                        type="button"
+                        onClick={() => setPaymentMethod("cash")}
+                        className={`qr-payment-btn ${paymentMethod === "cash" ? "qr-payment-btn-active" : ""}`}
+                      >
+                        💵 Nakit
+                      </button>
+                      <button
+                        type="button"
+                        onClick={() => setPaymentMethod("card")}
+                        className={`qr-payment-btn ${paymentMethod === "card" ? "qr-payment-btn-active" : ""}`}
+                      >
+                        💳 Kart
+                      </button>
+                    </div>
+                  </div>
+
+                  {/* Confirmation checkbox */}
+                  <label className="mb-4 flex cursor-pointer items-start gap-3 rounded-xl border border-white/08 bg-white/04 px-4 py-3">
+                    <input
+                      type="checkbox"
+                      checked={confirmationChecked}
+                      onChange={(e) => setConfirmationChecked(e.target.checked)}
+                      className="mt-0.5 h-4 w-4 accent-rose-500"
+                    />
+                    <span className="text-sm text-slate-300">Siparişimi ve toplam tutarı (<strong className="text-white">{formatPrice(cartTotal)}</strong>) onaylıyorum.</span>
+                  </label>
+
+                  {submitError ? <p className="mb-3 rounded-xl border border-rose-400/25 bg-rose-500/12 px-3 py-2 text-sm text-rose-300">{submitError}</p> : null}
+
+                  {/* Action buttons */}
+                  <div className="flex gap-3">
+                    <button
+                      type="button"
+                      onClick={() => { setCheckoutStep("review"); }}
+                      className="flex-1 rounded-2xl border border-white/10 bg-white/05 py-3.5 text-sm font-bold text-slate-300 transition hover:bg-white/10"
+                    >
+                      ← Geri
+                    </button>
+                    <button
+                      type="button"
+                      onClick={() => {
+                        void trackFunnel("checkout_confirm_ack", { cartItems: cartItemCount, cartTotal });
+                        void submitOrder(paymentMethod);
+                      }}
+                      disabled={isSubmitting || !confirmationChecked}
+                      className="qr-btn-primary"
+                      style={{ flex: 2 }}
+                    >
+                      {isSubmitting ? (
+                        <span className="flex items-center justify-center gap-2">
+                          <span className="qr-pulse-dot" style={{width:"0.4rem",height:"0.4rem"}} aria-hidden="true" />
+                          Gönderiliyor...
+                        </span>
+                      ) : "Siparişi Onayla ✓"}
+                    </button>
+                  </div>
+                </>
+              ) : null}
+            </div>
+          </div>
+        </>
+      ) : null}
     </div>
   );
 }

@@ -1547,3 +1547,327 @@ body.theme-cashier-light .m-btn-secondary {
   }
 }
 
+/* ============================================================
+   QR MENU – Liquid Glass Design System
+   ============================================================ */
+
+/* QR Shell Background */
+.qr-shell {
+  background: radial-gradient(circle at 15% 10%, rgba(244, 63, 94, 0.12) 0%, transparent 35%),
+              radial-gradient(circle at 85% 5%, rgba(251, 146, 60, 0.10) 0%, transparent 30%),
+              radial-gradient(circle at 50% 90%, rgba(99, 102, 241, 0.08) 0%, transparent 40%),
+              #080d1a;
+  min-height: 100svh;
+}
+
+/* QR Header – sticky top bar */
+.qr-header {
+  background: rgba(8, 13, 26, 0.75);
+  backdrop-filter: blur(24px) saturate(180%);
+  -webkit-backdrop-filter: blur(24px) saturate(180%);
+  border-bottom: 1px solid rgba(255, 255, 255, 0.06);
+}
+
+/* QR Category Tab Bar */
+.qr-category-bar {
+  background: rgba(8, 13, 26, 0.65);
+  backdrop-filter: blur(16px);
+  -webkit-backdrop-filter: blur(16px);
+  border-bottom: 1px solid rgba(255, 255, 255, 0.05);
+}
+
+.qr-tab-pill {
+  display: inline-flex;
+  align-items: center;
+  padding: 0.5rem 1rem;
+  border-radius: 9999px;
+  font-size: 0.8125rem;
+  font-weight: 700;
+  white-space: nowrap;
+  transition: all 0.2s ease;
+  border: 1px solid rgba(255, 255, 255, 0.08);
+  background: rgba(255, 255, 255, 0.05);
+  color: rgba(255, 255, 255, 0.65);
+}
+
+.qr-tab-pill:hover {
+  background: rgba(255, 255, 255, 0.10);
+  color: rgba(255, 255, 255, 0.85);
+}
+
+.qr-tab-pill-active {
+  background: linear-gradient(135deg, #f43f5e 0%, #fb923c 100%);
+  border-color: transparent;
+  color: #ffffff;
+  box-shadow: 0 4px 16px rgba(244, 63, 94, 0.40);
+}
+
+/* QR Product Card */
+.qr-product-card {
+  background: rgba(255, 255, 255, 0.04);
+  border: 1px solid rgba(255, 255, 255, 0.07);
+  border-radius: 1.5rem;
+  transition: transform 0.18s ease, box-shadow 0.18s ease, background 0.18s ease;
+  cursor: pointer;
+  -webkit-tap-highlight-color: transparent;
+}
+
+.qr-product-card:hover {
+  background: rgba(255, 255, 255, 0.07);
+  transform: translateY(-2px);
+  box-shadow: 0 8px 28px rgba(0, 0, 0, 0.35);
+}
+
+.qr-product-card:active {
+  transform: scale(0.97);
+}
+
+.qr-product-card-selected {
+  background: rgba(244, 63, 94, 0.08);
+  border-color: rgba(244, 63, 94, 0.45);
+  box-shadow: 0 8px 32px rgba(244, 63, 94, 0.22);
+}
+
+/* QR Floating Cart Button */
+.qr-cart-fab {
+  background: linear-gradient(135deg, #f43f5e 0%, #fb923c 100%);
+  box-shadow: 0 8px 24px rgba(244, 63, 94, 0.50), 0 2px 8px rgba(0, 0, 0, 0.3);
+  transition: transform 0.15s ease, box-shadow 0.15s ease;
+  border-radius: 9999px;
+  position: fixed;
+  bottom: 1.5rem;
+  right: 1.25rem;
+  z-index: 40;
+  display: flex;
+  align-items: center;
+  gap: 0.5rem;
+  padding: 0.875rem 1.25rem;
+  color: white;
+  font-weight: 700;
+  font-size: 0.9375rem;
+}
+
+.qr-cart-fab:hover {
+  transform: scale(1.04) translateY(-1px);
+  box-shadow: 0 12px 32px rgba(244, 63, 94, 0.60);
+}
+
+.qr-cart-fab:active {
+  transform: scale(0.97);
+}
+
+.qr-cart-fab-bounce {
+  animation: qr-fab-bounce 0.35s cubic-bezier(0.34, 1.56, 0.64, 1);
+}
+
+@keyframes qr-fab-bounce {
+  0% { transform: scale(1); }
+  40% { transform: scale(1.15); }
+  100% { transform: scale(1); }
+}
+
+/* QR Bottom Sheet */
+.qr-bottom-sheet-backdrop {
+  position: fixed;
+  inset: 0;
+  background: rgba(0, 0, 0, 0.72);
+  backdrop-filter: blur(4px);
+  z-index: 50;
+  animation: qr-fade-in 0.2s ease;
+}
+
+.qr-bottom-sheet {
+  position: fixed;
+  bottom: 0;
+  left: 0;
+  right: 0;
+  max-height: 92svh;
+  background: rgba(13, 19, 38, 0.92);
+  backdrop-filter: blur(32px) saturate(180%);
+  -webkit-backdrop-filter: blur(32px) saturate(180%);
+  border-top: 1px solid rgba(255, 255, 255, 0.08);
+  border-radius: 2rem 2rem 0 0;
+  z-index: 51;
+  overflow-y: auto;
+  overscroll-behavior: contain;
+  animation: qr-slide-up 0.32s cubic-bezier(0.34, 1.20, 0.64, 1);
+}
+
+@keyframes qr-slide-up {
+  from { transform: translateY(100%); opacity: 0.5; }
+  to { transform: translateY(0); opacity: 1; }
+}
+
+@keyframes qr-fade-in {
+  from { opacity: 0; }
+  to { opacity: 1; }
+}
+
+.qr-bottom-sheet-handle {
+  width: 2.5rem;
+  height: 0.25rem;
+  background: rgba(255, 255, 255, 0.2);
+  border-radius: 9999px;
+  margin: 0.75rem auto 0;
+}
+
+/* QR Modifier Option Button */
+.qr-modifier-btn {
+  border: 1px solid rgba(255, 255, 255, 0.10);
+  background: rgba(255, 255, 255, 0.04);
+  border-radius: 0.875rem;
+  padding: 0.625rem 0.875rem;
+  font-size: 0.8125rem;
+  font-weight: 600;
+  color: rgba(255, 255, 255, 0.75);
+  transition: all 0.15s ease;
+  text-align: left;
+  width: 100%;
+}
+
+.qr-modifier-btn:hover {
+  background: rgba(255, 255, 255, 0.08);
+  color: white;
+}
+
+.qr-modifier-btn-selected {
+  border-color: rgba(244, 63, 94, 0.55);
+  background: rgba(244, 63, 94, 0.12);
+  color: #fda4af;
+}
+
+/* QR Success Screen */
+.qr-success-screen {
+  position: fixed;
+  inset: 0;
+  background: radial-gradient(circle at 50% 30%, rgba(16, 185, 129, 0.15) 0%, transparent 55%), #080d1a;
+  z-index: 60;
+  overflow-y: auto;
+  animation: qr-fade-in 0.3s ease;
+}
+
+.qr-success-check {
+  width: 6rem;
+  height: 6rem;
+  border-radius: 9999px;
+  background: rgba(16, 185, 129, 0.15);
+  border: 2px solid rgba(16, 185, 129, 0.50);
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  box-shadow: 0 0 48px rgba(16, 185, 129, 0.35);
+  animation: qr-pop-in 0.5s cubic-bezier(0.34, 1.56, 0.64, 1) 0.1s both;
+}
+
+@keyframes qr-pop-in {
+  from { transform: scale(0); opacity: 0; }
+  to { transform: scale(1); opacity: 1; }
+}
+
+/* QR Step Indicator */
+.qr-step-dot {
+  width: 0.5rem;
+  height: 0.5rem;
+  border-radius: 9999px;
+  background: rgba(255, 255, 255, 0.2);
+  transition: all 0.25s ease;
+}
+
+.qr-step-dot-active {
+  background: #f43f5e;
+  box-shadow: 0 0 8px rgba(244, 63, 94, 0.6);
+  width: 1.5rem;
+}
+
+/* QR Primary CTA Button */
+.qr-btn-primary {
+  background: linear-gradient(135deg, #f43f5e 0%, #fb923c 100%);
+  color: white;
+  font-weight: 700;
+  font-size: 0.9375rem;
+  padding: 1rem 1.5rem;
+  border-radius: 1rem;
+  width: 100%;
+  border: none;
+  cursor: pointer;
+  transition: opacity 0.15s ease, transform 0.15s ease, box-shadow 0.15s ease;
+  box-shadow: 0 4px 20px rgba(244, 63, 94, 0.40);
+}
+
+.qr-btn-primary:hover:not(:disabled) {
+  opacity: 0.92;
+  transform: translateY(-1px);
+  box-shadow: 0 8px 28px rgba(244, 63, 94, 0.50);
+}
+
+.qr-btn-primary:active:not(:disabled) {
+  transform: scale(0.98);
+}
+
+.qr-btn-primary:disabled {
+  opacity: 0.45;
+  cursor: not-allowed;
+}
+
+/* QR Quantity Stepper */
+.qr-stepper-btn {
+  width: 2.25rem;
+  height: 2.25rem;
+  border-radius: 9999px;
+  background: rgba(255, 255, 255, 0.08);
+  border: 1px solid rgba(255, 255, 255, 0.10);
+  color: white;
+  font-size: 1.125rem;
+  font-weight: 700;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  transition: background 0.15s ease;
+}
+
+.qr-stepper-btn:hover {
+  background: rgba(255, 255, 255, 0.14);
+}
+
+.qr-stepper-btn:active {
+  background: rgba(255, 255, 255, 0.20);
+}
+
+/* QR Payment Toggle */
+.qr-payment-btn {
+  flex: 1;
+  padding: 0.75rem;
+  border-radius: 0.875rem;
+  font-weight: 700;
+  font-size: 0.875rem;
+  border: 1px solid rgba(255, 255, 255, 0.10);
+  background: rgba(255, 255, 255, 0.04);
+  color: rgba(255, 255, 255, 0.65);
+  transition: all 0.15s ease;
+}
+
+.qr-payment-btn-active {
+  background: rgba(244, 63, 94, 0.15);
+  border-color: rgba(244, 63, 94, 0.50);
+  color: #fda4af;
+}
+
+/* Pulse animation for "Hazırlanıyor" badge */
+.qr-pulse-dot {
+  width: 0.5rem;
+  height: 0.5rem;
+  border-radius: 9999px;
+  background: #10b981;
+  display: inline-block;
+  animation: qr-pulse 1.8s ease-in-out infinite;
+}
+
+@keyframes qr-pulse {
+  0%, 100% { opacity: 1; transform: scale(1); }
+  50% { opacity: 0.5; transform: scale(0.75); }
+}
+
+/* Scrollbar hide for category bar */
+.qr-scrollbar-hide::-webkit-scrollbar { display: none; }
+.qr-scrollbar-hide { -ms-overflow-style: none; scrollbar-width: none; }
+
