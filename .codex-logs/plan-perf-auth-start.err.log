@@ -1,9 +1,0 @@
-TypeError: fetch failed
-    at async C (C:\Users\coban\OneDrive\Masaüstü\POS SİSTEM\.next\server\chunks\[root-of-the-server]__90b7bb96._.js:1:1569)
-    at async b (C:\Users\coban\OneDrive\Masaüstü\POS SİSTEM\.next\server\chunks\[root-of-the-server]__90b7bb96._.js:1:2893)
-    at async u (C:\Users\coban\OneDrive\Masaüstü\POS SİSTEM\.next\server\chunks\[root-of-the-server]__90b7bb96._.js:1:6333) {
-  [cause]: AggregateError: 
-      at ignore-listed frames {
-    code: 'EACCES'
-  }
-}

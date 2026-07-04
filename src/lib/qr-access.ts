@@ -6,7 +6,7 @@ type QrAccessPayload = {
   exp: number;
 };
 
-export const DEFAULT_QR_ACCESS_TTL_SECONDS = 60 * 20;
+const DEFAULT_QR_ACCESS_TTL_SECONDS = 60 * 20;
 const DEV_FALLBACK_SECRET = "dev-insecure-qr-access-secret";
 
 function getQrAccessSecret() {
