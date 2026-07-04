@@ -1,4 +1,5 @@
 import Link from "next/link";
+import { type ReactNode } from "react";
 
 function cn(...parts: Array<string | false | null | undefined>) {
   return parts.filter(Boolean).join(" ");
@@ -37,7 +38,7 @@ export function MobileTaskCard({
           : "border-white/20 uupm-liquid-glass shadow-sm";
 
   return (
-    <article className={cn("mobile-task-card uupm-card-interactive rounded-[22px] border p-4.5", toneClass, className)}>
+    <article className={cn("mobile-task-card uupm-card-interactive rounded-3xl border p-4.5", toneClass, className)}>
       {title ? <p className="text-[10px] font-extrabold uppercase tracking-[0.2em] text-slate-500">{title}</p> : null}
       {subtitle ? <p className="mt-1 text-[1.05rem] font-bold tracking-tight text-slate-900">{subtitle}</p> : null}
       <div className={cn(title || subtitle ? "mt-3.5" : "")}>{children}</div>
@@ -107,6 +108,69 @@ export function MobileFullScreenFlow({
         </header>
         <div className="mt-4 space-y-4">{children}</div>
       </div>
+    </div>
+  );
+}
+
+export function MobileEmptyState({
+  icon,
+  title,
+  description,
+  action,
+}: {
+  icon?: ReactNode;
+  title: string;
+  description?: string;
+  action?: ReactNode;
+}) {
+  return (
+    <div className="flex flex-col items-center justify-center py-16 px-6 text-center">
+      {icon ? (
+        <div className="mb-4 flex h-14 w-14 items-center justify-center rounded-full bg-slate-100 text-slate-400">
+          {icon}
+        </div>
+      ) : null}
+      <p className="text-sm font-bold text-slate-700">{title}</p>
+      {description ? (
+        <p className="mt-1.5 text-xs font-medium text-slate-400 leading-relaxed max-w-[240px]">{description}</p>
+      ) : null}
+      {action ? <div className="mt-5">{action}</div> : null}
+    </div>
+  );
+}
+
+export function MobileSkeletonCard({ lines = 2 }: { lines?: number }) {
+  return (
+    <div className="mobile-task-card rounded-3xl border border-white/20 uupm-liquid-glass p-4.5 space-y-3">
+      <div className="skeleton h-3 w-16" />
+      <div className="skeleton h-4 w-3/4" />
+      {Array.from({ length: lines }).map((_, i) => (
+        <div key={i} className="skeleton h-3 w-full" style={{ width: `${85 - i * 15}%` }} />
+      ))}
+    </div>
+  );
+}
+
+export function MobileSkeletonList({ count = 3 }: { count?: number }) {
+  return (
+    <div className="space-y-3.5">
+      {Array.from({ length: count }).map((_, i) => (
+        <MobileSkeletonCard key={i} lines={2} />
+      ))}
+    </div>
+  );
+}
+
+export function MobileSkeletonGrid({ count = 6 }: { count?: number }) {
+  return (
+    <div className="grid grid-cols-2 gap-3">
+      {Array.from({ length: count }).map((_, i) => (
+        <div key={i} className="mobile-task-card rounded-3xl border border-white/20 uupm-liquid-glass p-3.5 space-y-2.5">
+          <div className="skeleton h-16 w-full rounded-xl" />
+          <div className="skeleton h-3 w-3/4" />
+          <div className="skeleton h-3 w-1/2" />
+        </div>
+      ))}
     </div>
   );
 }

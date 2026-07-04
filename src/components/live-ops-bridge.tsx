@@ -309,7 +309,7 @@ export function LiveOpsBridge({ tables, enableSound = false, fallbackIntervalMs 
       {connectionState === "online"
         ? "Realtime Açık"
         : connectionState === "connecting"
-          ? "Realtime Baglaniyor"
+          ? "Realtime Bağlanıyor"
           : "Realtime Kapali"}
     </span>
   );

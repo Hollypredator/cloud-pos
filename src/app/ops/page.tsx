@@ -817,7 +817,7 @@ export default async function OpsPage({
             ) : null}
             {canAdmin ? (
               <Link href="/admin/reports" className="rounded-xl border border-slate-200 bg-slate-50 px-4 py-4 text-center text-sm font-semibold text-slate-800 transition hover:border-slate-300 hover:bg-white sm:text-left">
-                {translateUiText("Satış Raporlar?", locale)}
+                {translateUiText("Satış Raporları", locale)}
               </Link>
             ) : null}
             {canAdmin ? (

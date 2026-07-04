@@ -415,7 +415,7 @@ export default async function AdminReportsPage({
           )}
 
           <div>
-            <p className="mb-3 text-sm font-bold uppercase tracking-[0.16em] text-slate-800">{translateUiText("Satış Kanal?", locale)}</p>
+            <p className="mb-3 text-sm font-bold uppercase tracking-[0.16em] text-slate-800">{translateUiText("Satış Kanalı", locale)}</p>
             <div className="rounded-2xl border border-slate-200 bg-slate-50 px-4 py-3 text-sm text-slate-700">{translateUiText("Tüm Kanallar", locale)}</div>
           </div>
 

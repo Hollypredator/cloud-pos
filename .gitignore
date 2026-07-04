@@ -46,3 +46,4 @@ next-env.d.ts
 
 # local supabase runtime metadata
 /supabase/.temp/
+.gstack/
