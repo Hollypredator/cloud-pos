@@ -1422,5 +1422,71 @@ body.theme-cashier-light .m-btn-secondary {
   }
 }
 
+/* ==========================================================================
+   UI/UX PRO MAX - PREMIUM DESIGN UTILITIES
+   ========================================================================== */
 
+/* Glassmorphism Panel styles */
+.uupm-glass {
+  background: rgba(255, 255, 255, 0.72) !important;
+  backdrop-filter: blur(16px) saturate(180%) !important;
+  -webkit-backdrop-filter: blur(16px) saturate(180%) !important;
+  border: 1px solid rgba(255, 255, 255, 0.45) !important;
+}
 
+.uupm-glass-dark {
+  background: rgba(15, 23, 42, 0.75) !important;
+  backdrop-filter: blur(20px) saturate(160%) !important;
+  -webkit-backdrop-filter: blur(20px) saturate(160%) !important;
+  border: 1px solid rgba(255, 255, 255, 0.08) !important;
+}
+
+/* Hover state effects & interactions */
+.uupm-card-interactive {
+  transition: all 0.3s cubic-bezier(0.4, 0, 0.2, 1) !important;
+}
+
+.uupm-card-interactive:hover {
+  transform: translateY(-4px) scale(1.02) !important;
+  box-shadow: 0 12px 24px -10px rgba(15, 23, 42, 0.15), 0 4px 20px 0 rgba(0, 0, 0, 0.05) !important;
+  border-color: rgba(15, 23, 42, 0.15) !important;
+}
+
+.uupm-card-interactive:active {
+  transform: translateY(-1px) scale(0.99) !important;
+}
+
+/* Gradients */
+.uupm-gradient-indigo {
+  background: linear-gradient(135deg, #6366f1 0%, #4f46e5 100%) !important;
+}
+
+.uupm-gradient-sunset {
+  background: linear-gradient(135deg, #ff5a34 0%, #f0b14f 100%) !important;
+}
+
+.uupm-gradient-mint {
+  background: linear-gradient(135deg, #0d9488 0%, #059669 100%) !important;
+}
+
+.uupm-gradient-cyber {
+  background: linear-gradient(135deg, #06b6d4 0%, #3b82f6 100%) !important;
+}
+
+/* Glow indicators */
+.uupm-glow-success {
+  box-shadow: 0 0 12px rgba(16, 185, 129, 0.45) !important;
+}
+
+.uupm-glow-warning {
+  box-shadow: 0 0 12px rgba(245, 158, 11, 0.45) !important;
+}
+
+.uupm-glow-danger {
+  box-shadow: 0 0 12px rgba(244, 63, 94, 0.45) !important;
+}
+
+/* Typography elements */
+.uupm-monospace-num {
+  font-variant-numeric: tabular-nums !important;
+}

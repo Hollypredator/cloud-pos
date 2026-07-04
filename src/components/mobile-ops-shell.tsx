@@ -296,36 +296,38 @@ export function MobileOpsShell({
           isOffline && pwaEnabled ? "offline-read-only" : ""
         }`}
       >
-        <header className="no-print fixed inset-x-0 top-0 z-40 border-b border-slate-200 bg-white/95 backdrop-blur">
-          <div className="mx-auto flex w-full max-w-[980px] items-center justify-between gap-3 px-3 pb-2 pt-[calc(var(--safe-area-top)+8px)]">
+        <header className="no-print fixed inset-x-0 top-0 z-40 uupm-glass border-b border-white/20 shadow-md">
+          <div className="mx-auto flex w-full max-w-[980px] items-center justify-between gap-3 px-4 pb-3 pt-[calc(var(--safe-area-top)+10px)]">
             <div className="min-w-0">
-              <p className="truncate text-[11px] font-semibold uppercase tracking-[0.18em] text-slate-500">
+              <p className="truncate text-[10px] font-extrabold uppercase tracking-[0.2em] text-slate-500">
                 {shellData?.brandName ?? "Cloud POS"}
               </p>
-              <p className="truncate text-[1.1rem] font-semibold text-slate-950">{mobileTitle}</p>
+              <p className="truncate text-[1.2rem] font-bold tracking-tight text-slate-900 mt-0.5">{mobileTitle}</p>
             </div>
             <span
-              className={`inline-flex rounded-full px-3 py-1 text-[11px] font-semibold uppercase tracking-[0.12em] ${
-                isOffline ? "bg-amber-100 text-amber-800" : "bg-emerald-100 text-emerald-700"
+              className={`inline-flex rounded-full px-3.5 py-1.5 text-[10px] font-bold uppercase tracking-[0.15em] shadow-sm transition-all duration-300 ${
+                isOffline 
+                  ? "bg-amber-500 text-white uupm-glow-warning" 
+                  : "bg-gradient-to-r from-emerald-500 to-teal-600 text-white uupm-glow-success"
               }`}
             >
               {isOffline ? "Çevrimdışı" : "Canlı"}
             </span>
           </div>
           {isOffline ? (
-            <div className="border-t border-amber-200 bg-amber-50 px-4 py-2 text-xs font-medium text-amber-900">
+            <div className="border-t border-amber-200/50 bg-amber-500/10 px-4 py-2 text-xs font-semibold text-amber-900 backdrop-blur-md">
               Çevrimdışı — önbellekten çalışıyor, salt okunur mod.
             </div>
           ) : null}
         </header>
-
-        <main className="mx-auto w-full max-w-[980px] px-3 pb-[calc(112px+var(--safe-area-bottom))] pt-[calc(74px+var(--safe-area-top))]">
+ 
+        <main className="mx-auto w-full max-w-[980px] px-4 pb-[calc(120px+var(--safe-area-bottom))] pt-[calc(86px+var(--safe-area-top))]">
           {children}
         </main>
-
-        <nav className="no-print fixed inset-x-0 bottom-0 z-40 border-t border-slate-200 bg-white/96 backdrop-blur">
+ 
+        <nav className="no-print fixed inset-x-0 bottom-0 z-40 uupm-glass border-t border-white/20 shadow-[0_-8px_30px_rgba(0,0,0,0.06)] rounded-t-[24px]">
           <div
-            className="mx-auto grid w-full max-w-[980px] gap-1 px-2 pb-[calc(var(--safe-area-bottom)+8px)] pt-2"
+            className="mx-auto grid w-full max-w-[980px] gap-2 px-3 pb-[calc(var(--safe-area-bottom)+10px)] pt-3"
             style={{ gridTemplateColumns: `repeat(${renderedPrimaryTabs.length}, minmax(0, 1fr)) auto` }}
           >
             {renderedPrimaryTabs.map((tab) => {
@@ -337,11 +339,13 @@ export function MobileOpsShell({
                   href={tab.href}
                   scroll={false}
                   aria-current={active ? "page" : undefined}
-                  className={`inline-flex min-h-[56px] min-w-0 flex-col items-center justify-center gap-1 rounded-2xl px-2 py-2 text-[11px] font-semibold ${
-                    active ? "bg-slate-950 text-white" : "text-slate-600"
+                  className={`inline-flex min-h-[58px] min-w-0 flex-col items-center justify-center gap-1.5 rounded-2xl px-2 py-2 text-[10px] font-bold tracking-wide transition-all duration-200 active:scale-95 ${
+                    active 
+                      ? "bg-gradient-to-br from-slate-900 to-slate-800 text-white shadow-lg shadow-slate-900/15" 
+                      : "text-slate-600 hover:bg-slate-100/50"
                   }`}
                 >
-                  <Icon aria-hidden="true" className="h-5 w-5 shrink-0" strokeWidth={2.2} />
+                  <Icon aria-hidden="true" className="h-5.5 w-5.5 shrink-0" strokeWidth={2.4} />
                   <span className="max-w-full truncate">{tab.label}</span>
                 </Link>
               );
@@ -351,14 +355,14 @@ export function MobileOpsShell({
               onClick={() => setActionsOpen((prev) => !prev)}
               aria-label="Diğer is akışlari"
               aria-expanded={actionsOpen}
-              className="inline-flex min-h-[56px] w-[58px] flex-col items-center justify-center gap-1 rounded-2xl border border-slate-200 bg-slate-50 px-2 py-2 text-[11px] font-semibold text-slate-700"
+              className="inline-flex min-h-[58px] w-[58px] flex-col items-center justify-center gap-1.5 rounded-2xl border border-slate-200/60 bg-slate-50/50 hover:bg-slate-100/60 px-2 py-2 text-[10px] font-bold tracking-wide text-slate-700 transition-all active:scale-95"
             >
-              <MoreHorizontal aria-hidden="true" className="h-5 w-5" strokeWidth={2.2} />
+              <MoreHorizontal aria-hidden="true" className="h-5.5 w-5.5" strokeWidth={2.4} />
               Diğer
             </button>
           </div>
         </nav>
-
+ 
         {actionsOpen ? (
           <div className="no-print fixed inset-0 z-50 bg-slate-950/45" onClick={() => setActionsOpen(false)}>
             <div

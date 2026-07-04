@@ -1,6 +1,17 @@
 import { revalidatePath } from "next/cache";
 import Link from "next/link";
 import { redirect } from "next/navigation";
+import { 
+  CreditCard, 
+  Wallet, 
+  TrendingUp, 
+  Clock, 
+  X, 
+  ChevronRight, 
+  AlertCircle, 
+  CheckCircle2, 
+  CalendarDays 
+} from "lucide-react";
 import { CashierPaymentPanel } from "@/components/cashier-payment-panel";
 import { LiveOpsBridge } from "@/components/live-ops-bridge";
 import { LiveRouteRefresh } from "@/components/live-route-refresh";
@@ -48,26 +59,26 @@ function orderSourceLabel(order: {
   customer_name?: string | null;
 }) {
   if (order.channel === "delivery") {
-    return order.customer_name ? `Paket servis - ${order.customer_name}` : "Paket servis";
+    return order.customer_name ? `Paket servis - ${order.customer_name}` : "Paket Servis";
   }
   if (order.channel === "pickup") {
-    return order.customer_name ? `Gel-al - ${order.customer_name}` : "Gel-al";
+    return order.customer_name ? `Gel-al - ${order.customer_name}` : "Gel-Al";
   }
   return formatOrderTableLabel(order);
 }
 
 function statusLabel(status: string) {
-  if (status === "served") return "Tahsilat";
-  if (status === "partially_paid") return "Kismi Ödeme";
+  if (status === "served") return "Ödeme Bekliyor";
+  if (status === "partially_paid") return "Kısmi Ödeme";
   if (status === "paid") return "Kapandı";
   if (status === "ready") return "Hazır";
   return status;
 }
 
 function statusTone(status: string) {
-  if (status === "paid") return "m-tone-success";
-  if (status === "partially_paid") return "m-tone-warning";
-  if (status === "served" || status === "ready") return "m-tone-warning";
+  if (status === "paid") return "bg-emerald-500 text-white uupm-glow-success";
+  if (status === "partially_paid") return "bg-amber-500 text-white uupm-glow-warning";
+  if (status === "served" || status === "ready") return "bg-amber-500 text-white uupm-glow-warning";
   return "m-tone-neutral";
 }
 
@@ -130,11 +141,11 @@ async function completeMobilePaymentAction(formData: FormData) {
       },
     });
   } catch {
-    redirect(feedbackHref("error", "Ödeme alinamadi.", returnOrderId ?? orderId));
+    redirect(feedbackHref("error", "Ödeme alınamadı.", returnOrderId ?? orderId));
   }
 
   if (result.status !== "ACK") {
-    redirect(feedbackHref("error", result.message ?? "Ödeme alinamadi.", returnOrderId ?? orderId));
+    redirect(feedbackHref("error", result.message ?? "Ödeme alınamadı.", returnOrderId ?? orderId));
   }
 
   revalidatePath("/m/cashier");
@@ -144,8 +155,8 @@ async function completeMobilePaymentAction(formData: FormData) {
   const remaining = typeof result.data?.remaining === "number" ? result.data.remaining : 0;
   const message =
     result.data?.idempotent === true
-      ? `Aynı Ödeme daha once kaydedildi. Kalan bakiye: ${remaining.toFixed(2)} TL.`
-      : `Ödeme kaydedildi. Kalan bakiye: ${remaining.toFixed(2)} TL.`;
+      ? `Aynı ödeme daha önce kaydedildi. Kalan bakiye: ${remaining.toFixed(2)} TL.`
+      : `Ödeme başarıyla kaydedildi. Kalan bakiye: ${remaining.toFixed(2)} TL.`;
   redirect(feedbackHref("success", message, returnOrderId ?? orderId));
 }
 
@@ -169,17 +180,17 @@ async function closePaidOrderAction(formData: FormData) {
       },
     });
   } catch {
-    redirect(feedbackHref("error", "Adisyon kapatilamadi.", returnOrderId ?? orderId));
+    redirect(feedbackHref("error", "Adisyon kapatılamadı.", returnOrderId ?? orderId));
   }
 
   if (result.status !== "ACK") {
-    redirect(feedbackHref("error", result.message ?? "Adisyon kapatilamadi.", returnOrderId ?? orderId));
+    redirect(feedbackHref("error", result.message ?? "Adisyon kapatılamadı.", returnOrderId ?? orderId));
   }
 
   revalidatePath("/m/cashier");
   revalidatePath("/cashier");
   revalidatePath("/m/ops");
-  redirect(feedbackHref("success", "Adisyon kapatildi.", undefined));
+  redirect(feedbackHref("success", "Adisyon başarıyla kapatıldı.", undefined));
 }
 
 export default async function MobileCashierPage({
@@ -213,68 +224,99 @@ export default async function MobileCashierPage({
       <LiveRouteRefresh tables={["orders", "order_items", "payments", "cash_register_sessions"]} debounceMs={240} minIntervalMs={1200} />
 
       {feedback ? (
-        <div className={`m-card ${tone === "error" ? "m-banner-error" : "m-banner-success"}`}>
-          {feedback}
+        <div className={`m-card border rounded-[22px] p-4 shadow-sm mb-4 flex items-center gap-3.5 ${
+          tone === "error" 
+            ? "border-rose-200 bg-rose-50 text-rose-800" 
+            : "border-emerald-200 bg-emerald-50 text-emerald-800"
+        }`}>
+          {tone === "error" ? <AlertCircle className="h-5 w-5 text-rose-600 shrink-0" /> : <CheckCircle2 className="h-5 w-5 text-emerald-600 shrink-0" />}
+          <p className="text-xs font-bold">{feedback}</p>
         </div>
       ) : null}
 
-      {usingDemoData ? <div className="m-card m-banner-warning">Demo veri modu aktif.</div> : null}
+      {usingDemoData ? (
+        <div className="m-card m-banner-warning border border-amber-300 rounded-[20px] bg-amber-50 p-4 shadow-sm mb-4 flex items-center gap-3">
+          <AlertCircle className="h-5 w-5 text-amber-600 shrink-0" />
+          <p className="text-xs font-semibold text-amber-800">Demo veri modu aktif.</p>
+        </div>
+      ) : null}
 
-      <section className="m-grid-3 mt-3">
-        <article className="m-card text-center">
-          <p className="m-label">Bekleyen</p>
-          <p className="m-value text-orange-700">{servedOrders.length}</p>
+      {/* Cashier Stats Board */}
+      <section className="m-grid-3">
+        <article className="uupm-card-interactive rounded-[22px] border border-slate-200/80 bg-white p-3.5 text-center shadow-sm">
+          <p className="text-[10px] font-extrabold uppercase tracking-[0.16em] text-slate-500">Bekleyen</p>
+          <p className="mt-1.5 text-2xl font-black text-amber-600 uupm-monospace-num">{servedOrders.length}</p>
         </article>
-        <article className="m-card text-center">
-          <p className="m-label">Kalan</p>
-          <p className="m-value-sm text-rose-700">{formatMoney(servedTotals.remaining)}</p>
+        <article className="uupm-card-interactive rounded-[22px] border border-slate-200/80 bg-white p-3.5 text-center shadow-sm">
+          <p className="text-[10px] font-extrabold uppercase tracking-[0.16em] text-slate-500">Açık Kalan</p>
+          <p className="mt-1.5 text-xs font-black text-rose-600 uupm-monospace-num truncate">{formatMoney(servedTotals.remaining)}</p>
         </article>
-        <article className="m-card text-center">
-          <p className="m-label">Tahsil</p>
-          <p className="m-value-sm text-emerald-700">{formatMoney(paidTotals.paid)}</p>
+        <article className="uupm-card-interactive rounded-[22px] border border-slate-200/80 bg-white p-3.5 text-center shadow-sm">
+          <p className="text-[10px] font-extrabold uppercase tracking-[0.16em] text-slate-500">Top. Kasa</p>
+          <p className="mt-1.5 text-xs font-black text-emerald-600 uupm-monospace-num truncate">{formatMoney(paidTotals.paid)}</p>
         </article>
       </section>
 
-      <section className="m-card mt-3">
+      {/* Header and Day Session Controller */}
+      <section className="m-card rounded-[24px] border border-slate-200 bg-white p-4.5 shadow-sm mt-3.5">
         <div className="flex items-center justify-between gap-3">
           <div>
-            <p className="m-label">Tahsilat Kuyrugu</p>
-            <p className="m-muted mt-1">Adisyon seç, Ödemeyi tam ekranda tamamla.</p>
+            <p className="text-[10px] font-extrabold uppercase tracking-[0.2em] text-slate-500">Tahsilat Kuyrugu</p>
+            <p className="text-xs font-semibold text-slate-500 mt-1">Adisyon seçip ödeme detaylarını tamamlayın.</p>
           </div>
-          <Link href="/m/cashier/session" className="m-btn-secondary inline-flex min-h-[40px] items-center justify-center px-3 text-xs">
-            Gun
+          <Link 
+            href="/m/cashier/session" 
+            className="mobile-cta-secondary border border-slate-200 hover:bg-slate-50 text-slate-800 inline-flex min-h-[42px] items-center justify-center gap-1.5 px-4.5 rounded-xl text-xs font-extrabold shadow-sm transition-all active:scale-95"
+          >
+            <CalendarDays className="h-4.5 w-4.5 text-slate-600 shrink-0" strokeWidth={2.4} />
+            Gün Sonu
           </Link>
         </div>
       </section>
 
-      <section className="m-stack mt-3">
+      {/* Bills Queue List */}
+      <section className="m-stack mt-3.5">
         {servedOrders.length === 0 ? (
-          <article className="m-card">
-            <p className="m-value-sm">Bekleyen adisyon yok.</p>
-            <p className="m-muted mt-1">Servise hazır veya kismi Ödemeli adisyonlar burada görünur.</p>
+          <article className="m-card border border-dashed border-slate-200 bg-slate-50/50 py-8 text-center rounded-[24px]">
+            <p className="text-sm font-bold text-slate-800">Bekleyen adisyon yok.</p>
+            <p className="text-xs font-semibold text-slate-500 mt-1">Servise hazır veya kısmi ödemeli adisyonlar burada görünür.</p>
           </article>
         ) : (
           servedOrders.map((order) => {
             const remaining = Number(order.remaining_balance ?? order.final_price ?? order.total_price);
             const isActive = selectedOrder?.id === order.id;
             return (
-              <article key={order.id} className={`m-card ${isActive ? "border-slate-950" : ""}`}>
+              <article 
+                key={order.id} 
+                className={`m-card uupm-card-interactive rounded-[24px] border bg-white p-4.5 shadow-sm transition-all duration-300 ${
+                  isActive ? "border-slate-900 shadow-md ring-2 ring-slate-900/5" : "border-slate-200"
+                }`}
+              >
                 <div className="flex items-start justify-between gap-3">
                   <div className="min-w-0">
-                    <p className="m-label">{orderSourceLabel(order)}</p>
-                    <p className="m-value-sm truncate">#{orderRef(order)}</p>
-                    <p className="m-muted mt-1">{new Date(order.created_at).toLocaleTimeString("tr-TR")}</p>
+                    <p className="text-[10px] font-extrabold uppercase tracking-[0.16em] text-slate-500">{orderSourceLabel(order)}</p>
+                    <p className="text-sm font-black text-slate-900 mt-1 truncate">Adisyon #{orderRef(order)}</p>
+                    <div className="flex items-center gap-1.5 text-slate-400 mt-1">
+                      <Clock className="h-3.5 w-3.5 shrink-0" strokeWidth={2.2} />
+                      <p className="text-[10px] font-bold uppercase tracking-wider">{new Date(order.created_at).toLocaleTimeString("tr-TR", {hour: "2-digit", minute:"2-digit"})}</p>
+                    </div>
                   </div>
-                  <span className={`m-pill ${statusTone(order.status)}`}>{statusLabel(order.status)}</span>
+                  <span className={`rounded-full px-3 py-1.5 text-[9px] font-extrabold uppercase tracking-widest shadow-sm ${statusTone(order.status)}`}>
+                    {statusLabel(order.status)}
+                  </span>
                 </div>
 
-                <div className="mt-3 flex items-end justify-between gap-3">
+                <div className="mt-4 pt-3 border-t border-slate-100 flex items-end justify-between gap-3">
                   <div>
-                    <p className="m-muted">Kalan</p>
-                    <p className="text-xl font-semibold text-emerald-700">{formatMoney(remaining)}</p>
+                    <p className="text-[10px] font-extrabold uppercase tracking-[0.12em] text-slate-400">Kalan Tutar</p>
+                    <p className="text-lg font-black text-rose-600 mt-1 uupm-monospace-num">{formatMoney(remaining)}</p>
                   </div>
-                  <Link href={`/m/cashier?order=${order.id}`} className="m-btn-primary inline-flex items-center justify-center px-4">
-                    {isActive ? "Açık" : "Tahsilata Gec"}
+                  <Link 
+                    href={`/m/cashier?order=${order.id}`} 
+                    className="mobile-cta-primary bg-gradient-to-r from-slate-900 to-slate-800 text-white inline-flex items-center justify-center gap-1.5 px-4.5 py-3.5 rounded-2xl text-xs font-bold uppercase tracking-wider shadow-sm transition-all active:scale-95"
+                  >
+                    {isActive ? "Seçildi" : "Tahsilata Gec"}
+                    <ChevronRight className="h-4.5 w-4.5" />
                   </Link>
                 </div>
               </article>
@@ -283,77 +325,91 @@ export default async function MobileCashierPage({
         )}
       </section>
 
+      {/* Selected Order Detail and Payment Drawer */}
       {selectedOrder ? (
-        <section className="m-card mt-3">
-          <div className="flex items-start justify-between gap-3">
+        <section className="m-card rounded-[24px] border border-slate-900/20 bg-slate-50/50 p-4.5 shadow-md mt-4">
+          <div className="flex items-start justify-between gap-3 mb-4.5">
             <div>
-              <p className="m-label">Adisyon Detayi</p>
-              <h2 className="mt-1 text-lg font-semibold text-slate-950">{orderSourceLabel(selectedOrder)}</h2>
-              <p className="m-muted mt-1">Sipariş #{orderRef(selectedOrder)}</p>
+              <p className="text-[10px] font-extrabold uppercase tracking-[0.2em] text-slate-400">Adisyon Detayı</p>
+              <h2 className="mt-1 text-base font-extrabold tracking-tight text-slate-900">{orderSourceLabel(selectedOrder)}</h2>
+              <p className="text-[11px] font-semibold text-slate-500 mt-1">Sipariş #{orderRef(selectedOrder)}</p>
             </div>
-            <Link href="/m/cashier" className="m-btn-secondary inline-flex min-h-[40px] items-center justify-center px-3 text-xs">
-              Kapat
+            <Link 
+              href="/m/cashier" 
+              className="inline-flex h-9 w-9 items-center justify-center rounded-full border border-slate-200 bg-white text-slate-500 hover:text-slate-800 transition-all active:scale-90 shadow-sm"
+            >
+              <X className="h-4.5 w-4.5" strokeWidth={2.4} />
             </Link>
           </div>
 
-          <div className="mt-3 grid grid-cols-3 gap-2">
-            <div className="rounded-2xl bg-slate-50 px-3 py-3">
-              <p className="m-label">Toplam</p>
-              <p className="mt-1 text-sm font-semibold text-slate-900">{formatMoney(selectedFinal)}</p>
+          <div className="grid grid-cols-3 gap-2.5">
+            <div className="rounded-2xl border border-slate-200/80 bg-white px-3.5 py-3 shadow-sm">
+              <p className="text-[9px] font-extrabold uppercase tracking-[0.14em] text-slate-400">Toplam</p>
+              <p className="mt-1 text-xs font-black text-slate-900 uupm-monospace-num">{formatMoney(selectedFinal)}</p>
             </div>
-            <div className="rounded-2xl bg-emerald-50 px-3 py-3">
-              <p className="m-label">Ödenen</p>
-              <p className="mt-1 text-sm font-semibold text-emerald-700">{formatMoney(selectedPaid)}</p>
+            <div className="rounded-2xl border border-emerald-100 bg-emerald-50 px-3.5 py-3 shadow-sm">
+              <p className="text-[9px] font-extrabold uppercase tracking-[0.14em] text-emerald-600">Ödenen</p>
+              <p className="mt-1 text-xs font-black text-emerald-800 uupm-monospace-num">{formatMoney(selectedPaid)}</p>
             </div>
-            <div className="rounded-2xl bg-rose-50 px-3 py-3">
-              <p className="m-label">Kalan</p>
-              <p className="mt-1 text-sm font-semibold text-rose-700">{formatMoney(selectedRemaining)}</p>
+            <div className="rounded-2xl border border-rose-100 bg-rose-50 px-3.5 py-3 shadow-sm">
+              <p className="text-[9px] font-extrabold uppercase tracking-[0.14em] text-rose-600">Kalan</p>
+              <p className="mt-1 text-xs font-black text-rose-800 uupm-monospace-num">{formatMoney(selectedRemaining)}</p>
             </div>
           </div>
 
-          <div className="mt-3 space-y-2">
+          {/* Items detailed breakdown list */}
+          <div className="mt-4.5 space-y-2.5">
             {selectedItems.length === 0 ? (
-              <div className="rounded-2xl border border-dashed border-slate-200 bg-slate-50 px-3 py-3 text-sm text-slate-500">
-                Kalem detayi bulunmuyor.
+              <div className="rounded-2xl border border-dashed border-slate-200 bg-white px-3.5 py-3 text-xs font-semibold text-slate-400">
+                Kalem detayı bulunmuyor.
               </div>
             ) : (
               selectedItems.map((item, index) => (
-                <div key={`${item.product_id}-${index}`} className="flex items-center justify-between gap-3 rounded-2xl bg-slate-50 px-3 py-3">
+                <div key={`${item.product_id}-${index}`} className="flex items-center justify-between gap-3 rounded-2xl border border-slate-100 bg-white px-3.5 py-3 shadow-sm">
                   <div className="min-w-0">
-                    <p className="truncate text-sm font-semibold text-slate-900">
+                    <p className="truncate text-xs font-bold text-slate-900">
                       {item.quantity}x {item.name}
                     </p>
-                    <p className="m-muted">{formatMoney(Number(item.line_total))}</p>
+                    <p className="text-[10px] font-bold text-slate-400 mt-0.5 uupm-monospace-num">
+                      {item.quantity > 1 ? `${formatMoney(Number(item.line_total) / item.quantity)} x ${item.quantity}` : formatMoney(Number(item.line_total))}
+                    </p>
                   </div>
+                  <p className="text-xs font-black text-slate-800 uupm-monospace-num shrink-0">{formatMoney(Number(item.line_total))}</p>
                 </div>
               ))
             )}
           </div>
 
-          {selectedRemaining > 0 ? (
-            <CashierPaymentPanel
-              orderId={selectedOrder.id}
-              returnOrderId={selectedOrder.id}
-              defaultAmount={selectedRemaining}
-              items={selectedItems}
-              requestKey={crypto.randomUUID()}
-              action={completeMobilePaymentAction}
-              submitIdleLabel="Ödemeyi Kaydet"
-              submitPendingLabel="Ödeme Isleniyor..."
-            />
-          ) : (
-            <form action={closePaidOrderAction} className="mt-4">
-              <input type="hidden" name="orderId" value={selectedOrder.id} />
-              <input type="hidden" name="returnOrderId" value={selectedOrder.id} />
-              <button type="submit" className="m-btn-primary w-full">
-                Adisyonu Kapat
-              </button>
-            </form>
-          )}
+          {/* Payment execution panel */}
+          <div className="mt-4.5 pt-4.5 border-t border-slate-200">
+            {selectedRemaining > 0 ? (
+              <CashierPaymentPanel
+                orderId={selectedOrder.id}
+                returnOrderId={selectedOrder.id}
+                defaultAmount={selectedRemaining}
+                items={selectedItems}
+                requestKey={crypto.randomUUID()}
+                action={completeMobilePaymentAction}
+                submitIdleLabel="Ödemeyi Tamamla"
+                submitPendingLabel="İşlem Yapılıyor..."
+              />
+            ) : (
+              <form action={closePaidOrderAction}>
+                <input type="hidden" name="orderId" value={selectedOrder.id} />
+                <input type="hidden" name="returnOrderId" value={selectedOrder.id} />
+                <button 
+                  type="submit" 
+                  className="mobile-cta-primary bg-gradient-to-r from-emerald-600 to-emerald-700 text-white w-full inline-flex items-center justify-center py-4 rounded-2xl text-sm font-bold uppercase tracking-wider shadow-md active:scale-98 transition-all"
+                >
+                  Adisyonu Kapat
+                </button>
+              </form>
+            )}
+          </div>
         </section>
       ) : null}
 
-      <div className="h-2" aria-hidden="true" />
+      <div className="h-4" aria-hidden="true" />
     </>
   );
 }
