@@ -1490,3 +1490,60 @@ body.theme-cashier-light .m-btn-secondary {
 .uupm-monospace-num {
   font-variant-numeric: tabular-nums !important;
 }
+
+/* Liquid Glass Design System Utilities */
+.uupm-liquid-glass {
+  background: rgba(255, 255, 255, 0.45) !important;
+  backdrop-filter: blur(24px) saturate(210%) !important;
+  -webkit-backdrop-filter: blur(24px) saturate(210%) !important;
+  border: 1px solid rgba(255, 255, 255, 0.5) !important;
+  box-shadow: 0 8px 32px 0 rgba(31, 38, 135, 0.04), inset 0 0 0 1px rgba(255, 255, 255, 0.15) !important;
+  background-image: linear-gradient(135deg, rgba(255, 255, 255, 0.25) 0%, rgba(255, 255, 255, 0.05) 100%) !important;
+}
+
+.uupm-liquid-glass-dark {
+  background: rgba(15, 23, 42, 0.55) !important;
+  backdrop-filter: blur(28px) saturate(180%) !important;
+  -webkit-backdrop-filter: blur(28px) saturate(180%) !important;
+  border: 1px solid rgba(255, 255, 255, 0.09) !important;
+  box-shadow: 0 8px 32px 0 rgba(0, 0, 0, 0.2), inset 0 0 0 1px rgba(255, 255, 255, 0.05) !important;
+  background-image: linear-gradient(135deg, rgba(255, 255, 255, 0.05) 0%, rgba(255, 255, 255, 0.01) 100%) !important;
+}
+
+/* Iridescent gradient effect */
+.uupm-iridescent-glow {
+  position: relative;
+  overflow: hidden;
+}
+
+.uupm-iridescent-glow::before {
+  content: '' !important;
+  position: absolute !important;
+  top: -50% !important;
+  left: -50% !important;
+  width: 200% !important;
+  height: 200% !important;
+  background: linear-gradient(
+    115deg,
+    rgba(255, 255, 255, 0) 0%,
+    rgba(255, 255, 255, 0.03) 30%,
+    rgba(99, 102, 241, 0.08) 45%,
+    rgba(244, 63, 94, 0.08) 55%,
+    rgba(16, 185, 129, 0.08) 65%,
+    rgba(255, 255, 255, 0.03) 75%,
+    rgba(255, 255, 255, 0) 100%
+  ) !important;
+  animation: uupm-flow 8s infinite linear !important;
+  pointer-events: none !important;
+  z-index: 0 !important;
+}
+
+@keyframes uupm-flow {
+  0% {
+    transform: rotate(0deg);
+  }
+  100% {
+    transform: rotate(360deg);
+  }
+}
+

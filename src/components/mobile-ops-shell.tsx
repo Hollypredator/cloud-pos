@@ -296,7 +296,7 @@ export function MobileOpsShell({
           isOffline && pwaEnabled ? "offline-read-only" : ""
         }`}
       >
-        <header className="no-print fixed inset-x-0 top-0 z-40 uupm-glass border-b border-white/20 shadow-md">
+        <header className="no-print fixed inset-x-0 top-0 z-40 uupm-liquid-glass uupm-iridescent-glow border-b border-white/20 shadow-md">
           <div className="mx-auto flex w-full max-w-[980px] items-center justify-between gap-3 px-4 pb-3 pt-[calc(var(--safe-area-top)+10px)]">
             <div className="min-w-0">
               <p className="truncate text-[10px] font-extrabold uppercase tracking-[0.2em] text-slate-500">
@@ -325,7 +325,7 @@ export function MobileOpsShell({
           {children}
         </main>
  
-        <nav className="no-print fixed inset-x-0 bottom-0 z-40 uupm-glass border-t border-white/20 shadow-[0_-8px_30px_rgba(0,0,0,0.06)] rounded-t-[24px]">
+        <nav className="no-print fixed inset-x-0 bottom-0 z-40 uupm-liquid-glass border-t border-white/20 shadow-[0_-8px_30px_rgba(0,0,0,0.06)] rounded-t-[24px]">
           <div
             className="mx-auto grid w-full max-w-[980px] gap-2 px-3 pb-[calc(var(--safe-area-bottom)+10px)] pt-3"
             style={{ gridTemplateColumns: `repeat(${renderedPrimaryTabs.length}, minmax(0, 1fr)) auto` }}
@@ -366,7 +366,7 @@ export function MobileOpsShell({
         {actionsOpen ? (
           <div className="no-print fixed inset-0 z-50 bg-slate-950/45" onClick={() => setActionsOpen(false)}>
             <div
-              className="absolute inset-x-0 bottom-0 max-h-[80vh] overflow-y-auto rounded-t-[28px] border-t border-slate-200 bg-white px-4 pb-[calc(var(--safe-area-bottom)+16px)] pt-4"
+              className="absolute inset-x-0 bottom-0 max-h-[80vh] overflow-y-auto rounded-t-[28px] border-t border-white/20 uupm-liquid-glass px-4 pb-[calc(var(--safe-area-bottom)+16px)] pt-4"
               onClick={(event) => event.stopPropagation()}
             >
               <div className="mx-auto w-full max-w-[980px] space-y-3">

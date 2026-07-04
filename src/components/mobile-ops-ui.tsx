@@ -34,7 +34,7 @@ export function MobileTaskCard({
         ? "border-amber-200 bg-gradient-to-br from-amber-50 to-amber-100/30 text-amber-950 uupm-glow-warning"
         : tone === "success"
           ? "border-emerald-200 bg-gradient-to-br from-emerald-50 to-emerald-100/30 text-emerald-950 uupm-glow-success"
-          : "border-slate-200/80 bg-white shadow-sm";
+          : "border-white/20 uupm-liquid-glass shadow-sm";
 
   return (
     <article className={cn("mobile-task-card uupm-card-interactive rounded-[22px] border p-4.5", toneClass, className)}>
@@ -60,7 +60,7 @@ export function MobileStickySegment({
   className?: string;
 }) {
   return (
-    <div className={cn("mobile-task-tabs uupm-glass border-white/20 p-1.5 rounded-2xl shadow-sm", className)}>
+    <div className={cn("mobile-task-tabs uupm-liquid-glass border-white/20 p-1.5 rounded-2xl shadow-sm", className)}>
       {items.map((item) => (
         <Link 
           key={item.href} 
@@ -90,7 +90,7 @@ export function MobileFullScreenFlow({
   return (
     <div className="app-mobile-only fixed inset-0 z-[70] bg-slate-950/45 backdrop-blur-sm">
       <div className="absolute inset-0 overflow-y-auto bg-slate-50 px-3 pb-[calc(106px+var(--safe-area-bottom))] pt-[calc(82px+var(--safe-area-top))]">
-        <header className="sticky top-0 z-10 uupm-glass rounded-2xl border border-white/40 px-4.5 py-4 shadow-md">
+        <header className="sticky top-0 z-10 uupm-liquid-glass rounded-2xl border border-white/40 px-4.5 py-4 shadow-md">
           <div className="flex items-start justify-between gap-3">
             <div>
               <p className="text-[10px] font-extrabold uppercase tracking-[0.25em] text-slate-400">Flow Yönetimi</p>
@@ -110,3 +110,4 @@ export function MobileFullScreenFlow({
     </div>
   );
 }
+
