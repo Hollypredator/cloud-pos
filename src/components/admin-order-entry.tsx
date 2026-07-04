@@ -861,7 +861,7 @@ export function AdminOrderEntry({
   if (isSelfServiceCoffee) {
     return (
       <>
-        <section className="app-mobile-hide m-card flex-1 min-h-0 overflow-x-clip rounded-[26px] border border-slate-800 bg-[linear-gradient(180deg,#070d19_0%,#0f172a_100%)] text-slate-100 shadow-[0_30px_60px_rgba(2,6,23,0.45)]">
+        <section className="app-mobile-hide m-card flex flex-1 min-h-0 flex-col overflow-x-clip rounded-[26px] border border-slate-800 bg-[linear-gradient(180deg,#070d19_0%,#0f172a_100%)] text-slate-100 shadow-[0_30px_60px_rgba(2,6,23,0.45)]">
           <header className="flex items-center justify-between border-b border-slate-800 px-6 py-5">
             <div>
               <p className="text-3xl font-black tracking-tight">Self Servis Kahvecim</p>
@@ -918,7 +918,7 @@ export function AdminOrderEntry({
             </p>
           </div>
 
-          <div className="flex-1 min-h-0 grid grid-cols-[minmax(0,1fr)_min(340px,28vw)]">
+          <div className="grid min-h-0 flex-1 grid-cols-[minmax(0,1fr)_min(340px,28vw)] grid-rows-[1fr]">
             <div className="min-w-0 overflow-y-auto px-5 pb-6 pt-5">
               <div className="mb-5 flex flex-wrap items-center gap-2">
                 <button
