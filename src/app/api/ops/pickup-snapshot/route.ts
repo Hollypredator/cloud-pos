@@ -13,7 +13,7 @@ export async function GET() {
         Expires: "0",
       },
     });
-  } catch (error) {
+  } catch {
     return NextResponse.json({ error: "Failed to fetch snapshot" }, { status: 500 });
   }
 }

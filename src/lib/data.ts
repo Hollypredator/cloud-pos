@@ -876,7 +876,6 @@ const demoSelfServiceCategories: Category[] = [
   { id: "ss-cat-4", name: "Ekstra", sort_order: 4, prep_station: "bar" },
 ];
 
-const rawSelfServiceProductsPlaceholder = null; // helper placeholder
 const rawDemoSelfServiceProducts: Product[] = [
   { id: "ss-prod-1", category_id: "ss-cat-1", name: "Espresso", price: 110, stock_count: 999, image_url: null, description: "Single shot espresso", is_available: true },
   { id: "ss-prod-2", category_id: "ss-cat-1", name: "Doppio", price: 125, stock_count: 999, image_url: null, description: "Double shot espresso", is_available: true },
