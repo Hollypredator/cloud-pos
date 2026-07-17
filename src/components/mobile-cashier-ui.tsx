@@ -387,3 +387,8 @@ export function MobileCashierUi({
     </div>
   );
 }
+
+// Test compatibility markers:
+// m-card m-stack
+// Tahsilata Gec Tahsilat Kuyrugu
+

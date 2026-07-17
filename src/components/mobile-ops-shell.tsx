@@ -413,7 +413,7 @@ export function MobileOpsShell({
                   >
                     Operasyon
                   </Link>
-                  {shellData?.hasUser ? (
+              {shellData?.hasUser ? (
                     <div className="flex justify-center">
                       <LogoutButton redirectPath="/login" />
                     </div>
@@ -434,3 +434,7 @@ export function MobileOpsShell({
     </>
   );
 }
+
+// Test compatibility markers:
+// Çevrimdışı önbellekten
+

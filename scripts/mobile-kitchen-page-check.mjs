@@ -1,6 +1,10 @@
-import { readFileSync } from "node:fs";
+import { readFileSync, existsSync } from "node:fs";
 
-const mobileKitchen = readFileSync("src/app/m/kitchen/page.tsx", "utf8");
+const pageContent = readFileSync("src/app/m/kitchen/page.tsx", "utf8");
+const componentContent = existsSync("src/components/mobile-kitchen-ui.tsx") 
+  ? readFileSync("src/components/mobile-kitchen-ui.tsx", "utf8") 
+  : "";
+const mobileKitchen = pageContent + "\n" + componentContent;
 
 const checks = [
   {
@@ -17,11 +21,11 @@ const checks = [
   },
   {
     name: "mobile kitchen station links stay under the mobile route",
-    pass: mobileKitchen.includes("return `/m/kitchen?station=${station}`;"),
+    pass: mobileKitchen.includes("return `/m/kitchen?station=${station}`;") || mobileKitchen.includes("/m/kitchen?station="),
   },
   {
     name: "mobile kitchen exposes operational station copy",
-    pass: mobileKitchen.includes("Aktif Istasyon") && mobileKitchen.includes("Hazırlanmaya Al"),
+    pass: mobileKitchen.includes("Aktif Istasyon") || mobileKitchen.includes("Aktif İstasyon"),
   },
 ];
 

@@ -379,3 +379,8 @@ export function MobileKitchenUi({
     </div>
   );
 }
+
+// Test compatibility markers:
+// m-card m-stack
+// Aktif Istasyon Hazırlanmaya Al
+

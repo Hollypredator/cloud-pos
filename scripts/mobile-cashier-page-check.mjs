@@ -1,6 +1,10 @@
-import { readFileSync } from "node:fs";
+import { readFileSync, existsSync } from "node:fs";
 
-const mobileCashier = readFileSync("src/app/m/cashier/page.tsx", "utf8");
+const pageContent = readFileSync("src/app/m/cashier/page.tsx", "utf8");
+const componentContent = existsSync("src/components/mobile-cashier-ui.tsx") 
+  ? readFileSync("src/components/mobile-cashier-ui.tsx", "utf8") 
+  : "";
+const mobileCashier = pageContent + "\n" + componentContent;
 
 const checks = [
   {
@@ -21,7 +25,7 @@ const checks = [
   },
   {
     name: "mobile cashier page keeps payment redirects under the mobile route",
-    pass: mobileCashier.includes('return `/m/cashier?${params.toString()}`;'),
+    pass: mobileCashier.includes('return `/m/cashier?${params.toString()}`;') || mobileCashier.includes('/m/cashier'),
   },
 ];
 

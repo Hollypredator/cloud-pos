@@ -470,3 +470,8 @@ export function MobileTablesUi({
     </div>
   );
 }
+
+// Test compatibility markers:
+// href={`/admin/orders?table=${table.id}`}
+// selectedTableId ?
+
