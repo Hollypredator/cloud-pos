@@ -44,7 +44,7 @@ function VirtualNumpad({ value, onChange }: { value: string; onChange: (val: str
           key={key}
           type="button"
           onClick={() => handlePress(key)}
-          className="min-h-[44px] rounded-xl border border-slate-200 bg-white py-4 text-xl font-bold text-slate-700 shadow-sm transition hover:bg-slate-50 active:bg-slate-200"
+          className="min-h-[44px] rounded-xl border border-rose-100/50 bg-white py-3.5 text-lg font-bold text-rose-950 shadow-sm transition hover:bg-rose-50 active:bg-rose-100 cursor-pointer"
         >
           {key === "DEL" ? "⌫" : key}
         </button>
@@ -182,14 +182,15 @@ export function CashierPaymentPanel({
   }
 
   return (
-    <div className="mt-4 space-y-4 rounded-[24px] border border-slate-200 bg-[#fbfbfc] p-4">
-      <div className="grid gap-3 lg:grid-cols-2">
-        <div className="rounded-[20px] border border-slate-200 bg-white p-4">
+    <div className="space-y-4 rounded-3xl border border-rose-100 bg-[#FAF7F5]/30 p-4">
+      <div className="grid gap-3">
+        {/* Equal split tool */}
+        <div className="rounded-2xl border border-rose-100/50 bg-white p-4">
           <div className="flex flex-col items-start gap-1">
-            <p className="text-xs font-bold uppercase tracking-[0.16em] text-slate-500">Esit Paylastir</p>
-            <p className="text-sm text-slate-500">Tek dokunusta kişi basi tahsilat oluştur.</p>
+            <p className="text-[9px] font-black uppercase tracking-wider text-rose-900/60">Eşit Paylaştır</p>
+            <p className="text-[10px] text-slate-500">Tek dokunuşta kişi başı tahsilat oluştur.</p>
           </div>
-          <div className="mt-3 grid gap-2 sm:grid-cols-3">
+          <div className="mt-3 grid grid-cols-3 gap-2">
             {[2, 3, 4].map((splitCount) => (
               <button
                 key={splitCount}
@@ -198,33 +199,34 @@ export function CashierPaymentPanel({
                   triggerHaptic(40);
                   applySplit(splitCount);
                 }}
-                className="min-h-[44px] rounded-2xl border border-slate-200 bg-slate-50 px-3 py-3 text-sm font-semibold text-slate-700 transition hover:border-slate-300 hover:bg-white"
+                className="min-h-[40px] rounded-xl border border-rose-100 bg-rose-50/10 px-3 py-2 text-xs font-black text-rose-950 transition hover:bg-rose-50 cursor-pointer"
               >
                 {splitCount} Kişi
               </button>
             ))}
           </div>
-          <div className="mt-3 grid gap-2 text-xs text-slate-500">
-            <p>2 kişi: {(defaultAmount / 2).toFixed(2)} TL</p>
-            <p>3 kişi: {(defaultAmount / 3).toFixed(2)} TL</p>
-            <p>4 kişi: {(defaultAmount / 4).toFixed(2)} TL</p>
+          <div className="mt-3 flex justify-between text-[9px] font-bold text-slate-400">
+            <span>2 kişi: {(defaultAmount / 2).toFixed(2)} TL</span>
+            <span>3 kişi: {(defaultAmount / 3).toFixed(2)} TL</span>
+            <span>4 kişi: {(defaultAmount / 4).toFixed(2)} TL</span>
           </div>
         </div>
 
-        <div className="rounded-[20px] border border-slate-200 bg-white p-4">
-          <div className="flex flex-col items-start justify-between gap-3 sm:flex-row sm:items-center">
+        {/* Quick split options */}
+        <div className="rounded-2xl border border-rose-100/50 bg-white p-4">
+          <div className="flex flex-col items-start justify-between gap-2 sm:flex-row sm:items-center">
             <div>
-              <p className="text-xs font-bold uppercase tracking-[0.16em] text-slate-500">Hızlı Tutar</p>
-              <p className="mt-1 text-sm text-slate-500">Kalan bakiyeden tek hamlede tutar seç.</p>
+              <p className="text-[9px] font-black uppercase tracking-wider text-rose-900/60">Hızlı Tutar</p>
+              <p className="text-[10px] text-slate-500">Kalan bakiyeden oran seç.</p>
             </div>
-            <span className="rounded-full bg-emerald-100 px-3 py-1 text-xs font-semibold text-emerald-700">
+            <span className="rounded-full bg-rose-900 text-white px-2.5 py-0.5 text-[9px] font-black font-mono">
               Kalan {defaultAmount.toFixed(2)} TL
             </span>
           </div>
-          <div className="mt-3 grid gap-2 sm:grid-cols-2">
+          <div className="mt-3 grid grid-cols-2 gap-2">
             {[
-              { label: "Tamami", value: defaultAmount },
-              { label: "Yarisi", value: defaultAmount / 2 },
+              { label: "Tamamı", value: defaultAmount },
+              { label: "Yarısı", value: defaultAmount / 2 },
               { label: "25%", value: defaultAmount * 0.25 },
               { label: "75%", value: defaultAmount * 0.75 },
             ].map((preset) => (
@@ -235,7 +237,7 @@ export function CashierPaymentPanel({
                   triggerHaptic(40);
                   setAmount(Math.max(0.01, preset.value).toFixed(2));
                 }}
-                className="min-h-[44px] rounded-2xl border border-slate-200 bg-slate-50 px-3 py-3 text-sm font-semibold text-slate-700 transition hover:border-slate-300 hover:bg-white"
+                className="min-h-[40px] rounded-xl border border-rose-100 bg-rose-50/10 px-3 py-2 text-xs font-black text-rose-950 transition hover:bg-rose-50 cursor-pointer"
               >
                 {preset.label}
               </button>
@@ -244,11 +246,12 @@ export function CashierPaymentPanel({
         </div>
       </div>
 
-      <div className="rounded-[20px] border border-slate-200 bg-white p-4">
-        <div className="flex flex-col items-start justify-between gap-3 sm:flex-row sm:items-center">
+      {/* Item-based split */}
+      <div className="rounded-2xl border border-rose-100/50 bg-white p-4">
+        <div className="flex items-center justify-between gap-3 border-b border-rose-50 pb-2">
           <div>
-            <p className="text-xs font-bold uppercase tracking-[0.16em] text-slate-500">Ürün Bazli Bol</p>
-            <p className="mt-1 text-sm text-slate-500">Bu ödemeye dahil olacak ürün miktarlarini seç.</p>
+            <p className="text-[9px] font-black uppercase tracking-wider text-rose-900/60">Ürün Bazlı Böl</p>
+            <p className="text-[10px] text-slate-500">Ödemeye dahil olacak ürünleri seç.</p>
           </div>
           <button
             type="button"
@@ -256,27 +259,27 @@ export function CashierPaymentPanel({
               triggerHaptic(40);
               applySelectedItems();
             }}
-            className="min-h-[44px] w-full rounded-2xl border border-slate-200 bg-slate-50 px-3 py-2 text-sm font-semibold text-slate-700 sm:w-auto"
+            className="min-h-[36px] rounded-xl border border-rose-100 bg-rose-50/20 px-3 py-1.5 text-[10px] font-black text-rose-900 cursor-pointer hover:bg-rose-50"
           >
-            Seçilenleri Tutarla
+            Hesapla
           </button>
         </div>
-        <div className="mt-3 space-y-2">
+        <div className="mt-3 space-y-2 max-h-48 overflow-y-auto pr-1">
           {items.map((item, index) => (
             <div
               key={`${item.product_id}-${index}`}
-              className="grid items-center gap-2 rounded-2xl bg-slate-50 px-3 py-3 sm:grid-cols-[minmax(0,1fr)_110px]"
+              className="flex items-center justify-between gap-3 rounded-xl bg-rose-50/5 border border-rose-100/30 px-3 py-2"
             >
               <div>
-                <p className="text-sm font-semibold text-slate-800">{item.name}</p>
-                <p className="text-xs text-slate-500">
+                <p className="text-xs font-bold text-slate-800">{item.name}</p>
+                <p className="text-[9px] font-bold text-slate-400">
                   {item.quantity} adet - {Number(item.line_total).toFixed(2)} TL
                 </p>
               </div>
               <select
                 value={selectedQuantities[index] ?? 0}
                 onChange={(event) => updateSelectedQuantity(index, Number(event.target.value))}
-                className="min-h-[44px] w-full rounded-xl border border-slate-300 px-2 py-2 text-sm"
+                className="min-h-[36px] rounded-lg border border-rose-150 bg-white px-2 py-1 text-xs font-semibold text-rose-950"
               >
                 {Array.from({ length: item.quantity + 1 }, (_, value) => (
                   <option key={value} value={value}>
@@ -287,10 +290,11 @@ export function CashierPaymentPanel({
             </div>
           ))}
         </div>
-        {splitSummary ? <p className="mt-3 text-xs text-slate-500">Seçilen: {splitSummary}</p> : null}
+        {splitSummary ? <p className="mt-3 text-[9px] font-bold text-rose-800/80">Seçilen: {splitSummary}</p> : null}
       </div>
 
-      <form action={onSubmit ? undefined : action} onSubmit={handleClientSubmit} className="space-y-3 rounded-[20px] border border-slate-200 bg-white p-4">
+      {/* Main Payment Submit Form */}
+      <form action={onSubmit ? undefined : action} onSubmit={handleClientSubmit} className="space-y-4 rounded-2xl border border-rose-100 bg-white p-4">
         <input type="hidden" name="orderId" value={orderId} />
         {returnOrderId ? <input type="hidden" name="returnOrderId" value={returnOrderId} /> : null}
         <input type="hidden" name="requestKey" value={resolvedRequestKey} />
@@ -298,8 +302,8 @@ export function CashierPaymentPanel({
         <input type="hidden" name="method" value={method} />
 
         <div>
-          <p className="text-xs font-bold uppercase tracking-[0.16em] text-slate-500">Ödeme Tipi</p>
-          <div className="mt-2 grid gap-2 sm:grid-cols-3">
+          <p className="text-[9px] font-black uppercase tracking-wider text-rose-900/60 mb-2">Ödeme Tipi</p>
+          <div className="grid grid-cols-3 gap-2">
             {[
               ["cash", "Nakit"],
               ["card", "Kart"],
@@ -312,10 +316,10 @@ export function CashierPaymentPanel({
                   triggerHaptic(40);
                   setMethod(value as "cash" | "card" | "mixed");
                 }}
-                className={`min-h-[44px] rounded-2xl px-3 py-3 text-sm font-semibold transition ${
+                className={`min-h-[42px] rounded-xl text-xs font-black transition cursor-pointer ${
                   method === value
-                    ? "bg-gradient-to-r from-[#ff5a34] to-[#f0b14f] text-white shadow-[0_10px_20px_rgba(255,111,60,0.24)]"
-                    : "border border-slate-200 bg-slate-50 text-slate-700 hover:border-slate-300 hover:bg-white"
+                    ? "bg-gradient-to-br from-rose-900 to-rose-800 text-white shadow-md shadow-rose-950/15"
+                    : "border border-rose-100 bg-rose-50/10 text-rose-950 hover:bg-rose-50"
                 }`}
               >
                 {label}
@@ -325,38 +329,39 @@ export function CashierPaymentPanel({
         </div>
 
         <div>
-          <p className="text-xs font-bold uppercase tracking-[0.16em] text-slate-500 mb-2">Tutar Girişi</p>
-          <div className="grid gap-4 lg:grid-cols-[minmax(0,1fr)_250px]">
-            <div className="rounded-[20px] border border-slate-200 bg-[#f8fafc] p-4">
+          <p className="text-[9px] font-black uppercase tracking-wider text-rose-900/60 mb-2">Tutar Girişi</p>
+          <div className="grid gap-4">
+            <div className="rounded-2xl border border-rose-100 bg-rose-50/5 p-3">
                <VirtualNumpad value={amount} onChange={setAmount} />
                <input type="hidden" name="amount" value={amount} />
             </div>
-            <div className="flex flex-col justify-start gap-3">
-              <div className="rounded-[20px] border border-slate-200 bg-white p-5 text-right shadow-sm flex-1 flex flex-col justify-center">
-                 <p className="text-[11px] font-bold uppercase text-slate-400 mb-2">Tahsil Edilecek</p>
-                 <div>
-                   <span className="text-4xl font-extrabold tracking-tight text-slate-900 break-all">{amount}</span>
-                   <span className="ml-1 text-lg font-semibold text-slate-400">TL</span>
+            
+            <div className="space-y-3">
+              <div className="rounded-2xl border border-rose-100 bg-white p-4 text-center shadow-sm">
+                 <p className="text-[9px] font-black uppercase tracking-wider text-slate-400">Tahsil Edilecek</p>
+                 <div className="mt-1">
+                   <span className="text-3xl font-black text-rose-950 font-mono break-all">{amount}</span>
+                   <span className="ml-1 text-sm font-black text-rose-950/60">TL</span>
                  </div>
               </div>
               <input
                 value={note}
                 onChange={(event) => setNote(event.target.value)}
-                placeholder="Ödeme notu (opsiyönel)"
-                className="w-full rounded-2xl border border-slate-300 px-4 py-4 text-sm"
+                placeholder="Ödeme notu (opsiyonel)"
+                className="w-full rounded-2xl border border-rose-150 bg-white px-4 py-3 text-xs font-semibold text-rose-950 focus:border-rose-300 outline-none"
               />
             </div>
           </div>
         </div>
 
-        <div className="grid gap-2 rounded-2xl bg-emerald-50 px-4 py-3 text-sm">
-          <p className="flex items-center justify-between text-slate-700">
+        <div className="grid gap-1.5 rounded-2xl bg-rose-50/30 border border-rose-100/50 px-4 py-3 text-xs">
+          <p className="flex items-center justify-between text-rose-900/80 font-bold">
             <span>Bu işlemin tutarı</span>
-            <span className="font-semibold">{safeAmount.toFixed(2)} TL</span>
+            <span className="font-extrabold font-mono">{safeAmount.toFixed(2)} TL</span>
           </p>
-          <p className="flex items-center justify-between text-emerald-800">
-            <span>İşlem sonrasi kalan</span>
-            <span className="font-semibold">{remainingAfterPayment.toFixed(2)} TL</span>
+          <p className="flex items-center justify-between text-rose-950 font-black pt-1.5 border-t border-rose-100/30">
+            <span>Kalan bakiye</span>
+            <span className="font-black font-mono">{remainingAfterPayment.toFixed(2)} TL</span>
           </p>
         </div>
 
@@ -364,7 +369,7 @@ export function CashierPaymentPanel({
           <button
             type="submit"
             disabled={pending}
-            className="min-h-[44px] w-full rounded-2xl bg-emerald-600 px-4 py-3 text-sm font-semibold text-white shadow-[0_10px_20px_rgba(16,185,129,0.24)] disabled:cursor-not-allowed disabled:opacity-70"
+            className="min-h-[44px] w-full rounded-2xl bg-gradient-to-r from-rose-900 to-rose-800 text-white text-xs font-black uppercase tracking-wider shadow-md disabled:cursor-not-allowed disabled:opacity-75 cursor-pointer"
           >
             {pending ? submitPendingLabel : submitIdleLabel}
           </button>
@@ -372,7 +377,7 @@ export function CashierPaymentPanel({
           <PendingSubmitButton
             idleLabel={submitIdleLabel}
             pendingLabel={submitPendingLabel}
-            className="min-h-[44px] w-full rounded-2xl bg-emerald-600 px-4 py-3 text-sm font-semibold text-white shadow-[0_10px_20px_rgba(16,185,129,0.24)]"
+            className="min-h-[44px] w-full rounded-2xl bg-gradient-to-r from-rose-900 to-rose-800 text-white text-xs font-black uppercase tracking-wider shadow-md cursor-pointer"
           />
         )}
       </form>

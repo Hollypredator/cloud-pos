@@ -1,18 +1,44 @@
 "use client";
 
-import { useState } from "react";
+import { useState, useEffect, useRef } from "react";
 import Link from "next/link";
 import Image from "next/image";
 import { LanguageSwitcher } from "@/components/language-switcher";
 import type { GeneralSettings } from "@/lib/app-settings";
 import type { AppLocale } from "@/lib/i18n";
 import { primaryHomeSeoLandingPages } from "@/lib/seo-landing-pages";
+import { 
+  QrCode, 
+  Layers, 
+  ChefHat, 
+  CreditCard, 
+  RefreshCw, 
+  BarChart3, 
+  ArrowRight,
+  Wifi,
+  WifiOff,
+  Plus,
+  Minus,
+  Check,
+  ChevronDown,
+  AlertTriangle,
+  Heart
+} from "lucide-react";
+import { gsap } from "gsap";
+import { ScrollTrigger } from "gsap/ScrollTrigger";
 
 type ProductLandingPageProps = {
   settings: GeneralSettings;
   leadStatus?: string;
   locale?: AppLocale;
 };
+
+interface CartItem {
+  id: string;
+  name: string;
+  price: number;
+  quantity: number;
+}
 
 export function ProductLandingPage({ settings, leadStatus, locale = "tr" }: ProductLandingPageProps) {
   const siteName = settings.siteName || "Quapos Cloud POS";
@@ -21,385 +47,635 @@ export function ProductLandingPage({ settings, leadStatus, locale = "tr" }: Prod
 
   const [activeFaqIndex, setActiveFaqIndex] = useState<number | null>(null);
 
+  // Simulator State
+  const [isOnline, setIsOnline] = useState<boolean>(true);
+  const [cart, setCart] = useState<CartItem[]>([]);
+  const [totalSales, setTotalSales] = useState<number>(1420);
+  const [offlineQueue, setOfflineQueue] = useState<CartItem[][]>([]);
+  const [isSyncing, setIsSyncing] = useState<boolean>(false);
+  const [justSynced, setJustSynced] = useState<boolean>(false);
+
+  // Animation Refs
+  const headerRef = useRef<HTMLDivElement>(null);
+  const heroSubRef = useRef<HTMLParagraphElement>(null);
+  const heroCtasRef = useRef<HTMLDivElement>(null);
+  const simulatorCardRef = useRef<HTMLDivElement>(null);
+  const receiptRef = useRef<HTMLDivElement>(null);
+  const contentSectionRef = useRef<HTMLDivElement>(null);
+  const showcaseSectionRef = useRef<HTMLDivElement>(null);
+
+  // Magnetic button refs
+  const magneticButton1 = useRef<HTMLAnchorElement>(null);
+  const magneticButton2 = useRef<HTMLAnchorElement>(null);
+
+  const menuItems = [
+    { id: "latte", name: "Latte Macchiato", price: 120 },
+    { id: "americano", name: "Americano", price: 95 },
+    { id: "croissant", name: "Butter Croissant", price: 90 },
+    { id: "cheesecake", name: "San Sebastian", price: 170 },
+  ];
+
   const faqs = [
     {
-      q: "Bu ürün sadece restoranlar için mi?",
-      a: "Hayır. Cloud POS hem kafe-restoran operasyon modülünü hem de self servis / QR tabanlı müşteri deneyimi altyapısını birlikte sunar.",
+      q: "Bulut POS sistemi internet kesildiğinde gerçekten çalışmaya devam eder mi?",
+      a: "Evet. Cloud POS, çevrimdışı çalışma (offline redundancy) mimarisiyle tasarlanmıştır. İnternet koptuğu anda kasalarınız kilitlenmez, sipariş almaya ve adisyon basmaya devam edebilirsiniz. İnternet geri geldiğinde biriken tüm işlemler otomatik olarak arka planda bulut veritabanıyla senkronize edilir.",
     },
     {
-      q: "Operasyon paneline giriş devam ediyor mu?",
-      a: "Evet. Landing page üzerinde Operasyon Paneli Giriş butonu korunur. Ürün tanıtımı yapılırken gerçek panele erişim kaybolmaz.",
+      q: "Kendi donanımımı (tablet, telefon veya dokunmatik PC) kullanabilir miyim?",
+      a: "Evet. PWA (Progressive Web App) standardı sayesinde ek donanım maliyetine katlanmanıza gerek yoktur. Mevcut iPad, Android tablet, akıllı telefon veya Windows masaüstü bilgisayarlarınızı anında birer garson terminali veya kasa ekranına dönüştürebilirsiniz.",
     },
     {
-      q: "Görseller gerçek ürün ekranı mı?",
-      a: "Evet. Bu sayfada kullanılan görseller mevcut uygulamanın gerçek QA ekran görüntülerinden alınmıştır; sahte dashboard mockup kullanılmaz.",
+      q: "Kurulum süreci ne kadar sürer ve teknik destek ücretli mi?",
+      a: "Bulut tabanlı mimarimiz sayesinde kurulum dakikalar içinde tamamlanır. Herhangi bir yerel sunucu kurulumu veya kablolama gerekmez. Teknik destek ve güncellemeler tamamen ücretsizdir ve buluttan anında cihazlarınıza yansıtılır.",
     },
     {
-      q: "Mobil kullanım var mı?",
-      a: "Evet. Mobil operasyon, masa akışı, sipariş girişi, mutfak ve kasa gibi PWA odaklı ekranlar ürünün parçasıdır.",
-    },
-    {
-      q: "Çoklu şube ve ekip yönetimi destekleniyor mu?",
-      a: "Evet. İşletme, şube, personel rolleri ve operasyon ekranları çoklu lokasyon yönetimine uygun yapıdadır.",
+      q: "Çoklu şube ve franchise yönetimi destekleniyor mu?",
+      a: "Evet. Tek bir yönetici hesabından tüm şubelerinizin ciro, stok, personel ve menü yönetimini merkezi olarak yapabilirsiniz. Şubeler arası malzeme transferi ve anlık performans karşılaştırmaları tek ekrandan izlenebilir.",
     },
   ];
 
+  // Simulator Actions
+  const addToCart = (item: { id: string; name: string; price: number }) => {
+    setCart(prev => {
+      const existing = prev.find(i => i.id === item.id);
+      if (existing) {
+        return prev.map(i => i.id === item.id ? { ...i, quantity: i.quantity + 1 } : i);
+      }
+      return [...prev, { ...item, quantity: 1 }];
+    });
+  };
+
+  const updateQuantity = (id: string, delta: number) => {
+    setCart(prev => {
+      return prev.map(i => {
+        if (i.id === id) {
+          const newQty = i.quantity + delta;
+          return newQty > 0 ? { ...i, quantity: newQty } : null;
+        }
+        return i;
+      }).filter(Boolean) as CartItem[];
+    });
+  };
+
+  const handleCheckout = () => {
+    if (cart.length === 0) return;
+
+    if (isOnline) {
+      const orderTotal = cart.reduce((sum, i) => sum + i.price * i.quantity, 0);
+      setTotalSales(prev => prev + orderTotal);
+      setCart([]);
+      
+      // Animate receipt print effect
+      if (receiptRef.current) {
+        gsap.fromTo(receiptRef.current,
+          { y: 30, opacity: 0 },
+          { y: 0, opacity: 1, duration: 0.6, ease: "back.out(1.5)" }
+        );
+        gsap.to(receiptRef.current, {
+          opacity: 0,
+          y: -20,
+          delay: 2.2,
+          duration: 0.4
+        });
+      }
+    } else {
+      setOfflineQueue(prev => [...prev, [...cart]]);
+      setCart([]);
+      
+      gsap.fromTo(".offline-alert",
+        { scale: 0.95, opacity: 0 },
+        { scale: 1, opacity: 1, duration: 0.3 }
+      );
+    }
+  };
+
+  // Sync Offline Queue when internet restores
+  useEffect(() => {
+    if (isOnline && offlineQueue.length > 0) {
+      setIsSyncing(true);
+      
+      const timer = setTimeout(() => {
+        const queuedTotal = offlineQueue.reduce((sum, order) => {
+          return sum + order.reduce((oSum, item) => oSum + item.price * item.quantity, 0);
+        }, 0);
+        
+        setTotalSales(prev => prev + queuedTotal);
+        setOfflineQueue([]);
+        setIsSyncing(false);
+        setJustSynced(true);
+        
+        setTimeout(() => setJustSynced(false), 3000);
+      }, 1500);
+
+      return () => clearTimeout(timer);
+    }
+  }, [isOnline, offlineQueue]);
+
+  // GSAP Animations setup
+  useEffect(() => {
+    if (typeof window !== "undefined") {
+      gsap.registerPlugin(ScrollTrigger);
+
+      // Hero line-masked staggers
+      gsap.fromTo(".hero-title-line",
+        { y: "100%", opacity: 0 },
+        { y: "0%", opacity: 1, duration: 0.8, stagger: 0.12, ease: "power4.out" }
+      );
+
+      // Other hero staggers
+      gsap.fromTo(headerRef.current, 
+        { y: -30, opacity: 0 }, 
+        { y: 0, opacity: 1, duration: 0.5, delay: 0.4 }
+      );
+
+      gsap.fromTo(heroSubRef.current,
+        { opacity: 0, y: 15 },
+        { opacity: 1, y: 0, duration: 0.6, delay: 0.6 }
+      );
+
+      gsap.fromTo(heroCtasRef.current,
+        { opacity: 0, scale: 0.98 },
+        { opacity: 1, scale: 1, duration: 0.5, delay: 0.7 }
+      );
+
+      // Initial simulator load transition
+      gsap.fromTo(simulatorCardRef.current,
+        { opacity: 0, y: 50 },
+        { opacity: 1, y: 0, duration: 0.9, delay: 0.5, ease: "power3.out" }
+      );
+
+      // 3D Scroll-Linked rotation for Simulator Card
+      gsap.to(simulatorCardRef.current, {
+        rotateX: 0,
+        rotateY: 0,
+        rotateZ: 0,
+        scale: 1,
+        scrollTrigger: {
+          trigger: "#urun",
+          start: "top top",
+          end: "bottom center",
+          scrub: 1
+        }
+      });
+
+      // Drifting organic background blobs
+      gsap.to(".blob-1", { x: "120px", y: "60px", duration: 12, repeat: -1, yoyo: true, ease: "sine.inOut" });
+      gsap.to(".blob-2", { x: "-140px", y: "90px", duration: 15, repeat: -1, yoyo: true, ease: "sine.inOut" });
+      gsap.to(".blob-3", { x: "80px", y: "-100px", duration: 13, repeat: -1, yoyo: true, ease: "sine.inOut" });
+
+      // Scroll animations
+      if (contentSectionRef.current) {
+        gsap.fromTo(contentSectionRef.current.children,
+          { opacity: 0, y: 35 },
+          {
+            opacity: 1,
+            y: 0,
+            stagger: 0.1,
+            duration: 0.7,
+            scrollTrigger: {
+              trigger: contentSectionRef.current,
+              start: "top 80%"
+            }
+          }
+        );
+      }
+
+      if (showcaseSectionRef.current) {
+        gsap.fromTo(showcaseSectionRef.current,
+          { opacity: 0 },
+          {
+            opacity: 1,
+            duration: 0.8,
+            scrollTrigger: {
+              trigger: showcaseSectionRef.current,
+              start: "top 75%"
+            }
+          }
+        );
+      }
+    }
+  }, []);
+
+  // Magnetic button helpers
+  useEffect(() => {
+    const applyMagnetic = (btn: HTMLAnchorElement | null) => {
+      if (!btn) return;
+      
+      const onMouseMove = (e: MouseEvent) => {
+        const rect = btn.getBoundingClientRect();
+        const x = e.clientX - rect.left - rect.width / 2;
+        const y = e.clientY - rect.top - rect.height / 2;
+
+        gsap.to(btn, {
+          x: x * 0.28,
+          y: y * 0.28,
+          duration: 0.3,
+          ease: "power2.out"
+        });
+      };
+
+      const onMouseLeave = () => {
+        gsap.to(btn, {
+          x: 0,
+          y: 0,
+          duration: 0.4,
+          ease: "elastic.out(1, 0.3)"
+        });
+      };
+
+      btn.addEventListener("mousemove", onMouseMove);
+      btn.addEventListener("mouseleave", onMouseLeave);
+
+      return () => {
+        btn.removeEventListener("mousemove", onMouseMove);
+        btn.removeEventListener("mouseleave", onMouseLeave);
+      };
+    };
+
+    const cleanup1 = applyMagnetic(magneticButton1.current);
+    const cleanup2 = applyMagnetic(magneticButton2.current);
+
+    return () => {
+      cleanup1?.();
+      cleanup2?.();
+    };
+  }, []);
+
+  const cartSubtotal = cart.reduce((sum, i) => sum + i.price * i.quantity, 0);
+
   return (
-    <div className="bg-background text-on-surface font-body-md min-h-screen flex flex-col">
-      {/* TopNavBar */}
-      <header className="bg-surface/80 backdrop-blur-md sticky top-0 z-50 border-b border-outline-variant/30">
-        <nav className="flex justify-between items-center w-full px-margin-mobile md:px-margin-desktop py-4 max-w-container-max mx-auto">
-          <div className="flex items-center gap-8">
-            <Link className="font-headline-md text-headline-md font-bold text-primary" href="/">
+    <div className="min-h-screen bg-[#FCFAF7] text-slate-900 font-sans selection:bg-amber-100 selection:text-amber-900 flex flex-col antialiased relative overflow-x-hidden">
+      
+      {/* Drifting Organic Fluid Mesh Backdrop Blobs */}
+      <div className="absolute inset-0 overflow-hidden pointer-events-none z-0">
+        <div className="blob-1 absolute top-[-10%] left-[-10%] w-[55%] h-[55%] rounded-full bg-rose-100/40 blur-[130px]"></div>
+        <div className="blob-2 absolute bottom-[-10%] right-[-10%] w-[55%] h-[55%] rounded-full bg-amber-100/40 blur-[130px]"></div>
+        <div className="blob-3 absolute top-[35%] left-[25%] w-[45%] h-[45%] rounded-full bg-indigo-100/30 blur-[140px]"></div>
+      </div>
+
+      {/* Premium Translucent Light Header */}
+      <header 
+        ref={headerRef}
+        className="sticky top-0 z-50 transition-all duration-300 w-full bg-white/75 backdrop-blur-xl border-b border-slate-200/50"
+      >
+        <nav className="flex justify-between items-center w-full px-6 md:px-12 py-4 max-w-7xl mx-auto">
+          <div className="flex items-center gap-12">
+            <Link className="text-lg font-bold tracking-tight text-slate-900 flex items-center gap-2 cursor-pointer" href="/">
+              <div className="w-7 h-7 rounded-lg bg-slate-900 text-white flex items-center justify-center shadow-md">
+                <span className="font-extrabold text-xs">CP</span>
+              </div>
               {siteName}
             </Link>
-            <div className="hidden md:flex items-center gap-6">
-              <a className="font-label-lg text-label-lg text-primary border-b-2 border-secondary pb-1" href="#urun">
+            <div className="hidden md:flex items-center gap-8">
+              <a className="text-xs font-semibold text-slate-600 hover:text-slate-900 transition-colors cursor-pointer" href="#urun">
                 Ürün
               </a>
-              <a className="font-label-lg text-label-lg text-on-surface-variant hover:text-primary transition-colors" href="#moduller">
+              <a className="text-xs font-semibold text-slate-500 hover:text-slate-900 transition-colors cursor-pointer" href="#moduller">
                 Modüller
               </a>
-              <a className="font-label-lg text-label-lg text-on-surface-variant hover:text-primary transition-colors" href="#ekranlar">
+              <a className="text-xs font-semibold text-slate-500 hover:text-slate-900 transition-colors cursor-pointer" href="#ekranlar">
                 Ekranlar
               </a>
-              <a className="font-label-lg text-label-lg text-on-surface-variant hover:text-primary transition-colors" href="#sss">
+              <a className="text-xs font-semibold text-slate-500 hover:text-slate-900 transition-colors cursor-pointer" href="#sss">
                 SSS
               </a>
             </div>
           </div>
           <div className="flex items-center gap-4">
             <LanguageSwitcher locale={locale} label="Dil" compact />
-            <Link className="hidden sm:block font-label-lg text-label-lg text-primary hover:bg-surface-container-low px-4 py-2 rounded-lg transition-all" href="/demo">
+            <Link className="hidden sm:block text-xs font-bold text-slate-500 hover:text-slate-900 px-4 py-2 rounded-xl hover:bg-slate-100 transition-all cursor-pointer" href="/demo">
               Demo
             </Link>
-            <Link className="bg-primary text-on-primary px-6 py-2.5 rounded-lg font-label-lg text-label-lg hover:opacity-90 transition-all" href="/login">
-              Operasyon Paneli Giriş
+            <Link className="px-5 py-2.5 rounded-xl text-xs font-bold border border-slate-200 bg-white text-slate-700 hover:bg-slate-50 transition-all shadow-sm cursor-pointer" href="/login">
+              Operasyon Paneli
             </Link>
           </div>
         </nav>
       </header>
 
-      <main className="flex-grow">
-        {/* Hero Section */}
-        <section className="relative overflow-hidden py-20 lg:py-32" id="urun">
-          <div className="max-w-container-max mx-auto px-margin-mobile md:px-margin-desktop">
-            <div className="flex flex-col lg:flex-row items-center gap-16">
-              <div className="w-full lg:w-1/2 space-y-8 text-left">
-                <span className="inline-block px-4 py-1.5 bg-secondary-container/10 text-secondary-container font-label-md text-label-md rounded-full">
-                  CLOUD POS PLATFORMU
-                </span>
-                <h1 className="font-headline-xl text-headline-xl text-primary leading-tight">
-                  Self servis ve kafe restoran operasyonu tek POS sisteminde.
-                </h1>
-                <p className="font-body-lg text-body-lg text-on-surface-variant max-w-xl">
-                  Cloud POS; QR/self servis müşteri deneyimi ile masa, sipariş, mutfak, kasa, stok, personel, çoklu şube ve raporlama modüllerini tek bulut tabanlı üründe birleştirir.
-                </p>
-                <div className="flex flex-wrap gap-4 pt-4">
-                  <Link className="h-12 flex items-center bg-primary text-on-primary px-8 rounded-lg font-label-lg text-label-lg hover:opacity-90 transition-all shadow-lg shadow-primary/10" href="/login">
-                    Operasyon Paneli Giriş
-                  </Link>
-                  <Link className="h-12 flex items-center border border-primary text-primary px-8 rounded-lg font-label-lg text-label-lg hover:bg-surface-container-low transition-all" href="/demo">
-                    Demo Ekranları Gör
-                  </Link>
-                </div>
-                
-                {leadStatus && (
-                  <p className="mt-5 rounded-2xl border border-emerald-200 bg-emerald-50 px-4 py-3 text-sm font-bold text-emerald-700">
-                    Talebiniz alındı. En kısa sürede dönüş yapılacak.
-                  </p>
-                )}
-
-                {/* Quick Stats Chips */}
-                <div className="flex flex-wrap gap-4 pt-8">
-                  <div className="flex items-center gap-3 bg-white p-3 rounded-xl border border-outline-variant/30 shadow-sm">
-                    <span className="material-symbols-outlined text-secondary">qr_code_2</span>
-                    <div>
-                      <p className="font-label-lg text-label-lg text-primary">Self servis</p>
-                      <p className="font-label-md text-label-md text-on-surface-variant">QR ve müşteri akışı</p>
-                    </div>
-                  </div>
-                  <div className="flex items-center gap-3 bg-white p-3 rounded-xl border border-outline-variant/30 shadow-sm">
-                    <span className="material-symbols-outlined text-secondary">restaurant</span>
-                    <div>
-                      <p className="font-label-lg text-label-lg text-primary">Restoran POS</p>
-                      <p className="font-label-md text-label-md text-on-surface-variant">Masa, mutfak, kasa</p>
-                    </div>
-                  </div>
-                  <div className="flex items-center gap-3 bg-white p-3 rounded-xl border border-outline-variant/30 shadow-sm">
-                    <span className="material-symbols-outlined text-secondary">smartphone</span>
-                    <div>
-                      <p className="font-label-lg text-label-lg text-primary">Mobil PWA</p>
-                      <p className="font-label-md text-label-md text-on-surface-variant">Telefon ve tablet uyumlu</p>
-                    </div>
-                  </div>
-                </div>
+      <main className="flex-grow z-10 relative">
+        
+        {/* Hero Section with Live POS Simulator & Showcase Animations */}
+        <section className="relative py-16 lg:py-24 px-6 md:px-12 max-w-7xl mx-auto" id="urun">
+          <div className="grid grid-cols-1 lg:grid-cols-[1.1fr_0.9fr] gap-16 lg:gap-12 items-center">
+            
+            {/* Hero Left Content with Masked Reveals */}
+            <div className="space-y-6 text-left max-w-2xl">
+              <div className="inline-flex items-center gap-2 px-3 py-1 bg-amber-500/10 border border-amber-500/20 text-amber-800 text-xs font-bold rounded-full uppercase tracking-wider">
+                <WifiOff className="w-3.5 h-3.5 text-amber-700 animate-pulse" />
+                Çevrimdışı Çalışma Garantisi
               </div>
               
-              <div className="w-full lg:w-1/2 relative">
-                <div className="relative z-10 rounded-2xl overflow-hidden shadow-2xl border-4 border-white">
-                  <Image 
-                    className="w-full h-auto" 
-                    alt="A high-fidelity desktop view of the Quapos Cloud POS operation dashboard"
-                    src="https://lh3.googleusercontent.com/aida/AP1WRLs3CeEFn7-kKzKZ6oC4kGNcFvfBUlbY8j9GbF5VQHcRzOhZg4K3OmzwMMhOBz0xZoucmuV6x2FwCs4iacVUqKzj0bvm1JtfjcjKjpXoALFzh7eWa7X6Db1XTNoep5hOVTlOB8rD3MHbMCe6FG27SFrTtACxQ7ewU8QPvLZDois5SnQ7PI-9We87UqEpoAc8dRUdlEEQRvtKPLnzrwz9JVyNJqvA6BLU494TEGrKqI3QYQak788D1qsCgg0"
-                    width={1440}
-                    height={900}
-                    priority
-                  />
+              <h1 className="text-4xl md:text-5xl lg:text-6xl font-extrabold text-slate-900 leading-[1.15] tracking-tight">
+                <div className="overflow-hidden py-1">
+                  <span className="hero-title-line block">İnternet Kopsa Bile</span>
                 </div>
-                <div className="absolute -bottom-10 -right-10 w-48 h-auto z-20 hidden md:block rounded-xl overflow-hidden shadow-xl border-4 border-white rotate-2 transition-transform hover:rotate-0">
+                <div className="overflow-hidden py-1">
+                  <span className="hero-title-line block">Satış Yapmaya</span>
+                </div>
+                <div className="overflow-hidden py-1">
+                  <span className="hero-title-line block text-amber-600">Devam Edin.</span>
+                </div>
+              </h1>
+
+              <p 
+                ref={heroSubRef}
+                className="text-base text-slate-600 leading-relaxed"
+              >
+                Bulut POS sistemlerinin en büyük zayıflığı internet kesintileridir. Cloud POS, PWA altyapısı sayesinde bağlantı koptuğu anda lokalde çalışmaya devam eder ve online olduğunda otomatik senkronize olur.
+              </p>
+              
+              <div 
+                ref={heroCtasRef}
+                className="flex flex-wrap gap-4 pt-4"
+              >
+                <Link 
+                  ref={magneticButton1}
+                  className="bg-slate-900 text-white hover:bg-slate-800 h-12 flex items-center justify-center px-8 rounded-xl font-bold text-xs cursor-pointer shadow-md transition-colors" 
+                  href="/login"
+                >
+                  Operasyon Paneli Giriş
+                  <ArrowRight className="w-4 h-4 ml-1.5" />
+                </Link>
+                <Link 
+                  ref={magneticButton2}
+                  className="h-12 flex items-center justify-center border border-slate-200 bg-white hover:bg-slate-50 text-slate-700 px-8 rounded-xl font-bold text-xs transition-all cursor-pointer" 
+                  href="/demo"
+                >
+                  Demo Ekranları Gör
+                </Link>
+              </div>
+              
+              {leadStatus && (
+                <div className="rounded-xl border border-emerald-500/20 bg-emerald-50 px-4 py-3 text-xs font-bold text-emerald-800 flex items-center gap-2">
+                  <Check className="w-4 h-4 text-emerald-600" />
+                  Görüşme talebiniz başarıyla kaydedilmiştir.
+                </div>
+              )}
+            </div>
+            
+            {/* Hero Right Content: Live POS Simulator with 3D Scroll Rotation */}
+            <div className="w-full relative">
+              {/* Receipt printer mockup slot */}
+              <div className="absolute top-16 right-6 w-44 z-0 pointer-events-none">
+                <div 
+                  ref={receiptRef}
+                  className="bg-white border-x border-b border-slate-200 p-3 shadow-md rounded-b-lg text-[10px] font-mono space-y-2 opacity-0 transform translate-y-4"
+                >
+                  <p className="text-center font-bold border-b border-slate-100 pb-1">CLOUD POS FİŞ</p>
+                  <div className="space-y-1">
+                    <p>1x Latte Macchiato - 120₺</p>
+                    <p>1x Butter Croissant - 90₺</p>
+                  </div>
+                  <p className="border-t border-slate-100 pt-1 font-bold flex justify-between">
+                    <span>Toplam:</span> <span>210₺</span>
+                  </p>
+                  <p className="text-[8px] text-slate-400 text-center">İşlem Başarılı ✓</p>
+                </div>
+              </div>
+
+              {/* Cashier Terminal Shell with initial 3D transforms */}
+              <div 
+                ref={simulatorCardRef}
+                style={{ 
+                  transformStyle: "preserve-3d", 
+                  perspective: "1000px", 
+                  transform: "rotateX(18deg) rotateY(-14deg) rotateZ(4deg) scale(0.94)" 
+                }}
+                className="relative z-10 rounded-2xl border border-slate-200 bg-white p-4 shadow-2xl flex flex-col space-y-4 max-w-lg mx-auto transition-shadow hover:shadow-slate-350 duration-500"
+              >
+                {/* Terminal Header / Status Bar */}
+                <div className="flex items-center justify-between border-b border-slate-100 pb-3">
+                  <div className="flex items-center gap-2">
+                    <span className="w-2.5 h-2.5 rounded-full bg-slate-900"></span>
+                    <span className="text-xs font-bold text-slate-800">Kasa Terminali Simulatorü</span>
+                  </div>
+                  
+                  {/* Connection Status Button */}
+                  <button 
+                    onClick={() => setIsOnline(!isOnline)}
+                    className={`inline-flex items-center gap-1.5 px-3 py-1 rounded-full text-[10px] font-bold transition-all border cursor-pointer ${
+                      isOnline 
+                        ? 'bg-emerald-50 border-emerald-200 text-emerald-800 hover:bg-emerald-100' 
+                        : 'bg-amber-50 border-amber-200 text-amber-800 hover:bg-amber-100'
+                    }`}
+                  >
+                    {isOnline ? (
+                      <>
+                        <Wifi className="w-3.5 h-3.5 text-emerald-600" />
+                        İnternet: Aktif
+                      </>
+                    ) : (
+                      <>
+                        <WifiOff className="w-3.5 h-3.5 text-amber-600" />
+                        İnternet: Kesik
+                      </>
+                    )}
+                  </button>
+                </div>
+
+                {/* Main POS Interface Grid */}
+                <div className="grid grid-cols-[1.1fr_0.9fr] gap-4 h-64">
+                  {/* Product Catalog Column */}
+                  <div className="grid grid-cols-2 gap-2 content-start">
+                    {menuItems.map(item => (
+                      <button 
+                        key={item.id}
+                        onClick={() => addToCart(item)}
+                        className="p-3 rounded-xl border border-slate-200 bg-slate-50 hover:bg-slate-100 transition-colors text-left space-y-1.5 cursor-pointer"
+                      >
+                        <p className="text-xs font-bold text-slate-800">{item.name}</p>
+                        <p className="text-[10px] font-semibold text-slate-500">{item.price} ₺</p>
+                      </button>
+                    ))}
+                  </div>
+
+                  {/* Active Ticket / Receipt Column */}
+                  <div className="rounded-xl border border-slate-100 bg-slate-50/50 p-3 flex flex-col justify-between">
+                    <div className="space-y-2 overflow-y-auto max-h-36 pr-1">
+                      <p className="text-[10px] font-bold text-slate-400 uppercase tracking-wider">Açık Adisyon</p>
+                      {cart.length === 0 ? (
+                        <p className="text-xs text-slate-400 italic py-4 text-center">Sepet boş</p>
+                      ) : (
+                        <div className="space-y-1.5">
+                          {cart.map(item => (
+                            <div key={item.id} className="flex justify-between items-center text-xs">
+                              <div>
+                                <p className="font-bold text-slate-800 truncate max-w-[90px]">{item.name}</p>
+                                <p className="text-[10px] text-slate-400">{item.price * item.quantity} ₺</p>
+                              </div>
+                              <div className="flex items-center gap-1.5 bg-white border border-slate-200 rounded-lg p-0.5">
+                                <button onClick={() => updateQuantity(item.id, -1)} className="p-0.5 hover:bg-slate-100 rounded text-slate-500 cursor-pointer"><Minus className="w-2.5 h-2.5" /></button>
+                                <span className="text-[10px] font-bold w-3 text-center">{item.quantity}</span>
+                                <button onClick={() => addToCart(item)} className="p-0.5 hover:bg-slate-100 rounded text-slate-500 cursor-pointer"><Plus className="w-2.5 h-2.5" /></button>
+                              </div>
+                            </div>
+                          ))}
+                        </div>
+                      )}
+                    </div>
+
+                    <div className="border-t border-slate-100 pt-2 space-y-2">
+                      <div className="flex justify-between text-xs font-bold text-slate-800">
+                        <span>Adisyon Toplamı:</span>
+                        <span>{cartSubtotal} ₺</span>
+                      </div>
+                      <button 
+                        disabled={cart.length === 0}
+                        onClick={handleCheckout}
+                        className="w-full bg-slate-900 hover:bg-slate-800 text-white disabled:bg-slate-200 disabled:text-slate-400 py-2 rounded-lg text-xs font-bold cursor-pointer transition-colors"
+                      >
+                        Adisyon Kapat ve Öde
+                      </button>
+                    </div>
+                  </div>
+                </div>
+
+                {/* Dashboard Metrics Simulator Footer */}
+                <div className="border-t border-slate-100 pt-3 flex justify-between items-center text-[10px]">
+                  <div>
+                    <p className="text-slate-400 font-semibold">Toplam Ciro (Bulut DB)</p>
+                    <p className="text-sm font-extrabold text-slate-800">{totalSales} ₺</p>
+                  </div>
+                  <div>
+                    <p className="text-slate-400 font-semibold text-right">Lokal Kuyruk</p>
+                    <p className="text-sm font-extrabold text-slate-800 text-right">{offlineQueue.length} adet</p>
+                  </div>
+                </div>
+
+                {/* Alerts Layer inside simulator */}
+                {offlineQueue.length > 0 && !isOnline && (
+                  <div className="offline-alert rounded-xl border border-amber-200 bg-amber-50 p-3 text-xs text-amber-800 flex items-start gap-2">
+                    <AlertTriangle className="w-4 h-4 text-amber-600 shrink-0 mt-0.5" />
+                    <div>
+                      <p className="font-bold">Çevrimdışı Mod Aktif</p>
+                      <p className="text-[10px] text-amber-700 mt-0.5">Sipariş lokal belleğe kaydedildi. Bağlantı geldiğinde otomatik eşitlenecektir.</p>
+                    </div>
+                  </div>
+                )}
+
+                {isSyncing && (
+                  <div className="rounded-xl border border-indigo-200 bg-indigo-50 p-3 text-xs text-indigo-800 flex items-center gap-2">
+                    <RefreshCw className="w-3.5 h-3.5 text-indigo-600 animate-spin" />
+                    <p className="font-bold">Lokal veriler buluta senkronize ediliyor...</p>
+                  </div>
+                )}
+
+                {justSynced && (
+                  <div className="rounded-xl border border-emerald-200 bg-emerald-50 p-3 text-xs text-emerald-800 flex items-center gap-2">
+                    <Check className="w-4 h-4 text-emerald-600" />
+                    <p className="font-bold">Kuyruk Başarıyla Eşleşti! Ciro güncellendi.</p>
+                  </div>
+                )}
+              </div>
+            </div>
+          </div>
+        </section>
+
+        {/* Feature Sections - Clean & Asymmetric layouts (Eliminating generic grids) */}
+        <section className="py-20 max-w-7xl mx-auto px-6 md:px-12" id="moduller">
+          <div className="text-center mb-20 space-y-4">
+            <span className="text-amber-800 text-xs font-bold uppercase tracking-widest">Özel Çözümler</span>
+            <h2 className="text-3xl md:text-4xl font-extrabold text-slate-900 tracking-tight">Kafenin Tüm Süreci Tek Panelde</h2>
+            <p className="text-slate-500 max-w-xl mx-auto text-xs leading-relaxed">Şablon tasarımlardan uzak, her detayı kafe ve restoran operasyonları için özel olarak kodlanmış araçlar.</p>
+          </div>
+          
+          <div 
+            ref={contentSectionRef}
+            className="space-y-16"
+          >
+            {/* Story Row 1 */}
+            <div className="grid grid-cols-1 md:grid-cols-2 gap-12 items-center">
+              <div className="space-y-4">
+                <div className="w-10 h-10 rounded-xl bg-slate-900 text-white flex items-center justify-center shadow-md">
+                  <CreditCard className="w-5 h-5" />
+                </div>
+                <h3 className="text-2xl font-bold text-slate-900">Çevrimdışı Kasa ve Adisyon</h3>
+                <p className="text-xs text-slate-500 leading-relaxed">
+                  İnternet arızaları restoranlarda servis akışını durduran en büyük krizdir. Cloud POS lokal önbellek katmanı sayesinde bağlantı koptuğunda kilitlenmez, adisyon yazıcılarına veri aktarmayı sürdürür.
+                </p>
+              </div>
+              <div className="rounded-2xl border border-slate-200 bg-[#F4F2EE]/40 p-6 flex items-center justify-center">
+                <div className="w-full max-w-sm rounded-xl overflow-hidden border border-slate-200 shadow-md">
                   <Image 
-                    className="w-full h-auto" 
-                    alt="A portrait view of the mobile-optimized PWA version of the Quapos operation panel"
-                    src="https://lh3.googleusercontent.com/aida/AP1WRLtRffyDmeuXbtL0lHlXio4ZBq9Z9F-dwK_5k2Livx4ls41mk2TfN7LSlvq9jFNPr0StlRjIi6azSP2U-HysFLPbSQoOjeiwsqGYlrvS91ssuSaS02PzrrtgGUBIS0ydzjeCxl48ZliVwgnFyJlf8wRW1za35gMbPVjKipwvMYXs_oCxGqwXTjrJYKYibt7s2XgM7HXhX7-8_J1saBniRGaUHjZEMq_4x83nZBDB6t5Ivq-rbVGiCUjH9rpL"
+                    className="w-full h-auto"
+                    alt="POS Garson Sipariş Ekranı"
+                    src="/landing-assets/mobil-pos-siparis.png"
                     width={390}
                     height={844}
                   />
                 </div>
-                {/* Atmospheric effect */}
-                <div className="absolute -top-20 -right-20 w-64 h-64 bg-secondary/10 blur-[100px] rounded-full"></div>
-                <div className="absolute -bottom-20 -left-20 w-64 h-64 bg-primary/5 blur-[100px] rounded-full"></div>
               </div>
             </div>
-          </div>
-        </section>
 
-        {/* Features Grid */}
-        <section className="py-24 bg-surface-container-lowest" id="moduller">
-          <div className="max-w-container-max mx-auto px-margin-mobile md:px-margin-desktop text-center mb-16">
-            <span className="font-label-lg text-label-lg text-secondary tracking-widest uppercase">ÜRÜN ÖZELLİKLERİ</span>
-            <h2 className="font-headline-lg text-headline-lg text-primary mt-4 max-w-2xl mx-auto">POS işi için gereken ana modüller hazır.</h2>
-            <p className="font-body-md text-body-md text-on-surface-variant mt-4 max-w-3xl mx-auto">Sayfa artık sadece yazılımı satmıyor; ürünün hangi operasyonları kapsadığını net biçimde anlatıyor. Kafe-restoran yönetimi ve self servis akışları aynı platformda konumlanıyor.</p>
-          </div>
-          <div className="max-w-container-max mx-auto px-margin-mobile md:px-margin-desktop grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-8">
-            {/* Module Card 1 */}
-            <div className="bg-white p-8 rounded-2xl border border-outline-variant/30 hover:shadow-xl transition-all group">
-              <div className="w-12 h-12 bg-secondary/10 text-secondary rounded-lg flex items-center justify-center mb-6 group-hover:scale-110 transition-transform">
-                <span className="material-symbols-outlined">storefront</span>
-              </div>
-              <h3 className="font-headline-md text-headline-md text-primary mb-3">Kafe ve restoran operasyonu</h3>
-              <p className="font-body-md text-body-md text-on-surface-variant">Masa, adisyon, sipariş, mutfak, kasa ve servis taleplerini tek akışta yönetin.</p>
-            </div>
-            {/* Module Card 2 */}
-            <div className="bg-white p-8 rounded-2xl border border-outline-variant/30 hover:shadow-xl transition-all group">
-              <div className="w-12 h-12 bg-secondary/10 text-secondary rounded-lg flex items-center justify-center mb-6 group-hover:scale-110 transition-transform">
-                <span className="material-symbols-outlined">qr_code</span>
-              </div>
-              <h3 className="font-headline-md text-headline-md text-primary mb-3">Self servis ve QR deneyimi</h3>
-              <p className="font-body-md text-body-md text-on-surface-variant">Müşteri menü görüntüleme, QR akışı ve self servis sipariş senaryoları için güçlü temel.</p>
-            </div>
-            {/* Module Card 3 */}
-            <div className="bg-white p-8 rounded-2xl border border-outline-variant/30 hover:shadow-xl transition-all group">
-              <div className="w-12 h-12 bg-secondary/10 text-secondary rounded-lg flex items-center justify-center mb-6 group-hover:scale-110 transition-transform">
-                <span className="material-symbols-outlined">soup_kitchen</span>
-              </div>
-              <h3 className="font-headline-md text-headline-md text-primary mb-3">Mutfak ekranı</h3>
-              <p className="font-body-md text-body-md text-on-surface-variant">Hazırlanıyor, geciken, kritik ve servise hazır siparişleri mutfak ekibine net gösterir.</p>
-            </div>
-            {/* Module Card 4 */}
-            <div className="bg-white p-8 rounded-2xl border border-outline-variant/30 hover:shadow-xl transition-all group">
-              <div className="w-12 h-12 bg-secondary/10 text-secondary rounded-lg flex items-center justify-center mb-6 group-hover:scale-110 transition-transform">
-                <span className="material-symbols-outlined">payments</span>
-              </div>
-              <h3 className="font-headline-md text-headline-md text-primary mb-3">Kasa ve adisyon</h3>
-              <p className="font-body-md text-body-md text-on-surface-variant">Açık hesaplar, ödeme akışı, gün işlemleri ve tahsilat süreçleri için hazır ekranlar.</p>
-            </div>
-            {/* Module Card 5 */}
-            <div className="bg-white p-8 rounded-2xl border border-outline-variant/30 hover:shadow-xl transition-all group">
-              <div className="w-12 h-12 bg-secondary/10 text-secondary rounded-lg flex items-center justify-center mb-6 group-hover:scale-110 transition-transform">
-                <span className="material-symbols-outlined">inventory</span>
-              </div>
-              <h3 className="font-headline-md text-headline-md text-primary mb-3">Stok ve ürün yönetimi</h3>
-              <p className="font-body-md text-body-md text-on-surface-variant">Ürün, kategori, reçete, maliyet ve kritik stok yönetimi için operasyonel yapı.</p>
-            </div>
-            {/* Module Card 6 */}
-            <div className="bg-white p-8 rounded-2xl border border-outline-variant/30 hover:shadow-xl transition-all group">
-              <div className="w-12 h-12 bg-secondary/10 text-secondary rounded-lg flex items-center justify-center mb-6 group-hover:scale-110 transition-transform">
-                <span className="material-symbols-outlined">monitoring</span>
-              </div>
-              <h3 className="font-headline-md text-headline-md text-primary mb-3">Raporlar ve analiz</h3>
-              <p className="font-body-md text-body-md text-on-surface-variant">Ciro, sipariş, şube, ürün ve finans metriklerini yönetim panelinden takip edin.</p>
-            </div>
-          </div>
-        </section>
-
-        {/* Real Screens Section */}
-        <section className="py-24 bg-surface overflow-hidden" id="ekranlar">
-          <div className="max-w-container-max mx-auto px-margin-mobile md:px-margin-desktop">
-            <div className="mb-16">
-              <span className="font-label-lg text-label-lg text-secondary tracking-widest uppercase">GERÇEK ÜRÜN EKRANLARI</span>
-              <h2 className="font-headline-lg text-headline-lg text-primary mt-4">Sahte mockup yok. Görseller gerçek uygulama ekranlarından.</h2>
-              <p className="font-body-md text-body-md text-on-surface-variant mt-4">Landing page üzerindeki ekranlar, mevcut Cloud POS ürününün gerçek QA görüntülerinden hazırlanmıştır. Ziyaretçi ürünün nasıl çalıştığını doğrudan görür.</p>
-            </div>
-            <div className="grid grid-cols-1 lg:grid-cols-12 gap-12 items-start">
-              {/* Dashboard Detail */}
-              <div className="lg:col-span-7 space-y-12">
-                <div className="group relative">
-                  <div className="flex items-center justify-between mb-4">
-                    <h4 className="font-headline-md text-headline-md text-primary">Operasyon merkezi</h4>
-                    <span className="bg-status-success/10 text-status-success px-3 py-1 rounded-full text-label-md font-label-md">Gerçek ekran</span>
-                  </div>
-                  <p className="font-body-md text-body-md text-on-surface-variant mb-6">Anlık sipariş, masa, mutfak ve kasa durumunu tek yönetim ekranında görün.</p>
-                  <div className="rounded-xl overflow-hidden shadow-lg border border-outline-variant/30 bg-white p-2">
-                    <Image 
-                      className="w-full h-auto rounded-lg" 
-                      alt="A panoramic high-resolution capture of the Quapos operational dashboard"
-                      src="https://lh3.googleusercontent.com/aida/AP1WRLs3CeEFn7-kKzKZ6oC4kGNcFvfBUlbY8j9GbF5VQHcRzOhZg4K3OmzwMMhOBz0xZoucmuV6x2FwCs4iacVUqKzj0bvm1JtfjcjKjpXoALFzh7eWa7X6Db1XTNoep5hOVTlOB8rD3MHbMCe6FG27SFrTtACxQ7ewU8QPvLZDois5SnQ7PI-9We87UqEpoAc8dRUdlEEQRvtKPLnzrwz9JVyNJqvA6BLU494TEGrKqI3QYQak788D1qsCgg0"
-                      width={1440}
-                      height={900}
-                    />
-                  </div>
+            {/* Story Row 2 */}
+            <div className="grid grid-cols-1 md:grid-cols-2 gap-12 items-center md:grid-flow-col-dense">
+              <div className="md:col-start-2 space-y-4">
+                <div className="w-10 h-10 rounded-xl bg-slate-900 text-white flex items-center justify-center shadow-md">
+                  <ChefHat className="w-5 h-5" />
                 </div>
+                <h3 className="text-2xl font-bold text-slate-900">Mutfak Otomasyon Ekranı (KDS)</h3>
+                <p className="text-xs text-slate-500 leading-relaxed">
+                  Garson terminallerinden girilen veya self-servis QR siparişlerden gelen veriler anlık hazırlık istasyonlarına (Barista, Fırın) bölünerek mutfak ekranına düşer. Siparişler gecikmeden masalara ulaşır.
+                </p>
               </div>
-              {/* Mobile Details */}
-              <div className="lg:col-span-5 grid grid-cols-2 gap-6">
-                <div className="space-y-6">
-                  <div className="flex flex-col">
-                    <span className="bg-status-success/10 text-status-success w-fit px-2 py-0.5 rounded-full text-[10px] font-bold mb-2 uppercase tracking-tighter">Gerçek ekran</span>
-                    <h4 className="font-label-lg text-label-lg text-primary">Mobil operasyon</h4>
-                    <p className="text-[12px] text-on-surface-variant leading-tight mb-4">PWA uyumlu mobil ekranlarla personel sahada hızlı hareket eder.</p>
-                  </div>
-                  <div className="rounded-3xl overflow-hidden shadow-2xl border-4 border-white bg-white">
-                    <Image 
-                      className="w-full h-auto" 
-                      alt="Close-up of the mobile operation panel for Quapos"
-                      src="https://lh3.googleusercontent.com/aida/AP1WRLtRffyDmeuXbtL0lHlXio4ZBq9Z9F-dwK_5k2Livx4ls41mk2TfN7LSlvq9jFNPr0StlRjIi6azSP2U-HysFLPbSQoOjeiwsqGYlrvS91ssuSaS02PzrrtgGUBIS0ydzjeCxl48ZliVwgnFyJlf8wRW1za35gMbPVjKipwvMYXs_oCxGqwXTjrJYKYibt7s2XgM7HXhX7-8_J1saBniRGaUHjZEMq_4x83nZBDB6t5Ivq-rbVGiCUjH9rpL"
-                      width={390}
-                      height={844}
-                    />
-                  </div>
-                </div>
-                <div className="space-y-6 pt-12">
-                  <div className="flex flex-col">
-                    <span className="bg-status-success/10 text-status-success w-fit px-2 py-0.5 rounded-full text-[10px] font-bold mb-2 uppercase tracking-tighter">Gerçek ekran</span>
-                    <h4 className="font-label-lg text-label-lg text-primary">Mobil POS sipariş</h4>
-                    <p className="text-[12px] text-on-surface-variant leading-tight mb-4">Ürün arama, kategori seçimi ve hızlı sipariş ekleme akışı.</p>
-                  </div>
-                  <div className="rounded-3xl overflow-hidden shadow-2xl border-4 border-white bg-white">
-                    <Image 
-                      className="w-full h-auto" 
-                      alt="Detailed view of the Quapos mobile ordering interface"
-                      src="https://lh3.googleusercontent.com/aida/AP1WRLtbwSAWMQApSs2qj9adQKw15375_idjUUBfO8QztCGZMGbQ-KrhUBwwWgdLb6xd4jw1H1N97Nj0D_u9lzctN-49RZhyrypbNYLC7dxQmFMlgAGZcgCFneg5EU77PjLaFIzqrnzHNgI7BCjZxy-Gy1zrrnQB2CTlrFoqKTTxCqk5rmHUzLXQGggkZqFikVvXkGCvks92zg3LkL8mEU8uxs63D21zbmtRXBZ7PhPszqu_EiQxRNplH6nR89fZ"
-                      width={390}
-                      height={844}
-                    />
-                  </div>
+              <div className="md:col-start-1 rounded-2xl border border-slate-200 bg-[#F4F2EE]/40 p-6 flex items-center justify-center">
+                <div className="w-full max-w-sm rounded-xl overflow-hidden border border-slate-200 shadow-md">
+                  <Image 
+                    className="w-full h-auto"
+                    alt="Canlı Kasa Takip Ekranı"
+                    src="/landing-assets/operasyon-paneli-mobil.png"
+                    width={390}
+                    height={844}
+                  />
                 </div>
               </div>
             </div>
           </div>
         </section>
 
-        {/* Platform Capability List */}
-        <section className="py-24 bg-primary text-on-primary">
-          <div className="max-w-container-max mx-auto px-margin-mobile md:px-margin-desktop">
-            <div className="flex flex-col lg:flex-row items-end justify-between gap-8 mb-16">
-              <div className="max-w-2xl">
-                <span className="font-label-lg text-label-lg text-secondary-fixed tracking-widest uppercase">PLATFORM KAPSAMI</span>
-                <h2 className="font-headline-lg text-headline-lg mt-4">Restoran operasyonu kadar self servis kanalı da düşünülmüş bir yapı.</h2>
-                <p className="font-body-md text-body-md text-primary-container mt-4 opacity-80">Ürün; personelin kullandığı operasyon ekranları ile müşterinin temas ettiği QR/self servis deneyimini aynı altyapıda birleştirir.</p>
-              </div>
-              <div className="hidden lg:block w-32 h-1 bg-secondary rounded-full mb-4"></div>
-            </div>
-            <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-4">
-              <div className="flex items-center gap-3 p-4 bg-white/5 border border-white/10 rounded-xl hover:bg-white/10 transition-colors">
-                <span className="material-symbols-outlined text-secondary-fixed">dashboard</span>
-                <span className="font-label-lg text-label-lg">Operasyon paneli</span>
-              </div>
-              <div className="flex items-center gap-3 p-4 bg-white/5 border border-white/10 rounded-xl hover:bg-white/10 transition-colors">
-                <span className="material-symbols-outlined text-secondary-fixed">point_of_sale</span>
-                <span className="font-label-lg text-label-lg">POS sipariş ekranı</span>
-              </div>
-              <div className="flex items-center gap-3 p-4 bg-white/5 border border-white/10 rounded-xl hover:bg-white/10 transition-colors">
-                <span className="material-symbols-outlined text-secondary-fixed">outdoor_grill</span>
-                <span className="font-label-lg text-label-lg">Mutfak ekranı</span>
-              </div>
-              <div className="flex items-center gap-3 p-4 bg-white/5 border border-white/10 rounded-xl hover:bg-white/10 transition-colors">
-                <span className="material-symbols-outlined text-secondary-fixed">receipt_long</span>
-                <span className="font-label-lg text-label-lg">Kasa ve adisyon</span>
-              </div>
-              <div className="flex items-center gap-3 p-4 bg-white/5 border border-white/10 rounded-xl hover:bg-white/10 transition-colors">
-                <span className="material-symbols-outlined text-secondary-fixed">table_restaurant</span>
-                <span className="font-label-lg text-label-lg">Masa yönetimi</span>
-              </div>
-              <div className="flex items-center gap-3 p-4 bg-white/5 border border-white/10 rounded-xl hover:bg-white/10 transition-colors">
-                <span className="material-symbols-outlined text-secondary-fixed">qr_code</span>
-                <span className="font-label-lg text-label-lg">Self servis / QR altyapısı</span>
-              </div>
-              <div className="flex items-center gap-3 p-4 bg-white/5 border border-white/10 rounded-xl hover:bg-white/10 transition-colors">
-                <span className="material-symbols-outlined text-secondary-fixed">devices</span>
-                <span className="font-label-lg text-label-lg">Mobil PWA ekranları</span>
-              </div>
-              <div className="flex items-center gap-3 p-4 bg-white/5 border border-white/10 rounded-xl hover:bg-white/10 transition-colors">
-                <span className="material-symbols-outlined text-secondary-fixed">inventory_2</span>
-                <span className="font-label-lg text-label-lg">Stok ve ürün yönetimi</span>
-              </div>
-              <div className="flex items-center gap-3 p-4 bg-white/5 border border-white/10 rounded-xl hover:bg-white/10 transition-colors">
-                <span className="material-symbols-outlined text-secondary-fixed">analytics</span>
-                <span className="font-label-lg text-label-lg">Raporlama</span>
-              </div>
-              <div className="flex items-center gap-3 p-4 bg-white/5 border border-white/10 rounded-xl hover:bg-white/10 transition-colors">
-                <span className="material-symbols-outlined text-secondary-fixed">hub</span>
-                <span className="font-label-lg text-label-lg">Çoklu şube yapısı</span>
-              </div>
-              <div className="flex items-center gap-3 p-4 bg-white/5 border border-white/10 rounded-xl hover:bg-white/10 transition-colors">
-                <span className="material-symbols-outlined text-secondary-fixed">badge</span>
-                <span className="font-label-lg text-label-lg">Personel rolleri</span>
-              </div>
-              <div className="flex items-center gap-3 p-4 bg-white/5 border border-white/10 rounded-xl hover:bg-white/10 transition-colors">
-                <span className="material-symbols-outlined text-secondary-fixed">folder_managed</span>
-                <span className="font-label-lg text-label-lg">Kurulum ve ortam dosyaları</span>
-              </div>
-            </div>
+        {/* Dynamic Solutions Links */}
+        <section className="py-20 max-w-7xl mx-auto px-6 md:px-12 border-t border-slate-200/50">
+          <div className="mb-12">
+            <span className="text-amber-800 text-xs font-bold uppercase tracking-widest">Sektörel Çözümler</span>
+            <h2 className="text-3xl font-extrabold text-slate-900 tracking-tight mt-2">İşletmenize Özel POS Yapılandırması</h2>
           </div>
-        </section>
-
-        {/* Solutions Pages */}
-        <section className="py-24 bg-white">
-          <div className="max-w-container-max mx-auto px-margin-mobile md:px-margin-desktop">
-            <div className="flex justify-between items-end mb-12">
-              <div>
-                <span className="font-label-lg text-label-lg text-secondary tracking-widest uppercase">ÇÖZÜM SAYFALARI</span>
-                <h2 className="font-headline-lg text-headline-lg text-primary mt-4">Detaylı çözüm modülleri.</h2>
-              </div>
-              <Link className="flex items-center gap-2 bg-primary text-on-primary px-6 py-3 rounded-lg font-label-lg text-label-lg hover:opacity-90 transition-all" href="/demo">
-                Demo sayfasına git
-                <span className="material-symbols-outlined text-[18px]">arrow_forward</span>
+          
+          <div className="grid grid-cols-1 md:grid-cols-3 gap-6">
+            {primaryHomeSeoLandingPages.map((page) => (
+              <Link 
+                key={page.slug} 
+                href={`/${page.slug}`} 
+                className="bg-white border border-slate-200 p-6 rounded-2xl shadow-sm hover:border-slate-350 transition-all cursor-pointer flex flex-col justify-between h-44"
+              >
+                <div>
+                  <h4 className="text-base font-bold text-slate-900 mb-2">{page.title}</h4>
+                  <p className="text-xs text-slate-500 leading-relaxed line-clamp-2">{page.description}</p>
+                </div>
+                <span className="text-xs font-bold text-slate-900 flex items-center gap-1">İncele <ArrowRight className="w-3.5 h-3.5" /></span>
               </Link>
-            </div>
-            <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6">
-              {primaryHomeSeoLandingPages.map((page) => (
-                <Link key={page.slug} href={`/${page.slug}`} className="group p-8 bg-surface-container-low rounded-2xl border border-outline-variant/30 hover:bg-primary hover:text-on-primary transition-all cursor-pointer">
-                  <h4 className="font-headline-md text-headline-md mb-4 group-hover:text-secondary-fixed">{page.title}</h4>
-                  <p className="font-body-sm text-body-sm opacity-70">{page.description}</p>
-                </Link>
-              ))}
-            </div>
+            ))}
           </div>
         </section>
 
-        {/* FAQ Section */}
-        <section className="py-24 bg-surface" id="sss">
-          <div className="max-w-container-max mx-auto px-margin-mobile md:px-margin-desktop">
-            <div className="text-center mb-16">
-              <span className="font-label-lg text-label-lg text-secondary tracking-widest uppercase">SIK SORULAN SORULAR</span>
-              <h2 className="font-headline-lg text-headline-lg text-primary mt-4">Ürün kapsamı net, erişim net, görseller gerçek.</h2>
-              <p className="font-body-md text-body-md text-on-surface-variant mt-4">Landing page artık ziyaretçiye Cloud POS’un ne olduğunu doğrudan anlatır.</p>
-            </div>
-            <div className="max-w-3xl mx-auto space-y-4">
+        {/* FAQ Area */}
+        <section className="py-20 border-t border-slate-200/50 bg-[#F4F2EE]/20" id="sss">
+          <div className="max-w-3xl mx-auto px-6">
+            <h2 className="text-2xl font-extrabold text-slate-900 tracking-tight text-center mb-12">Karar Vermeden Önce Sık Sorulanlar</h2>
+            <div className="space-y-4">
               {faqs.map((faq, index) => {
                 const isActive = activeFaqIndex === index;
                 return (
-                  <div key={index} className="faq-item bg-white rounded-xl border border-outline-variant/30 overflow-hidden transition-all">
+                  <div key={index} className="bg-white rounded-xl border border-slate-200 overflow-hidden">
                     <button 
-                      className="w-full px-6 py-5 flex items-center justify-between text-left hover:bg-surface-container-low transition-colors"
                       onClick={() => setActiveFaqIndex(isActive ? null : index)}
+                      className="w-full px-6 py-5 flex items-center justify-between text-left hover:bg-slate-50 cursor-pointer"
                     >
-                      <span className="font-label-lg text-label-lg text-primary">{faq.q}</span>
-                      <span className={`material-symbols-outlined transform transition-transform ${isActive ? 'rotate-180' : ''}`}>expand_more</span>
+                      <span className="text-sm font-bold text-slate-900">{faq.q}</span>
+                      <ChevronDown className={`w-4 h-4 text-slate-500 transform transition-transform ${isActive ? 'rotate-180' : ''}`} />
                     </button>
-                    <div className={`faq-content px-6 overflow-hidden transition-all duration-300 bg-white ${isActive ? 'max-h-[200px] py-4' : 'max-h-0 py-0'}`}>
-                      <p className="pb-6 font-body-md text-body-md text-on-surface-variant">{faq.a}</p>
+                    <div className={`overflow-hidden transition-all duration-300 ${isActive ? 'max-h-[200px] border-t border-slate-100' : 'max-h-0'}`}>
+                      <p className="px-6 py-5 text-xs text-slate-500 leading-relaxed bg-slate-50/50">{faq.a}</p>
                     </div>
                   </div>
                 );
@@ -407,87 +683,41 @@ export function ProductLandingPage({ settings, leadStatus, locale = "tr" }: Prod
             </div>
           </div>
         </section>
-
-        {/* Final CTA Section */}
-        <section className="py-24 bg-primary text-on-primary overflow-hidden relative">
-          <div className="max-w-container-max mx-auto px-margin-mobile md:px-margin-desktop relative z-10">
-            <div className="flex flex-col lg:flex-row items-center gap-16">
-              <div className="lg:w-1/2 space-y-8">
-                <h2 className="font-headline-xl text-headline-xl">Cloud POS’u gerçek ürün ekranlarıyla inceleyin.</h2>
-                <p className="font-body-lg text-body-lg opacity-80">Self servis, kafe-restoran operasyonu, mobil PWA, mutfak, kasa, stok, rapor ve çoklu şube modüllerini tek platformda görün.</p>
-                <div className="flex flex-wrap gap-4">
-                  <Link className="bg-secondary text-on-secondary px-8 py-4 rounded-lg font-label-lg text-label-lg hover:opacity-90 transition-all flex items-center gap-2" href="/login">
-                    Operasyon Paneli Giriş
-                    <span className="material-symbols-outlined">arrow_forward</span>
-                  </Link>
-                  <Link className="border border-white/20 hover:bg-white/10 px-8 py-4 rounded-lg font-label-lg text-label-lg transition-all" href="/demo">Demo Sayfası</Link>
-                </div>
-                <div className="pt-8 border-t border-white/10 text-label-md text-label-md opacity-60">
-                  Telefon: {phone} | E-posta: {supportEmail}
-                </div>
-              </div>
-              <div className="lg:w-1/2">
-                <div className="relative">
-                  <Image 
-                    className="w-64 h-auto mx-auto rounded-[32px] shadow-2xl border-[8px] border-white/10 relative z-10" 
-                    alt="A portrait-oriented mobile view of the Quapos table and service flow interface"
-                    src="https://lh3.googleusercontent.com/aida/AP1WRLvxtmNnwfPN6XXbx4jjqhvXFjjB3hXqjfUHFHc_i-QuHLCOvy5lgzeqtIlkzPh8MJe1z1cr8JguAZarCCTM6iUVOlRc0rC1YiVtgbf6CFfkuwwSHs41MXGU68MJW1qv2oIkPkIomuZj0gGJKo9b7Aqn3SODa4B8RhXwLBdfY5msmwSylfsY0ULSInacfHjpRL90wy-e4Crbn0wqNsfs0NxjRgUXE1vlnh_0lChN1LvBzbGMMb2GgDSaWIs"
-                    width={390}
-                    height={844}
-                  />
-                  {/* Background glow */}
-                  <div className="absolute inset-0 bg-secondary/20 blur-[80px] rounded-full scale-150"></div>
-                </div>
-              </div>
-            </div>
-          </div>
-        </section>
       </main>
 
       {/* Footer */}
-      <footer className="bg-surface-container-highest py-16">
-        <div className="grid grid-cols-1 md:grid-cols-4 gap-gutter px-margin-mobile md:px-margin-desktop max-w-container-max mx-auto text-left">
+      <footer className="bg-slate-900 text-white border-t border-slate-800 py-16">
+        <div className="max-w-7xl mx-auto px-6 md:px-12 grid grid-cols-1 md:grid-cols-4 gap-12">
           <div className="space-y-6">
-            <Link className="font-headline-md text-headline-md font-extrabold text-primary" href="/">
+            <Link className="text-base font-bold tracking-tight text-white flex items-center gap-2 cursor-pointer" href="/">
+              <div className="w-6 h-6 rounded bg-white text-slate-900 flex items-center justify-center font-extrabold text-[10px]">Q</div>
               {siteName}
             </Link>
-            <p className="font-body-sm text-body-sm text-on-surface-variant">Yeni nesil restoran ve kafe işletim sistemi. Tek panelden tüm operasyonunuzu yönetin.</p>
+            <p className="text-xs text-slate-400 leading-relaxed">Bulut tabanlı, lokal hızında çevrimdışı çalışabilen modern kafe ve restoran otomasyon sistemi.</p>
           </div>
           <div>
-            <h5 className="font-label-lg text-label-lg text-primary mb-6">Kurumsal</h5>
-            <ul className="space-y-4">
-              <li><Link className="font-label-md text-label-md text-on-surface-variant hover:text-secondary transition-colors underline-offset-4 hover:underline" href="#">Hakkımızda</Link></li>
-              <li><Link className="font-label-md text-label-md text-on-surface-variant hover:text-secondary transition-colors underline-offset-4 hover:underline" href="#">İletişim</Link></li>
-              <li><Link className="font-label-md text-label-md text-on-surface-variant hover:text-secondary transition-colors underline-offset-4 hover:underline" href="#">Kariyer</Link></li>
+            <h5 className="text-xs font-bold uppercase tracking-wider text-slate-300 mb-6">Kurumsal</h5>
+            <ul className="space-y-4 text-xs">
+              <li><Link className="text-slate-400 hover:text-white cursor-pointer" href="#">Hakkımızda</Link></li>
+              <li><Link className="text-slate-400 hover:text-white cursor-pointer" href="#">İletişim</Link></li>
             </ul>
           </div>
           <div>
-            <h5 className="font-label-lg text-label-lg text-primary mb-6">Yasal</h5>
-            <ul className="space-y-4">
-              <li><Link className="font-label-md text-label-md text-on-surface-variant hover:text-secondary transition-colors underline-offset-4 hover:underline" href="#">Kullanım Koşulları</Link></li>
-              <li><Link className="font-label-md text-label-md text-on-surface-variant hover:text-secondary transition-colors underline-offset-4 hover:underline" href="#">Gizlilik Politikası</Link></li>
-              <li><Link className="font-label-md text-label-md text-on-surface-variant hover:text-secondary transition-colors underline-offset-4 hover:underline" href="#">Çerez Politikası</Link></li>
+            <h5 className="text-xs font-bold uppercase tracking-wider text-slate-300 mb-6">Yasal</h5>
+            <ul className="space-y-4 text-xs">
+              <li><Link className="text-slate-400 hover:text-white cursor-pointer" href="#">Gizlilik Sözleşmesi</Link></li>
+              <li><Link className="text-slate-400 hover:text-white cursor-pointer" href="#">Kullanıcı Koşulları</Link></li>
             </ul>
           </div>
           <div>
-            <h5 className="font-label-lg text-label-lg text-primary mb-6">Yardım</h5>
-            <ul className="space-y-4">
-              <li><Link className="font-label-md text-label-md text-on-surface-variant hover:text-secondary transition-colors underline-offset-4 hover:underline" href="#">Destek</Link></li>
-              <li><Link className="font-label-md text-label-md text-on-surface-variant hover:text-secondary transition-colors underline-offset-4 hover:underline" href="#">Dokümantasyon</Link></li>
-              <li><Link className="font-label-md text-label-md text-on-surface-variant hover:text-secondary transition-colors underline-offset-4 hover:underline" href="#">SSS</Link></li>
-            </ul>
+            <h5 className="text-xs font-bold uppercase tracking-wider text-slate-300 mb-6">İletişim</h5>
+            <p className="text-xs text-slate-400">Destek: {phone}</p>
+            <p className="text-xs text-slate-400 mt-2">E-posta: {supportEmail}</p>
           </div>
         </div>
-        <div className="max-w-container-max mx-auto px-margin-mobile md:px-margin-desktop mt-16 pt-8 border-t border-outline-variant/30 flex flex-col md:flex-row justify-between items-center gap-4">
-          <p className="font-body-sm text-body-sm text-on-surface-variant opacity-60">© 2024 {siteName}. Tüm hakları saklıdır.</p>
-          <div className="flex gap-4">
-            <a className="w-10 h-10 rounded-full bg-surface-container-low flex items-center justify-center text-primary hover:bg-secondary hover:text-white transition-all" href="#">
-              <span className="material-symbols-outlined text-[20px]">public</span>
-            </a>
-            <a className="w-10 h-10 rounded-full bg-surface-container-low flex items-center justify-center text-primary hover:bg-secondary hover:text-white transition-all" href="#">
-              <span className="material-symbols-outlined text-[20px]">mail</span>
-            </a>
-          </div>
+        <div className="max-w-7xl mx-auto px-6 md:px-12 mt-16 pt-8 border-t border-slate-800 flex justify-between items-center text-xs text-slate-500">
+          <p>© 2026 {siteName}. Tüm hakları saklıdır.</p>
+          <p className="flex items-center gap-1">Handcrafted with <Heart className="w-3.5 h-3.5 text-rose-500 fill-rose-500" /> for cafe operators.</p>
         </div>
       </footer>
     </div>

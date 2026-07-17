@@ -6,9 +6,9 @@
 
 ---
 
-**Project:** Cloud POS
-**Generated:** 2026-07-16 23:42:53
-**Category:** Service Landing Page
+**Project:** Cloud POS PWA
+**Generated:** 2026-07-17 18:16:31
+**Category:** Restaurant/Food Service
 
 ---
 
@@ -18,24 +18,24 @@
 
 | Role | Hex | CSS Variable |
 |------|-----|--------------|
-| Primary | `#0EA5E9` | `--color-primary` |
-| Secondary | `#38BDF8` | `--color-secondary` |
-| CTA/Accent | `#F97316` | `--color-cta` |
-| Background | `#F0F9FF` | `--color-background` |
-| Text | `#0C4A6E` | `--color-text` |
+| Primary | `#DC2626` | `--color-primary` |
+| Secondary | `#F87171` | `--color-secondary` |
+| CTA/Accent | `#CA8A04` | `--color-cta` |
+| Background | `#FEF2F2` | `--color-background` |
+| Text | `#450A0A` | `--color-text` |
 
-**Color Notes:** Sky blue trust + warm CTA
+**Color Notes:** Appetizing red + warm gold
 
 ### Typography
 
-- **Heading Font:** Inter
-- **Body Font:** Inter
-- **Mood:** minimal, clean, swiss, functional, neutral, professional
-- **Google Fonts:** [Inter + Inter](https://fonts.google.com/share?selection.family=Inter:wght@300;400;500;600;700)
+- **Heading Font:** Playfair Display SC
+- **Body Font:** Karla
+- **Mood:** restaurant, menu, culinary, elegant, foodie, hospitality
+- **Google Fonts:** [Playfair Display SC + Karla](https://fonts.google.com/share?selection.family=Karla:wght@300;400;500;600;700|Playfair+Display+SC:wght@400;700)
 
 **CSS Import:**
 ```css
-@import url('https://fonts.googleapis.com/css2?family=Inter:wght@300;400;500;600;700&display=swap');
+@import url('https://fonts.googleapis.com/css2?family=Karla:wght@300;400;500;600;700&family=Playfair+Display+SC:wght@400;700&display=swap');
 ```
 
 ### Spacing Variables
@@ -68,7 +68,7 @@
 ```css
 /* Primary Button */
 .btn-primary {
-  background: #F97316;
+  background: #CA8A04;
   color: white;
   padding: 12px 24px;
   border-radius: 8px;
@@ -85,8 +85,8 @@
 /* Secondary Button */
 .btn-secondary {
   background: transparent;
-  color: #0EA5E9;
-  border: 2px solid #0EA5E9;
+  color: #DC2626;
+  border: 2px solid #DC2626;
   padding: 12px 24px;
   border-radius: 8px;
   font-weight: 600;
@@ -99,7 +99,7 @@
 
 ```css
 .card {
-  background: #F0F9FF;
+  background: #FEF2F2;
   border-radius: 12px;
   padding: 24px;
   box-shadow: var(--shadow-md);
@@ -125,9 +125,9 @@
 }
 
 .input:focus {
-  border-color: #0EA5E9;
+  border-color: #DC2626;
   outline: none;
-  box-shadow: 0 0 0 3px #0EA5E920;
+  box-shadow: 0 0 0 3px #DC262620;
 }
 ```
 
@@ -153,28 +153,28 @@
 
 ## Style Guidelines
 
-**Style:** Exaggerated Minimalism
+**Style:** Vibrant & Block-based
 
-**Keywords:** Bold minimalism, oversized typography, high contrast, negative space, loud minimal, statement design
+**Keywords:** Bold, energetic, playful, block layout, geometric shapes, high color contrast, duotone, modern, energetic
 
-**Best For:** Fashion, architecture, portfolios, agency landing pages, luxury brands, editorial
+**Best For:** Startups, creative agencies, gaming, social media, youth-focused, entertainment, consumer
 
-**Key Effects:** font-size: clamp(3rem 10vw 12rem), font-weight: 900, letter-spacing: -0.05em, massive whitespace
+**Key Effects:** Large sections (48px+ gaps), animated patterns, bold hover (color shift), scroll-snap, large type (32px+), 200-300ms
 
 ### Page Pattern
 
-**Pattern Name:** Minimal Single Column
+**Pattern Name:** App Store Style Landing
 
-- **Conversion Strategy:** Single CTA focus. Large typography. Lots of whitespace. No nav clutter. Mobile-first.
-- **CTA Placement:** Center, large CTA button
-- **Section Order:** 1. Hero headline, 2. Short description, 3. Benefit bullets (3 max), 4. CTA, 5. Footer
+- **Conversion Strategy:** Show real screenshots. Include ratings (4.5+ stars). QR code for mobile. Platform-specific CTAs.
+- **CTA Placement:** Download buttons prominent (App Store + Play Store) throughout
+- **Section Order:** 1. Hero with device mockup, 2. Screenshots carousel, 3. Features with icons, 4. Reviews/ratings, 5. Download CTAs
 
 ---
 
 ## Anti-Patterns (Do NOT Use)
 
-- ❌ Complex navigation
-- ❌ Hidden contact info
+- ❌ Low-quality imagery
+- ❌ Outdated hours
 
 ### Additional Forbidden Patterns
 

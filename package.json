@@ -10,7 +10,7 @@
     "start": "next start",
     "lint": "eslint src/app/api src/lib/auth.ts src/lib/data.ts src/lib/domains src/lib/platform-owner.ts src/lib/qr-access.ts src/components/order-status-widget.tsx src/components/order-history-widget.tsx src/components/qr-ordering-client.tsx scripts middleware.ts next.config.ts",
     "test": "vitest run",
-"typecheck": "tsc --noEmit",
+    "typecheck": "tsc --noEmit",
     "ops:smoke": "node scripts/ops-smoke-check.mjs",
     "alerts:dispatch": "node scripts/dispatch-ops-alert.mjs",
     "sessions:auto-close": "node scripts/dispatch-auto-session-close.mjs",
@@ -48,6 +48,7 @@
     "@vercel/analytics": "^2.0.0",
     "@vercel/speed-insights": "^2.0.0",
     "framer-motion": "^12.38.0",
+    "gsap": "^3.15.0",
     "lucide-react": "^1.17.0",
     "next": "16.1.6",
     "nodemailer": "^7.0.5",
@@ -64,7 +65,6 @@
     "@types/react-dom": "^19",
     "eslint": "^9",
     "eslint-config-next": "16.1.6",
-
     "tailwindcss": "^4",
     "typescript": "^5",
     "vitest": "^4.1.9"

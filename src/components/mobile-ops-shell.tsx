@@ -59,7 +59,7 @@ function resolveMobileActions(activeBusinessType: AppShellPayload["activeBusines
   }
 
   return [
-    { href: "/m/tables", label: "Masa Akışi", icon: "table", roles: ["admin", "cashier"], group: "order" },
+    { href: "/m/tables", label: "Masa Akışı", icon: "table", roles: ["admin", "cashier"], group: "order" },
     { href: "/admin/orders", label: "Sipariş Aç", icon: "plus", roles: ["owner", "admin", "cashier"], group: "order" },
     { href: "/m/cashier", label: "Adisyon", icon: "receipt", roles: ["admin", "cashier", "waiter"], group: "order" },
     { href: "/m/kitchen", label: "Mutfak", icon: "chefHat", roles: ["admin", "kitchen"], group: "ops", feature: "kitchen_display" },
@@ -102,7 +102,7 @@ function isFeatureEnabled(
 
 function actionGroupLabel(group: MobileAction["group"]) {
   if (group === "order") return "Sipariş ve Kasa";
-  if (group === "ops") return "Servis ve Dagitim";
+  if (group === "ops") return "Servis ve Dağıtım";
   return "Yönetim";
 }
 
@@ -292,42 +292,38 @@ export function MobileOpsShell({
       <PwaRuntime enabled={pwaEnabled} />
       <PwaInstallCard enabled={pwaEnabled} />
       <div
-        className={`m-ops-shell mobile-app-mode min-h-screen overflow-x-clip ${isOffline ? "offline-mode" : ""} ${
+        className={`min-h-screen overflow-x-clip bg-[#FCFAF7] pb-[calc(100px+var(--safe-area-bottom))] pt-[calc(90px+var(--safe-area-top))] px-4 ${isOffline ? "offline-mode" : ""} ${
           isOffline && pwaEnabled ? "offline-read-only" : ""
         }`}
       >
-        <header className="no-print fixed inset-x-0 top-0 z-40 uupm-liquid-glass uupm-iridescent-glow border-b border-white/20 shadow-md">
-          <div className="mx-auto flex w-full max-w-[980px] items-center justify-between gap-3 px-4 pb-3 pt-[calc(var(--safe-area-top)+10px)]">
-            <div className="min-w-0">
-              <p className="truncate text-[10px] font-extrabold uppercase tracking-[0.2em] text-slate-500">
-                {shellData?.brandName ?? "Cloud POS"}
-              </p>
-              <p className="truncate text-[1.2rem] font-bold tracking-tight text-slate-900 mt-0.5">{mobileTitle}</p>
-            </div>
-            <span
-              className={`inline-flex rounded-full px-3.5 py-1.5 text-[10px] font-bold uppercase tracking-[0.15em] shadow-sm transition-all duration-300 ${
-                isOffline 
-                  ? "bg-amber-500 text-white uupm-glow-warning" 
-                  : "bg-gradient-to-r from-emerald-500 to-teal-600 text-white uupm-glow-success"
-              }`}
-            >
-              {isOffline ? "Çevrimdışı" : "Canlı"}
-            </span>
+        {/* Floating Glassmorphic Header Dock */}
+        <header className="no-print fixed top-4 left-4 right-4 z-40 bg-white/70 backdrop-blur-xl border border-white/60 shadow-[0_4px_30px_rgba(0,0,0,0.02)] rounded-[20px] px-5 py-3.5 flex items-center justify-between">
+          <div className="min-w-0">
+            <p className="truncate text-[9px] font-black uppercase tracking-widest text-rose-600">
+              {shellData?.brandName ?? "Cloud POS"}
+            </p>
+            <p className="truncate text-base font-extrabold tracking-tight text-slate-900 mt-0.5">{mobileTitle}</p>
           </div>
-          {isOffline ? (
-            <div className="border-t border-amber-200/50 bg-amber-500/10 px-4 py-2 text-xs font-semibold text-amber-900 backdrop-blur-md">
-              Çevrimdışı — önbellekten çalışıyor, salt okunur mod.
-            </div>
-          ) : null}
+          <span
+            className={`inline-flex rounded-full px-3 py-1 text-[9px] font-extrabold uppercase tracking-wider shadow-sm transition-all duration-300 ${
+              isOffline 
+                ? "bg-amber-500 text-white" 
+                : "bg-rose-900 text-white"
+            }`}
+          >
+            {isOffline ? "Çevrimdışı" : "Aktif"}
+          </span>
         </header>
- 
-        <main className="mx-auto w-full max-w-[980px] px-4 pb-[calc(120px+var(--safe-area-bottom))] pt-[calc(86px+var(--safe-area-top))]">
+
+        {/* Main Content Area */}
+        <main className="mx-auto w-full max-w-lg">
           {children}
         </main>
  
-        <nav className="no-print fixed inset-x-0 bottom-0 z-40 uupm-liquid-glass border-t border-white/20 shadow-[0_-8px_30px_rgba(0,0,0,0.06)] rounded-t-[24px]">
+        {/* Floating Glassmorphic Bottom Navigation Dock */}
+        <nav className="no-print fixed bottom-4 left-4 right-4 z-40 bg-white/80 backdrop-blur-xl border border-white/60 shadow-[0_12px_40px_rgba(136,19,55,0.06)] rounded-[24px] px-2.5 py-2.5">
           <div
-            className="mx-auto grid w-full max-w-[980px] gap-2 px-3 pb-[calc(var(--safe-area-bottom)+10px)] pt-3"
+            className="grid w-full gap-2"
             style={{ gridTemplateColumns: `repeat(${renderedPrimaryTabs.length}, minmax(0, 1fr)) auto` }}
           >
             {renderedPrimaryTabs.map((tab) => {
@@ -339,13 +335,13 @@ export function MobileOpsShell({
                   href={tab.href}
                   scroll={false}
                   aria-current={active ? "page" : undefined}
-                  className={`inline-flex min-h-[58px] min-w-0 flex-col items-center justify-center gap-1.5 rounded-2xl px-2 py-2 text-[10px] font-bold tracking-wide transition-all duration-200 active:scale-95 ${
+                  className={`inline-flex min-h-[52px] min-w-0 flex-col items-center justify-center gap-1 rounded-2xl px-1.5 py-1.5 text-[9px] font-black tracking-wide transition-all duration-200 active:scale-95 ${
                     active 
-                      ? "bg-gradient-to-br from-slate-900 to-slate-800 text-white shadow-lg shadow-slate-900/15" 
-                      : "text-slate-600 hover:bg-slate-100/50"
+                      ? "bg-gradient-to-br from-rose-950 to-rose-900 text-white shadow-md shadow-rose-950/10" 
+                      : "text-rose-950/70 hover:bg-rose-50/50"
                   }`}
                 >
-                  <Icon aria-hidden="true" className="h-5.5 w-5.5 shrink-0" strokeWidth={2.4} />
+                  <Icon aria-hidden="true" className="h-5 w-5 shrink-0" strokeWidth={2.4} />
                   <span className="max-w-full truncate">{tab.label}</span>
                 </Link>
               );
@@ -353,11 +349,11 @@ export function MobileOpsShell({
             <button
               type="button"
               onClick={() => setActionsOpen((prev) => !prev)}
-              aria-label="Diğer is akışlari"
+              aria-label="Diğer iş akışları"
               aria-expanded={actionsOpen}
-              className="inline-flex min-h-[58px] w-[58px] flex-col items-center justify-center gap-1.5 rounded-2xl border border-slate-200/60 bg-slate-50/50 hover:bg-slate-100/60 px-2 py-2 text-[10px] font-bold tracking-wide text-slate-700 transition-all active:scale-95"
+              className="inline-flex min-h-[52px] w-[52px] flex-col items-center justify-center gap-1 rounded-2xl border border-rose-100/40 bg-rose-50/20 hover:bg-rose-100/30 px-1.5 py-1.5 text-[9px] font-black text-rose-900 transition-all active:scale-95 cursor-pointer"
             >
-              <MoreHorizontal aria-hidden="true" className="h-5.5 w-5.5" strokeWidth={2.4} />
+              <MoreHorizontal aria-hidden="true" className="h-5 w-5" strokeWidth={2.4} />
               Diğer
             </button>
           </div>
@@ -366,16 +362,16 @@ export function MobileOpsShell({
         {actionsOpen ? (
           <div className="no-print fixed inset-0 z-50 bg-slate-950/45" onClick={() => setActionsOpen(false)}>
             <div
-              className="absolute inset-x-0 bottom-0 max-h-[80vh] overflow-y-auto rounded-t-[28px] border-t border-white/20 uupm-liquid-glass px-4 pb-[calc(var(--safe-area-bottom)+16px)] pt-4"
+              className="absolute inset-x-4 bottom-4 max-h-[75vh] overflow-y-auto rounded-[24px] border border-white/60 bg-white/95 backdrop-blur-xl px-5 pb-5 pt-4 shadow-2xl"
               onClick={(event) => event.stopPropagation()}
             >
-              <div className="mx-auto w-full max-w-[980px] space-y-3">
-                <div className="mb-1 flex items-center justify-between gap-3">
-                  <p className="text-sm font-semibold uppercase tracking-[0.16em] text-slate-500">Hızlı Is Akışları</p>
+              <div className="space-y-4">
+                <div className="flex items-center justify-between gap-3 border-b border-rose-50 pb-2">
+                  <p className="text-xs font-black uppercase tracking-wider text-rose-950">Hızlı İş Akışları</p>
                   <button
                     type="button"
                     onClick={() => setActionsOpen(false)}
-                    className="rounded-xl border border-slate-200 bg-white px-3 py-1.5 text-xs font-semibold text-slate-700"
+                    className="rounded-xl border border-rose-200 bg-white px-3 py-1.5 text-[10px] font-black text-rose-900 hover:bg-rose-50 cursor-pointer"
                   >
                     Kapat
                   </button>
@@ -384,8 +380,8 @@ export function MobileOpsShell({
                 {groupedActions
                   .filter((group) => group.actions.length > 0)
                   .map((group) => (
-                    <section key={group.key} className="rounded-[20px] border border-slate-200 bg-slate-50 px-3 py-3">
-                      <p className="text-[11px] font-semibold uppercase tracking-[0.14em] text-slate-500">{group.title}</p>
+                    <section key={group.key} className="rounded-2xl border border-rose-100/60 bg-rose-50/10 px-3 py-3">
+                      <p className="text-[10px] font-black uppercase tracking-wider text-rose-900/60">{group.title}</p>
                       <div className="mt-2 grid gap-2">
                         {group.actions.map((action) => {
                           const Icon = mobileIcons[action.icon];
@@ -395,10 +391,10 @@ export function MobileOpsShell({
                               href={action.href}
                               scroll={false}
                               onClick={() => setActionsOpen(false)}
-                              className="flex min-h-[54px] items-center gap-3 rounded-2xl border border-slate-200 bg-white px-4 py-3 text-sm font-semibold text-slate-900"
+                              className="flex min-h-[50px] items-center gap-3 rounded-xl border border-rose-100/40 bg-white px-4 py-2.5 text-xs font-bold text-rose-950 transition hover:border-rose-200"
                             >
-                              <span className="inline-flex h-9 w-9 items-center justify-center rounded-xl bg-slate-900 text-white">
-                                <Icon aria-hidden="true" className="h-[18px] w-[18px]" strokeWidth={2.2} />
+                              <span className="inline-flex h-8 w-8 items-center justify-center rounded-lg bg-rose-950 text-white">
+                                <Icon aria-hidden="true" className="h-4.5 w-4.5" strokeWidth={2.2} />
                               </span>
                               <span>{action.label}</span>
                             </Link>
@@ -408,12 +404,12 @@ export function MobileOpsShell({
                     </section>
                   ))}
 
-                <div className="grid grid-cols-2 gap-2">
+                <div className="grid grid-cols-2 gap-2 pt-2 border-t border-rose-50">
                   <Link
                     href="/m/ops"
                     scroll={false}
                     onClick={() => setActionsOpen(false)}
-                    className="inline-flex min-h-[46px] items-center justify-center rounded-2xl border border-slate-200 bg-white px-4 py-3 text-sm font-semibold text-slate-800"
+                    className="inline-flex min-h-[44px] items-center justify-center rounded-xl border border-rose-200 bg-white px-4 py-2.5 text-xs font-bold text-rose-900"
                   >
                     Operasyon
                   </Link>
@@ -424,7 +420,7 @@ export function MobileOpsShell({
                   ) : (
                     <Link
                       href="/login"
-                      className="inline-flex min-h-[46px] items-center justify-center rounded-2xl bg-slate-900 px-4 py-3 text-sm font-semibold text-white"
+                      className="inline-flex min-h-[44px] items-center justify-center rounded-xl bg-rose-950 px-4 py-2.5 text-xs font-bold text-white"
                     >
                       Giriş
                     </Link>

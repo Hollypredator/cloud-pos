@@ -81,23 +81,30 @@ export const getCurrentUserWithRole = cache(async () => {
   };
 });
 
-export async function requireRole(allowedRoles: AppRole[], nextPath: string) {
+async function getBaseAuthenticatedContext(nextPath: string, loginPath: string) {
   const context = await getCurrentUserWithRole();
   if (canUseDemoModeBypass(context.usingDemoData)) {
-    return { bypass: true as const };
+    return { bypass: true as const, context };
   }
 
   if (!context.user) {
-    redirect(`/login?next=${encodeURIComponent(nextPath)}`);
+    redirect(`${loginPath}?next=${encodeURIComponent(nextPath)}`);
+  }
+
+  return { bypass: false as const, context };
+}
+
+export async function requireRole(allowedRoles: AppRole[], nextPath: string) {
+  const { bypass, context } = await getBaseAuthenticatedContext(nextPath, "/login");
+  if (bypass) {
+    return { bypass: true as const };
   }
 
   if (!hasResolvedOperationalScope(context)) {
     redirect("/unauthorized");
   }
 
-  const roleAllowed =
-    hasRoleAccess(context.role, allowedRoles);
-
+  const roleAllowed = hasRoleAccess(context.role, allowedRoles);
   if (!roleAllowed) {
     redirect("/unauthorized");
   }
@@ -106,13 +113,9 @@ export async function requireRole(allowedRoles: AppRole[], nextPath: string) {
 }
 
 export async function requireExactRole(allowedRoles: AppRole[], nextPath: string) {
-  const context = await getCurrentUserWithRole();
-  if (canUseDemoModeBypass(context.usingDemoData)) {
+  const { bypass, context } = await getBaseAuthenticatedContext(nextPath, "/login");
+  if (bypass) {
     return { bypass: true as const };
-  }
-
-  if (!context.user) {
-    redirect(`/login?next=${encodeURIComponent(nextPath)}`);
   }
 
   if (!hasResolvedOperationalScope(context)) {
@@ -127,13 +130,9 @@ export async function requireExactRole(allowedRoles: AppRole[], nextPath: string
 }
 
 export async function requireStudioAccess(nextPath: string, allowedRoles?: StudioRole[]) {
-  const context = await getCurrentUserWithRole();
-  if (canUseDemoModeBypass(context.usingDemoData)) {
+  const { bypass, context } = await getBaseAuthenticatedContext(nextPath, "/studio/login");
+  if (bypass) {
     return { bypass: true as const };
-  }
-
-  if (!context.user) {
-    redirect(`/studio/login?next=${encodeURIComponent(nextPath)}`);
   }
 
   const email = context.user.email?.toLowerCase() ?? "";
@@ -163,13 +162,9 @@ export async function requireStudioAccess(nextPath: string, allowedRoles?: Studi
 }
 
 export async function requireSupportAccess(nextPath: string, allowedRoles?: SupportRole[]) {
-  const context = await getCurrentUserWithRole();
-  if (canUseDemoModeBypass(context.usingDemoData)) {
+  const { bypass, context } = await getBaseAuthenticatedContext(nextPath, "/support/login");
+  if (bypass) {
     return { bypass: true as const };
-  }
-
-  if (!context.user) {
-    redirect(`/support/login?next=${encodeURIComponent(nextPath)}`);
   }
 
   const email = context.user.email?.toLowerCase() ?? "";
@@ -203,3 +198,4 @@ export async function requireSupportAccess(nextPath: string, allowedRoles?: Supp
 
   return { bypass: false as const, role: context.role, email, supportRole: supportAccess.role };
 }
+
