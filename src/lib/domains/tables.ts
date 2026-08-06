@@ -22,4 +22,6 @@ export {
   setTableSupervisor,
   updateTableStatus,
   updateTableDetails,
+  updateTablePosition,
+  updateTableSeatCount,
 } from "@/lib/data";

@@ -1,19 +1,11 @@
 import Image from "next/image";
 import { notFound } from "next/navigation";
-import { getAppBaseUrl } from "@/lib/app-url";
 import { requireRole } from "@/lib/auth";
-import { getActiveBusinessSlug } from "@/lib/business-server";
 import { getTableMap } from "@/lib/domains/tables";
+import { buildQrTarget } from "../../qr-helpers-server";
 
-async function buildQrTarget(identifier: string) {
-  const base = getAppBaseUrl();
-  const businessSlug = await getActiveBusinessSlug();
-  return `${base}/${businessSlug}/qr/${identifier}`;
-}
-
-async function buildQrImage(identifier: string) {
-  const target = encodeURIComponent(await buildQrTarget(identifier));
-  return `https://api.qrserver.com/v1/create-qr-code/?size=480x480&data=${target}`;
+function buildQrImage(prebuiltTarget: string) {
+  return `https://api.qrserver.com/v1/create-qr-code/?size=480x480&data=${encodeURIComponent(prebuiltTarget)}`;
 }
 
 export default async function PrintTableQrPage({
@@ -31,7 +23,7 @@ export default async function PrintTableQrPage({
   }
 
   const qrTarget = await buildQrTarget(table.qr_code_identifier);
-  const qrImage = await buildQrImage(table.qr_code_identifier);
+  const qrImage = buildQrImage(qrTarget);
 
   return (
     <div className="min-h-screen bg-white p-8 text-slate-900 print:p-0">

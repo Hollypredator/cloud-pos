@@ -68,12 +68,14 @@ export async function updateTableAction(formData: FormData) {
   const tableId = String(formData.get("tableId") ?? "");
   const tableNumber = Number(formData.get("tableNumber"));
   const tableName = String(formData.get("tableName") ?? "").trim();
+  const seatCountRaw = Number(formData.get("seatCount"));
+  const seatCount = Number.isInteger(seatCountRaw) && seatCountRaw > 0 ? seatCountRaw : undefined;
   if (!tableId || !Number.isInteger(tableNumber) || tableNumber <= 0) {
     redirect(feedbackHref("error", "Masa bilgilerini kaydetmek için gecerli bir masa no girin."));
   }
 
   try {
-    const result = await updateTableDetails({ tableId, tableNumber, name: tableName });
+    const result = await updateTableDetails({ tableId, tableNumber, name: tableName, seatCount });
     if (!result.ok) {
       redirect(feedbackHref("error", result.error ?? "Masa bilgileri güncellenemedi."));
     }

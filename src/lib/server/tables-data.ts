@@ -382,10 +382,12 @@ export async function getTableMapImpl(deps: QueryDeps) {
         return null;
       }
 
-      const buildQuery = (includeZone: boolean) => {
+      const buildQuery = (includeZone: boolean, includePosition: boolean, includeSeatCount: boolean) => {
+        const baseColumns = "id, business_id, branch_id, table_number, name, status, qr_code_identifier";
+        const columns = `${baseColumns}${includeZone ? ", zone_id" : ""}${includePosition ? ", position_x, position_y" : ""}${includeSeatCount ? ", seat_count" : ""}`;
         let query = readerSupabase
           .from("tables")
-          .select(includeZone ? "id, business_id, branch_id, zone_id, table_number, name, status, qr_code_identifier" : "id, business_id, branch_id, table_number, name, status, qr_code_identifier")
+          .select(columns)
           .order("table_number", { ascending: true });
         if (!scope.useLegacySchema && scope.businessId) {
           query = query.eq("business_id", scope.businessId);
@@ -397,9 +399,15 @@ export async function getTableMapImpl(deps: QueryDeps) {
       };
 
       try {
-        let result = (await deps.withQueryTimeout(buildQuery(true))) as { data: unknown[] | null; error: { message: string } | null };
+        let result = (await deps.withQueryTimeout(buildQuery(true, true, true))) as { data: unknown[] | null; error: { message: string } | null };
+        if (result.error?.message?.toLowerCase().includes("seat_count")) {
+          result = (await deps.withQueryTimeout(buildQuery(true, true, false))) as { data: unknown[] | null; error: { message: string } | null };
+        }
+        if (result.error?.message?.toLowerCase().includes("position_x") || result.error?.message?.toLowerCase().includes("position_y")) {
+          result = (await deps.withQueryTimeout(buildQuery(true, false, false))) as { data: unknown[] | null; error: { message: string } | null };
+        }
         if (result.error?.message?.toLowerCase().includes("zone_id")) {
-          result = (await deps.withQueryTimeout(buildQuery(false))) as { data: unknown[] | null; error: { message: string } | null };
+          result = (await deps.withQueryTimeout(buildQuery(false, false, false))) as { data: unknown[] | null; error: { message: string } | null };
         }
         return { data: result.data as unknown[] | null, error: result.error as { message: string } | null };
       } catch {
@@ -1172,7 +1180,10 @@ export async function bulkDeleteTableZonesImpl(
   };
 }
 
-export async function updateTableDetailsImpl(input: { tableId: string; tableNumber: number; name: string }, deps: MutationDeps) {
+export async function updateTableDetailsImpl(
+  input: { tableId: string; tableNumber: number; name: string; seatCount?: number },
+  deps: MutationDeps,
+) {
   const supabase = getSupabaseServerClient();
   if (!supabase) {
     return { ok: false, error: "Demo modda masa güncelleme pasif." };
@@ -1180,12 +1191,16 @@ export async function updateTableDetailsImpl(input: { tableId: string; tableNumb
 
   const scope = await deps.getDefaultBusinessScope();
   const targetBranchId = await resolveMutationBranchId(supabase, scope);
+  const updatePayload: Record<string, unknown> = {
+    table_number: input.tableNumber,
+    name: input.name.trim() || `Masa ${input.tableNumber}`,
+  };
+  if (input.seatCount !== undefined) {
+    updatePayload.seat_count = input.seatCount;
+  }
   let query = supabase
     .from("tables")
-    .update({
-      table_number: input.tableNumber,
-      name: input.name.trim() || `Masa ${input.tableNumber}`,
-    })
+    .update(updatePayload)
     .eq("id", input.tableId);
   if (!scope.useLegacySchema && scope.businessId) {
     query = query.eq("business_id", scope.businessId);
@@ -1194,7 +1209,18 @@ export async function updateTableDetailsImpl(input: { tableId: string; tableNumb
     query = query.eq("branch_id", targetBranchId);
   }
 
-  const { error } = await query;
+  let { error } = await query;
+  if (error?.message?.toLowerCase().includes("seat_count") && input.seatCount !== undefined) {
+    delete updatePayload.seat_count;
+    let retryQuery = supabase.from("tables").update(updatePayload).eq("id", input.tableId);
+    if (!scope.useLegacySchema && scope.businessId) {
+      retryQuery = retryQuery.eq("business_id", scope.businessId);
+    }
+    if (targetBranchId) {
+      retryQuery = retryQuery.eq("branch_id", targetBranchId);
+    }
+    ({ error } = await retryQuery);
+  }
   if (error) {
     if (isDuplicateTableNumberError(error.message)) {
       return { ok: false, error: "Bu bolgede aynı masa numarasi oldugu için güncellenemedi." };
@@ -1208,6 +1234,79 @@ export async function updateTableDetailsImpl(input: { tableId: string; tableNumb
     action: "update",
     details: { tableNumber: input.tableNumber, tableName: input.name.trim() || `Masa ${input.tableNumber}` },
   });
+
+  deps.revalidateOperationsCaches();
+  return { ok: true };
+}
+
+export async function updateTablePositionImpl(
+  input: { tableId: string; positionX: number; positionY: number },
+  deps: MutationDeps,
+) {
+  const supabase = getSupabaseServerClient();
+  if (!supabase) {
+    return { ok: false, error: "Demo modda masa kroki pozisyonu kaydedilemiyor." };
+  }
+
+  const clampedX = Math.min(100, Math.max(0, input.positionX));
+  const clampedY = Math.min(100, Math.max(0, input.positionY));
+
+  const scope = await deps.getDefaultBusinessScope();
+  const targetBranchId = await resolveMutationBranchId(supabase, scope);
+  let query = supabase
+    .from("tables")
+    .update({ position_x: clampedX, position_y: clampedY })
+    .eq("id", input.tableId);
+  if (!scope.useLegacySchema && scope.businessId) {
+    query = query.eq("business_id", scope.businessId);
+  }
+  if (targetBranchId) {
+    query = query.eq("branch_id", targetBranchId);
+  }
+
+  const { error } = await query;
+  if (error) {
+    if (error.message?.toLowerCase().includes("position_x")) {
+      return { ok: false, error: "Kroki ozelligi için veritabani migrasyonunu çalıştırın." };
+    }
+    return { ok: false, error: error.message };
+  }
+
+  deps.revalidateOperationsCaches();
+  return { ok: true };
+}
+
+export async function updateTableSeatCountImpl(
+  input: { tableId: string; seatCount: number },
+  deps: MutationDeps,
+) {
+  const supabase = getSupabaseServerClient();
+  if (!supabase) {
+    return { ok: false, error: "Demo modda masa kapasitesi kaydedilemiyor." };
+  }
+
+  const clampedSeatCount = Math.min(20, Math.max(1, Math.round(input.seatCount)));
+
+  const scope = await deps.getDefaultBusinessScope();
+  const targetBranchId = await resolveMutationBranchId(supabase, scope);
+  let query = supabase
+    .from("tables")
+    .update({ seat_count: clampedSeatCount })
+    .eq("id", input.tableId);
+  if (!scope.useLegacySchema && scope.businessId) {
+    query = query.eq("business_id", scope.businessId);
+  }
+  if (targetBranchId) {
+    query = query.eq("branch_id", targetBranchId);
+  }
+
+  const { error } = await query;
+  if (error) {
+    if (error.message?.toLowerCase().includes("seat_count")) {
+      return { ok: false, error: "Kapasite ozelligi için veritabani migrasyonunu çalıştırın." };
+    }
+    return { ok: false, error: error.message };
+  }
 
   deps.revalidateOperationsCaches();
   return { ok: true };

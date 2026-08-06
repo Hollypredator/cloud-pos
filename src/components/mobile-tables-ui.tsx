@@ -23,6 +23,9 @@ interface Table {
   name?: string | null;
   status: TableStatus;
   zone_id?: string | null;
+  position_x?: number | null;
+  position_y?: number | null;
+  seat_count?: number | null;
 }
 
 interface Order {
@@ -54,6 +57,14 @@ function formatMoney(value: number) {
 
 function orderRef(order: Order) {
   return order.check_number?.trim() ? order.check_number : order.id.slice(0, 8);
+}
+
+function tableShapeClass(seatCount?: number | null) {
+  const seats = seatCount ?? 4;
+  if (seats <= 2) return "h-16 w-16 rounded-full";
+  if (seats <= 4) return "h-20 w-20 rounded-2xl";
+  if (seats <= 6) return "h-16 w-28 rounded-2xl";
+  return "h-16 w-36 rounded-2xl";
 }
 
 function tableStatusLabel(status: TableStatus) {
@@ -96,6 +107,7 @@ export function MobileTablesUi({
   const [toastMsg, setToastMsg] = useState<string | null>(null);
 
   // Map utilities
+  const hasFloorPlanLayout = tables.some((table) => table.position_x != null && table.position_y != null);
   const zoneNameById = new Map(zones.map((z) => [z.id, z.name]));
   const supervisorByTableId = new Map(tableSupervisors.map((ts) => [ts.table_id, ts]));
   const requestCountByTableId = new Map<string, number>();
@@ -240,6 +252,56 @@ export function MobileTablesUi({
         <section className="bg-white/40 border border-rose-100/30 rounded-3xl p-5 shadow-sm min-h-[380px]">
           {filteredTablesByZone.length === 0 ? (
             <div className="py-20 text-center text-slate-400 text-xs font-bold">Masa bulunamadı.</div>
+          ) : hasFloorPlanLayout ? (
+            <div className="relative min-h-[420px] w-full">
+              {filteredTablesByZone.map((table) => {
+                const order = ordersByTableId.get(table.id);
+                const reqs = requestCountByTableId.get(table.id) ?? 0;
+                const active = selectedTable?.id === table.id;
+
+                let colorStyles = "bg-emerald-50 border-emerald-200 text-emerald-950";
+                if (table.status === "occupied") colorStyles = "bg-amber-50 border-amber-200 text-amber-950";
+                if (table.status === "reserved") colorStyles = "bg-indigo-50 border-indigo-200 text-indigo-950";
+
+                const left = table.position_x ?? 10;
+                const top = table.position_y ?? 10;
+
+                return (
+                  <div
+                    key={table.id}
+                    onClick={() => setSelectedTable(table)}
+                    style={{ left: `${left}%`, top: `${top}%` }}
+                    className={`table-node absolute -translate-x-1/2 -translate-y-1/2 ${tableShapeClass(table.seat_count)} border-2 flex flex-col justify-between p-2.5 transition-all duration-300 cursor-pointer active:scale-95 shadow-sm ${colorStyles} ${
+                      active ? "ring-4 ring-rose-900 border-rose-900" : ""
+                    }`}
+                  >
+                    <div className="flex justify-between items-center w-full">
+                      <span className="text-[9px] font-black tracking-tighter">Masa</span>
+                      {reqs > 0 && (
+                        <span className="w-2.5 h-2.5 rounded-full bg-rose-600 animate-ping absolute -top-1 -right-1" />
+                      )}
+                      {reqs > 0 && (
+                        <span className="w-2 h-2 rounded-full bg-rose-600 absolute -top-1 -right-1" />
+                      )}
+                    </div>
+                    <div className="text-center font-extrabold text-lg leading-none py-1">
+                      {table.table_number}
+                    </div>
+                    <div className="text-center w-full truncate">
+                      {table.status === "occupied" && order ? (
+                        <span className="text-[8px] font-bold font-mono text-amber-900">
+                          {formatMoney(Number(order.remaining_balance ?? order.final_price ?? order.total_price))}
+                        </span>
+                      ) : (
+                        <span className="text-[8px] font-bold text-slate-500/70">
+                          {tableStatusLabel(table.status)}
+                        </span>
+                      )}
+                    </div>
+                  </div>
+                );
+              })}
+            </div>
           ) : (
             <div className="grid grid-cols-3 sm:grid-cols-4 gap-4 justify-items-center">
               {filteredTablesByZone.map((table) => {
@@ -291,6 +353,11 @@ export function MobileTablesUi({
                 );
               })}
             </div>
+          )}
+          {!hasFloorPlanLayout && (
+            <p className="mt-4 text-center text-[10px] font-bold text-slate-400">
+              Gerçek salon krokisi için Admin &gt; Masalar &gt; Kroki Düzenle ekranından masaları yerleştirin.
+            </p>
           )}
         </section>
       ) : (
