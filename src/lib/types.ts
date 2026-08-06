@@ -153,6 +153,9 @@ export type DiningTable = {
   name?: string | null;
   status: TableStatus;
   qr_code_identifier: string;
+  position_x?: number | null;
+  position_y?: number | null;
+  seat_count?: number | null;
 };
 
 export type TableZone = {
@@ -656,6 +659,8 @@ export type OpsCommandType =
   | "DELIVERY_ASSIGN"
   | "DELIVERY_COMPLETE"
   | "TABLE_STATUS_SET"
+  | "TABLE_POSITION_SET"
+  | "TABLE_SEAT_COUNT_SET"
   | "TABLE_REQUEST_RESOLVE"
   | "CASH_SESSION_OPEN"
   | "CASH_SESSION_CLOSE";

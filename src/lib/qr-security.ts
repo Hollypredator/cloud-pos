@@ -1,10 +1,24 @@
 import crypto from "crypto";
 
-const QR_SECRET = process.env.QR_SECRET || process.env.JWT_SECRET || "cloudpos-qr-secure-seating-key-2026";
+const DEV_FALLBACK_SECRET = "cloudpos-qr-secure-seating-key-2026";
+
+function getQrSecret() {
+  const configured = (process.env.QR_SECRET || process.env.JWT_SECRET || "").trim();
+  if (configured) {
+    return configured;
+  }
+
+  // Keep production strict while making local/dev QR testing work out of the box.
+  if (process.env.NODE_ENV !== "production") {
+    return DEV_FALLBACK_SECRET;
+  }
+
+  return "";
+}
 
 export function generateQrSignature(identifier: string, timestamp: string): string {
   return crypto
-    .createHmac("sha256", QR_SECRET)
+    .createHmac("sha256", getQrSecret())
     .update(`${identifier}:${timestamp}`)
     .digest("hex");
 }

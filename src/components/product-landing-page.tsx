@@ -699,7 +699,7 @@ export function ProductLandingPage({ settings, leadStatus, locale = "tr" }: Prod
             <h5 className="text-xs font-bold uppercase tracking-wider text-slate-300 mb-6">Kurumsal</h5>
             <ul className="space-y-4 text-xs">
               <li><Link className="text-slate-400 hover:text-white cursor-pointer" href="#">Hakkımızda</Link></li>
-              <li><Link className="text-slate-400 hover:text-white cursor-pointer" href="#">İletişim</Link></li>
+              <li><Link className="text-slate-400 hover:text-white cursor-pointer" href="/contact">İletişim</Link></li>
             </ul>
           </div>
           <div>

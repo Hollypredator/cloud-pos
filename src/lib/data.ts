@@ -21,6 +21,8 @@ import {
   moveTableOrderImpl,
   updateTableStatusImpl,
   updateTableDetailsImpl,
+  updateTablePositionImpl,
+  updateTableSeatCountImpl,
 } from "@/lib/server/tables-data";
 import {
   createCategoryImpl,
@@ -31,7 +33,7 @@ import {
   updateCategoryPrepStationImpl,
   updateProductImpl,
 } from "@/lib/server/products-data";
-import { ALL_BRANCHES_VALUE, DEFAULT_BUSINESS_SLUG, normalizeBusinessSlug } from "@/lib/business";
+import { ALL_BRANCHES_VALUE, normalizeBusinessSlug } from "@/lib/business";
 import { getActiveBusinessSlug } from "@/lib/business-server";
 import { demoStaffAccounts } from "@/lib/demo";
 import {
@@ -70,7 +72,6 @@ import type {
   Category,
   Courier,
   DiningTable,
-  Ingredient,
   MediaAsset,
   Order,
   OrderChannel,
@@ -91,7 +92,6 @@ import type {
   ProductProfileScope,
   ProductKind,
   ProductUnit,
-  ProductIngredient,
   SalesLead,
   SalesLeadNote,
   SalesLeadStatus,
@@ -772,8 +772,6 @@ import {
   helperEnrichCalories,
   demoCategories,
   demoProducts,
-  demoSelfServiceCategories,
-  demoSelfServiceProducts,
   getDemoMenuSeed,
   demoTables,
   demoOrders,
@@ -6145,7 +6143,7 @@ export async function bulkDeleteTablesByIds(input: { tableIds: string[]; include
   });
 }
 
-export async function updateTableDetails(input: { tableId: string; tableNumber: number; name: string }) {
+export async function updateTableDetails(input: { tableId: string; tableNumber: number; name: string; seatCount?: number }) {
   return updateTableDetailsImpl(input, {
     getDefaultBusinessScope,
     logAuditEvent,
@@ -6155,6 +6153,22 @@ export async function updateTableDetails(input: { tableId: string; tableNumber: 
 
 export async function updateTableStatus(input: { tableId: string; status: TableStatus }) {
   return updateTableStatusImpl(input, {
+    getDefaultBusinessScope,
+    logAuditEvent,
+    revalidateOperationsCaches,
+  });
+}
+
+export async function updateTablePosition(input: { tableId: string; positionX: number; positionY: number }) {
+  return updateTablePositionImpl(input, {
+    getDefaultBusinessScope,
+    logAuditEvent,
+    revalidateOperationsCaches,
+  });
+}
+
+export async function updateTableSeatCount(input: { tableId: string; seatCount: number }) {
+  return updateTableSeatCountImpl(input, {
     getDefaultBusinessScope,
     logAuditEvent,
     revalidateOperationsCaches,

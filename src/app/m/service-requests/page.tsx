@@ -162,7 +162,7 @@ export default async function MobileServiceRequestsPage({
       </section>
 
       {/* Requests Queue stack */}
-      <section className="grid gap-3.5 mt-3.5">
+      <section className="m-stack mt-3.5">
         {requests.length === 0 ? (
           <article className="m-card border border-dashed border-slate-200 bg-slate-50/50 py-8 text-center rounded-[24px]">
             <p className="text-sm font-bold text-slate-800">{activeStatus === "open" ? "Açık talep bulunmuyor." : "Çözülen talep bulunmuyor."}</p>

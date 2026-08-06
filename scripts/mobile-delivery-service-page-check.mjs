@@ -42,7 +42,7 @@ const checks = [
   },
   {
     name: "mobile service requests exposes resolve action",
-    pass: mobileRequests.includes("Cozuldu Olarak Isaretle") && mobileRequests.includes("TABLE_REQUEST_RESOLVE"),
+    pass: mobileRequests.includes("Çözüldü Olarak İşaretle") && mobileRequests.includes("TABLE_REQUEST_RESOLVE"),
   },
 ];
 

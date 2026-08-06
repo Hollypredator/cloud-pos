@@ -12,6 +12,7 @@ import {
   publishCustomerDisplaySnapshot,
   type CustomerDisplaySessionRecord,
 } from "@/lib/customer-display";
+import { TablePickerFloorPlan } from "@/components/table-picker-floor-plan";
 
 function triggerHaptic(pattern: number | number[] = 40) {
   if (typeof window !== "undefined" && typeof navigator !== "undefined" && typeof navigator.vibrate === "function") {
@@ -32,6 +33,7 @@ import type {
   ProductModifierGroup,
   ProductModifierOption,
   TableStatus,
+  TableZone,
   OperatingProfile,
   OperatingProfileCapabilities,
 } from "@/lib/types";
@@ -104,6 +106,7 @@ export function AdminOrderEntry({
   modifierGroups,
   modifierOptions,
   tables,
+  zones = [],
   initialTableId,
   lockedTableId,
   onOrderCreated,
@@ -121,6 +124,7 @@ export function AdminOrderEntry({
   modifierGroups: ProductModifierGroup[];
   modifierOptions: ProductModifierOption[];
   tables: DiningTable[];
+  zones?: TableZone[];
   initialTableId?: string;
   lockedTableId?: string;
   onOrderCreated?: (orderId: string) => void;
@@ -161,6 +165,7 @@ export function AdminOrderEntry({
   const [mobileCartOpen, setMobileCartOpen] = useState(false);
   const [tablePickerFilter, setTablePickerFilter] = useState<"all" | TableStatus>("all");
   const [tablePickerQuery, setTablePickerQuery] = useState("");
+  const [tablePickerLayout, setTablePickerLayout] = useState<"list" | "kroki">("list");
   const [productSearchQuery, setProductSearchQuery] = useState("");
   const [nextItemMultiplier, setNextItemMultiplier] = useState<number>(1);
   const [receiptPrintLayout, setReceiptPrintLayout] = useState<ReceiptPrintLayout>("thermal");
@@ -1343,6 +1348,22 @@ export function AdminOrderEntry({
                       Geri
                    </Link>
                 )}
+                <div className="flex items-center rounded-xl border border-slate-200 bg-white p-1">
+                  <button
+                    type="button"
+                    onClick={() => setTablePickerLayout("list")}
+                    className={`min-h-[40px] rounded-lg px-3 text-xs font-semibold ${tablePickerLayout === "list" ? "bg-slate-900 text-white" : "text-slate-600"}`}
+                  >
+                    Liste
+                  </button>
+                  <button
+                    type="button"
+                    onClick={() => setTablePickerLayout("kroki")}
+                    className={`min-h-[40px] rounded-lg px-3 text-xs font-semibold ${tablePickerLayout === "kroki" ? "bg-slate-900 text-white" : "text-slate-600"}`}
+                  >
+                    Kroki
+                  </button>
+                </div>
                 <div className="grid grid-cols-2 gap-2 sm:grid-cols-4">
                   {(["all", "empty", "occupied", "reserved"] as const).map((status) => (
                     <button
@@ -1371,7 +1392,20 @@ export function AdminOrderEntry({
               />
             </div>
 
-            {filteredTables.length === 0 ? (
+            {tablePickerLayout === "kroki" ? (
+              <div className="mt-4">
+                <TablePickerFloorPlan
+                  tables={filteredTables}
+                  zones={zones}
+                  selectedTableId={selectedTableId}
+                  onSelect={(tableId) => {
+                    setSelectedTableId(tableId);
+                    setChannel("dine_in");
+                    setTablePickerView("composer");
+                  }}
+                />
+              </div>
+            ) : filteredTables.length === 0 ? (
               <p className="mt-4 rounded-xl border border-dashed border-slate-200 bg-slate-50 px-4 py-4 text-sm text-slate-500">
                 Bu filtrede masa bulunamadı.
               </p>

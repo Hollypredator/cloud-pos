@@ -32,7 +32,7 @@ export function BackofficePage({
   const locale = getLocale();
   return (
     <div className={cn(
-      "backoffice-page-shell relative min-h-screen overflow-x-clip bg-[#f3f5f8]",
+      "backoffice-page-shell relative min-h-screen overflow-x-clip bg-black text-white",
       minimal ? "px-0 py-0" : "px-3 py-4 md:px-6"
     )}>
       <main className={cn(
@@ -42,11 +42,11 @@ export function BackofficePage({
         {sidebar && !minimal ? <aside className="backoffice-page-sidebar min-w-0 w-full xl:w-[320px]">{sidebar}</aside> : null}
         <section className={cn("backoffice-page-content min-w-0 flex-1 flex flex-col overflow-x-clip", minimal ? "" : "gap-5")}>
           {!minimal && (
-            <div className="backoffice-page-hero shrink-0 rounded-2xl border border-slate-200 bg-white px-4 py-3 shadow-sm sm:px-6 sm:py-4">
+            <div className="backoffice-page-hero shrink-0 rounded-2xl border border-red-600/30 bg-zinc-900 px-4 py-3 shadow-xl sm:px-6 sm:py-4">
               <div className="flex flex-wrap items-center justify-between gap-4">
                 <div>
-                  <p className="text-xs font-semibold text-slate-500">{description ? translateUiText(description, locale) : description}</p>
-                  <h1 className="font-display mt-1 text-[1.55rem] font-semibold tracking-tight text-slate-950 sm:text-[1.8rem]">{translateUiText(title, locale)}</h1>
+                  <p className="text-xs font-semibold text-zinc-400">{description ? translateUiText(description, locale) : description}</p>
+                  <h1 className="font-display mt-1 text-[1.55rem] font-black tracking-tight text-white sm:text-[1.8rem]">{translateUiText(title, locale)}</h1>
                 </div>
                 {actions ? <div className="backoffice-page-actions flex w-full flex-wrap items-center gap-2 sm:w-auto sm:gap-3">{actions}</div> : null}
               </div>

@@ -65,7 +65,7 @@ export function AppRuntimeWrapper({
   return (
     <QueryProvider>
       <PosCommandQueueRuntime />
-      <AppShell initialData={initialShellData}>{children}</AppShell>
+      {children}
     </QueryProvider>
   );
 }

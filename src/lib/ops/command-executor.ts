@@ -11,7 +11,7 @@ import {
   updateOrderStatus,
 } from "@/lib/domains/orders";
 import { closeCashSession, openCashSession } from "@/lib/domains/finance";
-import { resolveTableRequest, updateTableStatus } from "@/lib/domains/tables";
+import { resolveTableRequest, updateTableStatus, updateTablePosition, updateTableSeatCount } from "@/lib/domains/tables";
 import type {
   FulfillmentStatus,
   OpsCommand,
@@ -387,6 +387,33 @@ export async function executeOpsCommand(command: OpsCommand, options?: ExecuteCo
         const result = await updateTableStatus({ tableId, status: payload.status });
         if (!result.ok) {
           return commandResult(command, classifyFailure(result.error), { message: result.error ?? "Masa durumu güncellenemedi." });
+        }
+        return commandResult(command, "ACK", { data: flattenResultData(result as unknown as Record<string, unknown>) });
+      }
+
+      case "TABLE_POSITION_SET": {
+        const tableId = asString(payload.table_id);
+        const positionX = asNumber(payload.position_x);
+        const positionY = asNumber(payload.position_y);
+        if (!tableId || positionX === null || positionY === null) {
+          return commandResult(command, "REJECT", { message: "TABLE_POSITION_SET için table_id, position_x ve position_y zorunlu." });
+        }
+        const result = await updateTablePosition({ tableId, positionX, positionY });
+        if (!result.ok) {
+          return commandResult(command, classifyFailure(result.error), { message: result.error ?? "Masa pozisyonu güncellenemedi." });
+        }
+        return commandResult(command, "ACK", { data: flattenResultData(result as unknown as Record<string, unknown>) });
+      }
+
+      case "TABLE_SEAT_COUNT_SET": {
+        const tableId = asString(payload.table_id);
+        const seatCount = asNumber(payload.seat_count);
+        if (!tableId || seatCount === null) {
+          return commandResult(command, "REJECT", { message: "TABLE_SEAT_COUNT_SET için table_id ve seat_count zorunlu." });
+        }
+        const result = await updateTableSeatCount({ tableId, seatCount });
+        if (!result.ok) {
+          return commandResult(command, classifyFailure(result.error), { message: result.error ?? "Masa kapasitesi güncellenemedi." });
         }
         return commandResult(command, "ACK", { data: flattenResultData(result as unknown as Record<string, unknown>) });
       }
