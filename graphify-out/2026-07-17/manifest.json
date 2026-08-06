@@ -170,9 +170,9 @@
     "semantic_hash": "2291084e03807fd8d8dc7021068170ef"
   },
   "src/app/[slug]/qr/[identifier]/page.tsx": {
-    "mtime": 1781462273.097907,
-    "ast_hash": "6c257fca0db7d4a7085ab590dbf90444",
-    "semantic_hash": "6c257fca0db7d4a7085ab590dbf90444"
+    "mtime": 1784304989.991974,
+    "ast_hash": "fcdf9f0ffac740e69a56d2d406424d09",
+    "semantic_hash": ""
   },
   "src/app/adisyon-programi/page.tsx": {
     "mtime": 1781380245.4184225,
@@ -610,9 +610,9 @@
     "semantic_hash": "9134bae631b4dbef9d50990975f0f49e"
   },
   "src/app/m/kitchen/page.tsx": {
-    "mtime": 1783181519.9353848,
-    "ast_hash": "6c4570c6b9884074d4552380e97d0678",
-    "semantic_hash": "6c4570c6b9884074d4552380e97d0678"
+    "mtime": 1784304873.4040473,
+    "ast_hash": "eba55a91a4218014699f93a410edbd37",
+    "semantic_hash": ""
   },
   "src/app/m/layout.tsx": {
     "mtime": 1781294958.1365554,
@@ -635,9 +635,9 @@
     "semantic_hash": "8cb7b54853c37370b8832cb86dd69f1f"
   },
   "src/app/m/tables/page.tsx": {
-    "mtime": 1783181448.9925885,
-    "ast_hash": "a610a8154034f9e65b70f17dbf89cc1d",
-    "semantic_hash": "a610a8154034f9e65b70f17dbf89cc1d"
+    "mtime": 1784304816.9831982,
+    "ast_hash": "3536b51456284765f1f3f06479b060d9",
+    "semantic_hash": ""
   },
   "src/app/manifest.ts": {
     "mtime": 1782239238.1178958,
@@ -2007,6 +2007,21 @@
   "src/lib/offline-sync.ts": {
     "mtime": 1784304713.9313219,
     "ast_hash": "e2f1048445832ba806bcfecf54061ba9",
+    "semantic_hash": ""
+  },
+  "src/components/mobile-kitchen-ui.tsx": {
+    "mtime": 1784304918.7017944,
+    "ast_hash": "d0b594fdf764d87054726c7d14ef82ff",
+    "semantic_hash": ""
+  },
+  "src/components/mobile-tables-ui.tsx": {
+    "mtime": 1784304839.1470945,
+    "ast_hash": "a517d850dd88460c32a6754da1b5018c",
+    "semantic_hash": ""
+  },
+  "src/lib/qr-security.ts": {
+    "mtime": 1784304981.7310553,
+    "ast_hash": "af66a0efad9a5061e5b23d41da3e2898",
     "semantic_hash": ""
   }
 }

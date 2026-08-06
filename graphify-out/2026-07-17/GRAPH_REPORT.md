@@ -1,11 +1,11 @@
 # Graph Report - POS SİSTEM  (2026-07-17)
 
 ## Corpus Check
-- 388 files · ~313,251 words
+- 391 files · ~314,741 words
 - Verdict: corpus is large enough that graph structure adds value.
 
 ## Summary
-- 2336 nodes · 6558 edges · 142 communities (128 shown, 14 thin omitted)
+- 2349 nodes · 6574 edges · 135 communities (121 shown, 14 thin omitted)
 - Extraction: 100% EXTRACTED · 0% INFERRED · 0% AMBIGUOUS · INFERRED: 10 edges (avg confidence: 0.8)
 - Token cost: 0 input · 0 output
 
@@ -100,14 +100,12 @@
 - [[_COMMUNITY_Community 82|Community 82]]
 - [[_COMMUNITY_Lib Plan Module|Lib Plan Module]]
 - [[_COMMUNITY_App Studio Module|App Studio Module]]
-- [[_COMMUNITY_Lib Pos Module|Lib Pos Module]]
 - [[_COMMUNITY_Scripts Check Write Module|Scripts Check Write Module]]
 - [[_COMMUNITY_Community 87|Community 87]]
 - [[_COMMUNITY_Scripts Ops Smoke Module|Scripts Ops Smoke Module]]
 - [[_COMMUNITY_Scripts Staging Rollout Module|Scripts Staging Rollout Module]]
 - [[_COMMUNITY_App Login Module|App Login Module]]
 - [[_COMMUNITY_App Sitemap Module|App Sitemap Module]]
-- [[_COMMUNITY_Community 92|Community 92]]
 - [[_COMMUNITY_Scripts Check Tenant Module|Scripts Check Tenant Module]]
 - [[_COMMUNITY_Scripts Tenant Runtime Module|Scripts Tenant Runtime Module]]
 - [[_COMMUNITY_App Auth Module|App Auth Module]]
@@ -116,7 +114,6 @@
 - [[_COMMUNITY_Scripts Mobile Pwa Module|Scripts Mobile Pwa Module]]
 - [[_COMMUNITY_Scripts Mobile Tables Module|Scripts Mobile Tables Module]]
 - [[_COMMUNITY_Scripts Phase6 Observability Module|Scripts Phase6 Observability Module]]
-- [[_COMMUNITY_Community 101|Community 101]]
 - [[_COMMUNITY_Package Module|Package Module]]
 - [[_COMMUNITY_Scripts Mobile Cashier Module|Scripts Mobile Cashier Module]]
 - [[_COMMUNITY_Scripts Mobile Kitchen Module|Scripts Mobile Kitchen Module]]
@@ -138,17 +135,13 @@
 - [[_COMMUNITY_Postcss Config Module|Postcss Config Module]]
 - [[_COMMUNITY_Lib Demo Module|Lib Demo Module]]
 - [[_COMMUNITY_Lib Demo Module|Lib Demo Module]]
-- [[_COMMUNITY_Community 136|Community 136]]
-- [[_COMMUNITY_Community 137|Community 137]]
 - [[_COMMUNITY_Community 138|Community 138]]
 - [[_COMMUNITY_Community 139|Community 139]]
-- [[_COMMUNITY_Community 140|Community 140]]
-- [[_COMMUNITY_Community 141|Community 141]]
 
 ## God Nodes (most connected - your core abstractions)
 1. `getSupabaseServerClient()` - 194 edges
 2. `requireRole()` - 119 edges
-3. `getDefaultBusinessScope` - 84 edges
+3. `getDefaultBusinessScope` - 83 edges
 4. `requireSupportAccess()` - 61 edges
 5. `translateUiText()` - 57 edges
 6. `getCurrentLocale()` - 52 edges
@@ -172,59 +165,59 @@
 ## Import Cycles
 - None detected.
 
-## Communities (142 total, 14 thin omitted)
+## Communities (135 total, 14 thin omitted)
 
 ### Community 0 - "Core Data & Demo Seeds"
-Cohesion: 0.16
-Nodes (8): feedbackHref(), parseTableFilter(), setTableStatusAction(), TableFilter, POS_CLIENT_QUEUE_CASHIER_ENABLED, POS_CLIENT_QUEUE_TABLES_ENABLED, PosQueryKey, posQueryKeys
+Cohesion: 0.15
+Nodes (18): PosQueryKey, posQueryKeys, asObject(), asStatus(), drainOnResolvedCallbacks(), EnqueuePosCommandInput, flushInternal(), flushPosCommandQueue() (+10 more)
 
 ### Community 1 - "Product Management Admin"
 Cohesion: 0.06
-Nodes (93): actionErrorMessage(), addCategoryAction(), addIngredientAction(), addModifierGroupAction(), addModifierOptionAction(), addProductAction(), attachIngredientAction(), buildRestaurantDemoRecipe() (+85 more)
+Nodes (81): actionErrorMessage(), addCategoryAction(), addIngredientAction(), addModifierGroupAction(), addModifierOptionAction(), addProductAction(), attachIngredientAction(), buildRestaurantDemoRecipe() (+73 more)
 
 ### Community 2 - "POS Command Queue Engine"
-Cohesion: 0.06
-Nodes (57): CashierAdvancePickupStatusQueueButton(), CashierCancelOrderQueueForm(), CashierFinancialsQueueForm(), CashierOrderItemCancelQueueButton(), CashierPaymentQueuePanel(), CashierRefundQueueForm(), useTrackedCommandResult(), OptimisticMoney() (+49 more)
+Cohesion: 0.12
+Nodes (19): asNumber(), asOrderStatus(), asString(), asTableStatus(), buildCommittedSnapshotsFromAck(), noopStorage, PosCommandQueueStore, QueueResultInput (+11 more)
 
 ### Community 3 - "Order State & Actions"
-Cohesion: 0.11
-Nodes (43): applyOrderFinancials(), assignOrderCourier(), cancelOrder(), cancelOrderItem(), createOrder(), deriveOrderStatusFromStationStatuses(), fireAndForgetAuditEvent(), fireAndForgetOrderPostCreateMaintenance() (+35 more)
+Cohesion: 0.13
+Nodes (38): applyOrderFinancials(), assignOrderCourier(), cancelOrder(), cancelOrderItem(), createOrder(), fireAndForgetAuditEvent(), fireAndForgetOrderPostCreateMaintenance(), getOrderItemUnitCostSnapshotMap() (+30 more)
 
 ### Community 4 - "QR Code Ordering API"
 Cohesion: 0.12
 Nodes (16): Additional Forbidden Patterns, Anti-Patterns (Do NOT Use), Buttons, Cards, Color Palette, Component Specs, Design System Master File, Global Rules (+8 more)
 
 ### Community 5 - "SEO Landing Pages"
-Cohesion: 0.09
-Nodes (16): generateMetadata(), generateMetadata(), generateMetadata(), generateMetadata(), generateMetadata(), generateMetadata(), generateMetadata(), generateMetadata() (+8 more)
+Cohesion: 0.06
+Nodes (25): generateMetadata(), generateMetadata(), generateMetadata(), generateMetadata(), generateMetadata(), generateMetadata(), generateMetadata(), generateMetadata() (+17 more)
 
 ### Community 6 - "Package Scripts & Stress Checks"
 Cohesion: 0.05
 Nodes (38): scripts, alerts:dispatch, build, dev, dev:turbopack, dev:webpack, lint, monitor:synthetic (+30 more)
 
 ### Community 7 - "Alerts & Performance Metrics APIs"
-Cohesion: 0.15
-Nodes (29): checkSecret(), evaluateOps(), GET(), misconfigured(), POST(), unauthorized(), GET(), GET() (+21 more)
+Cohesion: 0.25
+Nodes (14): checkSecret(), evaluateOps(), GET(), misconfigured(), POST(), unauthorized(), GET(), GET() (+6 more)
 
 ### Community 8 - "Command & Sync APIs"
-Cohesion: 0.16
-Nodes (23): CommandRequestBody, isRecord(), mapCommandHttpStatus(), normalizeCommandFromBody(), normalizeDeviceId(), POST(), GET(), POST() (+15 more)
+Cohesion: 0.11
+Nodes (31): CommandRequestBody, isRecord(), mapCommandHttpStatus(), normalizeCommandFromBody(), normalizeDeviceId(), POST(), GET(), POST() (+23 more)
 
 ### Community 9 - "Admin Orders & Tables API Router"
-Cohesion: 0.18
-Nodes (15): GET(), GET(), GET(), Body, POST(), canUseDemoModeBypass(), getBaseAuthenticatedContext(), getCurrentUserWithRole (+7 more)
+Cohesion: 0.22
+Nodes (14): GET(), GET(), GET(), canUseDemoModeBypass(), getBaseAuthenticatedContext(), getCurrentUserIdentity, getCurrentUserWithRole, hasRoleAccess() (+6 more)
 
 ### Community 10 - "Mobile Tables & Ordering UI"
-Cohesion: 0.14
-Nodes (13): buildStationGroups(), formatOrderTableLabel(), inferStationByItemName(), inferStationByName(), KitchenStation, MobileKitchenPage(), moveMobileOrder(), normalizeLabel() (+5 more)
+Cohesion: 0.21
+Nodes (15): addIncidentUpdateAction(), SupportIncidentDetailPage(), createIncidentAction(), SupportIncidentsPage(), updateIncidentStatusAction(), SupportTeamPage(), SupportTenantsPage(), requireSupportAccess() (+7 more)
 
 ### Community 11 - "Studio Visual Editor & Demo Page"
-Cohesion: 0.10
-Nodes (24): demoModules, DemoPageRenderer(), DemoRendererEditorOptions, demoScreens, demoSteps, DemoSectionId, defaultDemoPackages, defaultDemoPresentationFlow (+16 more)
+Cohesion: 0.08
+Nodes (33): readBoolean(), readDemoContent(), readJsonField(), readValue(), StudioDemoPage(), updateDemoPageContentAction(), demoModules, DemoRendererEditorOptions (+25 more)
 
 ### Community 12 - "Mobile Kitchen Screen"
-Cohesion: 0.18
-Nodes (14): assignAuthUserAction(), createStaffAction(), deleteStaffAction(), feedbackHref(), roles, StaffProfile, updateRoleAction(), updateStaffAction() (+6 more)
+Cohesion: 0.22
+Nodes (14): CashierAdvancePickupStatusQueueButton(), CashierCancelOrderQueueForm(), CashierFinancialsQueueForm(), CashierOrderItemCancelQueueButton(), CashierPaymentQueuePanel(), CashierRefundQueueForm(), useTrackedCommandResult(), OptimisticMoney() (+6 more)
 
 ### Community 13 - "Studio Login & Media Management"
 Cohesion: 0.19
@@ -239,44 +232,44 @@ Cohesion: 0.12
 Nodes (22): KitchenTicketPage(), orderRef(), orderSourceLabel(), TestSlipPage(), orderSourceLabel(), orderRef(), orderSourceLabel(), ReceiptPage() (+14 more)
 
 ### Community 16 - "Lib Server Module"
-Cohesion: 0.12
-Nodes (22): createTable(), assignTableZoneImpl(), bulkCreateTablesImpl(), BulkCreateTablesResult, bulkDeleteTablesImpl(), BulkDeleteTablesResult, BulkDeleteZonesResult, createQrIdentifier() (+14 more)
+Cohesion: 0.24
+Nodes (10): BlogIndexPage(), formatDate(), readingTime(), AdminBlogPage(), deleteBlogPostAction(), saveBlogPostAction(), toSlug(), deleteBlogPost() (+2 more)
 
 ### Community 17 - "Lib Server Module"
 Cohesion: 0.17
-Nodes (15): SupportBillingPage(), SupportFeatureFlagsPage(), feedbackHref(), updateBusinessPlanAction(), updateBusinessTypeAction(), updateFeatureFlagAction(), updateTenantProfileAction(), listSupportBillingSummaries() (+7 more)
+Nodes (22): feedbackHref(), SupportTenantDetailPage(), updateBusinessPlanAction(), updateBusinessTypeAction(), updateFeatureFlagAction(), updateTenantProfileAction(), assignExistingAuthUserToBusiness(), deleteStaffAccount() (+14 more)
 
 ### Community 18 - "App Admin Module"
-Cohesion: 0.12
-Nodes (33): addTableAction(), assignTableZoneAction(), bulkAddTablesAction(), bulkDeleteSelectedTablesAction(), bulkDeleteTablesAction(), bulkDeleteZonesAction(), deleteTableAction(), deleteZoneAction() (+25 more)
+Cohesion: 0.05
+Nodes (71): addTableAction(), assignTableZoneAction(), bulkAddTablesAction(), bulkDeleteSelectedTablesAction(), bulkDeleteTablesAction(), bulkDeleteZonesAction(), createZoneAction(), deleteTableAction() (+63 more)
 
 ### Community 19 - "Components Qr Module"
-Cohesion: 0.06
-Nodes (24): HistoryOrder, OrderHistoryWidget(), estimateEta(), LatestOrder, orderRef(), OrderStatus, OrderStatusWidget(), statusClass() (+16 more)
+Cohesion: 0.07
+Nodes (23): HistoryOrder, OrderHistoryWidget(), estimateEta(), LatestOrder, orderRef(), OrderStatus, OrderStatusWidget(), statusClass() (+15 more)
 
 ### Community 20 - "Lib Data Module"
-Cohesion: 0.13
-Nodes (36): SessionReportPrintPage(), CashierSessionPage(), bulkAdjustStocks(), clearBusinessOperationalData(), closeCashSession(), createBranch(), createCourier(), deleteBranch() (+28 more)
+Cohesion: 0.10
+Nodes (46): SessionReportPrintPage(), createStaffAction(), bulkAdjustStocks(), bulkUpdateCategoryPrices(), clearBusinessOperationalData(), closeCashSession(), commitEnterpriseMarketImport(), createBranch() (+38 more)
 
 ### Community 21 - "App Admin Module"
-Cohesion: 0.28
-Nodes (11): Body, POST(), createQrAccessToken(), fromBase64Url(), getQrAccessSecret(), getQrAccessTokenExpiryDate(), QrAccessFailureReason, QrAccessPayload (+3 more)
+Cohesion: 0.17
+Nodes (24): GET(), parseRequestedOrderIds(), GET(), Body, POST(), Body, POST(), Body (+16 more)
 
 ### Community 22 - "App Cashier Module"
-Cohesion: 0.14
-Nodes (25): AdminOrdersPage(), advancePickupStatusAction(), applyFinancialsAction(), buildReceiptLink(), buildReceiptQr(), cancelOrderAction(), cancelOrderItemAction(), CashierPage() (+17 more)
+Cohesion: 0.13
+Nodes (21): advancePickupStatusAction(), applyFinancialsAction(), buildReceiptLink(), buildReceiptQr(), cancelOrderAction(), cancelOrderItemAction(), completePaymentAction(), feedbackHref() (+13 more)
 
 ### Community 23 - "App Layout Module"
-Cohesion: 0.13
-Nodes (21): CartItem, ProductLandingPage(), ProductLandingPageProps, defaultApplicationSettings, defaultGeneralSettings, defaultSeoSettings, GeneralSettings, normalizeApplicationSettings() (+13 more)
+Cohesion: 0.15
+Nodes (19): defaultApplicationSettings, defaultGeneralSettings, defaultSeoSettings, defaultSmtpSettings, normalizeApplicationSettings(), normalizeGeneralSettings(), normalizeHexColor(), normalizeSidebarOrder() (+11 more)
 
 ### Community 24 - "App Support Module"
-Cohesion: 0.14
-Nodes (32): NotFound(), ManagedSitePage(), SupportAccessPage(), SupportHealthPage(), addIncidentUpdateAction(), SupportIncidentDetailPage(), createIncidentAction(), SupportIncidentsPage() (+24 more)
+Cohesion: 0.21
+Nodes (15): assignTicketAction(), SupportTicketsPage(), updateTicketStatusAction(), addInternalNoteAction(), assignTicketAction(), SupportTicketDetailPage(), updateTicketStatusAction(), assignSupportTicket() (+7 more)
 
 ### Community 25 - "Lib I18n Module"
 Cohesion: 0.03
-Nodes (105): AuthServerClient, buildDeterministicSlug(), CASHIER_HISTORY_FILTERABLE_STATUSES, demoBlogPosts, demoLeadNotes, demoMediaAssets, demoSalesLeads, enrichTicketSla() (+97 more)
+Nodes (110): BulkAdjustResult, SaveStatus, AuthServerClient, CASHIER_HISTORY_FILTERABLE_STATUSES, demoBlogPosts, demoLeadNotes, demoMediaAssets, demoSalesLeads (+102 more)
 
 ### Community 26 - "Lib Web Module"
 Cohesion: 0.21
@@ -287,48 +280,48 @@ Cohesion: 0.12
 Nodes (24): alertDispatchSecret, apiBudgetMs, apiP95BudgetMs, authCookie, autoSessionCloseSecret, baseUrl, buildTargets(), fmt() (+16 more)
 
 ### Community 28 - "App Delivery Module"
-Cohesion: 0.11
-Nodes (19): orderRef(), PrintCenterPage(), buildGroupedOrderItems(), buildPendingStationStatusesForItems(), getCachedKitchenOrdersSnapshot(), getCachedOrderSummaryRows(), getCashierPageSnapshot(), getDeliveryPageSnapshot() (+11 more)
+Cohesion: 0.09
+Nodes (25): buildGroupedOrderItems(), buildPendingStationStatusesForItems(), deriveOrderStatusFromStationStatuses(), getCachedKitchenOrdersSnapshot(), getCachedOrderReceiptRow(), getCachedOrderSummaryRows(), getCashierPageSnapshot(), getDeliveryPageSnapshot() (+17 more)
 
 ### Community 29 - "App Studio Module"
-Cohesion: 0.17
-Nodes (19): POST(), AdminSettingsPage(), readString(), sendSmtpTestAction(), updateGeneralSettingsAction(), updateSmtpSettingsAction(), defaultSmtpSettings, isSmtpConfigured() (+11 more)
+Cohesion: 0.36
+Nodes (10): POST(), isSmtpConfigured(), normalizeSmtpSettings(), createSalesLead(), createTransport(), getResendConfig(), getStoredSmtpSettings(), notifySalesLeadCreated() (+2 more)
 
 ### Community 30 - "Components Pwa Module"
 Cohesion: 0.10
 Nodes (9): buildQueryString(), MobileAction, mobileIcons, MobileOpsShell(), resolveLargeScreenHref(), resolveMobileTitle(), BeforeInstallPromptEvent, PwaInstallCard() (+1 more)
 
 ### Community 31 - "Components Backoffice Module"
-Cohesion: 0.15
-Nodes (28): AdminAuditPage(), BranchParams, AdminSetupPage(), qaScenarios, AdminStockPage(), closeSessionAction(), feedbackHref(), openSessionAction() (+20 more)
+Cohesion: 0.08
+Nodes (48): AdminAuditPage(), BranchParams, orderRef(), PrintCenterPage(), AdminReportsPage(), buildAreaPoints(), buildPolylinePoints(), buildReportHref() (+40 more)
 
 ### Community 32 - "App Kitchen Module"
-Cohesion: 0.12
-Nodes (15): buildStationGroups(), formatOrderTableLabel(), inferStationByItemName(), inferStationByName(), KitchenPage(), KitchenStation, moveOrder(), normalizeLabel() (+7 more)
+Cohesion: 0.06
+Nodes (35): AdminOrdersPage(), CashierPage(), CashierSessionPage(), buildStationGroups(), formatOrderTableLabel(), inferStationByItemName(), inferStationByName(), KitchenPage() (+27 more)
 
 ### Community 33 - "App M Module"
 Cohesion: 0.20
 Nodes (9): Color Overrides, Component Overrides, Layout Overrides, Page-Specific Components, Page-Specific Rules, Pwa Dashboard Page Overrides, Recommendations, Spacing Overrides (+1 more)
 
 ### Community 34 - "Components Landing Module"
-Cohesion: 0.12
-Nodes (22): LandingContactCard(), getLandingHeaderCopy(), getSectionBorderClass(), getSectionHref(), getSectionShadowClass(), getSectionSurfaceClass(), HeaderMegaCard, HeaderMegaMenu (+14 more)
+Cohesion: 0.08
+Nodes (33): DemoPageRenderer(), LandingContactCard(), getLandingHeaderCopy(), getSectionBorderClass(), getSectionHref(), getSectionShadowClass(), getSectionSurfaceClass(), HeaderMegaCard (+25 more)
 
 ### Community 35 - "Lib App Module"
-Cohesion: 0.16
-Nodes (16): APP_SHELL_API_BUDGET_MS, GET(), getAppShellPayloadWithinBudget(), generateMetadata(), getAppShellPayloadWithBudget(), RootLayout(), sora, spaceGrotesk (+8 more)
+Cohesion: 0.30
+Nodes (9): APP_SHELL_API_BUDGET_MS, GET(), getAppShellPayloadWithinBudget(), getAppShellPayloadWithBudget(), isServiceRoleConfigured(), metadata, MobileOpsLayout(), getAppShellPayload (+1 more)
 
 ### Community 36 - "Lib Server Module"
 Cohesion: 0.25
 Nodes (20): AccountingPage(), AccountingTab, addPurchaseItem(), createExpense(), createPurchase(), createSupplier(), finalizePurchase(), getActiveBusinessId() (+12 more)
 
 ### Community 37 - "App Ops Module"
-Cohesion: 0.09
-Nodes (17): formatClock(), formatCurrency(), getIntlLocale(), movePickupOrderStatus(), OpsPage(), resolvePickupActionLabel(), statusLabel(), stockRiskMeta() (+9 more)
+Cohesion: 0.27
+Nodes (9): AdminSettingsPage(), readString(), sendSmtpTestAction(), updateGeneralSettingsAction(), updateSmtpSettingsAction(), getSmtpSettings(), updateGeneralSettings(), updateSmtpSettings() (+1 more)
 
 ### Community 38 - "Lib Data Module"
-Cohesion: 0.21
-Nodes (21): AdminContentPage(), createSitePageAction(), deleteSitePageAction(), readJsonField(), readLandingContent(), readValue(), resetSitePageAction(), updateLandingContentAction() (+13 more)
+Cohesion: 0.16
+Nodes (26): AdminContentPage(), createSitePageAction(), deleteSitePageAction(), readJsonField(), readLandingContent(), readValue(), resetSitePageAction(), updateLandingContentAction() (+18 more)
 
 ### Community 39 - "Components App Module"
 Cohesion: 0.15
@@ -339,32 +332,32 @@ Cohesion: 0.29
 Nodes (9): QuerySnapshotSeed(), hydrateQuerySnapshots(), persistQuerySnapshot(), readSnapshotStore(), SnapshotEntry, SnapshotStore, toCacheToken(), trimSnapshotStore() (+1 more)
 
 ### Community 41 - "Lib Server Module"
-Cohesion: 0.11
-Nodes (20): listProfileRoleCounts(), listProfiles(), updateUserActivity(), readFeatureOverridesForBusiness(), ActiveBusinessSummary, AppShellBranchSummary, demoBranches, demoBusiness (+12 more)
+Cohesion: 0.07
+Nodes (37): buildQrImage(), buildQrTarget(), buildQrImage(), buildQrTarget(), PrintTableQrPage(), Body, POST(), Body (+29 more)
 
 ### Community 42 - "App Admin Module"
-Cohesion: 0.16
-Nodes (17): AdminSettingsPage(), clearDemoOperationsAction(), createPlanRequestAction(), createSupportTicketAction(), readString(), updateApplicationSettingsAction(), updateGeneralSettingsAction(), updateSessionSettingsAction() (+9 more)
+Cohesion: 0.13
+Nodes (23): assignAuthUserAction(), deleteStaffAction(), feedbackHref(), updateRoleAction(), updateStaffAction(), AdminSettingsPage(), clearDemoOperationsAction(), createPlanRequestAction() (+15 more)
 
 ### Community 43 - "Components Mobile Module"
-Cohesion: 0.14
-Nodes (16): baseHref(), feedbackHref(), MobileTablesPage(), parseFlow(), parseTableFilter(), setTableStatusAction(), statusStyles, TableFilter (+8 more)
+Cohesion: 0.10
+Nodes (23): feedbackHref(), MobileTablesPage(), parseFlow(), parseTableFilter(), setTableStatusAction(), TableFilter, TablesSearchParams, feedbackHref() (+15 more)
 
 ### Community 44 - "App Support Module"
-Cohesion: 0.15
-Nodes (23): SupportAuditPage(), SupportKnowledgePage(), upsertKnowledgeAction(), SupportOnboardingPage(), SupportHomePage(), SupportTeamPage(), enrichSupportPlanRequests(), enrichSupportTickets() (+15 more)
+Cohesion: 0.16
+Nodes (14): SupportAuditPage(), SupportHealthPage(), SupportLoginPage(), SupportOnboardingPage(), SupportHomePage(), SupportPlanRequestsPage(), updatePlanRequestStatusAction(), getSupportAccessByEmail() (+6 more)
 
 ### Community 45 - "App Support Module"
 Cohesion: 0.25
 Nodes (5): formatMoney(), MobileOpsDashboard(), MobileOpsDashboardProps, Order, Product
 
 ### Community 46 - "Components Admin Module"
-Cohesion: 0.13
-Nodes (25): Body, POST(), Body, parseQrConfirmation(), POST(), resolveOrderCreateFailureMessage(), LegacyQrPage(), BusinessQrPage() (+17 more)
+Cohesion: 0.15
+Nodes (20): Body, parseQrConfirmation(), POST(), resolveOrderCreateFailureMessage(), BusinessQrPage(), QrSearchParams, getApplicationSettings(), getBusinessContextBySlug() (+12 more)
 
 ### Community 47 - "Lib Site Module"
-Cohesion: 0.13
-Nodes (21): buildSectionsFromLegacy(), defaultLandingContent, emptyLandingContent, LandingFaqItem, LandingFeatureItem, LandingPackage, LandingProcessItem, LandingSectionBase (+13 more)
+Cohesion: 0.09
+Nodes (24): LandingVisualEditor(), SectionType, buildSectionsFromLegacy(), createLandingSectionTemplate(), emptyLandingContent, LandingContent, LandingFaqItem, LandingFeatureItem (+16 more)
 
 ### Community 48 - "Tsconfig Module"
 Cohesion: 0.10
@@ -379,12 +372,12 @@ Cohesion: 0.36
 Nodes (8): normalizeEnterpriseMarketImportPayload(), normalizeMarketImportBoolean(), normalizeMarketImportNumber(), normalizeMarketImportText(), normalizeMarketProductDepartment(), normalizeMarketProductKind(), normalizeMarketProductUnit(), readEnterpriseMarketCatalogKeys()
 
 ### Community 51 - "Components App Module"
-Cohesion: 0.25
-Nodes (5): AdminStockWorkbench(), BulkAdjustResult, SaveStatus, BusinessType, StockMovement
+Cohesion: 0.18
+Nodes (7): KitchenStation, MobileKitchenUi(), MobileKitchenUiProps, Order, OrderItem, stationLabel(), StationProgress
 
 ### Community 52 - "Components Cashier Module"
-Cohesion: 0.15
-Nodes (9): publicRoutes, sitemap(), SeoLandingCluster, SeoLandingLocale, SeoLandingMarket, SeoLandingPage, seoLandingPages, SeoLandingSchemaType (+1 more)
+Cohesion: 0.29
+Nodes (10): createFerrariProfile(), createStandardProfile(), getRouteBucket(), getWebPerfProfile(), isFerrariEnabled(), normalizePathname(), readFlag(), WebPerfProfile (+2 more)
 
 ### Community 53 - "Lib Data Module"
 Cohesion: 0.24
@@ -395,20 +388,20 @@ Cohesion: 0.20
 Nodes (12): AdminFinancePage(), buildAreaPoints(), buildFinanceHref(), buildPolylinePoints(), describeArc(), FilterMode, FinanceView, methodLabel() (+4 more)
 
 ### Community 55 - "App Cashier Module"
-Cohesion: 0.20
-Nodes (12): AdminReportsPage(), buildAreaPoints(), buildPolylinePoints(), buildReportHref(), dayLabel(), describeArc(), FilterMode, parseDateInput() (+4 more)
+Cohesion: 0.27
+Nodes (6): MobileServiceRequestsPage(), parseStatusFilter(), RequestStatusFilter, resolveMobileRequestAction(), statusHref(), SwipeableActionCard()
 
 ### Community 56 - "App Studio Module"
-Cohesion: 0.15
-Nodes (11): robots(), metadata, metadata, LogoutButton(), links, StudioNav(), links, SupportNav() (+3 more)
+Cohesion: 0.16
+Nodes (9): metadata, metadata, LogoutButton(), links, StudioNav(), links, SupportNav(), protectedRobots (+1 more)
 
 ### Community 57 - "App Support Module"
-Cohesion: 0.18
-Nodes (18): addPlatformUserAction(), addSupportUserAction(), togglePlatformUserAction(), toggleSupportUserAction(), updatePlatformRoleAction(), updateSupportRoleAction(), createSupportIncident(), getCurrentSupportActor() (+10 more)
+Cohesion: 0.20
+Nodes (17): addPlatformUserAction(), addSupportUserAction(), SupportAccessPage(), togglePlatformUserAction(), toggleSupportUserAction(), updatePlatformRoleAction(), updateSupportRoleAction(), createSupportIncidentUpdate() (+9 more)
 
 ### Community 58 - "App Support Module"
-Cohesion: 0.33
-Nodes (9): asNonEmptyString(), isObjectRecord(), isOpsCommandType(), OPS_COMMAND_TYPES, parseOpsCommand(), parseSyncPushRequest(), toIsoString(), OpsCommand (+1 more)
+Cohesion: 0.29
+Nodes (9): addStudioUserAction(), StudioAccessPage(), toggleStudioUserAction(), updateStudioRoleAction(), listStudioAccessUsers(), setStudioAccessUserRole(), setStudioAccessUserStatus(), upsertStudioAccessUser() (+1 more)
 
 ### Community 59 - "Lib Customer Module"
 Cohesion: 0.08
@@ -423,28 +416,28 @@ Cohesion: 0.12
 Nodes (16): Additional Forbidden Patterns, Anti-Patterns (Do NOT Use), Buttons, Cards, Color Palette, Component Specs, Design System Master File, Global Rules (+8 more)
 
 ### Community 62 - "App Blog Module"
-Cohesion: 0.13
-Nodes (29): BlogIndexPage(), formatDate(), generateMetadata(), readingTime(), BlogPostPage(), formatDate(), generateMetadata(), readingTime() (+21 more)
+Cohesion: 0.11
+Nodes (35): generateMetadata(), BlogPostPage(), formatDate(), generateMetadata(), readingTime(), DemoPage(), generateMetadata(), generateMetadata() (+27 more)
 
 ### Community 63 - "Lib Seo Module"
-Cohesion: 0.11
-Nodes (33): AdminBusinessesPage(), AdminProductsPage(), AdminRolesPage(), AdminTablesPage(), closePaidOrderAction(), completeMobilePaymentAction(), feedbackHref(), MobileCashierPage() (+25 more)
+Cohesion: 0.09
+Nodes (39): AdminBusinessesPage(), AdminProductsPage(), MobileCashierPage(), MobileCashierSearchParams, totals(), assignMobileCourierAction(), completeMobileDeliveryAction(), createMobileCourierAction() (+31 more)
 
 ### Community 64 - "Public Sw Ops Module"
 Cohesion: 0.15
 Nodes (8): CURRENT_OPS_CACHES, networkFirstApi(), networkFirstNavigation(), OPS_API_PATHS, OPS_NAV_PREFIXES, putInCache(), STATIC_ASSET_PATHS, STATIC_ASSET_PREFIXES
 
 ### Community 65 - "Lib Sync Module"
-Cohesion: 0.11
-Nodes (17): MobileServiceRequestsPage(), parseStatusFilter(), RequestStatusFilter, resolveMobileRequestAction(), statusHref(), parseStatusFilter(), RequestStatusFilter, resolveAction() (+9 more)
+Cohesion: 0.08
+Nodes (40): AdminSetupPage(), closeSessionAction(), feedbackHref(), openSessionAction(), resolveCashierSessionReturnPath(), assignCourierAction(), cardTone(), completeDeliveryAction() (+32 more)
 
 ### Community 66 - "Community 66"
-Cohesion: 0.23
-Nodes (12): MenuSnapshot, buildQrImage(), buildQrTarget(), buildQrImage(), buildQrTarget(), PrintTableQrPage(), getAppBaseUrl(), normalizeBaseUrl() (+4 more)
+Cohesion: 0.31
+Nodes (9): formatMoney(), MobileTablesUi(), MobileTablesUiProps, Order, orderRef(), orderStatusLabel(), Table, tableStatusLabel() (+1 more)
 
 ### Community 67 - "Components Sidebar Module"
-Cohesion: 0.18
-Nodes (11): ensureOrder(), NavItem, navItems, SidebarCustomizer(), SidebarCustomizerProps, TargetRole, FeatureKey, marketOperationLinks (+3 more)
+Cohesion: 0.16
+Nodes (12): ensureOrder(), NavItem, navItems, SidebarCustomizer(), SidebarCustomizerProps, TargetRole, FeatureKey, marketOperationLinks (+4 more)
 
 ### Community 68 - "Package Dependencies React Module"
 Cohesion: 0.13
@@ -459,32 +452,32 @@ Cohesion: 0.29
 Nodes (13): applySessionScope(), checkSecret(), GET(), isSessionDueToday(), LocalStamp, misconfigured(), OPEN_ORDER_STATUSES, OpenSessionRow (+5 more)
 
 ### Community 72 - "Lib Data Module"
-Cohesion: 0.23
-Nodes (15): aggregateFinancePayments(), buildOpsSnapshotMetrics(), createEmptyOpsSnapshotAggregate(), getCachedOpsDataClient, getCachedOpsPageRow(), getDashboardData(), getOpsDataClient(), getOpsMetricsSnapshot() (+7 more)
+Cohesion: 0.19
+Nodes (17): DeferredSetupPrompt(), aggregateFinancePayments(), buildOpsSnapshotMetrics(), createEmptyOpsSnapshotAggregate(), getCachedOpsDataClient, getCachedOpsPageRow(), getCachedSetupChecklistSummary, getDashboardData() (+9 more)
 
 ### Community 73 - "Community 73"
-Cohesion: 0.19
-Nodes (8): CashierPaymentPanel(), formatMoney(), MobileCashierUi(), MobileCashierUiProps, orderRef(), orderSourceLabel(), Order, OrderItem
+Cohesion: 0.20
+Nodes (7): CashierPaymentPanel(), formatMoney(), MobileCashierUi(), MobileCashierUiProps, orderRef(), orderSourceLabel(), OrderItem
 
 ### Community 74 - "App M Module"
-Cohesion: 0.11
-Nodes (22): isOpsDashboardPath(), LiveOpsBridge(), LiveOpsBridgeProps, shouldBroadcastRealtimeEvent(), toFiniteNumber(), LiveRouteRefresh(), LiveRouteRefreshProps, addLivePosEventListener() (+14 more)
+Cohesion: 0.23
+Nodes (8): isOpsDashboardPath(), LiveOpsBridgeProps, shouldBroadcastRealtimeEvent(), toFiniteNumber(), addLivePosEventListener(), emitLivePosEvent(), LivePosEvent, LivePosEventType
 
 ### Community 75 - "Scripts Staging Rollout Module"
 Cohesion: 0.55
 Nodes (10): assertFlag(), fail(), info(), isLocalHost(), normalizeUrl(), requireValue(), runCashierWave(), runNpmScript() (+2 more)
 
 ### Community 76 - "Community 76"
-Cohesion: 0.17
-Nodes (12): getCurrentUserWithLoginBudget(), LoginPage(), LanguageSwitcher(), StaffLoginForm(), StaffLoginFormProps, AppLocale, getLocaleOptions(), landingTranslationMapEn (+4 more)
+Cohesion: 0.12
+Nodes (15): createTenantAction(), feedbackHref(), SupportTenantCreatePage(), buildDeterministicSlug(), createSupportTenantProvision(), generateTemporaryPassword(), isBranchSlugConflictError(), normalizeBranchSlug() (+7 more)
 
 ### Community 77 - "Community 77"
-Cohesion: 0.24
-Nodes (13): assignCourierAction(), cardTone(), completeDeliveryAction(), createCourierAction(), deleteCourierAction(), DeliveryPage(), DeliveryStage, feedbackHref() (+5 more)
+Cohesion: 0.33
+Nodes (7): OptimisticTableStatusBadge(), resolveCommittedStatus(), statusStyles, TableReservationToggleQueueButton(), tableStatusLabel(), TableStatusQueueButton(), enqueuePosCommand()
 
 ### Community 78 - "Components Customer Module"
-Cohesion: 0.27
-Nodes (9): AdminMediaPage(), createMediaAssetAction(), deleteMediaAssetAction(), deleteMediaAsset(), inferTitleFromFilename(), listMediaAssets(), sanitizeMediaFilename(), uploadMediaFile() (+1 more)
+Cohesion: 0.32
+Nodes (6): SupportBillingPage(), SupportFeatureFlagsPage(), listSupportBillingSummaries(), listSupportFeatureFlagOverrides(), FEATURE_META, getPlanLabel()
 
 ### Community 79 - "Package Devdependencies Types Module"
 Cohesion: 0.18
@@ -499,28 +492,24 @@ Cohesion: 0.33
 Nodes (13): asString(), LockAction, LockRequestBody, POST(), acquireBranchLock(), getBranchLockState(), isActiveAndNotExpired(), isMissingTableError() (+5 more)
 
 ### Community 82 - "Community 82"
-Cohesion: 0.23
-Nodes (10): orderTone(), tableStatusLabel(), tableStatusTone(), LiveHistoryResponse, ModalTab, orderRef(), TableManagementModal(), TableOrderHistoryItem (+2 more)
+Cohesion: 0.60
+Nodes (4): SupportKnowledgePage(), upsertKnowledgeAction(), listSupportKnowledgeArticles(), upsertSupportKnowledgeArticle()
 
 ### Community 83 - "Lib Plan Module"
 Cohesion: 0.33
 Nodes (5): Build and Validation Commands, POS & QR Ordering - Development Guidelines, Project Structure & Guidelines, PWA Validation Scripts, Skill Routing
 
 ### Community 84 - "App Studio Module"
-Cohesion: 0.10
-Nodes (32): hasStudioWriteAccess(), addStudioUserAction(), StudioAccessPage(), toggleStudioUserAction(), updateStudioRoleAction(), AdminBlogPage(), deleteBlogPostAction(), saveBlogPostAction() (+24 more)
-
-### Community 85 - "Lib Pos Module"
-Cohesion: 0.23
-Nodes (10): Body, POST(), normalizeBranchId(), createSupportPlanRequest(), createSupportTicket(), getAppShellSnapshot, getRequestAppContext, AppShellContext (+2 more)
+Cohesion: 0.15
+Nodes (21): hasStudioWriteAccess(), POST(), resolveMediaKind(), StudioLoginPage(), AdminMediaPage(), createMediaAssetAction(), deleteMediaAssetAction(), createMediaAsset() (+13 more)
 
 ### Community 86 - "Scripts Check Write Module"
 Cohesion: 0.28
 Nodes (8): auditPatterns, guardPatterns, noAuditRequiredRoutes, publicWriteRoutes, run(), toRel(), walkRoutes(), writeMethods
 
 ### Community 87 - "Community 87"
-Cohesion: 0.20
-Nodes (9): APP_RUNTIME_PREFIXES, MOBILE_ROUTE_REDIRECTS, PosCommandQueueRuntime(), QueryProvider(), ApplicationSettings, AppShellPayload, AppRole, StaffAccessScope (+1 more)
+Cohesion: 0.18
+Nodes (10): APP_RUNTIME_PREFIXES, AppRuntimeWrapper(), MOBILE_ROUTE_REDIRECTS, PosCommandQueueRuntime(), QueryProvider(), ApplicationSettings, AppShellPayload, EffectiveCapabilities (+2 more)
 
 ### Community 88 - "Scripts Ops Smoke Module"
 Cohesion: 0.32
@@ -535,12 +524,8 @@ Cohesion: 0.40
 Nodes (4): [0.1.0.0] - 2026-06-23, Added, Changelog, Removed
 
 ### Community 91 - "App Sitemap Module"
-Cohesion: 0.24
-Nodes (10): buildEffectiveCapabilities(), buildPlanCapabilities(), EffectiveCapabilities, FeatureOverrideMap, getRequiredPlan(), isFeatureAllowedForBranchProfile(), PLAN_LABELS, PLAN_ORDER (+2 more)
-
-### Community 92 - "Community 92"
-Cohesion: 0.18
-Nodes (5): LandingVisualEditor(), SectionType, createLandingSectionTemplate(), LandingContent, LandingSection
+Cohesion: 0.27
+Nodes (9): buildEffectiveCapabilities(), buildPlanCapabilities(), FeatureOverrideMap, getRequiredPlan(), isFeatureAllowedForBranchProfile(), PLAN_LABELS, PLAN_ORDER, PROFILE_FEATURE_ALLOWLIST (+1 more)
 
 ### Community 93 - "Scripts Check Tenant Module"
 Cohesion: 0.47
@@ -555,8 +540,8 @@ Cohesion: 0.60
 Nodes (5): normalizeRetryEmail(), normalizeRetryPassword(), POST(), toFriendlyAuthError(), withTimeout()
 
 ### Community 96 - "Community 96"
-Cohesion: 0.29
-Nodes (10): createBranchAction(), deleteBranchAction(), feedbackHref(), normalizeBranchProfile(), toggleBranchAction(), updateBranchAction(), resetBusinessOperationalDataAction(), hasExactRoleAccess() (+2 more)
+Cohesion: 0.40
+Nodes (6): createBranchAction(), deleteBranchAction(), feedbackHref(), normalizeBranchProfile(), toggleBranchAction(), updateBranchAction()
 
 ### Community 97 - "Scripts Mobile Delivery Module"
 Cohesion: 0.40
@@ -573,10 +558,6 @@ Nodes (4): adminOrders, checks, failed, mobileTables
 ### Community 100 - "Scripts Phase6 Observability Module"
 Cohesion: 0.50
 Nodes (4): fail(), requiredFiles, requiredPatterns, run()
-
-### Community 101 - "Community 101"
-Cohesion: 0.36
-Nodes (8): readBoolean(), readDemoContent(), readJsonField(), readValue(), updateDemoPageContentAction(), DemoVisualEditor(), updateDemoPageContent(), defaultDemoPageContent
 
 ### Community 102 - "Package Module"
 Cohesion: 0.50
@@ -618,41 +599,25 @@ Nodes (3): checks, failed, files
 Cohesion: 0.52
 Nodes (6): addPendingCommand(), deletePendingCommand(), getDB(), getPendingCommands(), PendingCommand, syncPendingCommands()
 
-### Community 136 - "Community 136"
-Cohesion: 0.70
-Nodes (3): GET(), getActiveBranchId, listBranches()
-
-### Community 137 - "Community 137"
-Cohesion: 0.83
-Nodes (3): createTenantAction(), feedbackHref(), createSupportTenantProvision()
-
-### Community 140 - "Community 140"
-Cohesion: 0.67
-Nodes (3): createZoneAction(), createTableZone(), createTableZoneImpl()
-
-### Community 141 - "Community 141"
-Cohesion: 0.67
-Nodes (3): DeferredSetupPrompt(), getCachedSetupChecklistSummary, getSetupChecklistSummary()
-
 ## Knowledge Gaps
-- **451 isolated node(s):** `eslintConfig`, `RateLimitRule`, `RateLimitStore`, `RateLimitMeta`, `RATE_LIMIT_RULES` (+446 more)
+- **458 isolated node(s):** `eslintConfig`, `RateLimitRule`, `RateLimitStore`, `RateLimitMeta`, `RATE_LIMIT_RULES` (+453 more)
   These have ≤1 connection - possible missing edges or undocumented components.
 - **14 thin communities (<3 nodes) omitted from report** — run `graphify query` to explore isolated nodes.
 
 ## Suggested Questions
 _Questions this graph is uniquely positioned to answer:_
 
-- **Why does `requireRole()` connect `Product Management Admin` to `Core Data & Demo Seeds`, `Admin Orders & Tables API Router`, `Mobile Tables & Ordering UI`, `Community 140`, `App Admin Module`, `App Admin Module`, `Lib Data Module`, `App Cashier Module`, `App Delivery Module`, `Components Backoffice Module`, `App Kitchen Module`, `Lib Server Module`, `App Ops Module`, `App Admin Module`, `Components Mobile Module`, `App Admin Module`, `App Cashier Module`, `Lib Seo Module`, `Lib Sync Module`, `Community 66`, `Community 77`, `App Studio Module`, `Community 96`?**
-  _High betweenness centrality (0.020) - this node is a cross-community bridge._
-- **Why does `getSupabaseServerClient()` connect `App Support Module` to `Product Management Admin`, `Order State & Actions`, `Alerts & Performance Metrics APIs`, `Community 136`, `Community 137`, `Admin Orders & Tables API Router`, `Command & Sync APIs`, `Mobile Kitchen Screen`, `Community 141`, `Community 140`, `Lib Server Module`, `Lib Server Module`, `App Admin Module`, `Lib Data Module`, `App Cashier Module`, `App Layout Module`, `App Support Module`, `Lib I18n Module`, `App Delivery Module`, `App Studio Module`, `Components Backoffice Module`, `Lib Server Module`, `Lib Data Module`, `Lib Server Module`, `App Admin Module`, `Components Mobile Module`, `Components Admin Module`, `Lib Data Module`, `App Support Module`, `Lib Data Module`, `App Blog Module`, `Lib Sync Module`, `Community 66`, `App Api Module`, `Components Customer Module`, `Components Landing Module`, `App Studio Module`, `Lib Pos Module`, `Community 101`?**
-  _High betweenness centrality (0.017) - this node is a cross-community bridge._
-- **Why does `getSeoSettings()` connect `App Blog Module` to `Lib I18n Module`, `Lib App Module`, `App Studio Module`, `App Support Module`?**
-  _High betweenness centrality (0.011) - this node is a cross-community bridge._
+- **Why does `requireRole()` connect `Lib Sync Module` to `App Kitchen Module`, `Product Management Admin`, `Lib Server Module`, `Lib Server Module`, `App Admin Module`, `Components Mobile Module`, `Admin Orders & Tables API Router`, `App Admin Module`, `App Admin Module`, `Lib Data Module`, `App Cashier Module`, `App Admin Module`, `App Cashier Module`, `Lib Seo Module`, `Components Backoffice Module`?**
+  _High betweenness centrality (0.028) - this node is a cross-community bridge._
+- **Why does `getSupabaseServerClient()` connect `Lib Server Module` to `Product Management Admin`, `Order State & Actions`, `Alerts & Performance Metrics APIs`, `Command & Sync APIs`, `Mobile Tables & Ordering UI`, `Studio Visual Editor & Demo Page`, `Lib Server Module`, `App Admin Module`, `Lib Data Module`, `App Admin Module`, `App Layout Module`, `App Support Module`, `Lib I18n Module`, `App Delivery Module`, `App Studio Module`, `Components Backoffice Module`, `Lib Server Module`, `App Ops Module`, `Lib Data Module`, `Lib Server Module`, `App Admin Module`, `Components Mobile Module`, `App Support Module`, `Components Admin Module`, `Lib Data Module`, `App Support Module`, `App Support Module`, `Lib Data Module`, `App Blog Module`, `Lib Sync Module`, `App Api Module`, `Lib Data Module`, `Community 76`, `Components Customer Module`, `Components Landing Module`, `Community 82`, `App Studio Module`?**
+  _High betweenness centrality (0.021) - this node is a cross-community bridge._
+- **Why does `requireSupportAccess()` connect `Mobile Tables & Ordering UI` to `Admin Orders & Tables API Router`, `App Support Module`, `Community 76`, `Components Customer Module`, `Lib Server Module`, `Community 82`, `App Studio Module`, `App Support Module`, `App Support Module`?**
+  _High betweenness centrality (0.012) - this node is a cross-community bridge._
 - **What connects `eslintConfig`, `RateLimitRule`, `RateLimitStore` to the rest of the system?**
-  _451 weakly-connected nodes found - possible documentation gaps or missing edges._
+  _458 weakly-connected nodes found - possible documentation gaps or missing edges._
+- **Should `Core Data & Demo Seeds` be split into smaller, more focused modules?**
+  _Cohesion score 0.14761904761904762 - nodes in this community are weakly interconnected._
 - **Should `Product Management Admin` be split into smaller, more focused modules?**
-  _Cohesion score 0.05881188118811881 - nodes in this community are weakly interconnected._
+  _Cohesion score 0.06128702757916241 - nodes in this community are weakly interconnected._
 - **Should `POS Command Queue Engine` be split into smaller, more focused modules?**
-  _Cohesion score 0.05669710806697108 - nodes in this community are weakly interconnected._
-- **Should `Order State & Actions` be split into smaller, more focused modules?**
-  _Cohesion score 0.10909090909090909 - nodes in this community are weakly interconnected._
+  _Cohesion score 0.12 - nodes in this community are weakly interconnected._

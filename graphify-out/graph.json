@@ -1474,20 +1474,20 @@
       "norm_label": "mobile-cashier-page-check.mjs"
     },
     {
-      "label": "mobileCashier",
+      "label": "pageContent",
       "file_type": "code",
       "source_file": "scripts/mobile-cashier-page-check.mjs",
       "source_location": "L3",
       "_origin": "ast",
-      "id": "scripts_mobile_cashier_page_check_mobilecashier",
+      "id": "scripts_mobile_cashier_page_check_pagecontent",
       "community": 103,
-      "norm_label": "mobilecashier"
+      "norm_label": "pagecontent"
     },
     {
       "label": "checks",
       "file_type": "code",
       "source_file": "scripts/mobile-cashier-page-check.mjs",
-      "source_location": "L5",
+      "source_location": "L9",
       "_origin": "ast",
       "id": "scripts_mobile_cashier_page_check_checks",
       "community": 103,
@@ -1497,7 +1497,7 @@
       "label": "failed",
       "file_type": "code",
       "source_file": "scripts/mobile-cashier-page-check.mjs",
-      "source_location": "L28",
+      "source_location": "L32",
       "_origin": "ast",
       "id": "scripts_mobile_cashier_page_check_failed",
       "community": 103,
@@ -1564,20 +1564,20 @@
       "norm_label": "mobile-kitchen-page-check.mjs"
     },
     {
-      "label": "mobileKitchen",
+      "label": "pageContent",
       "file_type": "code",
       "source_file": "scripts/mobile-kitchen-page-check.mjs",
       "source_location": "L3",
       "_origin": "ast",
-      "id": "scripts_mobile_kitchen_page_check_mobilekitchen",
+      "id": "scripts_mobile_kitchen_page_check_pagecontent",
       "community": 104,
-      "norm_label": "mobilekitchen"
+      "norm_label": "pagecontent"
     },
     {
       "label": "checks",
       "file_type": "code",
       "source_file": "scripts/mobile-kitchen-page-check.mjs",
-      "source_location": "L5",
+      "source_location": "L9",
       "_origin": "ast",
       "id": "scripts_mobile_kitchen_page_check_checks",
       "community": 104,
@@ -1587,7 +1587,7 @@
       "label": "failed",
       "file_type": "code",
       "source_file": "scripts/mobile-kitchen-page-check.mjs",
-      "source_location": "L28",
+      "source_location": "L32",
       "_origin": "ast",
       "id": "scripts_mobile_kitchen_page_check_failed",
       "community": 104,
@@ -1694,20 +1694,20 @@
       "norm_label": "mobile-tables-order-flow-check.mjs"
     },
     {
-      "label": "mobileTables",
+      "label": "pageContent",
       "file_type": "code",
       "source_file": "scripts/mobile-tables-order-flow-check.mjs",
       "source_location": "L3",
       "_origin": "ast",
-      "id": "scripts_mobile_tables_order_flow_check_mobiletables",
+      "id": "scripts_mobile_tables_order_flow_check_pagecontent",
       "community": 99,
-      "norm_label": "mobiletables"
+      "norm_label": "pagecontent"
     },
     {
       "label": "adminOrders",
       "file_type": "code",
       "source_file": "scripts/mobile-tables-order-flow-check.mjs",
-      "source_location": "L4",
+      "source_location": "L8",
       "_origin": "ast",
       "id": "scripts_mobile_tables_order_flow_check_adminorders",
       "community": 99,
@@ -1717,7 +1717,7 @@
       "label": "checks",
       "file_type": "code",
       "source_file": "scripts/mobile-tables-order-flow-check.mjs",
-      "source_location": "L6",
+      "source_location": "L10",
       "_origin": "ast",
       "id": "scripts_mobile_tables_order_flow_check_checks",
       "community": 99,
@@ -1727,7 +1727,7 @@
       "label": "failed",
       "file_type": "code",
       "source_file": "scripts/mobile-tables-order-flow-check.mjs",
-      "source_location": "L21",
+      "source_location": "L25",
       "_origin": "ast",
       "id": "scripts_mobile_tables_order_flow_check_failed",
       "community": 99,
@@ -25268,7 +25268,7 @@
       "relation": "contains",
       "confidence": "EXTRACTED",
       "source_file": "scripts/mobile-cashier-page-check.mjs",
-      "source_location": "L5",
+      "source_location": "L9",
       "weight": 1.0,
       "source": "scripts_mobile_cashier_page_check",
       "target": "scripts_mobile_cashier_page_check_checks",
@@ -25278,7 +25278,7 @@
       "relation": "contains",
       "confidence": "EXTRACTED",
       "source_file": "scripts/mobile-cashier-page-check.mjs",
-      "source_location": "L28",
+      "source_location": "L32",
       "weight": 1.0,
       "source": "scripts_mobile_cashier_page_check",
       "target": "scripts_mobile_cashier_page_check_failed",
@@ -25291,7 +25291,7 @@
       "source_location": "L3",
       "weight": 1.0,
       "source": "scripts_mobile_cashier_page_check",
-      "target": "scripts_mobile_cashier_page_check_mobilecashier",
+      "target": "scripts_mobile_cashier_page_check_pagecontent",
       "confidence_score": 1.0
     },
     {
@@ -25338,7 +25338,7 @@
       "relation": "contains",
       "confidence": "EXTRACTED",
       "source_file": "scripts/mobile-kitchen-page-check.mjs",
-      "source_location": "L5",
+      "source_location": "L9",
       "weight": 1.0,
       "source": "scripts_mobile_kitchen_page_check",
       "target": "scripts_mobile_kitchen_page_check_checks",
@@ -25348,7 +25348,7 @@
       "relation": "contains",
       "confidence": "EXTRACTED",
       "source_file": "scripts/mobile-kitchen-page-check.mjs",
-      "source_location": "L28",
+      "source_location": "L32",
       "weight": 1.0,
       "source": "scripts_mobile_kitchen_page_check",
       "target": "scripts_mobile_kitchen_page_check_failed",
@@ -25361,7 +25361,7 @@
       "source_location": "L3",
       "weight": 1.0,
       "source": "scripts_mobile_kitchen_page_check",
-      "target": "scripts_mobile_kitchen_page_check_mobilekitchen",
+      "target": "scripts_mobile_kitchen_page_check_pagecontent",
       "confidence_score": 1.0
     },
     {
@@ -25438,7 +25438,7 @@
       "relation": "contains",
       "confidence": "EXTRACTED",
       "source_file": "scripts/mobile-tables-order-flow-check.mjs",
-      "source_location": "L4",
+      "source_location": "L8",
       "weight": 1.0,
       "source": "scripts_mobile_tables_order_flow_check",
       "target": "scripts_mobile_tables_order_flow_check_adminorders",
@@ -25448,7 +25448,7 @@
       "relation": "contains",
       "confidence": "EXTRACTED",
       "source_file": "scripts/mobile-tables-order-flow-check.mjs",
-      "source_location": "L6",
+      "source_location": "L10",
       "weight": 1.0,
       "source": "scripts_mobile_tables_order_flow_check",
       "target": "scripts_mobile_tables_order_flow_check_checks",
@@ -25458,7 +25458,7 @@
       "relation": "contains",
       "confidence": "EXTRACTED",
       "source_file": "scripts/mobile-tables-order-flow-check.mjs",
-      "source_location": "L21",
+      "source_location": "L25",
       "weight": 1.0,
       "source": "scripts_mobile_tables_order_flow_check",
       "target": "scripts_mobile_tables_order_flow_check_failed",
@@ -25471,7 +25471,7 @@
       "source_location": "L3",
       "weight": 1.0,
       "source": "scripts_mobile_tables_order_flow_check",
-      "target": "scripts_mobile_tables_order_flow_check_mobiletables",
+      "target": "scripts_mobile_tables_order_flow_check_pagecontent",
       "confidence_score": 1.0
     },
     {
@@ -93780,5 +93780,5 @@
     }
   ],
   "hyperedges": [],
-  "built_at_commit": "52cd1cc72dcafa00f29933bf94989d12bbe40089"
+  "built_at_commit": "1fe1e2e6f8cc9e452cfb19d0ec6b4fb2809b42c7"
 }

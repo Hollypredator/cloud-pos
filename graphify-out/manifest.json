@@ -60,9 +60,9 @@
     "semantic_hash": "db048b5a813a40eb42a03c91f662df43"
   },
   "scripts/mobile-cashier-page-check.mjs": {
-    "mtime": 1780914169.694765,
-    "ast_hash": "af28c9cc388f7e72e3a76cfe6a76d92f",
-    "semantic_hash": "af28c9cc388f7e72e3a76cfe6a76d92f"
+    "mtime": 1784307190.6505141,
+    "ast_hash": "9f4bb268c608668153a144b2580d5e8d",
+    "semantic_hash": ""
   },
   "scripts/mobile-delivery-service-page-check.mjs": {
     "mtime": 1781219297.2709465,
@@ -70,9 +70,9 @@
     "semantic_hash": "907cdd2b11b7d95bf44dd7808427fe97"
   },
   "scripts/mobile-kitchen-page-check.mjs": {
-    "mtime": 1781462475.7613497,
-    "ast_hash": "9f7fcc54635e8f4cbe06eada3b1fdf84",
-    "semantic_hash": "9f7fcc54635e8f4cbe06eada3b1fdf84"
+    "mtime": 1784307195.1028533,
+    "ast_hash": "7ef6323a3a7dffffbc9db001b99d6467",
+    "semantic_hash": ""
   },
   "scripts/mobile-pwa-install-check.mjs": {
     "mtime": 1782239246.0265772,
@@ -85,9 +85,9 @@
     "semantic_hash": "daa50ff801c2c173fe4daae0f25f7ba2"
   },
   "scripts/mobile-tables-order-flow-check.mjs": {
-    "mtime": 1782232308.2866874,
-    "ast_hash": "111320beef441cb337e090420a29867e",
-    "semantic_hash": "111320beef441cb337e090420a29867e"
+    "mtime": 1784307199.538901,
+    "ast_hash": "f9f20eca206e2843448c1fa3998bfb0a",
+    "semantic_hash": ""
   },
   "scripts/ops-smoke-check.mjs": {
     "mtime": 1781462273.1712635,
@@ -1030,8 +1030,8 @@
     "semantic_hash": "1f13d4777e2d47273121b38b9bfa8154"
   },
   "src/components/mobile-ops-shell.tsx": {
-    "mtime": 1784301914.4416282,
-    "ast_hash": "a141b5ccd906507454586b84665ef757",
+    "mtime": 1784307283.5674567,
+    "ast_hash": "7a14d268988bf882687ad491cb94ec92",
     "semantic_hash": ""
   },
   "src/components/mobile-ops-ui.tsx": {
@@ -2000,8 +2000,8 @@
     "semantic_hash": ""
   },
   "src/components/mobile-cashier-ui.tsx": {
-    "mtime": 1784304726.2958953,
-    "ast_hash": "2e99d2d159bcd465d12f89c8194f6ca2",
+    "mtime": 1784307214.9787316,
+    "ast_hash": "ef5068e22aef59f3b5a77e9f49f930a4",
     "semantic_hash": ""
   },
   "src/lib/offline-sync.ts": {
@@ -2010,13 +2010,13 @@
     "semantic_hash": ""
   },
   "src/components/mobile-kitchen-ui.tsx": {
-    "mtime": 1784304918.7017944,
-    "ast_hash": "d0b594fdf764d87054726c7d14ef82ff",
+    "mtime": 1784307223.0450494,
+    "ast_hash": "9211d7e6a9ddbfeb94c86c6ffd337e3a",
     "semantic_hash": ""
   },
   "src/components/mobile-tables-ui.tsx": {
-    "mtime": 1784304839.1470945,
-    "ast_hash": "a517d850dd88460c32a6754da1b5018c",
+    "mtime": 1784307230.6753333,
+    "ast_hash": "99d6c162e08acebe34edd00abd47d08f",
     "semantic_hash": ""
   },
   "src/lib/qr-security.ts": {

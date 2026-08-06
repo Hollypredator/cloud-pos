@@ -1,7 +1,7 @@
 # Graph Report - POS SİSTEM  (2026-07-17)
 
 ## Corpus Check
-- 391 files · ~314,741 words
+- 391 files · ~314,843 words
 - Verdict: corpus is large enough that graph structure adds value.
 
 ## Summary
@@ -10,7 +10,7 @@
 - Token cost: 0 input · 0 output
 
 ## Graph Freshness
-- Built from commit: `52cd1cc7`
+- Built from commit: `1fe1e2e6`
 - Run `git rev-parse HEAD` and compare to check if the graph is stale.
 - Run `graphify update .` after code changes (no API cost).
 
@@ -553,7 +553,7 @@ Nodes (4): appleIconExists, checks, failed, files
 
 ### Community 99 - "Scripts Mobile Tables Module"
 Cohesion: 0.40
-Nodes (4): adminOrders, checks, failed, mobileTables
+Nodes (4): adminOrders, checks, failed, pageContent
 
 ### Community 100 - "Scripts Phase6 Observability Module"
 Cohesion: 0.50
@@ -565,11 +565,11 @@ Nodes (3): name, private, version
 
 ### Community 103 - "Scripts Mobile Cashier Module"
 Cohesion: 0.50
-Nodes (3): checks, failed, mobileCashier
+Nodes (3): checks, failed, pageContent
 
 ### Community 104 - "Scripts Mobile Kitchen Module"
 Cohesion: 0.50
-Nodes (3): checks, failed, mobileKitchen
+Nodes (3): checks, failed, pageContent
 
 ### Community 105 - "Scripts Mobile Pwa Module"
 Cohesion: 0.50
