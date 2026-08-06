@@ -47,3 +47,10 @@ next-env.d.ts
 # local supabase runtime metadata
 /supabase/.temp/
 .gstack/
+
+# MCP sunucu yapilandirmalari — API anahtari icerir, asla commit edilmez
+.mcp.json
+.vscode/mcp.json
+
+# Makineye ozel Claude Code ayarlari (izin listesi, yerel yollar)
+.claude/settings.local.json
