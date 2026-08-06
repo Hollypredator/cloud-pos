@@ -69,7 +69,7 @@ export default async function SupportIncidentsPage() {
               <div>
                 <p className="text-xs uppercase tracking-[0.24em] text-slate-500">{incident.severity}</p>
                 <h2 className="mt-2 text-xl font-semibold text-slate-900">
-                  <Link href={`/support/incidents/${incident.id}`} className="hover:text-[#ff6a3d]">
+                  <Link href={`/support/incidents/${incident.id}`} className="hover:text-[#dc2626]">
                     {incident.title}
                   </Link>
                 </h2>

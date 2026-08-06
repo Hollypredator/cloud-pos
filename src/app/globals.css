@@ -3,15 +3,39 @@
 
 :root {
   --font-geist-mono: "Consolas", "SFMono-Regular", "Menlo", monospace;
-  --background: #f8f9fc;
-  --foreground: #191c1e;
-  --panel: #ffffff;
-  --panel-border: #edeef1;
-  --panel-shadow: 0 4px 12px rgba(2, 6, 23, 0.05);
-  --panel-shadow-hover: 0 10px 20px rgba(2, 6, 23, 0.08);
-  --brand-1: #000000;
-  --brand-2: #9d4300;
-  --brand-3: #001a42;
+  --background: #0a0a0c;
+  --foreground: #ffffff;
+  --panel: #121215;
+  --panel-border: #27272a;
+  --panel-shadow: 0 4px 20px rgba(0, 0, 0, 0.4);
+  --panel-shadow-hover: 0 10px 30px rgba(220, 38, 38, 0.2);
+  --brand-1: #dc2626;
+  --brand-2: #ef4444;
+  --brand-3: #991b1b;
+  /* Gövde ve fiyat metni için. --brand-2 (#ef4444) --panel üzerinde ~4.1:1 kalıyor,
+     WCAG AA sınırının altında. Bu ton ~5.2:1 verir; parlak mutfak ışığında okunur. */
+  --brand-text: #f87171;
+
+  /* --- Liquid Glass sistemi (tek kaynak) ---------------------------------
+     Üç bulanıklık kademesi. Her yüzeye en ağırını vermek GPU'yu boşuna yakar,
+     ucuz kasa terminalinde kaydırma takılır.
+       rail   → sabit çubuklar, üst bar, alt navigasyon
+       card   → panel ve kart yüzeyleri (varsayılan)
+       modal  → modal, çekmece, açılır katman
+     Mobilde ve kaba işaretçide (dokunmatik) kademeler otomatik düşer. */
+  --glass-blur-rail: 10px;
+  --glass-blur-card: 16px;
+  --glass-blur-modal: 24px;
+  --glass-sat: 150%;
+  --glass-bg: rgba(18, 18, 21, 0.62);
+  --glass-bg-strong: rgba(10, 10, 12, 0.78);
+  --glass-border: rgba(255, 255, 255, 0.09);
+  --glass-border-brand: rgba(220, 38, 38, 0.24);
+  --glass-sheen: rgba(255, 255, 255, 0.05);
+  --glass-shadow: 0 8px 32px rgba(0, 0, 0, 0.45);
+  /* backdrop-filter desteklenmediğinde / kapatıldığında kullanılan düz karşılık */
+  --glass-fallback: #131316;
+  --glass-fallback-strong: #0d0d10;
   --font-sans-base: var(--font-space-grotesk, "Inter", "Segoe UI", sans-serif);
   --font-display: var(--font-sora, "Avenir Next", "Segoe UI", sans-serif);
   --font-numeric: var(--font-sora, "Avenir Next", "Segoe UI", sans-serif);
@@ -19,32 +43,184 @@
   --safe-area-bottom: env(safe-area-inset-bottom, 0px);
   --safe-area-left: env(safe-area-inset-left, 0px);
   --safe-area-right: env(safe-area-inset-right, 0px);
-  --m-bg: #f8f9fc;
-  --m-card: #ffffff;
-  --m-text: #191c1e;
-  --m-muted: #46464c;
-  --m-border: #edeef1;
-  --m-primary: #000000;
+  --m-bg: #0a0a0c;
+  --m-card: #121215;
+  --m-text: #ffffff;
+  --m-muted: #a1a1aa;
+  --m-border: #27272a;
+  --m-primary: #dc2626;
   --m-primary-text: #ffffff;
-  --m-warning-bg: #ffdbca;
-  --m-warning-text: #783200;
-  --m-success-bg: #e9fdf4;
-  --m-success-text: #10b981;
-  --m-error-bg: #ffdad6;
-  --m-error-text: #ba1a1a;
+  --m-warning-bg: #7f1d1d;
+  --m-warning-text: #fca5a5;
+  --m-success-bg: #14532d;
+  --m-success-text: #86efac;
+  --m-error-bg: #991b1b;
+  --m-error-text: #fca5a5;
 
-  --color-success: #10b981;
+  --color-success: #22c55e;
   --color-warning: #f59e0b;
-  --color-danger: #f43f5e;
+  --color-danger: #dc2626;
   --color-info: #3b82f6;
-  --color-success-bg: #e9fdf4;
-  --color-warning-bg: #fffbeb;
-  --color-danger-bg: #fef2f2;
-  --color-info-bg: #eff6ff;
+  --color-success-bg: #052e16;
+  --color-warning-bg: #451a03;
+  --color-danger-bg: #450a0a;
+  --color-info-bg: #172554;
 
-  --skeleton-base: #e2e8f0;
-  --skeleton-shine: #f1f5f9;
+  --skeleton-base: #27272a;
+  --skeleton-shine: #3f3f46;
 }
+
+/* ==========================================================================
+   LIQUID GLASS — tek sistem
+   Kırmızı / siyah / beyaz, koyu tema öncelikli.
+
+   Üç yüzey dili var ve ayrım bağlamdan gelir:
+     .glass*        yönetim paneli, /admin/*, raporlar — oturarak kullanılıyor,
+                    katmanlı derinlik 8 şubeyi tek ekranda okunabilir kılıyor
+     .surface-flat  kasa, mutfak, masa, pickup, mutabakat — ayakta, aceleyle,
+                    tek elle; ucuz terminalde bulanıklık kaydırmayı takıyor
+     qr-*           QR müşteri menüsü, kendi bölümünde
+
+   Performans: bulanıklık kademeli, mobilde ve dokunmatikte otomatik düşüyor,
+   backdrop-filter yoksa düz renge iniyor.
+   ========================================================================== */
+
+.glass,
+.glass-rail,
+.glass-modal {
+  background-color: var(--glass-bg);
+  background-image: linear-gradient(135deg, var(--glass-sheen) 0%, transparent 62%);
+  border: 1px solid var(--glass-border);
+  box-shadow: var(--glass-shadow);
+  color: #ffffff;
+}
+
+.glass {
+  backdrop-filter: blur(var(--glass-blur-card)) saturate(var(--glass-sat));
+  -webkit-backdrop-filter: blur(var(--glass-blur-card)) saturate(var(--glass-sat));
+}
+
+.glass-rail {
+  backdrop-filter: blur(var(--glass-blur-rail)) saturate(var(--glass-sat));
+  -webkit-backdrop-filter: blur(var(--glass-blur-rail)) saturate(var(--glass-sat));
+}
+
+.glass-modal {
+  background-color: var(--glass-bg-strong);
+  backdrop-filter: blur(var(--glass-blur-modal)) saturate(var(--glass-sat));
+  -webkit-backdrop-filter: blur(var(--glass-blur-modal)) saturate(var(--glass-sat));
+}
+
+/* Marka vurgulu cam: birincil kart, seçili durum, KPI. Kırmızı burada dekoratif
+   değil — dikkat çekmesi gereken tek yüzeyi işaretler. */
+.glass-brand {
+  border-color: var(--glass-border-brand);
+}
+
+/* Operasyon terminali: cam yok. İç içe kullanılabilsin diye kendi çocuklarındaki
+   cam yüzeyleri de düzleştirir — kasa ekranına yanlışlıkla cam sızmasın. */
+.surface-flat,
+.surface-flat .glass,
+.surface-flat .glass-rail,
+.surface-flat .glass-modal {
+  background-color: var(--panel);
+  background-image: none;
+  backdrop-filter: none;
+  -webkit-backdrop-filter: none;
+  border-color: var(--panel-border);
+  box-shadow: none;
+}
+
+/* backdrop-filter yok (eski WebView, GPU kapalı, düşük güç modu) → düz renk.
+   Yarı saydam kalırsa arkadaki metin okunmaz hale gelir. */
+@supports not ((backdrop-filter: blur(1px)) or (-webkit-backdrop-filter: blur(1px))) {
+  .glass,
+  .glass-rail {
+    background-color: var(--glass-fallback);
+    background-image: none;
+  }
+  .glass-modal {
+    background-color: var(--glass-fallback-strong);
+    background-image: none;
+  }
+}
+
+/* Dokunmatik = kasa/tablet terminali. Bulanıklığı düşür, opaklığı artır. */
+@media (pointer: coarse) {
+  :root {
+    --glass-blur-rail: 6px;
+    --glass-blur-card: 10px;
+    --glass-blur-modal: 14px;
+    --glass-bg: rgba(18, 18, 21, 0.80);
+    --glass-bg-strong: rgba(10, 10, 12, 0.90);
+  }
+}
+
+/* Küçük ekranda cam tamamen düşer: mobil GPU bütçesi ve okunabilirlik. */
+@media (max-width: 767px) {
+  :root {
+    --glass-blur-rail: 4px;
+    --glass-blur-card: 8px;
+    --glass-blur-modal: 10px;
+    --glass-bg: rgba(18, 18, 21, 0.88);
+    --glass-bg-strong: rgba(10, 10, 12, 0.94);
+  }
+}
+
+/* Hareket azaltma tercihi cam efektini de kapsar — saydamlık bazı kullanıcılarda
+   baş dönmesi yapar. */
+@media (prefers-reduced-motion: reduce) {
+  .glass,
+  .glass-rail,
+  .glass-modal {
+    backdrop-filter: none;
+    -webkit-backdrop-filter: none;
+    background-color: var(--glass-fallback);
+    background-image: none;
+  }
+}
+
+.pos-btn-red {
+  background: linear-gradient(135deg, #dc2626 0%, #991b1b 100%);
+  color: #ffffff;
+  box-shadow: 0 4px 20px 0 rgba(220, 38, 38, 0.5);
+  border: 1px solid rgba(239, 68, 68, 0.4);
+  transition: all 0.2s cubic-bezier(0.4, 0, 0.2, 1);
+}
+
+.pos-btn-red:hover {
+  transform: translateY(-2px) scale(1.01);
+  box-shadow: 0 8px 25px 0 rgba(220, 38, 38, 0.7);
+  background: linear-gradient(135deg, #ef4444 0%, #dc2626 100%);
+}
+
+.pos-btn-black {
+  background: #18181b;
+  color: #ffffff;
+  border: 1px solid #3f3f46;
+  box-shadow: 0 4px 14px 0 rgba(0, 0, 0, 0.3);
+  transition: all 0.2s ease-in-out;
+}
+
+.pos-btn-black:hover {
+  background: #27272a;
+  border-color: #dc2626;
+}
+
+.pos-btn-white {
+  background: #ffffff;
+  color: #09090b;
+  font-weight: 800;
+  box-shadow: 0 4px 14px 0 rgba(255, 255, 255, 0.2);
+  transition: all 0.2s ease-in-out;
+}
+
+.pos-btn-white:hover {
+  background: #f4f4f5;
+  transform: translateY(-1px);
+}
+
+
 
 @theme inline {
   --color-background: var(--background);
@@ -555,9 +731,9 @@ body {
 
 .mobile-app-mode .mobile-order-category-chip[data-active="true"] {
   border-color: transparent;
-  background: linear-gradient(135deg, #ff6a3d, #f2b44f);
+  background: linear-gradient(135deg, var(--brand-1), var(--brand-3));
   color: #ffffff;
-  box-shadow: 0 8px 18px rgba(255, 106, 61, 0.22);
+  box-shadow: 0 8px 18px rgba(220, 38, 38, 0.22);
 }
 
 .mobile-app-mode .mobile-order-category-chip[data-active="true"] small {
@@ -963,7 +1139,7 @@ button:disabled {
   button,
   [role="button"] {
     touch-action: manipulation;
-    -webkit-tap-highlight-color: rgba(255, 106, 61, 0.16);
+    -webkit-tap-highlight-color: rgba(220, 38, 38, 0.16);
   }
 
   input,
@@ -980,8 +1156,8 @@ button:disabled {
 }
 
 ::selection {
-  background: rgba(255, 106, 61, 0.22);
-  color: #111827;
+  background: rgba(220, 38, 38, 0.32);
+  color: #ffffff;
 }
 
 .font-display {
@@ -1012,14 +1188,16 @@ button:disabled {
 .panel-hover:hover {
   transform: translateY(-2px);
   box-shadow: var(--panel-shadow-hover);
-  border-color: rgba(255, 106, 61, 0.22);
+  border-color: rgba(220, 38, 38, 0.22);
 }
 
+/* Marka içi: kırmızının iki tonu + nötr beyaz sis. Eski hâlinde turuncu, amber
+   ve teal vardı — üçü de palet dışıydı. */
 .mesh-accent {
   background-image:
-    radial-gradient(circle at 10% 10%, rgba(255, 106, 61, 0.13), transparent 28%),
-    radial-gradient(circle at 90% 20%, rgba(242, 180, 79, 0.13), transparent 24%),
-    radial-gradient(circle at 80% 90%, rgba(15, 118, 110, 0.1), transparent 26%);
+    radial-gradient(circle at 10% 10%, rgba(220, 38, 38, 0.14), transparent 28%),
+    radial-gradient(circle at 90% 20%, rgba(153, 27, 27, 0.16), transparent 26%),
+    radial-gradient(circle at 80% 90%, rgba(255, 255, 255, 0.05), transparent 30%);
 }
 
 @media print {
@@ -1193,8 +1371,9 @@ button:disabled {
   left: -50%;
   width: 200%;
   height: 200%;
-  background: radial-gradient(circle, rgba(255, 106, 61, 0.08) 0%, rgba(242, 180, 79, 0.05) 50%, transparent 80%);
+  background: radial-gradient(circle, rgba(220, 38, 38, 0.09) 0%, rgba(153, 27, 27, 0.05) 50%, transparent 80%);
   animation: aurora-spin 25s infinite linear;
+  will-change: transform;
   pointer-events: none;
   z-index: -1;
 }
@@ -1202,6 +1381,18 @@ button:disabled {
 @keyframes aurora-spin {
   from { transform: rotate(0deg); }
   to { transform: rotate(360deg); }
+}
+
+/* Sonsuz dönen katman: dokunmatik terminalde ve hareket azaltmada kapalı. */
+@media (pointer: coarse), (prefers-reduced-motion: reduce) {
+  .uupm-glowing-aurora::before {
+    animation: none;
+    will-change: auto;
+  }
+}
+
+.surface-flat .uupm-glowing-aurora::before {
+  display: none;
 }
 
 .uupm-tactile-card {
@@ -1217,9 +1408,9 @@ button:disabled {
 
 .uupm-tactile-card:hover {
   transform: translateY(-4px) scale(1.01);
-  border-color: rgba(255, 106, 61, 0.25);
+  border-color: rgba(220, 38, 38, 0.25);
   box-shadow: 
-    0 20px 25px -5px rgba(255, 106, 61, 0.06),
+    0 20px 25px -5px rgba(220, 38, 38, 0.06),
     0 10px 10px -5px rgba(0, 0, 0, 0.02),
     inset 0 1px 0 0 rgba(255, 255, 255, 0.8);
 }
@@ -1230,7 +1421,7 @@ button:disabled {
 }
 
 .uupm-glow-btn:hover {
-  box-shadow: 0 0 20px rgba(255, 106, 61, 0.35);
+  box-shadow: 0 0 20px rgba(220, 38, 38, 0.35);
   transform: translateY(-1px);
 }
 
@@ -1500,19 +1691,19 @@ body.theme-cashier-light .m-btn-secondary {
    UI/UX PRO MAX - PREMIUM DESIGN UTILITIES
    ========================================================================== */
 
-/* Glassmorphism Panel styles */
-.uupm-glass {
-  background: rgba(255, 255, 255, 0.72) !important;
-  backdrop-filter: blur(16px) saturate(180%) !important;
-  -webkit-backdrop-filter: blur(16px) saturate(180%) !important;
-  border: 1px solid rgba(255, 255, 255, 0.45) !important;
-}
-
+/* Glassmorphism Panel styles
+   Eski hâli beyaz camdı (rgba(255,255,255,.72)) ve #0a0a0c koyu uygulamada
+   yıkanmış duruyordu. Artık tek sisteme (.glass) bağlı takma adlar —
+   mevcut 35 kullanım kırılmadan doğru yüzeye geçiyor. */
+.uupm-glass,
 .uupm-glass-dark {
-  background: rgba(15, 23, 42, 0.75) !important;
-  backdrop-filter: blur(20px) saturate(160%) !important;
-  -webkit-backdrop-filter: blur(20px) saturate(160%) !important;
-  border: 1px solid rgba(255, 255, 255, 0.08) !important;
+  background-color: var(--glass-bg);
+  background-image: linear-gradient(135deg, var(--glass-sheen) 0%, transparent 62%);
+  backdrop-filter: blur(var(--glass-blur-card)) saturate(var(--glass-sat));
+  -webkit-backdrop-filter: blur(var(--glass-blur-card)) saturate(var(--glass-sat));
+  border: 1px solid var(--glass-border);
+  box-shadow: var(--glass-shadow);
+  color: #ffffff;
 }
 
 /* Hover state effects & interactions */
@@ -1565,23 +1756,17 @@ body.theme-cashier-light .m-btn-secondary {
   font-variant-numeric: tabular-nums !important;
 }
 
-/* Liquid Glass Design System Utilities */
-.uupm-liquid-glass {
-  background: rgba(255, 255, 255, 0.45) !important;
-  backdrop-filter: blur(24px) saturate(210%) !important;
-  -webkit-backdrop-filter: blur(24px) saturate(210%) !important;
-  border: 1px solid rgba(255, 255, 255, 0.5) !important;
-  box-shadow: 0 8px 32px 0 rgba(31, 38, 135, 0.04), inset 0 0 0 1px rgba(255, 255, 255, 0.15) !important;
-  background-image: linear-gradient(135deg, rgba(255, 255, 255, 0.25) 0%, rgba(255, 255, 255, 0.05) 100%) !important;
-}
-
+/* Liquid Glass Design System Utilities
+   .glass-modal takma adı: daha güçlü bulanıklık + daha opak zemin. */
+.uupm-liquid-glass,
 .uupm-liquid-glass-dark {
-  background: rgba(15, 23, 42, 0.55) !important;
-  backdrop-filter: blur(28px) saturate(180%) !important;
-  -webkit-backdrop-filter: blur(28px) saturate(180%) !important;
-  border: 1px solid rgba(255, 255, 255, 0.09) !important;
-  box-shadow: 0 8px 32px 0 rgba(0, 0, 0, 0.2), inset 0 0 0 1px rgba(255, 255, 255, 0.05) !important;
-  background-image: linear-gradient(135deg, rgba(255, 255, 255, 0.05) 0%, rgba(255, 255, 255, 0.01) 100%) !important;
+  background-color: var(--glass-bg-strong);
+  background-image: linear-gradient(135deg, var(--glass-sheen) 0%, transparent 62%);
+  backdrop-filter: blur(var(--glass-blur-modal)) saturate(var(--glass-sat));
+  -webkit-backdrop-filter: blur(var(--glass-blur-modal)) saturate(var(--glass-sat));
+  border: 1px solid var(--glass-border);
+  box-shadow: var(--glass-shadow), inset 0 0 0 1px var(--glass-sheen);
+  color: #ffffff;
 }
 
 /* Iridescent gradient effect */
@@ -1597,17 +1782,17 @@ body.theme-cashier-light .m-btn-secondary {
   left: -50% !important;
   width: 200% !important;
   height: 200% !important;
+  /* Marka içi: kırmızı + beyaz. Eski hâlinde indigo ve zümrüt vardı, palet dışı. */
   background: linear-gradient(
     115deg,
     rgba(255, 255, 255, 0) 0%,
-    rgba(255, 255, 255, 0.03) 30%,
-    rgba(99, 102, 241, 0.08) 45%,
-    rgba(244, 63, 94, 0.08) 55%,
-    rgba(16, 185, 129, 0.08) 65%,
-    rgba(255, 255, 255, 0.03) 75%,
+    rgba(255, 255, 255, 0.03) 32%,
+    rgba(220, 38, 38, 0.10) 50%,
+    rgba(255, 255, 255, 0.03) 68%,
     rgba(255, 255, 255, 0) 100%
   ) !important;
   animation: uupm-flow 8s infinite linear !important;
+  will-change: transform;
   pointer-events: none !important;
   z-index: 0 !important;
 }
@@ -1619,6 +1804,27 @@ body.theme-cashier-light .m-btn-secondary {
   100% {
     transform: rotate(360deg);
   }
+}
+
+/* Sonsuz dönen 200%x200% katman kalıcı GPU çizimi demek. Kasa ve mutfak
+   terminalinde ekran hiç boşta kalmıyordu — dokunmatikte ve hareket azaltmada
+   kapat, düz bir marka vurgusuna indir. */
+@media (pointer: coarse), (prefers-reduced-motion: reduce) {
+  .uupm-iridescent-glow::before {
+    animation: none !important;
+    background: linear-gradient(
+      115deg,
+      rgba(255, 255, 255, 0) 0%,
+      rgba(220, 38, 38, 0.06) 50%,
+      rgba(255, 255, 255, 0) 100%
+    ) !important;
+    will-change: auto;
+  }
+}
+
+/* Operasyon terminalinde ışıltı hiç çalışmaz. */
+.surface-flat .uupm-iridescent-glow::before {
+  display: none !important;
 }
 
 /* ============================================================

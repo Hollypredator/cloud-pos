@@ -628,7 +628,7 @@ export default async function AdminReportsPage({
                   segments={financial.methodBreakdown.map((row, index) => ({
                     label: paymentTypeLabel(row.method),
                     value: Math.max(0, row.net),
-                    color: index === 0 ? "#ff6a3d" : index === 1 ? "#0f766e" : "#475569",
+                    color: index === 0 ? "#dc2626" : index === 1 ? "#0f766e" : "#475569",
                   }))}
                 />
                 <div className="space-y-3">
@@ -646,7 +646,7 @@ export default async function AdminReportsPage({
                         </div>
                         <div className="mt-4 h-3 overflow-hidden rounded-full bg-white">
                           <div
-                            className={`h-3 rounded-full ${index % 2 === 0 ? "bg-gradient-to-r from-[#ff6a3d] to-[#f2b44f]" : "bg-gradient-to-r from-[#0f766e] to-[#34d399]"}`}
+                            className={`h-3 rounded-full ${index % 2 === 0 ? "bg-gradient-to-r from-[#dc2626] to-[#991b1b]" : "bg-gradient-to-r from-[#0f766e] to-[#34d399]"}`}
                             style={{ width: `${width}%` }}
                           />
                         </div>

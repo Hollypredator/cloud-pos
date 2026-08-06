@@ -96,7 +96,7 @@ function methodLabel(method: string) {
 
 function methodAccent(index: number) {
   const accents = [
-    "from-[#ff6a3d] to-[#f2b44f]",
+    "from-[#dc2626] to-[#991b1b]",
     "from-[#0f766e] to-[#34d399]",
     "from-[#334155] to-[#64748b]",
   ];
@@ -426,12 +426,12 @@ export default async function AdminFinancePage({
                 <svg viewBox="0 0 720 260" className="h-[260px] w-full">
                   <defs>
                     <linearGradient id="finance-area" x1="0" x2="0" y1="0" y2="1">
-                      <stop offset="0%" stopColor="#ff6a3d" stopOpacity="0.28" />
+                      <stop offset="0%" stopColor="#dc2626" stopOpacity="0.28" />
                       <stop offset="100%" stopColor="#0f766e" stopOpacity="0.06" />
                     </linearGradient>
                     <linearGradient id="finance-line" x1="0" x2="1" y1="0" y2="0">
-                      <stop offset="0%" stopColor="#ff6a3d" />
-                      <stop offset="50%" stopColor="#f2b44f" />
+                      <stop offset="0%" stopColor="#dc2626" />
+                      <stop offset="50%" stopColor="#991b1b" />
                       <stop offset="100%" stopColor="#0f766e" />
                     </linearGradient>
                   </defs>
@@ -455,7 +455,7 @@ export default async function AdminFinancePage({
                     const showLabel = index % labelInterval === 0 || index === hourlySales.length - 1;
                     return (
                       <g key={row.hour}>
-                        <circle cx={x} cy={y} r="7" fill="#ffffff" stroke="#ff6a3d" strokeWidth="4" />
+                        <circle cx={x} cy={y} r="7" fill="#ffffff" stroke="#dc2626" strokeWidth="4" />
                         {showLabel && (
                           <text x={x} y="254" textAnchor="middle" fontSize="15" fill="#64748b">
                             {row.hour}
@@ -587,7 +587,7 @@ export default async function AdminFinancePage({
                 segments={methodBreakdown.map((row, index) => ({
                   label: methodLabel(row.method),
                   value: Math.max(0, row.net),
-                  color: index === 0 ? "#ff6a3d" : index === 1 ? "#0f766e" : "#475569",
+                  color: index === 0 ? "#dc2626" : index === 1 ? "#0f766e" : "#475569",
                 }))}
               />
               <div className="space-y-4">
@@ -654,7 +654,7 @@ export default async function AdminFinancePage({
                 <span className="font-display text-slate-600">{row.hour}:00</span>
                 <div className="relative h-10 overflow-hidden rounded-2xl bg-white">
                   <div
-                    className="absolute inset-y-0 left-0 rounded-2xl bg-gradient-to-r from-[#ff6a3d] via-[#f2b44f] to-[#0f766e]"
+                    className="absolute inset-y-0 left-0 rounded-2xl bg-gradient-to-r from-[#dc2626] via-[#991b1b] to-[#0f766e]"
                     style={{ width: `${Math.max(6, (row.sales / maxHourly) * 100)}%` }}
                   />
                   <div className="absolute inset-0 bg-[linear-gradient(90deg,transparent_0%,rgba(255,255,255,0.25)_40%,transparent_80%)]" />
@@ -678,7 +678,7 @@ export default async function AdminFinancePage({
                   key={row.hour}
                   className="panel-hover rounded-[20px] border border-slate-200 p-4 text-center"
                   style={{
-                    background: `linear-gradient(180deg, rgba(255,106,61,${0.12 + intensity * 0.58}) 0%, rgba(15,118,110,${0.08 + intensity * 0.24}) 100%)`,
+                    background: `linear-gradient(180deg, rgba(220,38,38,${0.12 + intensity * 0.58}) 0%, rgba(15,118,110,${0.08 + intensity * 0.24}) 100%)`,
                   }}
                 >
                   <p className="font-display text-sm font-semibold text-slate-900">{row.hour}:00</p>

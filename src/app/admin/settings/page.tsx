@@ -238,7 +238,7 @@ function ToggleField({
       </div>
       <span className="relative inline-flex cursor-pointer items-center">
         <input type="checkbox" name={name} defaultChecked={defaultChecked} className="peer sr-only" />
-        <span className="h-8 w-14 rounded-full bg-slate-200 transition peer-checked:bg-[#ff6a3d]" />
+        <span className="h-8 w-14 rounded-full bg-slate-200 transition peer-checked:bg-[#dc2626]" />
         <span className="absolute left-1 h-6 w-6 rounded-full bg-white shadow-sm transition peer-checked:translate-x-6" />
       </span>
     </label>

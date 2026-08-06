@@ -283,7 +283,7 @@ export function TableManagementModal({
             <p className="font-display mt-3 text-2xl font-semibold text-slate-900">{tableStatusLabel(table.status)}</p>
             <p className="mt-2 text-sm text-slate-500">{translateUiText("Masa", locale)} {table.table_number}</p>
           </article>
-          <article className="rounded-[24px] border border-slate-200 bg-[linear-gradient(130deg,rgba(255,106,61,0.1),rgba(255,255,255,0.95)_65%)] p-4">
+          <article className="rounded-[24px] border border-slate-200 bg-[linear-gradient(130deg,rgba(220,38,38,0.1),rgba(255,255,255,0.95)_65%)] p-4">
             <p className="text-xs font-bold uppercase tracking-[0.16em] text-slate-500">{translateUiText("Aktif Adisyon", locale)}</p>
             <p className="font-display mt-3 text-2xl font-semibold text-slate-900">{liveLatestOrder ? `#${orderRef(liveLatestOrder)}` : translateUiText("Yok", locale)}</p>
             <p className="mt-2 text-sm text-slate-500">{liveLatestOrder ? liveLatestOrder.status : translateUiText("Bu masa için açık sipariş bulunmuyor", locale)}</p>
@@ -299,21 +299,21 @@ export function TableManagementModal({
           <button
             type="button"
             onClick={() => setActiveTab("order")}
-            className={`min-h-12 rounded-xl px-4 py-3 text-base font-semibold sm:text-sm ${activeTab === "order" ? "bg-gradient-to-r from-[#ff6a3d] to-[#f2b44f] text-white shadow-[0_12px_22px_rgba(255,106,61,0.2)]" : "bg-white text-slate-700"}`}
+            className={`min-h-12 rounded-xl px-4 py-3 text-base font-semibold sm:text-sm ${activeTab === "order" ? "bg-gradient-to-r from-[#dc2626] to-[#991b1b] text-white shadow-[0_12px_22px_rgba(220,38,38,0.2)]" : "bg-white text-slate-700"}`}
           >
             {translateUiText("Sipariş Girisi", locale)}
           </button>
           <button
             type="button"
             onClick={() => setActiveTab("history")}
-            className={`min-h-12 rounded-xl px-4 py-3 text-base font-semibold sm:text-sm ${activeTab === "history" ? "bg-gradient-to-r from-[#ff6a3d] to-[#f2b44f] text-white shadow-[0_12px_22px_rgba(255,106,61,0.2)]" : "bg-white text-slate-700"}`}
+            className={`min-h-12 rounded-xl px-4 py-3 text-base font-semibold sm:text-sm ${activeTab === "history" ? "bg-gradient-to-r from-[#dc2626] to-[#991b1b] text-white shadow-[0_12px_22px_rgba(220,38,38,0.2)]" : "bg-white text-slate-700"}`}
           >
             {translateUiText("Son Siparişler", locale)}
           </button>
           <button
             type="button"
             onClick={() => setActiveTab("ops")}
-            className={`min-h-12 rounded-xl px-4 py-3 text-base font-semibold sm:text-sm ${activeTab === "ops" ? "bg-gradient-to-r from-[#ff6a3d] to-[#f2b44f] text-white shadow-[0_12px_22px_rgba(255,106,61,0.2)]" : "bg-white text-slate-700"}`}
+            className={`min-h-12 rounded-xl px-4 py-3 text-base font-semibold sm:text-sm ${activeTab === "ops" ? "bg-gradient-to-r from-[#dc2626] to-[#991b1b] text-white shadow-[0_12px_22px_rgba(220,38,38,0.2)]" : "bg-white text-slate-700"}`}
           >
             {translateUiText("Masa Islemleri", locale)}
           </button>
@@ -374,7 +374,7 @@ export function TableManagementModal({
                     <button
                       type="button"
                       onClick={handlePreviewPrint}
-                      className="min-h-11 rounded-xl bg-gradient-to-r from-[#ff6a3d] to-[#f2b44f] px-4 py-2.5 text-sm font-semibold text-white"
+                      className="min-h-11 rounded-xl bg-gradient-to-r from-[#dc2626] to-[#991b1b] px-4 py-2.5 text-sm font-semibold text-white"
                     >
                       {translateUiText("Yazdır", locale)}
                     </button>
@@ -497,7 +497,7 @@ export function TableManagementModal({
                         >
                           {translateUiText("Adisyonu Gör", locale)}
                         </button>
-                        <Link href={`/cashier?order=${order.id}`} className="inline-flex min-h-11 w-full items-center justify-center rounded-2xl bg-gradient-to-r from-[#ff6a3d] to-[#f2b44f] px-4 py-3 text-center text-base font-semibold text-white sm:w-auto sm:text-sm">
+                        <Link href={`/cashier?order=${order.id}`} className="inline-flex min-h-11 w-full items-center justify-center rounded-2xl bg-gradient-to-r from-[#dc2626] to-[#991b1b] px-4 py-3 text-center text-base font-semibold text-white sm:w-auto sm:text-sm">
                           {translateUiText("Popup Tahsilat", locale)}
                         </Link>
                       </div>
@@ -516,9 +516,15 @@ export function TableManagementModal({
                 <h3 className="font-display text-2xl font-semibold tracking-tight text-slate-900">{translateUiText("Masa Bilgileri", locale)}</h3>
                 <form action={updateTableAction} className="mt-4 grid gap-3">
                   <input type="hidden" name="tableId" value={table.id} />
-                  <div className="grid gap-3 md:grid-cols-[160px_1fr]">
+                  <div className="grid gap-3 md:grid-cols-[160px_1fr_140px]">
                     <input name="tableNumber" type="number" min={1} inputMode="numeric" defaultValue={table.table_number} className="min-h-12 rounded-2xl border border-slate-300 px-4 py-3 text-base sm:text-sm" />
                     <input name="tableName" defaultValue={table.name ?? ""} placeholder={translateUiText("Masa adi", locale)} className="min-h-12 rounded-2xl border border-slate-300 px-4 py-3 text-base sm:text-sm" />
+                    <select name="seatCount" defaultValue={String(table.seat_count ?? 4)} className="min-h-12 rounded-2xl border border-slate-300 px-4 py-3 text-base sm:text-sm">
+                      <option value="2">2 Kişilik</option>
+                      <option value="4">4 Kişilik</option>
+                      <option value="6">6 Kişilik</option>
+                      <option value="8">8+ Kişilik</option>
+                    </select>
                   </div>
                   <PendingSubmitButton
                     idleLabel={translateUiText("Masa Bilgilerini Kaydet", locale)}

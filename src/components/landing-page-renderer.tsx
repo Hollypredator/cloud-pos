@@ -742,7 +742,7 @@ function renderSection(
           {section.items.map((item, index) => (
             <div key={`${section.id}-${index}`} className="rounded-2xl border border-slate-200 bg-white p-4">
               <div className="flex items-center gap-3">
-                <span className="inline-flex h-9 w-9 items-center justify-center rounded-full bg-[linear-gradient(135deg,#ff6a3d_0%,#f2b44f_100%)] text-xs font-black text-white">
+                <span className="inline-flex h-9 w-9 items-center justify-center rounded-full bg-[linear-gradient(135deg,#dc2626_0%,#991b1b_100%)] text-xs font-black text-white">
                   {index + 1}
                 </span>
                 <p className="text-sm font-semibold text-slate-900">{item.title}</p>

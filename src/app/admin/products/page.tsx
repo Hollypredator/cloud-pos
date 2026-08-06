@@ -35,10 +35,10 @@ import {
   addModifierOptionAction,
   deleteModifierGroupAction,
   deleteModifierOptionAction,
-  prepStationLabel,
   resolveProductsFeedbackPath,
   resolveProductsReturnPath,
 } from "./actions";
+import { prepStationLabel } from "./action-helpers";
 
 
 
@@ -267,7 +267,7 @@ export default async function AdminProductsPage({
                 defaultChecked={applicationSettings.embeddedDemoCatalogEnabled}
                 className="peer sr-only"
               />
-              <span className="h-8 w-14 rounded-full bg-slate-300 transition peer-checked:bg-[#ff6a3d]" />
+              <span className="h-8 w-14 rounded-full bg-slate-300 transition peer-checked:bg-[#dc2626]" />
               <span className="absolute left-1 h-6 w-6 rounded-full bg-white shadow transition peer-checked:translate-x-6" />
             </label>
           </div>
@@ -288,7 +288,7 @@ export default async function AdminProductsPage({
                   Kahve, soguk icecek, firindan, tatli ve atistirmalik Ürünleri aktif işletmeye ekler.
                 </p>
               </div>
-              <button type="submit" className="rounded-xl bg-[#ff6a3d] px-4 py-2 text-xs font-semibold text-white">
+              <button type="submit" className="rounded-xl bg-[#dc2626] px-4 py-2 text-xs font-semibold text-white">
                 Hazır kataloğu yükle
               </button>
             </div>

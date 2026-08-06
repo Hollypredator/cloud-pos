@@ -480,7 +480,7 @@ export default async function TablesPage({
                     {canOpenOrders ? (
                       <Link
                         href={`/admin/orders?table=${encodeURIComponent(table.id)}`}
-                        className="inline-flex min-h-11 items-center justify-center rounded-2xl bg-gradient-to-r from-[#ff6a3d] to-[#f2b44f] px-4 py-3 text-center text-sm font-semibold text-white"
+                        className="inline-flex min-h-11 items-center justify-center rounded-2xl bg-gradient-to-r from-[#dc2626] to-[#991b1b] px-4 py-3 text-center text-sm font-semibold text-white"
                       >
                         {latestOrder && hasOpenOrder ? "Siparişe Ekle" : "Sipariş Ac"}
                       </Link>

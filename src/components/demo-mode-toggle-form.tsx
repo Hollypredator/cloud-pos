@@ -21,7 +21,7 @@ export function DemoModeToggleForm({ defaultChecked, action }: DemoModeToggleFor
           <p className="mt-1 text-sm text-slate-500">
             Acildiginda test verisi hazırlanır. Kapatıldığında yeni demo veri uretimi durur.
           </p>
-          <p className="mt-2 text-xs font-semibold uppercase tracking-[0.14em] text-[#ff6a3d]">Aninda kaydolur</p>
+          <p className="mt-2 text-xs font-semibold uppercase tracking-[0.14em] text-[#dc2626]">Aninda kaydolur</p>
         </div>
         <label htmlFor={inputId} className="relative inline-flex cursor-pointer items-center">
           <input
@@ -35,7 +35,7 @@ export function DemoModeToggleForm({ defaultChecked, action }: DemoModeToggleFor
               formRef.current?.requestSubmit();
             }}
           />
-          <span className="h-8 w-14 rounded-full bg-slate-200 transition peer-checked:bg-[#ff6a3d]" />
+          <span className="h-8 w-14 rounded-full bg-slate-200 transition peer-checked:bg-[#dc2626]" />
           <span className="absolute left-1 h-6 w-6 rounded-full bg-white shadow-sm transition peer-checked:translate-x-6" />
         </label>
       </div>

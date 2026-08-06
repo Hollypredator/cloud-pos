@@ -107,7 +107,7 @@ export default async function SupportTicketsPage({
               <div>
                 <p className="text-xs uppercase tracking-[0.24em] text-slate-500">{ticket.type}</p>
                 <h2 className="mt-2 text-xl font-semibold text-slate-900">
-                  <Link href={`/support/tickets/${ticket.id}`} className="hover:text-[#ff6a3d]">
+                  <Link href={`/support/tickets/${ticket.id}`} className="hover:text-[#dc2626]">
                     {ticket.subject}
                   </Link>
                 </h2>

@@ -188,7 +188,7 @@ export default async function AdminTablesPage({
           value={String(tables.length)}
           hint="Salon kapasitesi"
           tone="accent"
-          className="bg-[linear-gradient(130deg,rgba(255,106,61,0.14),rgba(255,255,255,0.9)_65%)]"
+          className="bg-[linear-gradient(130deg,rgba(220,38,38,0.14),rgba(255,255,255,0.9)_65%)]"
         />
         <SummaryCard
           label={translateUiText("Dolu Masa", locale)}
@@ -215,7 +215,7 @@ export default async function AdminTablesPage({
       <WorkflowGuide
         title={translateUiText("Masalari 3 Adimda Hazırla", locale)}
         description={translateUiText("Salon kurulumu ilk kez yapilsa bile masa akışı kolay anlasilsin.", locale)}
-        className="bg-[linear-gradient(125deg,rgba(15,23,42,0.03),rgba(255,255,255,0.92)_45%,rgba(255,106,61,0.08))]"
+        className="bg-[linear-gradient(125deg,rgba(15,23,42,0.03),rgba(255,255,255,0.92)_45%,rgba(220,38,38,0.08))]"
         steps={[
           { title: translateUiText("Masayı oluştur ve isim ver", locale), description: translateUiText("Yeni masa numarasını ve görünur masa adini kaydet; ekip bu isimle çalışır.", locale) },
           { title: translateUiText("QR'i kontrol et", locale), description: translateUiText("QR ve yazdırma islerini Masa Yönet popup'i icinden tamamla.", locale) },
@@ -326,6 +326,12 @@ export default async function AdminTablesPage({
                   {filteredTables.length}
                 </span>
                 <Link
+                  href="/admin/tables/floor-plan"
+                  className="inline-flex min-h-10 items-center justify-center rounded-xl border border-slate-300 bg-white px-3 py-2 text-xs font-semibold text-slate-700 hover:bg-slate-50"
+                >
+                  Kroki Düzenle
+                </Link>
+                <Link
                   href={deleteMode ? normalModeHref : deleteModeHref}
                   className={`inline-flex min-h-10 items-center justify-center rounded-xl border px-3 py-2 text-xs font-semibold ${
                     deleteMode ? "border-slate-300 bg-white text-slate-700" : "border-rose-300 bg-rose-50 text-rose-700"
@@ -372,7 +378,7 @@ export default async function AdminTablesPage({
               <PendingSubmitButton
                 idleLabel="Toplu Masa Ac"
                 pendingLabel="Olusturuluyor..."
-                className="min-h-12 w-full rounded-2xl bg-gradient-to-r from-[#ff6a3d] to-[#f2b44f] px-4 py-3 text-base font-semibold text-white sm:text-sm lg:w-auto"
+                className="min-h-12 w-full rounded-2xl bg-gradient-to-r from-[#dc2626] to-[#991b1b] px-4 py-3 text-base font-semibold text-white sm:text-sm lg:w-auto"
               />
             </form>
 
@@ -585,7 +591,7 @@ export default async function AdminTablesPage({
                             Sorumlu garson atamasi için son migration henüz uygulanmamis.
                           </div>
                         )}
-                        <Link href={`/admin/tables?table=${table.id}${zoneFilter ? `&zone=${zoneFilter}` : ""}`} className="inline-flex min-h-11 items-center justify-center rounded-xl bg-gradient-to-r from-[#ff6a3d] to-[#f2b44f] px-3 py-3 text-center text-base font-semibold text-white sm:text-sm">
+                        <Link href={`/admin/tables?table=${table.id}${zoneFilter ? `&zone=${zoneFilter}` : ""}`} className="inline-flex min-h-11 items-center justify-center rounded-xl bg-gradient-to-r from-[#dc2626] to-[#991b1b] px-3 py-3 text-center text-base font-semibold text-white sm:text-sm">
                           Masa Yönet
                         </Link>
                         {latestOrder ? (

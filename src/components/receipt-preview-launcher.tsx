@@ -154,7 +154,7 @@ export function ReceiptPreviewLauncher({
                 <button type="button" onClick={() => setLayout("thermal58")} className={`rounded-xl px-3 py-2 text-xs font-semibold ${layout === "thermal58" ? "bg-slate-900 text-white" : "border border-slate-300 bg-white text-slate-700"}`}>58mm</button>
               </div>
               <div className="flex flex-wrap gap-2">
-                <button type="button" onClick={handlePrint} className="rounded-xl bg-gradient-to-r from-[#ff6a3d] to-[#f2b44f] px-3 py-2 text-xs font-semibold text-white">
+                <button type="button" onClick={handlePrint} className="rounded-xl bg-gradient-to-r from-[#dc2626] to-[#991b1b] px-3 py-2 text-xs font-semibold text-white">
                   {layout === "a4" ? "Yazdır / PDF" : "Yazdır"}
                 </button>
                 <button type="button" onClick={() => setOpen(false)} className="rounded-xl border border-slate-300 bg-white px-3 py-2 text-xs font-semibold text-slate-700">Kapat</button>

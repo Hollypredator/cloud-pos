@@ -832,7 +832,7 @@ export function AppNav({
             </div>
           ) : null}
           {!hasUser ? (
-            <Link href="/login" className={`block rounded-2xl bg-[linear-gradient(135deg,#ff6a3d_0%,#f2b44f_100%)] text-center font-semibold text-white shadow-[0_14px_24px_rgba(255,106,61,0.24)] ${isMarketSidebar ? "px-2 py-2 text-[10px] uppercase tracking-[0.15em]" : "px-4 py-3 text-sm"}`}>
+            <Link href="/login" className={`block rounded-2xl bg-[linear-gradient(135deg,#dc2626_0%,#991b1b_100%)] text-center font-semibold text-white shadow-[0_14px_24px_rgba(220,38,38,0.24)] ${isMarketSidebar ? "px-2 py-2 text-[10px] uppercase tracking-[0.15em]" : "px-4 py-3 text-sm"}`}>
               {translateUiText("Giriş", locale)}
             </Link>
           ) : (
