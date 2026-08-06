@@ -20,6 +20,10 @@ interface MobileCashierUiProps {
   paidTotals: { final: number; paid: number; remaining: number };
   completeMobilePaymentAction: (formData: FormData) => void;
   closePaidOrderAction: (formData: FormData) => void;
+  /** Takeaway profilinde mobil kasa hizli gorunumle acilir. */
+  isSelfServiceCoffee?: boolean;
+  businessName?: string;
+  branchName?: string;
 }
 
 function formatMoney(value: number) {
@@ -56,6 +60,8 @@ function statusTone(status: string) {
   return "bg-rose-100 text-rose-800 border-rose-200";
 }
 
+import { TakeawayCashierView } from "@/components/takeaway-cashier-view";
+
 export function MobileCashierUi({
   servedOrders,
   paidOrders,
@@ -64,10 +70,19 @@ export function MobileCashierUi({
   paidTotals,
   completeMobilePaymentAction,
   closePaidOrderAction,
+  isSelfServiceCoffee = false,
+  businessName,
+  branchName,
 }: MobileCashierUiProps) {
   const router = useRouter();
   const containerRef = useRef<HTMLDivElement>(null);
   const [toastMsg, setToastMsg] = useState<string | null>(null);
+  // Baslangic modu isletme tipinden gelir — kodda sabit degil. Onceki hali
+  // kosulsuz "takeaway_quick" idi ve restoran subelerinde de takeaway gorunumu
+  // aciliyordu.
+  const [mode, setMode] = useState<"standard" | "takeaway_quick">(
+    isSelfServiceCoffee ? "takeaway_quick" : "standard",
+  );
 
   useEffect(() => {
     globalSetToastMessage = setToastMsg;
@@ -105,6 +120,27 @@ export function MobileCashierUi({
       );
     }
   }, [selectedOrder?.id]);
+
+  // Takeaway hizli kasa gorunumu. Bu donus TUM hook cagrilarindan SONRA olmali:
+  // daha once useEffect'lerin ustundeydi ve "Restoran Masali Kasaya Gec"
+  // butonuna basildiginda React "Rendered more hooks than during the previous
+  // render" hatasiyla ekrani cokertiyordu — butonun kendisi ekrani kiriyordu.
+  if (mode === "takeaway_quick") {
+    return (
+      <div className="relative">
+        <div className="absolute top-3 right-4 z-50">
+          <button
+            type="button"
+            onClick={() => setMode("standard")}
+            className="text-[10px] bg-zinc-900 border border-zinc-800 text-zinc-400 hover:text-white px-2.5 py-1 rounded-lg"
+          >
+            Restoran Masalı Kasaya Geç
+          </button>
+        </div>
+        <TakeawayCashierView businessName={businessName} branchName={branchName} />
+      </div>
+    );
+  }
 
   const selectedItems = selectedOrder && Array.isArray(selectedOrder.items) ? (selectedOrder.items as OrderItem[]) : [];
   const selectedRemaining = selectedOrder

@@ -37,6 +37,8 @@ interface Product {
   stock_count: any;
 }
 
+import { TakeawayAppLauncher } from "@/components/takeaway-app-launcher";
+
 interface MobileOpsDashboardProps {
   metrics: {
     todayRevenue: number;
@@ -54,6 +56,11 @@ interface MobileOpsDashboardProps {
     openServiceRequests: number;
   };
   isSelfServiceCoffee: boolean;
+  /** Takeaway görünümünün başlığı. Verilmezse nötr metne düşer — eskiden
+      "Holy Cup Coffee" sabit yazılıydı ve her işletmede o görünüyordu. */
+  businessName?: string;
+  branchName?: string;
+  cashierName?: string;
 }
 
 function formatMoney(value: number) {
@@ -82,9 +89,8 @@ function statusLabel(status: string) {
   if (status === "pending") return "Bekliyor";
   if (status === "preparing") return "Hazırlanıyor";
   if (status === "ready") return "Hazır";
-  if (status === "served") return "Servis Edildi";
-  if (status === "partially_paid") return "Kısmi";
-  if (status === "paid") return "Kapandı";
+  if (status === "served") return "Teslim Edildi";
+  if (status === "paid") return "Ödendi";
   return status;
 }
 
@@ -95,6 +101,9 @@ export function MobileOpsDashboard({
   usingDemoData,
   ops,
   isSelfServiceCoffee,
+  businessName,
+  branchName,
+  cashierName,
 }: MobileOpsDashboardProps) {
   const router = useRouter();
   const dashboardRef = useRef<HTMLDivElement>(null);
@@ -107,6 +116,20 @@ export function MobileOpsDashboard({
       );
     }
   }, []);
+
+  // Takeaway profili farklı bir operasyon ekranı görür. Bu dönüş TÜM hook
+  // çağrılarından SONRA olmalı: daha önce useEffect'in üstündeydi ve şube
+  // değiştirilip profil değişince React "Rendered fewer hooks than expected"
+  // hatasıyla ekranı çökertiyordu.
+  if (isSelfServiceCoffee) {
+    return (
+      <TakeawayAppLauncher
+        businessName={businessName}
+        cashierName={cashierName}
+        branchName={branchName}
+      />
+    );
+  }
 
   const totalTables = metrics.occupiedTables + metrics.emptyTables;
   const occupancyPercent = totalTables > 0 ? Math.round((metrics.occupiedTables / totalTables) * 100) : 0;

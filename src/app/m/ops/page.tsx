@@ -2,7 +2,7 @@ import { requireRole } from "@/lib/auth";
 import { getOpsPageSnapshot } from "@/lib/data";
 import { resolveOperatingProfile } from "@/lib/operating-profile";
 import { logServerPerf, measureAsync } from "@/lib/perf";
-import { getBusinessScopeContext } from "@/lib/server/app-context";
+import { getAppShellContext, getBusinessScopeContext, type AppShellContext } from "@/lib/server/app-context";
 import { shouldUseMobileClientAuthRedirect } from "@/lib/server/mobile-auth-guard";
 import { LiveOpsBridge } from "@/components/live-ops-bridge";
 import { LiveRouteRefresh } from "@/components/live-route-refresh";
@@ -25,6 +25,16 @@ export default async function MobileOpsPage() {
     ops,
   } = snapshotResult.value;
 
+  // Takeaway görünümü işletme ve şube adını gösteriyor. getAppShellSnapshot
+  // cache()'li — aynı istekte zaten çözülmüş oluyor, ek sorgu maliyeti yok.
+  const shell = await getAppShellContext();
+  const activeBusinessName =
+    shell.businesses.find((item: AppShellContext["businesses"][number]) => item.slug === shell.activeBusinessSlug)
+      ?.name ?? undefined;
+  const activeBranchName =
+    shell.branches.find((branch: AppShellContext["branches"][number]) => branch.id === shell.activeBranchId)
+      ?.name ?? undefined;
+
   return (
     <>
       <LiveOpsBridge tables={["orders", "tables", "table_requests", "payments"]} />
@@ -36,6 +46,8 @@ export default async function MobileOpsPage() {
         usingDemoData={usingDemoData}
         ops={ops}
         isSelfServiceCoffee={isSelfServiceCoffee}
+        businessName={activeBusinessName}
+        branchName={activeBranchName}
       />
     </>
   );

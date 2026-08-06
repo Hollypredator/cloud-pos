@@ -10,6 +10,8 @@ import { requireRole } from "@/lib/auth";
 import { getCashierPageSnapshot } from "@/lib/domains/orders";
 import { executeWebOpsCommand } from "@/lib/ops/server-action";
 import { logServerPerf, measureAsync } from "@/lib/perf";
+import { resolveOperatingProfile } from "@/lib/operating-profile";
+import { getAppShellContext, type AppShellContext } from "@/lib/server/app-context";
 import { shouldUseMobileClientAuthRedirect } from "@/lib/server/mobile-auth-guard";
 import type { Order, PaymentMethod } from "@/lib/types";
 
@@ -152,6 +154,17 @@ export default async function MobileCashierPage({
   const servedTotals = totals(servedOrders);
   const paidTotals = totals(paidOrders);
 
+  // Mobil kasanin acilis modu isletme tipinden gelir; bileşen icinde sabit degil.
+  // getAppShellContext cache()'li — ayni istekte zaten cozulmus oluyor.
+  const shell = await getAppShellContext();
+  const isSelfServiceCoffee = resolveOperatingProfile(shell.activeBusinessType) === "coffee_self_service";
+  const activeBusinessName =
+    shell.businesses.find((item: AppShellContext["businesses"][number]) => item.slug === shell.activeBusinessSlug)
+      ?.name ?? undefined;
+  const activeBranchName =
+    shell.branches.find((branch: AppShellContext["branches"][number]) => branch.id === shell.activeBranchId)
+      ?.name ?? undefined;
+
   return (
     <>
       <LiveOpsBridge tables={["orders", "order_items", "payments", "cash_register_sessions"]} fallbackIntervalMs={1400} />
@@ -175,7 +188,7 @@ export default async function MobileCashierPage({
         </div>
       )}
 
-      <MobileCashierUi 
+      <MobileCashierUi
         servedOrders={servedOrders}
         paidOrders={paidOrders}
         selectedOrder={selectedOrder}
@@ -183,6 +196,9 @@ export default async function MobileCashierPage({
         paidTotals={paidTotals}
         completeMobilePaymentAction={completeMobilePaymentAction}
         closePaidOrderAction={closePaidOrderAction}
+        isSelfServiceCoffee={isSelfServiceCoffee}
+        businessName={activeBusinessName}
+        branchName={activeBranchName}
       />
     </>
   );
