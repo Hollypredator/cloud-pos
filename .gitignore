@@ -54,3 +54,8 @@ next-env.d.ts
 
 # Makineye ozel Claude Code ayarlari (izin listesi, yerel yollar)
 .claude/settings.local.json
+
+# graphify ciktisi — uretilen dosya, `graphify update .` ile yeniden olusur.
+# Depoda tutmak her calistirmada ~90 bin satir gurultu yaratiyor ve pre-push
+# gizli-bilgi taramasini boguyordu.
+graphify-out/
