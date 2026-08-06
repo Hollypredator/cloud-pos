@@ -113,9 +113,24 @@ export async function syncPendingCommands(): Promise<{ success: number; failed: 
   }
 }
 
+export async function printToLocalDaemon(payload: Record<string, any>): Promise<boolean> {
+  try {
+    const response = await fetch("http://localhost:9100/print", {
+      method: "POST",
+      headers: { "Content-Type": "application/json" },
+      body: JSON.stringify(payload),
+    });
+    return response.ok;
+  } catch {
+    // Fallback if local print daemon is offline
+    return false;
+  }
+}
+
 // Auto-register online listener
 if (typeof window !== "undefined") {
   window.addEventListener("online", () => {
     void syncPendingCommands();
   });
 }
+

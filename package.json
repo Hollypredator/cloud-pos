@@ -8,6 +8,7 @@
     "dev:webpack": "next dev --webpack",
     "build": "next build",
     "start": "next start",
+    "print:daemon": "node scripts/local-print-daemon.mjs",
     "lint": "eslint src/app/api src/lib/auth.ts src/lib/data.ts src/lib/domains src/lib/platform-owner.ts src/lib/qr-access.ts src/components/order-status-widget.tsx src/components/order-history-widget.tsx src/components/qr-ordering-client.tsx scripts middleware.ts next.config.ts",
     "test": "vitest run",
     "typecheck": "tsc --noEmit",
