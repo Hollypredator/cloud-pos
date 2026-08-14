@@ -472,7 +472,12 @@ export function AppShell({
             isSelfServiceOrders ? "bg-[#080d1a]" : ""
           } ${
             mobileAppMode
-              ? "pb-[calc(88px+var(--safe-area-bottom))] pt-[calc(68px+var(--safe-area-top))]"
+              ? // Self-servis kendi ust basligini taniyor (isletme adi +
+                // canli/offline nokta, admin-order-entry.tsx icinde) — genel
+                // "CLOUD POS" cubugu onun ustune ikinci bir baslik olarak
+                // binmesin diye o cubuk self-servis icin hic render edilmiyor,
+                // dolayisiyla onun icin ayrilan ust bosluk da gerekmiyor.
+                `pb-[calc(88px+var(--safe-area-bottom))] ${isSelfServiceOrders ? "pt-0" : "pt-[calc(68px+var(--safe-area-top))]"}`
               : "pb-28 md:pb-0"
           }`}
         >
@@ -491,34 +496,37 @@ export function AppShell({
 
         {mobileAppMode ? (
           <>
-            {/* `md:hidden` kasitli olarak yok: bu blok zaten `mobileAppMode`
-                JS kosuluyla sariliyor, o da self-servis kiosk icin genislikten
-                bagimsiz true olabiliyor (bkz. isSelfServiceOrders yukarida).
-                `md:hidden` eklenseydi genis bir kiosk tablette bu ust cubuk
-                (marka adi + canli/offline rozeti) JS "goster" derken CSS
-                tekrar gizlerdi. */}
-            <div className="no-print fixed inset-x-0 top-0 z-40 border-b border-slate-200 bg-white">
-              <div className="mx-auto flex w-full max-w-[980px] items-center justify-between gap-3 px-3 pb-2 pt-[calc(var(--safe-area-top)+8px)]">
-                <div className="min-w-0">
-                  <p className="truncate text-[11px] font-semibold uppercase tracking-[0.18em] text-slate-500">
-                    {shellData?.brandName ?? "Cloud POS"}
-                  </p>
-                  <p className="truncate text-[1.06rem] font-semibold text-slate-900">{mobileTitle}</p>
+            {/* Self-servis icin bu ust cubuk hic render edilmiyor: kendi
+                basligi (isletme adi + canli/offline nokta) zaten
+                admin-order-entry.tsx icinde var, ikisi ust uste iki ayri
+                baslik olarak duruyordu ve az onceki scroll-azaltma
+                duzeltmesinin kazandirdigi yeri geri aliyordu. Restoran
+                tarafinda (masa/mutfak/kasa gibi cok sayfali gezinme) bu
+                cubuk hala gerekli — "hangi sayfadayim" bilgisini tasiyor. */}
+            {!isSelfServiceOrders ? (
+              <div className="no-print fixed inset-x-0 top-0 z-40 border-b border-slate-200 bg-white">
+                <div className="mx-auto flex w-full max-w-[980px] items-center justify-between gap-3 px-3 pb-2 pt-[calc(var(--safe-area-top)+8px)]">
+                  <div className="min-w-0">
+                    <p className="truncate text-[11px] font-semibold uppercase tracking-[0.18em] text-slate-500">
+                      {shellData?.brandName ?? "Cloud POS"}
+                    </p>
+                    <p className="truncate text-[1.06rem] font-semibold text-slate-900">{mobileTitle}</p>
+                  </div>
+                  <span
+                    className={`inline-flex rounded-full px-3 py-1 text-[11px] font-semibold uppercase tracking-[0.12em] ${
+                      isOffline ? "bg-amber-100 text-amber-800" : "bg-emerald-100 text-emerald-700"
+                    }`}
+                  >
+                    {isOffline ? translateUiText("Offline", locale) : translateUiText("Canlı", locale)}
+                  </span>
                 </div>
-                <span
-                  className={`inline-flex rounded-full px-3 py-1 text-[11px] font-semibold uppercase tracking-[0.12em] ${
-                    isOffline ? "bg-amber-100 text-amber-800" : "bg-emerald-100 text-emerald-700"
-                  }`}
-                >
-                  {isOffline ? translateUiText("Offline", locale) : translateUiText("Canlı", locale)}
-                </span>
+                {isOffline ? (
+                  <div className="border-t border-amber-200 bg-amber-50 px-4 py-2 text-xs font-medium text-amber-900">
+                    {translateUiText("Bağlantı gerekli. Offline modda sadece okunabilir kullanım açık.", locale)}
+                  </div>
+                ) : null}
               </div>
-              {isOffline ? (
-                <div className="border-t border-amber-200 bg-amber-50 px-4 py-2 text-xs font-medium text-amber-900">
-                  {translateUiText("Bağlantı gerekli. Offline modda sadece okunabilir kullanım açık.", locale)}
-                </div>
-              ) : null}
-            </div>
+            ) : null}
 
             {/* Kiosk ekranindaki TEK yonetim-alani erisim yolu bu iki dugme:
                 Home (/ops'a doner, orada isSelfServiceOrders artik false

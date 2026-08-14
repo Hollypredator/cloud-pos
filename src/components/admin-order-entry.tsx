@@ -220,6 +220,22 @@ export function AdminOrderEntry({
   const searchInputRef = useRef<HTMLInputElement>(null);
   const displayFreezeUntilRef = useRef(0);
   const isSelfServiceCoffee = operatingProfile === "coffee_self_service";
+  // Self-servis kendi kimligini (isletme adi + canli/offline nokta) kendi
+  // basligina tasiyor artik — app-shell'in genel "CLOUD POS" cubugu
+  // self-servis icin hic render edilmiyor (ikisi ust uste iki baslikti).
+  // Bu yuzden kucuk bir yerel online takibi burada da lazim.
+  const [isOnline, setIsOnline] = useState(true);
+  useEffect(() => {
+    if (!isSelfServiceCoffee) return;
+    const apply = () => setIsOnline(navigator.onLine);
+    apply();
+    window.addEventListener("online", apply);
+    window.addEventListener("offline", apply);
+    return () => {
+      window.removeEventListener("online", apply);
+      window.removeEventListener("offline", apply);
+    };
+  }, [isSelfServiceCoffee]);
   const [catalogSnapshot, setCatalogSnapshot] = useState<CatalogSnapshot | null>(null);
 
   // Tuketim SATIS ANINDA istemcide donduruluyor (bkz. catalog-consumption.ts).
@@ -1005,8 +1021,17 @@ export function AdminOrderEntry({
           <header className="flex items-center justify-between border-b border-slate-800 px-6 py-5">
             <div className="min-w-0">
               {/* Isletme adi disaridan gelir. Sabit yazildiginda her kiracinin
-                  kasasinda ayni marka gorunuyordu. */}
-              <p className="truncate text-3xl font-black tracking-tight">{businessName ?? "Self Servis"}</p>
+                  kasasinda ayni marka gorunuyordu. Canli/offline nokta burada:
+                  app-shell'in genel ust cubugu self-servis icin artik hic
+                  render edilmiyor (iki ust uste baslik olmasin diye), bu
+                  yuzden kimlik bilgisiyle birlikte baglanti durumu da burada. */}
+              <div className="flex items-center gap-2">
+                <span
+                  className={`h-2 w-2 shrink-0 rounded-full ${isOnline ? "bg-emerald-400" : "bg-amber-400"}`}
+                  aria-hidden="true"
+                />
+                <p className="truncate text-3xl font-black tracking-tight">{businessName ?? "Self Servis"}</p>
+              </div>
               <p className="mt-1 truncate text-sm text-slate-400">{branchName ?? "Hızlı ve Lezzetli"}</p>
             </div>
             <div className="text-right">
@@ -1262,6 +1287,19 @@ export function AdminOrderEntry({
         </section>
 
         <div className={`ss-kiosk-only space-y-3 ${isStackMobile ? "pb-[calc(190px+var(--safe-area-bottom))]" : "pb-[calc(164px+var(--safe-area-bottom))]"}`}>
+          {/* Mobile Self-Service: Baslik. Masaustu bolumun aksine bunun hic
+              basligi yoktu — app-shell'in genel ust cubugu buraya kimlik
+              saglardi. O cubuk artik self-servis icin hic render edilmiyor
+              (iki ust uste baslikti), o yuzden bu satir olmadan telefon
+              genisliginde isletme adi/canli durumu hicbir yerde gorunmezdi. */}
+          <div className="flex items-center gap-2 px-1">
+            <span
+              className={`h-2 w-2 shrink-0 rounded-full ${isOnline ? "bg-emerald-400" : "bg-amber-400"}`}
+              aria-hidden="true"
+            />
+            <p className="truncate text-sm font-bold text-white">{businessName ?? "Self Servis"}</p>
+          </div>
+
           {/* Mobile Self-Service: Search */}
           <div className="m-card rounded-2xl border border-slate-700/80 p-1 space-y-1">
             <input
