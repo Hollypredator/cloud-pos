@@ -59,41 +59,77 @@ export function SelfServiceModifierInline({
   const blocked = missingGroupIds.length > 0;
   const total = (Number(product.price) + delta) * quantity;
 
+  // Adim listesi: "Ürün" her zaman ilk ve tamamlanmis (buraya bir urun
+  // secilerek gelindi). Sonraki adimlar veriden gelen gerçek gruplar —
+  // sabit "Boy/Ekstra" degil, tenant kendi Recipe Studio'sundan ne
+  // tanimlarsa o. Referans tasarimlarda 3 adim gorunuyordu (Ürün/Boyut/
+  // Ekstralar) cunku o ornekte grup sayisi 2'ydi; burada grup sayisi
+  // degisken oldugu icin adim sayisi da veriye gore uzar/kisalir.
+  const steps = [
+    { key: "__product__", label: "Ürün", done: true, missing: false },
+    ...groups.map((group) => ({
+      key: group.id,
+      label: group.name,
+      done: (selected[group.id] ?? []).length > 0,
+      missing: missingGroupIds.includes(group.id),
+    })),
+  ];
+
   return (
-    <article className="rounded-2xl border-2 border-rose-400/60 bg-slate-900 p-4 shadow-[0_8px_24px_rgba(0,0,0,0.35)]">
-      <div className="flex items-start justify-between gap-3">
-        <div className="min-w-0">
+    <article className="rounded-2xl border-2 border-rose-400/60 bg-slate-900 shadow-[0_8px_24px_rgba(0,0,0,0.35)]">
+      <div className="border-b border-white/10 px-4 pt-4">
+        <div className="flex items-start justify-between gap-3">
           <p className="truncate text-lg font-black tracking-tight text-white">{product.name}</p>
-          {/* Adim seridi: hangi grup tamam, hangisi zorunlu-eksik. */}
-          <div className="mt-1 flex flex-wrap items-center gap-x-2 gap-y-1 text-[10px] font-bold uppercase tracking-wide">
-            <span className="text-emerald-400">✓ Ürün</span>
-            {groups.map((group) => {
-              const done = (selected[group.id] ?? []).length > 0;
-              const isMissing = missingGroupIds.includes(group.id);
-              return (
-                <span
-                  key={group.id}
-                  className={isMissing ? "text-red-400" : done ? "text-emerald-400" : "text-white/35"}
-                >
-                  → {done && !isMissing ? "✓ " : ""}
-                  {group.name}
-                  {group.is_required && !done ? " (ZORUNLU)" : ""}
-                </span>
-              );
-            })}
-          </div>
+          <button
+            type="button"
+            onClick={onCancel}
+            aria-label="Vazgeç"
+            className="inline-flex h-9 w-9 shrink-0 items-center justify-center rounded-lg border border-white/10 text-white/60"
+          >
+            <X className="h-4 w-4" />
+          </button>
         </div>
-        <button
-          type="button"
-          onClick={onCancel}
-          aria-label="Vazgeç"
-          className="inline-flex h-9 w-9 shrink-0 items-center justify-center rounded-lg border border-white/10 text-white/60"
-        >
-          <X className="h-4 w-4" />
-        </button>
+
+        {/* Buyuk adim seridi: numarali daire + baglanti cizgisi + etiket.
+            Kucuk, gomulu bir metin satiri degil — kasiyer uzaktan/hizlica
+            "hangi asamadayim" sorusuna gozle cevap bulabilsin diye. */}
+        <div className="flex items-center gap-1 overflow-x-auto py-3">
+        {steps.map((step, index) => (
+          <div key={step.key} className="flex shrink-0 items-center gap-1">
+            {index > 0 ? (
+              <span
+                className={`h-[2px] w-6 shrink-0 ${
+                  steps[index - 1].done && !steps[index - 1].missing ? "bg-emerald-400" : "bg-white/15"
+                }`}
+                aria-hidden="true"
+              />
+            ) : null}
+            <div className="flex flex-col items-center gap-1">
+              <span
+                className={`flex h-7 w-7 shrink-0 items-center justify-center rounded-full text-xs font-black ${
+                  step.missing
+                    ? "bg-red-600 text-white"
+                    : step.done
+                      ? "bg-emerald-500 text-white"
+                      : "border-2 border-white/25 text-white/50"
+                }`}
+              >
+                {step.done && !step.missing ? <Check className="h-3.5 w-3.5" /> : index + 1}
+              </span>
+              <span
+                className={`whitespace-nowrap text-[10px] font-bold uppercase tracking-wide ${
+                  step.missing ? "text-red-400" : step.done ? "text-emerald-300" : "text-white/45"
+                }`}
+              >
+                {step.label}
+              </span>
+            </div>
+          </div>
+        ))}
+        </div>
       </div>
 
-      <div className="mt-4 space-y-4">
+      <div className="space-y-4 px-4 pb-4">
         {groups.map((group) => {
           const options = optionsByGroup.get(group.id) ?? [];
           const ids = selected[group.id] ?? [];
@@ -148,7 +184,7 @@ export function SelfServiceModifierInline({
         })}
       </div>
 
-      <div className="mt-4 flex items-center gap-3">
+      <div className="flex items-center gap-3 px-4 pb-4">
         <div className="flex items-center gap-1 rounded-xl border border-white/10 bg-white/[0.04] p-1">
           <button
             type="button"
