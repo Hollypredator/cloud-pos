@@ -76,7 +76,14 @@ export default async function AdminOrdersPage({
     const activeBranch = appContext.branches.find((branch) => branch.id === appContext.activeBranchId);
 
     return (
-      <main className="coffee-pos-mode flex h-screen w-full flex-col overflow-hidden bg-[#080d1a] text-white">
+      // `h-full` degil `h-screen` yazilmis olsaydi: bu <main>, app-shell'in
+      // mobileAppMode icin ayirdigi ust/alt sabit cubuk paylini (pt-68px/
+      // pb-88px, ebeveyn div'de) yok sayip tam 100vh talep ederdi. Self-servis
+      // artik kiosk modu genislikten bagimsiz her zaman acik oldugu icin bu
+      // cubuklar hep render ediliyor — h-screen ile catisip sepet panelinin
+      // altini (Nakit/Kart butonlari) kirpip goturuyordu. `h-full` ebeveynin
+      // PADDING SONRASI kalan alanina sigar, cubuklarla catismaz.
+      <main className="coffee-pos-mode flex h-full w-full flex-col overflow-hidden bg-[#080d1a] text-white">
         <SelfServiceCheckout
           businessSlug={businessSlug}
           businessName={appContext.activeBusiness?.name ?? businessSlug}
