@@ -22,7 +22,7 @@ function triggerHaptic(pattern: number | number[] = 40) {
     }
   }
 }
-import { TakeawayModifierFlow } from "@/components/takeaway-modifier-flow";
+import { SelfServiceModifierInline } from "@/components/self-service-modifier-inline";
 import { TablePickerFloorPlan } from "@/components/table-picker-floor-plan";
 import { loadCatalog, type CatalogSnapshot } from "@/lib/offline/catalog-store";
 import { freezeCartConsumption } from "@/lib/offline/catalog-consumption";
@@ -489,7 +489,23 @@ export function AdminOrderEntry({
     }
 
     if (isSelfServiceCoffee && selfServiceModifierFlow === "stepped") {
-      // Boy ve ekler sorulur. Varsayilanlar akisin icinde onceden secili gelir.
+      // Boy ve ekler izgarada urunun kendi yerinde acilir (bkz.
+      // self-service-modifier-inline.tsx). Varsayilan yoksa zorunlu grupta
+      // ilk secenege duser — bos zorunlu grupla acilirsa kullanici hicbir
+      // sey secmeden "Sepete Ekle"ye basamaz, ekranda hangi grubun eksik
+      // oldugu bile gorunmez.
+      const defaults: Record<string, string[]> = {};
+      for (const group of groups) {
+        const options = optionsByGroup.get(group.id) ?? [];
+        const preselected = options.filter((option) => option.is_default).map((option) => option.id);
+        const fallback = group.is_required && preselected.length === 0 && options[0] ? [options[0].id] : [];
+        defaults[group.id] = (preselected.length > 0 ? preselected : fallback).slice(
+          0,
+          Math.max(group.max_select, 1),
+        );
+      }
+      setSelectedOptions(defaults);
+      setConfiguredQuantity(product.id, nextItemMultiplier);
       setActiveProductId(product.id);
       return;
     }
@@ -607,6 +623,19 @@ export function AdminOrderEntry({
 
     addConfiguredProductWithQuantity(product, buildModifierSelections(activeProductId), nextItemMultiplier);
     setNextItemMultiplier(1);
+  }
+
+  /** Izgara-ici self-servis onayi. `confirmModifiers` gibi ama adet
+      `getConfiguredQuantity`den gelir — cip'lerdeki +/- burayi besler. */
+  function confirmInlineModifiers(product: Product) {
+    const groups = groupsByProduct.get(product.id) ?? [];
+    for (const group of groups) {
+      const count = (selectedOptions[group.id] ?? []).length;
+      if (group.is_required && count < Math.max(1, group.min_select)) {
+        return;
+      }
+    }
+    addConfiguredProductWithQuantity(product, buildModifierSelections(product.id), getConfiguredQuantity(product.id));
   }
 
   function removeProduct(key: string) {
@@ -1062,37 +1091,69 @@ export function AdminOrderEntry({
                 </p>
               ) : (
                 <div className="grid gap-4 sm:grid-cols-2 xl:grid-cols-4">
-                  {selfServiceProducts.map((product) => (
-                    <article
-                      key={`self-service-product-${product.id}`}
-                      role="button"
-                      tabIndex={0}
-                      onClick={() => openModifierPicker(product)}
-                      onKeyDown={(event) => {
-                        if (event.key === "Enter" || event.key === " ") {
-                          event.preventDefault();
-                          openModifierPicker(product);
-                        }
-                      }}
-                      className="m-card cursor-pointer rounded-2xl border border-slate-700/70 p-4 transition hover:border-rose-300/40 active:scale-[0.99] focus:outline-none focus-visible:ring-2 focus-visible:ring-rose-400"
-                    >
-                      <div className="mb-4 inline-flex h-11 w-11 items-center justify-center rounded-full bg-slate-700/80 text-xs font-black text-slate-100">
-                        {product.name.slice(0, 2).toUpperCase()}
-                      </div>
-                      <p className="text-lg font-semibold text-white">{product.name}</p>
-                      <p className="mt-2 text-3xl font-black tracking-tight text-rose-400">₺{Number(product.price).toFixed(2)}</p>
-                      <button
-                        type="button"
-                        onClick={(event) => {
-                          event.stopPropagation();
-                          openModifierPicker(product);
+                  {selfServiceProducts.map((product) => {
+                    const productGroups = groupsByProduct.get(product.id) ?? [];
+                    const isExpanded =
+                      isSelfServiceCoffee &&
+                      selfServiceModifierFlow === "stepped" &&
+                      activeProductId === product.id &&
+                      productGroups.length > 0;
+
+                    // Genisleyen kart tum satiri kaplar: ekranin geri kalani
+                    // gorunur kalsin diye — modal degil, izgaranin kendisi.
+                    if (isExpanded) {
+                      return (
+                        <div key={`self-service-product-${product.id}`} className="sm:col-span-2 xl:col-span-4">
+                          <SelfServiceModifierInline
+                            product={product}
+                            groups={productGroups}
+                            optionsByGroup={optionsByGroup}
+                            selected={selectedOptions}
+                            onToggle={toggleOption}
+                            quantity={getConfiguredQuantity(product.id)}
+                            onQuantityChange={(quantity) => setConfiguredQuantity(product.id, quantity)}
+                            onCancel={() => {
+                              setActiveProductId(null);
+                              setSelectedOptions({});
+                            }}
+                            onConfirm={() => confirmInlineModifiers(product)}
+                          />
+                        </div>
+                      );
+                    }
+
+                    return (
+                      <article
+                        key={`self-service-product-${product.id}`}
+                        role="button"
+                        tabIndex={0}
+                        onClick={() => openModifierPicker(product)}
+                        onKeyDown={(event) => {
+                          if (event.key === "Enter" || event.key === " ") {
+                            event.preventDefault();
+                            openModifierPicker(product);
+                          }
                         }}
-                        className="mt-4 rounded-full bg-slate-700 px-4 py-1.5 text-xs font-semibold text-white hover:bg-slate-600"
+                        className="m-card cursor-pointer rounded-2xl border border-slate-700/70 p-4 transition hover:border-rose-300/40 active:scale-[0.99] focus:outline-none focus-visible:ring-2 focus-visible:ring-rose-400"
                       >
-                        Ekle
-                      </button>
-                    </article>
-                  ))}
+                        <div className="mb-4 inline-flex h-11 w-11 items-center justify-center rounded-full bg-slate-700/80 text-xs font-black text-slate-100">
+                          {product.name.slice(0, 2).toUpperCase()}
+                        </div>
+                        <p className="text-lg font-semibold text-white">{product.name}</p>
+                        <p className="mt-2 text-3xl font-black tracking-tight text-rose-400">₺{Number(product.price).toFixed(2)}</p>
+                        <button
+                          type="button"
+                          onClick={(event) => {
+                            event.stopPropagation();
+                            openModifierPicker(product);
+                          }}
+                          className="mt-4 rounded-full bg-slate-700 px-4 py-1.5 text-xs font-semibold text-white hover:bg-slate-600"
+                        >
+                          {productGroups.length > 0 ? "Seç" : "Ekle"}
+                        </button>
+                      </article>
+                    );
+                  })}
                 </div>
               )}
             </div>
@@ -1253,27 +1314,57 @@ export function AdminOrderEntry({
             </div>
           ) : (
             <div className="grid grid-cols-2 gap-2.5">
-              {selfServiceProducts.map((product) => (
-                <article
-                  key={`ss-mobile-product-${product.id}`}
-                  role="button"
-                  tabIndex={0}
-                  onClick={() => openModifierPicker(product)}
-                  onKeyDown={(event) => {
-                    if (event.key === "Enter" || event.key === " ") {
-                      event.preventDefault();
-                      openModifierPicker(product);
-                    }
-                  }}
-                  className="m-card cursor-pointer rounded-2xl border border-slate-700/60 p-3.5 transition active:scale-[0.98] hover:border-rose-400/40 focus:outline-none focus-visible:ring-2 focus-visible:ring-rose-400"
-                >
-                  <div className="mb-3 inline-flex h-10 w-10 items-center justify-center rounded-full bg-slate-700/70 text-[11px] font-black text-slate-200">
-                    {product.name.slice(0, 2).toUpperCase()}
-                  </div>
-                  <p className="line-clamp-2 text-[0.92rem] font-semibold leading-tight text-white">{product.name}</p>
-                  <p className="mt-2 text-xl font-black tracking-tight text-rose-400">₺{Number(product.price).toFixed(2)}</p>
-                </article>
-              ))}
+              {selfServiceProducts.map((product) => {
+                const productGroups = groupsByProduct.get(product.id) ?? [];
+                const isExpanded =
+                  isSelfServiceCoffee &&
+                  selfServiceModifierFlow === "stepped" &&
+                  activeProductId === product.id &&
+                  productGroups.length > 0;
+
+                if (isExpanded) {
+                  return (
+                    <div key={`ss-mobile-product-${product.id}`} className="col-span-2">
+                      <SelfServiceModifierInline
+                        product={product}
+                        groups={productGroups}
+                        optionsByGroup={optionsByGroup}
+                        selected={selectedOptions}
+                        onToggle={toggleOption}
+                        quantity={getConfiguredQuantity(product.id)}
+                        onQuantityChange={(quantity) => setConfiguredQuantity(product.id, quantity)}
+                        onCancel={() => {
+                          setActiveProductId(null);
+                          setSelectedOptions({});
+                        }}
+                        onConfirm={() => confirmInlineModifiers(product)}
+                      />
+                    </div>
+                  );
+                }
+
+                return (
+                  <article
+                    key={`ss-mobile-product-${product.id}`}
+                    role="button"
+                    tabIndex={0}
+                    onClick={() => openModifierPicker(product)}
+                    onKeyDown={(event) => {
+                      if (event.key === "Enter" || event.key === " ") {
+                        event.preventDefault();
+                        openModifierPicker(product);
+                      }
+                    }}
+                    className="m-card cursor-pointer rounded-2xl border border-slate-700/60 p-3.5 transition active:scale-[0.98] hover:border-rose-400/40 focus:outline-none focus-visible:ring-2 focus-visible:ring-rose-400"
+                  >
+                    <div className="mb-3 inline-flex h-10 w-10 items-center justify-center rounded-full bg-slate-700/70 text-[11px] font-black text-slate-200">
+                      {product.name.slice(0, 2).toUpperCase()}
+                    </div>
+                    <p className="line-clamp-2 text-[0.92rem] font-semibold leading-tight text-white">{product.name}</p>
+                    <p className="mt-2 text-xl font-black tracking-tight text-rose-400">₺{Number(product.price).toFixed(2)}</p>
+                  </article>
+                );
+              })}
             </div>
           )}
 
@@ -1988,28 +2079,6 @@ export function AdminOrderEntry({
                    </div>
                 </div>
              )}
-
-             {/* Self-servis: urun -> boy -> ekler akisi. Restoran tarafi asagidaki
-                 acik temali modali kullanmaya devam eder. */}
-             {activeProduct &&
-             isSelfServiceCoffee &&
-             selfServiceModifierFlow === "stepped" &&
-             (groupsByProduct.get(activeProduct.id) ?? []).length > 0 ? (
-                <TakeawayModifierFlow
-                   product={activeProduct}
-                   groups={groupsByProduct.get(activeProduct.id) ?? []}
-                   optionsByGroup={optionsByGroup}
-                   initialQuantity={nextItemMultiplier}
-                   onCancel={() => {
-                      setActiveProductId(null);
-                      setSelectedOptions({});
-                   }}
-                   onConfirm={(selections, quantity) => {
-                      addConfiguredProductWithQuantity(activeProduct, selections, quantity);
-                      setNextItemMultiplier(1);
-                   }}
-                />
-             ) : null}
 
              {/* Modals for modifiers */}
              {activeProduct &&
