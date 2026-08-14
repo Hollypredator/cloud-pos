@@ -47,3 +47,6 @@ next-env.d.ts
 # local supabase runtime metadata
 /supabase/.temp/
 .gstack/
+
+# Graphify bilgi grafigi ciktisi — uretilen dosya, surumlenmez.
+graphify-out/
