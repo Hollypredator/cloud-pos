@@ -491,7 +491,13 @@ export function AppShell({
 
         {mobileAppMode ? (
           <>
-            <div className="no-print fixed inset-x-0 top-0 z-40 border-b border-slate-200 bg-white md:hidden">
+            {/* `md:hidden` kasitli olarak yok: bu blok zaten `mobileAppMode`
+                JS kosuluyla sariliyor, o da self-servis kiosk icin genislikten
+                bagimsiz true olabiliyor (bkz. isSelfServiceOrders yukarida).
+                `md:hidden` eklenseydi genis bir kiosk tablette bu ust cubuk
+                (marka adi + canli/offline rozeti) JS "goster" derken CSS
+                tekrar gizlerdi. */}
+            <div className="no-print fixed inset-x-0 top-0 z-40 border-b border-slate-200 bg-white">
               <div className="mx-auto flex w-full max-w-[980px] items-center justify-between gap-3 px-3 pb-2 pt-[calc(var(--safe-area-top)+8px)]">
                 <div className="min-w-0">
                   <p className="truncate text-[11px] font-semibold uppercase tracking-[0.18em] text-slate-500">
@@ -514,7 +520,12 @@ export function AppShell({
               ) : null}
             </div>
 
-            <div className="no-print fixed inset-x-0 bottom-0 z-40 border-t border-slate-200 bg-white md:hidden">
+            {/* Kiosk ekranindaki TEK yonetim-alani erisim yolu bu iki dugme:
+                Home (/ops'a doner, orada isSelfServiceOrders artik false
+                oldugu icin sol menu geri gelir) ve Actions (sipariş/servis/
+                yonetim gruplu kisayollar). `md:hidden` buradan da kasitli
+                cikarildi — ayni gerekce. */}
+            <div className="no-print fixed inset-x-0 bottom-0 z-40 border-t border-slate-200 bg-white">
               <div className="mx-auto grid w-full max-w-[980px] grid-cols-[1fr_auto] gap-2 px-3 pb-[calc(var(--safe-area-bottom)+8px)] pt-2">
                 <Link
                   href="/ops"
@@ -536,7 +547,7 @@ export function AppShell({
             </div>
 
             {actionsOpen ? (
-              <div className="no-print fixed inset-0 z-50 bg-slate-950/40 md:hidden" onClick={() => setActionsOpen(false)}>
+              <div className="no-print fixed inset-0 z-50 bg-slate-950/40" onClick={() => setActionsOpen(false)}>
                 <div
                   className="absolute inset-x-0 bottom-0 max-h-[78vh] overflow-y-auto rounded-t-[28px] border-t border-slate-200 bg-white px-4 pb-[calc(var(--safe-area-bottom)+16px)] pt-4"
                   onClick={(event) => event.stopPropagation()}

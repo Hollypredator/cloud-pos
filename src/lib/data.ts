@@ -926,13 +926,100 @@ const rawDemoSelfServiceProducts: Product[] = [
 ];
 const demoSelfServiceProducts: Product[] = rawDemoSelfServiceProducts.map((p) => helperEnrichCalories(p));
 
+/**
+ * Sicak/Soguk kahve urunlerine boy + sut + ekstra modifier'lari.
+ *
+ * Onceden demo self-servis kataloğu modifier'sizdi (asagida bos dizi
+ * donduruluyordu) — yani hicbir demo tenant'ta "urun -> boy -> ekler" akisi
+ * test edilemiyordu, gorunecek veri yoktu. Her icecege ayni uc grup
+ * uygulaniyor; gercek kiracilar kendi receteler ekranindan ozellestirir.
+ */
+const SELF_SERVICE_DRINK_CATEGORY_IDS = new Set(["ss-cat-1", "ss-cat-2"]);
+const SELF_SERVICE_BLACK_COFFEE_NAMES = new Set([
+  "Espresso",
+  "Doppio",
+  "Americano",
+  "Filtre Kahve",
+  "Turk Kahvesi",
+  "Iced Americano",
+  "Cold Brew",
+  "Nitro Cold Brew",
+]);
+
+function buildSelfServiceDrinkModifiers(products: Product[]) {
+  const groups: ProductModifierGroup[] = [];
+  const options: ProductModifierOption[] = [];
+
+  for (const product of products) {
+    if (!SELF_SERVICE_DRINK_CATEGORY_IDS.has(product.category_id)) continue;
+
+    const sizeGroupId = `${product.id}-size`;
+    groups.push({
+      id: sizeGroupId,
+      product_id: product.id,
+      name: "Boy",
+      min_select: 1,
+      max_select: 1,
+      is_required: true,
+      sort_order: 1,
+    });
+    options.push(
+      { id: `${sizeGroupId}-s`, group_id: sizeGroupId, name: "S", price_delta: 0, is_default: true, sort_order: 1 },
+      { id: `${sizeGroupId}-m`, group_id: sizeGroupId, name: "M", price_delta: 15, is_default: false, sort_order: 2 },
+      { id: `${sizeGroupId}-l`, group_id: sizeGroupId, name: "L", price_delta: 30, is_default: false, sort_order: 3 },
+      { id: `${sizeGroupId}-xl`, group_id: sizeGroupId, name: "XL", price_delta: 45, is_default: false, sort_order: 4 },
+    );
+
+    // Sade kahvelerde sut tipi anlamsiz — Turk kahvesine "yulaf sutu"
+    // secenegi sunmak demo veriyi guvenilmez gosterirdi.
+    if (!SELF_SERVICE_BLACK_COFFEE_NAMES.has(product.name)) {
+      const milkGroupId = `${product.id}-milk`;
+      groups.push({
+        id: milkGroupId,
+        product_id: product.id,
+        name: "Süt Tipi",
+        min_select: 0,
+        max_select: 1,
+        is_required: false,
+        sort_order: 2,
+      });
+      options.push(
+        { id: `${milkGroupId}-tam`, group_id: milkGroupId, name: "Tam Yağlı", price_delta: 0, is_default: true, sort_order: 1 },
+        { id: `${milkGroupId}-yarim`, group_id: milkGroupId, name: "Yarım Yağlı", price_delta: 0, is_default: false, sort_order: 2 },
+        { id: `${milkGroupId}-yulaf`, group_id: milkGroupId, name: "Yulaf Sütü", price_delta: 20, is_default: false, sort_order: 3 },
+        { id: `${milkGroupId}-badem`, group_id: milkGroupId, name: "Badem Sütü", price_delta: 20, is_default: false, sort_order: 4 },
+      );
+    }
+
+    const extraGroupId = `${product.id}-extra`;
+    groups.push({
+      id: extraGroupId,
+      product_id: product.id,
+      name: "Ekstra",
+      min_select: 0,
+      max_select: 3,
+      is_required: false,
+      sort_order: 3,
+    });
+    options.push(
+      { id: `${extraGroupId}-shot`, group_id: extraGroupId, name: "Ekstra Shot", price_delta: 25, is_default: false, sort_order: 1 },
+      { id: `${extraGroupId}-vanilya`, group_id: extraGroupId, name: "Vanilya Şurubu", price_delta: 15, is_default: false, sort_order: 2 },
+      { id: `${extraGroupId}-karamel`, group_id: extraGroupId, name: "Karamel Şurubu", price_delta: 15, is_default: false, sort_order: 3 },
+    );
+  }
+
+  return { groups, options };
+}
+
+const demoSelfServiceModifiers = buildSelfServiceDrinkModifiers(demoSelfServiceProducts);
+
 function getDemoMenuSeed(businessType?: BusinessType | null) {
   const isSelfService = businessType === "self_service_coffee";
   return {
     categories: isSelfService ? demoSelfServiceCategories : demoCategories,
     products: isSelfService ? demoSelfServiceProducts : demoProducts,
-    modifierGroups: isSelfService ? ([] as ProductModifierGroup[]) : demoModifierGroups,
-    modifierOptions: isSelfService ? ([] as ProductModifierOption[]) : demoModifierOptions,
+    modifierGroups: isSelfService ? demoSelfServiceModifiers.groups : demoModifierGroups,
+    modifierOptions: isSelfService ? demoSelfServiceModifiers.options : demoModifierOptions,
   };
 }
 

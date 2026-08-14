@@ -203,6 +203,11 @@ export function AdminOrderEntry({
   const [selectedOptions, setSelectedOptions] = useState<Record<string, string[]>>({});
   const [productQuantities, setProductQuantities] = useState<Record<string, number>>({});
   const [categoryTabsOpen, setCategoryTabsOpen] = useState(true);
+  // Musteri ekrani eslestirme vardiyada bir kez yapilan kurulum isi, siparis
+  // basina degil. Varsayilan acikken urun izgarasindan once ~150px yer
+  // kapliyordu — kasiyer her acilista urune ulasmak icin kaydirmak
+  // zorundaydi. Katlanmis baslar, durumu tek satirda gosterir.
+  const [displayPairingOpen, setDisplayPairingOpen] = useState(false);
   const [mobileCartOpen, setMobileCartOpen] = useState(false);
   const [tablePickerFilter, setTablePickerFilter] = useState<"all" | TableStatus>("all");
   const [tablePickerLayout, setTablePickerLayout] = useState<"liste" | "kroki">("liste");
@@ -1010,49 +1015,64 @@ export function AdminOrderEntry({
             </div>
           </header>
 
-          <div className="border-b border-slate-800 bg-slate-900/55 px-6 py-4">
-            <div className="flex flex-wrap items-end gap-3">
-              <div className="min-w-[220px]">
-                <p className="text-xs uppercase tracking-[0.16em] text-slate-400">Müşteri Ekrani Eslesme Kodu</p>
-                <p className="mt-1 text-2xl font-black tracking-[0.14em] text-emerald-300">
-                  {displaySession?.pairCode ?? "------"}
+          <div className="border-b border-slate-800 bg-slate-900/55 px-6">
+            <button
+              type="button"
+              onClick={() => setDisplayPairingOpen((prev) => !prev)}
+              className="flex w-full items-center justify-between gap-3 py-3 text-left"
+            >
+              <span className="flex items-center gap-2 text-xs uppercase tracking-[0.16em] text-slate-400">
+                <span className={`h-2 w-2 shrink-0 rounded-full ${displaySession ? "bg-emerald-400" : "bg-slate-600"}`} aria-hidden="true" />
+                Müşteri Ekranı{" "}
+                {displaySession ? (
+                  <span className="font-black tracking-[0.14em] text-emerald-300">{displaySession.pairCode}</span>
+                ) : (
+                  "Bağlı Değil"
+                )}
+              </span>
+              <span className="text-xs font-semibold text-slate-300">{displayPairingOpen ? "Gizle" : "Ayarla"}</span>
+            </button>
+
+            {displayPairingOpen ? (
+              <div className="pb-4">
+                <div className="flex flex-wrap items-end gap-3">
+                  <button
+                    type="button"
+                    onClick={createDisplayPairCode}
+                    className="rounded-xl bg-emerald-600 px-4 py-2 text-sm font-semibold text-white hover:bg-emerald-500"
+                  >
+                    Kod Uret
+                  </button>
+                  <button
+                    type="button"
+                    onClick={openCustomerDisplay}
+                    disabled={!displaySession}
+                    className="rounded-xl border border-slate-500 bg-slate-800 px-4 py-2 text-sm font-semibold text-slate-100 disabled:cursor-not-allowed disabled:opacity-40"
+                  >
+                    Müşteri Ekranini Ac
+                  </button>
+                  <button
+                    type="button"
+                    onClick={copyDisplayPairCode}
+                    disabled={!displaySession}
+                    className="rounded-xl border border-slate-500 bg-slate-800 px-4 py-2 text-sm font-semibold text-slate-100 disabled:cursor-not-allowed disabled:opacity-40"
+                  >
+                    {displayCodeCopied ? "Kopyalandi" : "Kodu Kopyala"}
+                  </button>
+                  <button
+                    type="button"
+                    onClick={clearDisplaySession}
+                    disabled={!displaySession}
+                    className="rounded-xl border border-rose-500/50 bg-rose-500/10 px-4 py-2 text-sm font-semibold text-rose-200 disabled:cursor-not-allowed disabled:opacity-40"
+                  >
+                    Eslestirmeyi Temizle
+                  </button>
+                </div>
+                <p className="mt-2 text-xs text-slate-400">
+                  10.1&quot; ekranda <span className="font-semibold text-slate-200">/customer-display</span> acip bu kod ile baglanin.
                 </p>
               </div>
-              <button
-                type="button"
-                onClick={createDisplayPairCode}
-                className="rounded-xl bg-emerald-600 px-4 py-2 text-sm font-semibold text-white hover:bg-emerald-500"
-              >
-                Kod Uret
-              </button>
-              <button
-                type="button"
-                onClick={openCustomerDisplay}
-                disabled={!displaySession}
-                className="rounded-xl border border-slate-500 bg-slate-800 px-4 py-2 text-sm font-semibold text-slate-100 disabled:cursor-not-allowed disabled:opacity-40"
-              >
-                Müşteri Ekranini Ac
-              </button>
-              <button
-                type="button"
-                onClick={copyDisplayPairCode}
-                disabled={!displaySession}
-                className="rounded-xl border border-slate-500 bg-slate-800 px-4 py-2 text-sm font-semibold text-slate-100 disabled:cursor-not-allowed disabled:opacity-40"
-              >
-                {displayCodeCopied ? "Kopyalandi" : "Kodu Kopyala"}
-              </button>
-              <button
-                type="button"
-                onClick={clearDisplaySession}
-                disabled={!displaySession}
-                className="rounded-xl border border-rose-500/50 bg-rose-500/10 px-4 py-2 text-sm font-semibold text-rose-200 disabled:cursor-not-allowed disabled:opacity-40"
-              >
-                Eslestirmeyi Temizle
-              </button>
-            </div>
-            <p className="mt-2 text-xs text-slate-400">
-              10.1&quot; ekranda <span className="font-semibold text-slate-200">/customer-display</span> acip bu kod ile baglanin.
-            </p>
+            ) : null}
           </div>
 
           <div className="grid min-h-0 flex-1 grid-cols-[minmax(0,1fr)_min(340px,28vw)] grid-rows-[1fr]">
