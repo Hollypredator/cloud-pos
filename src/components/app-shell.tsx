@@ -233,15 +233,22 @@ export function AppShell({
     [stablePathname],
   );
   const mobileExperienceEnabled = shellData?.mobileAppExperienceEnabled ?? true;
-  const mobileAppMode = Boolean(mobileExperienceEnabled && isCoarsePointer && isMobileOpsRoute);
-  const touchFirstMode = showShell;
-  const pwaEnabled = Boolean(shellData?.mobileReadOnlyPwaEnabled);
-  const pwaRuntimeEnabled = Boolean(pwaEnabled && mobileAppMode);
   const activeBusinessType = shellData?.activeBusinessType ?? "restaurant_cafe";
   const isSelfServiceOrders =
     activeBusinessType === "self_service_coffee" &&
     !!stablePathname &&
     stablePathname.startsWith("/admin/orders");
+  // Self-servis siparis ekrani her zaman kiosk gibi calisir, ekran genisligi
+  // ne olursa olsun: bir tablet/dokunmatik terminal genelde 767px'in
+  // ustunde raporlanir (10-13"), o yuzden sadece genislige bakan
+  // `isCoarsePointer` bu ekrani hic yakalamiyordu ve tek amacli bir siparis
+  // terminalinde genel yonetim sol menusu bosuna yer kapliyordu.
+  const mobileAppMode = Boolean(
+    mobileExperienceEnabled && (isCoarsePointer || isSelfServiceOrders) && isMobileOpsRoute,
+  );
+  const touchFirstMode = showShell;
+  const pwaEnabled = Boolean(shellData?.mobileReadOnlyPwaEnabled);
+  const pwaRuntimeEnabled = Boolean(pwaEnabled && mobileAppMode);
   const mobileTitle = resolveMobileTitle(stablePathname, locale, activeBusinessType);
   const quickActions = useMemo(() => {
     if (!shellData) {
