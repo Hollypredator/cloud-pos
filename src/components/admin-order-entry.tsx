@@ -23,6 +23,7 @@ function triggerHaptic(pattern: number | number[] = 40) {
   }
 }
 import { TakeawayModifierFlow } from "@/components/takeaway-modifier-flow";
+import { TablePickerFloorPlan } from "@/components/table-picker-floor-plan";
 import { loadCatalog, type CatalogSnapshot } from "@/lib/offline/catalog-store";
 import { freezeCartConsumption } from "@/lib/offline/catalog-consumption";
 
@@ -37,6 +38,7 @@ import type {
   ProductModifierGroup,
   ProductModifierOption,
   TableStatus,
+  TableZone,
   OperatingProfile,
   OperatingProfileCapabilities,
 } from "@/lib/types";
@@ -129,6 +131,7 @@ export function AdminOrderEntry({
   modifierGroups,
   modifierOptions,
   tables,
+  zones = [],
   initialTableId,
   lockedTableId,
   onOrderCreated,
@@ -148,6 +151,8 @@ export function AdminOrderEntry({
   modifierGroups: ProductModifierGroup[];
   modifierOptions: ProductModifierOption[];
   tables: DiningTable[];
+  /** Kroki gorunumundeki bolge sekmeleri. Verilmezse tek "Bölgesiz" sekme. */
+  zones?: TableZone[];
   initialTableId?: string;
   lockedTableId?: string;
   onOrderCreated?: (orderId: string, paymentMethod?: PaymentMethod) => void;
@@ -195,6 +200,7 @@ export function AdminOrderEntry({
   const [categoryTabsOpen, setCategoryTabsOpen] = useState(true);
   const [mobileCartOpen, setMobileCartOpen] = useState(false);
   const [tablePickerFilter, setTablePickerFilter] = useState<"all" | TableStatus>("all");
+  const [tablePickerLayout, setTablePickerLayout] = useState<"liste" | "kroki">("liste");
   const [tablePickerQuery, setTablePickerQuery] = useState("");
   const [productSearchQuery, setProductSearchQuery] = useState("");
   const [nextItemMultiplier, setNextItemMultiplier] = useState<number>(1);
@@ -1450,16 +1456,45 @@ export function AdminOrderEntry({
               </div>
             </div>
 
-            <div className="mt-3">
+            <div className="mt-3 flex flex-col gap-2 sm:flex-row sm:items-center">
               <input
                 value={tablePickerQuery}
                 onChange={(event) => setTablePickerQuery(event.target.value)}
                 placeholder="Masa ara (ad veya numara)"
                 className="min-h-[48px] w-full rounded-xl border border-slate-300 px-4 py-3 text-sm"
               />
+              {/* Garson salonu isimle degil yerle hatirlar; kroki gorunumu
+                  /admin/tables/floor-plan'daki yerlesimi birebir gosterir. */}
+              <div className="flex shrink-0 gap-1 rounded-xl border border-slate-300 bg-slate-50 p-1">
+                {(["liste", "kroki"] as const).map((layout) => (
+                  <button
+                    key={layout}
+                    type="button"
+                    onClick={() => setTablePickerLayout(layout)}
+                    className={`min-h-[40px] rounded-lg px-4 text-sm font-semibold transition-colors ${
+                      tablePickerLayout === layout ? "bg-slate-900 text-white" : "text-slate-600 hover:bg-slate-100"
+                    }`}
+                  >
+                    {layout === "liste" ? "Liste" : "Kroki"}
+                  </button>
+                ))}
+              </div>
             </div>
 
-            {filteredTables.length === 0 ? (
+            {tablePickerLayout === "kroki" ? (
+              <div className="mt-4">
+                <TablePickerFloorPlan
+                  tables={filteredTables}
+                  zones={zones}
+                  selectedTableId={selectedTableId}
+                  onSelect={(tableId) => {
+                    setSelectedTableId(tableId);
+                    setChannel("dine_in");
+                    setTablePickerView("composer");
+                  }}
+                />
+              </div>
+            ) : filteredTables.length === 0 ? (
               <p className="mt-4 rounded-xl border border-dashed border-slate-200 bg-slate-50 px-4 py-4 text-sm text-slate-500">
                 Bu filtrede masa bulunamadı.
               </p>

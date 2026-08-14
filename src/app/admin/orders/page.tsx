@@ -5,7 +5,7 @@ import { BackofficePage, SidebarPanel, SummaryCard } from "@/components/backoffi
 import { SelfServiceCheckout } from "@/components/self-service-checkout";
 import { requireRole } from "@/lib/auth";
 import { getMenu } from "@/lib/domains/orders";
-import { getTableMap } from "@/lib/domains/tables";
+import { getTableMap, getTableZones } from "@/lib/domains/tables";
 import { translateUiText } from "@/lib/i18n";
 import { getCurrentLocale } from "@/lib/i18n-server";
 import { resolveOperatingProfile, getOperatingProfileCapabilities } from "@/lib/operating-profile";
@@ -41,7 +41,8 @@ export default async function AdminOrdersPage({
   const [
     { categories, products, modifierGroups, modifierOptions, usingDemoData: usingMenuDemo },
     { tables, usingDemoData: usingTablesDemo },
-  ] = await Promise.all([getMenu(businessSlug), getTableMap()]);
+    { zones },
+  ] = await Promise.all([getMenu(businessSlug), getTableMap(), getTableZones()]);
 
   const availableProducts = products.filter((product) => product.is_available).length;
 
@@ -53,6 +54,7 @@ export default async function AdminOrdersPage({
       modifierGroups={modifierGroups}
       modifierOptions={modifierOptions}
       tables={tables}
+      zones={zones}
       initialTableId={preselectedTableId}
       entryMode={isSelfServiceCoffee ? "classic" : "table_first"}
       layoutMode={isMobileUA ? "mobile_stack" : entryLayoutMode}

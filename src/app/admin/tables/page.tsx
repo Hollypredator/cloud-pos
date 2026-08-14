@@ -339,6 +339,12 @@ export default async function AdminTablesPage({
                   {filteredTables.length}
                 </span>
                 <Link
+                  href="/admin/tables/floor-plan"
+                  className="inline-flex min-h-10 items-center justify-center rounded-xl border border-slate-300 bg-white px-3 py-2 text-xs font-semibold text-slate-700 hover:bg-slate-50"
+                >
+                  Kroki Düzenle
+                </Link>
+                <Link
                   href={deleteMode ? normalModeHref : deleteModeHref}
                   className={`inline-flex min-h-10 items-center justify-center rounded-xl border px-3 py-2 text-xs font-semibold ${
                     deleteMode ? "border-slate-300 bg-white text-slate-700" : "border-rose-300 bg-rose-50 text-rose-700"

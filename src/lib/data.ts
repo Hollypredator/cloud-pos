@@ -19,6 +19,8 @@ import {
   getTableZonesImpl,
   listLatestOrdersByTableIdsImpl,
   moveTableOrderImpl,
+  updateTablePositionImpl,
+  updateTableSeatCountImpl,
   updateTableStatusImpl,
   updateTableDetailsImpl,
 } from "@/lib/server/tables-data";
@@ -6752,6 +6754,22 @@ export async function updateTableDetails(input: { tableId: string; tableNumber: 
 
 export async function updateTableStatus(input: { tableId: string; status: TableStatus }) {
   return updateTableStatusImpl(input, {
+    getDefaultBusinessScope,
+    logAuditEvent,
+    revalidateOperationsCaches,
+  });
+}
+
+export async function updateTablePosition(input: { tableId: string; positionX: number; positionY: number }) {
+  return updateTablePositionImpl(input, {
+    getDefaultBusinessScope,
+    logAuditEvent,
+    revalidateOperationsCaches,
+  });
+}
+
+export async function updateTableSeatCount(input: { tableId: string; seatCount: number }) {
+  return updateTableSeatCountImpl(input, {
     getDefaultBusinessScope,
     logAuditEvent,
     revalidateOperationsCaches,
