@@ -3107,6 +3107,89 @@ async function getOrderItemUnitCostSnapshotMap(input: {
   return map;
 }
 
+/** Sunucu cevabi "bu tuketim zaten yazilmis" anlamina mi geliyor? */
+function isConsumptionReplay(message: string) {
+  const text = message.toLowerCase();
+  return (
+    text.includes("23505") ||
+    text.includes("duplicate key") ||
+    text.includes("uniq_ingredient_movement_sale_line")
+  );
+}
+
+/**
+ * Dondurulmus tuketimi yazar: order_item_ingredients + ingredient_movements.
+ *
+ * Idempotans: `uniq_ingredient_movement_sale_line` (order_item_id,
+ * ingredient_id) tekrar gonderimde devreye girer — cevrimdisi kuyruk ayni
+ * siparisi tekrar gonderebilir. Bu durum HATA degil, korumanin calismasidir;
+ * `orders.consumption_failed` isaretlenmez (offline-queue.ts'teki
+ * isIdempotentReplay ile ayni ilke, sunucu tarafi karsiligi).
+ */
+async function writeFrozenConsumption(args: {
+  supabase: NonNullable<ReturnType<typeof getSupabaseServerClient>>;
+  orderId: string;
+  branchId: string;
+  itemIds: string[];
+  frozenConsumption: NonNullable<Parameters<typeof createOrder>[0]["frozenConsumption"]>;
+}) {
+  const { supabase, orderId, branchId, itemIds, frozenConsumption } = args;
+
+  const consumptionRows: Array<{
+    order_id: string;
+    order_item_id: string;
+    ingredient_id: string;
+    quantity: number;
+    unit_cost: number;
+    source: string;
+  }> = [];
+
+  for (const entry of frozenConsumption) {
+    const orderItemId = itemIds[entry.lineIndex];
+    if (!orderItemId) continue;
+    for (const line of entry.lines) {
+      if (!line.ingredientId || !(line.quantity > 0)) continue;
+      consumptionRows.push({
+        order_id: orderId,
+        order_item_id: orderItemId,
+        ingredient_id: line.ingredientId,
+        quantity: line.quantity,
+        unit_cost: line.unitCost,
+        source: line.source,
+      });
+    }
+  }
+
+  if (consumptionRows.length === 0) return;
+
+  const { error: consumptionError } = await supabase.from("order_item_ingredients").insert(consumptionRows);
+  if (consumptionError && !isConsumptionReplay(consumptionError.message)) {
+    await supabase
+      .from("orders")
+      .update({ consumption_failed: true, consumption_error: consumptionError.message.slice(0, 500) })
+      .eq("id", orderId);
+    return;
+  }
+
+  const movementRows = consumptionRows.map((row) => ({
+    ingredient_id: row.ingredient_id,
+    branch_id: branchId,
+    change_quantity: -row.quantity,
+    unit_cost: row.unit_cost,
+    reason: "sale_consumption",
+    order_id: orderId,
+    order_item_id: row.order_item_id,
+  }));
+
+  const { error: movementError } = await supabase.from("ingredient_movements").insert(movementRows);
+  if (movementError && !isConsumptionReplay(movementError.message)) {
+    await supabase
+      .from("orders")
+      .update({ consumption_failed: true, consumption_error: movementError.message.slice(0, 500) })
+      .eq("id", orderId);
+  }
+}
+
 export async function createOrder(input: {
   tableId?: string | null;
   businessId?: string;
@@ -3122,6 +3205,19 @@ export async function createOrder(input: {
   courierPhone?: string;
   courierId?: string | null;
   fulfillmentStatus?: FulfillmentStatus;
+  /**
+   * Satis anindaki dondurulmus tuketim (PLAN-RECETE-MALIYET-STOK.md, Faz 3).
+   * Sunucu bunu OLDUGU GIBI yazar, yeniden hesaplamaz — reçete sonradan
+   * degisse veya siparis cevrimdisi saatler sonra senkron olsa bile ne
+   * tuketildigi satis anindaki haliyle sabit kalir.
+   *
+   * lineIndex, `input.items` dizisindeki sirayla eslesir (order_items.id
+   * henuz yoktu, cevrimdisi satista olusmamisti).
+   */
+  frozenConsumption?: Array<{
+    lineIndex: number;
+    lines: Array<{ ingredientId: string; quantity: number; unitCost: number; source: string }>;
+  }>;
 }) {
   const supabase = getSupabaseServerClient();
   if (!supabase) {
@@ -3410,10 +3506,17 @@ export async function createOrder(input: {
     useLegacySchema: scope.useLegacySchema,
   });
 
-  const payload = normalizedItems.map((item) => {
+  // Kalem kimlikleri onceden uretilir: RETURNING sirasi coklu VALUES'ta
+  // garanti degildir, ama tuketim yazimi lineIndex -> order_item_id
+  // eslemesinin dogru olmasina bagli. Client tarafinda uretip payload'a
+  // eklemek, DB'nin dondurdugu siraya guvenmekten daha saglam.
+  const itemIds = normalizedItems.map(() => crypto.randomUUID());
+
+  const payload = normalizedItems.map((item, index) => {
     const unitCostSnapshot = toScaled(Math.max(0, unitCostSnapshotByProductId.get(item.product_id_for_db ?? "") ?? 0), 4);
     const quantity = Math.max(0, Number(item.quantity));
     return {
+      id: itemIds[index],
       order_id: persistedOrderId,
       product_id: item.product_id_for_db,
       product_name: item.name,
@@ -3432,7 +3535,8 @@ export async function createOrder(input: {
     (itemError.message.toLowerCase().includes("unit_cost_snapshot") ||
       itemError.message.toLowerCase().includes("line_cost_snapshot"))
   ) {
-    const legacyPayload = normalizedItems.map((item) => ({
+    const legacyPayload = normalizedItems.map((item, index) => ({
+      id: itemIds[index],
       order_id: persistedOrderId,
       product_id: item.product_id_for_db,
       product_name: item.name,
@@ -3494,6 +3598,20 @@ export async function createOrder(input: {
       }
       return { ok: false, error: modifierInsert.error.message };
     }
+  }
+
+  // Dondurulmus tuketimi yazar. Basarisiz olursa satis GECER — kasayi stok
+  // kaydi yuzunden durdurmak kafeyi kilitler (CEO review karar 2B) — ama
+  // sessizce gecmez: `orders.consumption_failed` isaretlenir, fark raporu
+  // bu siparisleri disler.
+  if (input.frozenConsumption && input.frozenConsumption.length > 0 && effectiveBranchId) {
+    await writeFrozenConsumption({
+      supabase,
+      orderId: persistedOrderId,
+      branchId: effectiveBranchId,
+      itemIds,
+      frozenConsumption: input.frozenConsumption,
+    });
   }
 
   fireAndForgetOrderPostCreateMaintenance({
@@ -7604,7 +7722,29 @@ export async function deleteProduct(productId: string) {
   });
 }
 
+/**
+ * `base_unit` (g/ml/adet) receten ve stogun kural kaynagi — migration
+ * `20260809_add_recipe_cost_and_ingredient_stock.sql`'de eklendi. Ama
+ * `createIngredient`/`updateIngredient` yalnizca serbest metin `unit`
+ * yaziyordu, `base_unit` hic set edilmiyordu; her yeni malzeme sessizce
+ * kolon varsayilani olan 'adet'e duruyordu — birimi "g" yazsan bile.
+ *
+ * Duzeltme: `unit` artık serbest metin degil, bu ucunden biri. Ayni deger
+ * hem `unit` (geriye donuk, ekranlarda gosterilen) hem `base_unit` (kisitli,
+ * recete/stok hesabinin dayandigi) alanina yazilir — iki alan birbirinden
+ * sapamaz.
+ */
+const INGREDIENT_UNITS = ["g", "ml", "adet"] as const;
+type IngredientUnit = (typeof INGREDIENT_UNITS)[number];
+
+function isIngredientUnit(value: string): value is IngredientUnit {
+  return (INGREDIENT_UNITS as readonly string[]).includes(value);
+}
+
 export async function createIngredient(name: string, unit: string, cost: number) {
+  if (!isIngredientUnit(unit)) {
+    return { ok: false, error: `Birim "g", "ml" veya "adet" olmalı.` };
+  }
   const supabase = getSupabaseServerClient() ?? (await getTenantDataClient());
   if (!supabase) {
     return { ok: false, error: "Demo modda malzeme ekleme pasif." };
@@ -7615,8 +7755,8 @@ export async function createIngredient(name: string, unit: string, cost: number)
   }
 
   const payload = !scope.useLegacySchema && scope.businessId
-    ? { name, unit, cost, business_id: scope.businessId }
-    : { name, unit, cost };
+    ? { name, unit, base_unit: unit, cost, business_id: scope.businessId }
+    : { name, unit, base_unit: unit, cost };
   const { data, error } = await supabase.from("ingredients").insert(payload).select("id").single();
 
   if (error) {
@@ -7628,6 +7768,9 @@ export async function createIngredient(name: string, unit: string, cost: number)
 }
 
 export async function updateIngredient(ingredientId: string, name: string, unit: string, cost: number) {
+  if (!isIngredientUnit(unit)) {
+    return { ok: false, error: `Birim "g", "ml" veya "adet" olmalı.` };
+  }
   const supabase = getSupabaseServerClient() ?? (await getTenantDataClient());
   if (!supabase) {
     return { ok: false, error: "Demo modda malzeme güncelleme pasif." };
@@ -7636,7 +7779,7 @@ export async function updateIngredient(ingredientId: string, name: string, unit:
 
   let query = supabase
     .from("ingredients")
-    .update({ name, unit, cost })
+    .update({ name, unit, base_unit: unit, cost })
     .eq("id", ingredientId);
   if (!scope.useLegacySchema && scope.businessId) {
     query = query.eq("business_id", scope.businessId);
@@ -7668,6 +7811,631 @@ export async function deleteIngredient(ingredientId: string) {
   }
   revalidateProductManagementCaches();
   return { ok: true };
+}
+
+export type IngredientCountInput = {
+  ingredientId: string;
+  countedQuantity: number;
+};
+
+/**
+ * Fiziksel sayimi kaydeder: fark kadar `stock_count` hareketi yazar.
+ *
+ * Yaris kosulu (CEO review bulgu 5A): sayim 10 dakika surer, o sirada satis
+ * devam eder ve stok duser. Kasiyer raftaki miktari yazip kaydettiginde
+ * "bakiye bu olmali" der; aradaki satislar iki kez sayilir ve fark her
+ * sayimda biraz daha kayar.
+ *
+ * Cozum: sayimin BASLADIGI an damgalanir. Kaydederken o andan sonraki
+ * hareketler toplanip mahsup edilir, boylece duzeltme yalnizca gercek farki
+ * kapatir. Zaman damgasi istemciden degil sunucudan gelir; kasa makinesinin
+ * saati kaymissa hesap bozulmasin.
+ */
+export type IngredientPurchaseInput = {
+  ingredientId: string;
+  quantity: number;
+  unitCost: number;
+};
+
+/**
+ * Malzeme alim girisini kaydeder.
+ *
+ * Stok dusum tarafi (satis, sayim) zaten vardi; alim yoktu — stok tek yonlu
+ * azaliyordu, iki hafta icinde tum bakiyeler negatife duserdi (CEO review
+ * D3.1). Her kalem `record_ingredient_purchase` Postgres fonksiyonunu
+ * cagirir: stogu artirir, hareketli agirlikli ortalama maliyeti gunceller.
+ *
+ * Fonksiyon satir kilidi (`for update`) kullanir; es zamanli iki alim ayni
+ * malzemeye girse bile MAP hesabi yarisa girmez. Bu yuzden kalemler
+ * Promise.all ile paralel gonderilebilir — kilidin kendisi guvenligi saglar.
+ *
+ * Son adim: etkilenen urunlerin `computed_unit_cost`'u TEK toplu RPC ile
+ * tazelenir (CEO review 1B — satir bazli tetikleyici degil, acikca cagrilan
+ * toplu fonksiyon; 30 kalemlik bir alim yuzlerce ayri yeniden hesap
+ * tetiklemesin).
+ */
+export async function saveIngredientPurchase(input: { note: string; items: IngredientPurchaseInput[] }) {
+  const supabase = getSupabaseServerClient() ?? (await getTenantDataClient());
+  if (!supabase) {
+    return { ok: false as const, error: "Demo modda alım kaydedilemez." };
+  }
+
+  const scope = await getDefaultBusinessScope();
+  if (!scope.branchId) {
+    return { ok: false as const, error: "Alım için aktif şube seçilmeli." };
+  }
+
+  const items = input.items.filter(
+    (item) => item.ingredientId && item.quantity > 0 && Number.isFinite(item.unitCost) && item.unitCost >= 0,
+  );
+  if (items.length === 0) {
+    return { ok: false as const, error: "Girilen kalem yok." };
+  }
+
+  const results = await Promise.all(
+    items.map((item) =>
+      supabase.rpc("record_ingredient_purchase", {
+        p_branch_id: scope.branchId,
+        p_ingredient_id: item.ingredientId,
+        p_quantity: item.quantity,
+        p_unit_cost: item.unitCost,
+        p_note: input.note || null,
+      }),
+    ),
+  );
+
+  const failed = results.filter((result) => result.error);
+  const succeededIngredientIds = items
+    .filter((_, index) => !results[index].error)
+    .map((item) => item.ingredientId);
+
+  if (succeededIngredientIds.length > 0) {
+    await supabase.rpc("recompute_products_for_ingredients", { ingredient_ids: succeededIngredientIds });
+    revalidateProductManagementCaches();
+  }
+
+  if (failed.length > 0) {
+    const firstError = failed[0].error?.message ?? "Bilinmeyen hata.";
+    return {
+      ok: false as const,
+      error:
+        failed.length === items.length
+          ? firstError
+          : `${succeededIngredientIds.length} kalem kaydedildi, ${failed.length} kalem başarısız: ${firstError}`,
+    };
+  }
+
+  return { ok: true as const, adjusted: succeededIngredientIds.length };
+}
+
+export async function saveIngredientCount(input: {
+  startedAt: string;
+  reason: string;
+  items: IngredientCountInput[];
+}) {
+  const supabase = getSupabaseServerClient() ?? (await getTenantDataClient());
+  if (!supabase) {
+    return { ok: false as const, error: "Demo modda sayım kaydedilemez." };
+  }
+
+  const scope = await getDefaultBusinessScope();
+  if (!scope.branchId) {
+    return { ok: false as const, error: "Sayım için aktif şube seçilmeli." };
+  }
+
+  const items = input.items.filter((item) => item.ingredientId && Number.isFinite(item.countedQuantity));
+  if (items.length === 0) {
+    return { ok: false as const, error: "Sayılan kalem yok." };
+  }
+
+  const ingredientIds = items.map((item) => item.ingredientId);
+
+  const [{ data: stockRows, error: stockError }, { data: sinceRows, error: sinceError }] = await Promise.all([
+    supabase
+      .from("ingredient_stock")
+      .select("ingredient_id, quantity")
+      .eq("branch_id", scope.branchId)
+      .in("ingredient_id", ingredientIds),
+    supabase
+      .from("ingredient_movements")
+      .select("ingredient_id, change_quantity")
+      .eq("branch_id", scope.branchId)
+      .in("ingredient_id", ingredientIds)
+      .gte("created_at", input.startedAt),
+  ]);
+
+  if (stockError || sinceError) {
+    return { ok: false as const, error: (stockError ?? sinceError)?.message ?? "Stok okunamadı." };
+  }
+
+  const currentByIngredient = new Map(
+    (stockRows ?? []).map((row: { ingredient_id: string; quantity: number | null }) => [
+      row.ingredient_id,
+      Number(row.quantity ?? 0),
+    ]),
+  );
+
+  // Sayim basladiktan sonra olan hareketler: bunlar raftaki miktara zaten
+  // yansimis durumda, duzeltmeden dusulmeli.
+  const movedSinceStart = new Map<string, number>();
+  for (const row of (sinceRows ?? []) as Array<{ ingredient_id: string; change_quantity: number | null }>) {
+    movedSinceStart.set(
+      row.ingredient_id,
+      (movedSinceStart.get(row.ingredient_id) ?? 0) + Number(row.change_quantity ?? 0),
+    );
+  }
+
+  const movements = items
+    .map((item) => {
+      const current = currentByIngredient.get(item.ingredientId) ?? 0;
+      const since = movedSinceStart.get(item.ingredientId) ?? 0;
+      // Sayim aninda beklenen bakiye = simdiki bakiye - sayim sonrasi hareketler
+      const expectedAtCountTime = current - since;
+      const delta = item.countedQuantity - expectedAtCountTime;
+      return { ingredientId: item.ingredientId, delta: Math.round(delta * 1000) / 1000 };
+    })
+    .filter((row) => row.delta !== 0);
+
+  if (movements.length === 0) {
+    return { ok: true as const, adjusted: 0, message: "Fark yok, düzeltme yazılmadı." };
+  }
+
+  const { error: insertError } = await supabase.from("ingredient_movements").insert(
+    movements.map((row) => ({
+      ingredient_id: row.ingredientId,
+      branch_id: scope.branchId,
+      change_quantity: row.delta,
+      reason: "stock_count",
+      note: input.reason,
+    })),
+  );
+
+  if (insertError) {
+    return { ok: false as const, error: insertError.message };
+  }
+
+  const nowIso = new Date().toISOString();
+  await supabase
+    .from("ingredient_stock")
+    .update({ last_counted_at: nowIso })
+    .eq("branch_id", scope.branchId)
+    .in("ingredient_id", ingredientIds);
+
+  return { ok: true as const, adjusted: movements.length };
+}
+
+export type IngredientStockRow = {
+  ingredientId: string;
+  name: string;
+  unit: string;
+  cost: number;
+  quantity: number;
+  minQuantity: number;
+  lastCountedAt: string | null;
+};
+
+/**
+ * Aktif subenin malzeme stok listesi.
+ *
+ * `ingredient_stock` tablosu henüz uygulanmamis olabilir (migration
+ * `20260809_add_recipe_cost_and_ingredient_stock.sql` bekliyor). O durumda
+ * ekran cokmemeli: bos liste ve `schemaReady: false` doner, cagiran taraf
+ * kullaniciya "once migration uygulanmali" der. Sessizce bos gostermek,
+ * "stok yok" ile "tablo yok"u ayirt edilemez kilardi.
+ */
+export async function getIngredientStockOverview(): Promise<{
+  rows: IngredientStockRow[];
+  schemaReady: boolean;
+  usingDemoData: boolean;
+}> {
+  const supabase = getSupabaseServerClient() ?? (await getTenantDataClient());
+  if (!supabase) {
+    return { rows: [], schemaReady: false, usingDemoData: true };
+  }
+
+  const scope = await getDefaultBusinessScope();
+  if (!scope.businessId) {
+    return { rows: [], schemaReady: false, usingDemoData: false };
+  }
+
+  const { data: ingredientRows, error: ingredientError } = await supabase
+    .from("ingredients")
+    .select("id, name, unit, cost")
+    .eq("business_id", scope.businessId)
+    .order("name");
+
+  if (ingredientError) {
+    return { rows: [], schemaReady: false, usingDemoData: false };
+  }
+
+  const ingredients = (ingredientRows ?? []) as Array<{
+    id: string;
+    name: string;
+    unit: string | null;
+    cost: number | null;
+  }>;
+
+  if (ingredients.length === 0) {
+    return { rows: [], schemaReady: true, usingDemoData: false };
+  }
+
+  let stockByIngredient = new Map<string, { quantity: number; minQuantity: number; lastCountedAt: string | null }>();
+  let schemaReady = true;
+
+  if (scope.branchId) {
+    const { data: stockRows, error: stockError } = await supabase
+      .from("ingredient_stock")
+      .select("ingredient_id, quantity, min_quantity, last_counted_at")
+      .eq("branch_id", scope.branchId);
+
+    if (stockError) {
+      // Tablo yoksa migration uygulanmamis demektir; ayirt edilebilir olsun.
+      schemaReady = false;
+    } else {
+      stockByIngredient = new Map(
+        (stockRows ?? []).map((row: {
+          ingredient_id: string;
+          quantity: number | null;
+          min_quantity: number | null;
+          last_counted_at: string | null;
+        }) => [
+          row.ingredient_id,
+          {
+            quantity: Number(row.quantity ?? 0),
+            minQuantity: Number(row.min_quantity ?? 0),
+            lastCountedAt: row.last_counted_at,
+          },
+        ]),
+      );
+    }
+  }
+
+  return {
+    schemaReady,
+    usingDemoData: false,
+    rows: ingredients.map((ingredient) => {
+      const stock = stockByIngredient.get(ingredient.id);
+      return {
+        ingredientId: ingredient.id,
+        name: ingredient.name,
+        unit: ingredient.unit ?? "adet",
+        cost: Number(ingredient.cost ?? 0),
+        quantity: stock?.quantity ?? 0,
+        minQuantity: stock?.minQuantity ?? 0,
+        lastCountedAt: stock?.lastCountedAt ?? null,
+      };
+    }),
+  };
+}
+
+const DAYS_OF_COVER_WINDOW_DAYS = 14;
+
+export type StockRiskRow = IngredientStockRow & {
+  /** Son 14 gunun ortalama gunluk satis tuketimi. */
+  avgDailyConsumption: number;
+  /** quantity / avgDailyConsumption. Tuketim verisi yoksa null (hesaplanamaz, sifir degil). */
+  daysOfCover: number | null;
+  isLowStock: boolean;
+};
+
+/**
+ * Malzeme stogu + gun kapsama + dusuk stok bayragi (CEO review D3.4).
+ *
+ * Gun kapsama son 14 gunun `sale_consumption` hareketlerinden turetilir.
+ * Sabit esik yerine hareketli pencere: yeni acilan subede veri yoksa
+ * "hesaplanamiyor" (null) doner, sifir gun gibi yanlis alarm vermez.
+ */
+export async function getStockRiskOverview(): Promise<{
+  rows: StockRiskRow[];
+  lowStockRows: StockRiskRow[];
+  schemaReady: boolean;
+  usingDemoData: boolean;
+}> {
+  const overview = await getIngredientStockOverview();
+  if (!overview.schemaReady || overview.usingDemoData || overview.rows.length === 0) {
+    return { rows: [], lowStockRows: [], schemaReady: overview.schemaReady, usingDemoData: overview.usingDemoData };
+  }
+
+  const supabase = getSupabaseServerClient() ?? (await getTenantDataClient());
+  const scope = await getDefaultBusinessScope();
+  if (!supabase || !scope.branchId) {
+    const rows = overview.rows.map((row) => ({
+      ...row,
+      avgDailyConsumption: 0,
+      daysOfCover: null,
+      isLowStock: row.minQuantity > 0 && row.quantity <= row.minQuantity,
+    }));
+    return { rows, lowStockRows: rows.filter((row) => row.isLowStock), schemaReady: overview.schemaReady, usingDemoData: overview.usingDemoData };
+  }
+
+  const sinceIso = new Date(Date.now() - DAYS_OF_COVER_WINDOW_DAYS * 86400000).toISOString();
+  const { data: movementRows } = await supabase
+    .from("ingredient_movements")
+    .select("ingredient_id, change_quantity")
+    .eq("branch_id", scope.branchId)
+    .eq("reason", "sale_consumption")
+    .gte("created_at", sinceIso);
+
+  const consumedByIngredient = new Map<string, number>();
+  for (const row of (movementRows ?? []) as Array<{ ingredient_id: string; change_quantity: number }>) {
+    // sale_consumption satirlari negatif yazilir; gunluk tuketim pozitif olcek ister.
+    const consumed = Math.abs(Number(row.change_quantity ?? 0));
+    consumedByIngredient.set(row.ingredient_id, (consumedByIngredient.get(row.ingredient_id) ?? 0) + consumed);
+  }
+
+  const rows: StockRiskRow[] = overview.rows.map((row) => {
+    const totalConsumed = consumedByIngredient.get(row.ingredientId) ?? 0;
+    const avgDailyConsumption = totalConsumed / DAYS_OF_COVER_WINDOW_DAYS;
+    const daysOfCover = avgDailyConsumption > 0 ? row.quantity / avgDailyConsumption : null;
+    return {
+      ...row,
+      avgDailyConsumption,
+      daysOfCover,
+      isLowStock: row.minQuantity > 0 && row.quantity <= row.minQuantity,
+    };
+  });
+
+  return {
+    rows,
+    lowStockRows: rows.filter((row) => row.isLowStock),
+    schemaReady: overview.schemaReady,
+    usingDemoData: overview.usingDemoData,
+  };
+}
+
+type IngredientVarianceMovementRow = {
+  id: string;
+  ingredient_id: string;
+  change_quantity: number;
+  note: string | null;
+  created_at: string;
+  ingredients: { name: string; unit: string } | { name: string; unit: string }[] | null;
+};
+
+export type IngredientVarianceRow = {
+  id: string;
+  ingredientId: string;
+  ingredientName: string;
+  unit: string;
+  changeQuantity: number;
+  note: string | null;
+  createdAt: string;
+};
+
+/**
+ * Sayim anindaki teorik-gerceki fark gecmisi (CEO review D3.2).
+ *
+ * `saveIngredientCount` her sayimda farki `stock_count` nedenli tek hareket
+ * olarak zaten yaziyor (Faz 1). Bu fonksiyon yeni hesap yapmaz, sadece o
+ * hareketleri okunabilir bir rapora cevirir.
+ */
+export async function getIngredientVarianceHistory(limit = 100): Promise<{
+  rows: IngredientVarianceRow[];
+  schemaReady: boolean;
+}> {
+  const supabase = getSupabaseServerClient() ?? (await getTenantDataClient());
+  if (!supabase) {
+    return { rows: [], schemaReady: false };
+  }
+
+  const scope = await getDefaultBusinessScope();
+  if (!scope.branchId) {
+    return { rows: [], schemaReady: true };
+  }
+
+  const { data, error } = await supabase
+    .from("ingredient_movements")
+    .select("id, ingredient_id, change_quantity, note, created_at, ingredients(name, unit)")
+    .eq("branch_id", scope.branchId)
+    .eq("reason", "stock_count")
+    .order("created_at", { ascending: false })
+    .limit(limit);
+
+  if (error) {
+    return { rows: [], schemaReady: false };
+  }
+
+  const rows = ((data ?? []) as IngredientVarianceMovementRow[]).map((row) => {
+    const ingredient = Array.isArray(row.ingredients) ? row.ingredients[0] ?? null : row.ingredients;
+    return {
+      id: row.id,
+      ingredientId: row.ingredient_id,
+      ingredientName: ingredient?.name ?? "Bilinmeyen malzeme",
+      unit: ingredient?.unit ?? "",
+      changeQuantity: Number(row.change_quantity ?? 0),
+      note: row.note,
+      createdAt: row.created_at,
+    };
+  });
+
+  return { rows, schemaReady: true };
+}
+
+/**
+ * Bir urunun recetesinin tamamini tek cagrida yazar.
+ *
+ * Eski akis her malzeme icin ayri form gonderimi ve tam sayfa yenilemesi
+ * istiyordu: 40 urun x ~3 malzeme = 120 gidis-donus, gercekte 1-2 saat.
+ * Kimse doldurmayinca tüm maliyet ozelligi olu dogar — bugun katalogdaki
+ * her urunun marji %100 gorunuyor, sebebi bu.
+ *
+ * Degistirme semantigi (replace): gelen liste urunun recetesinin son halidir.
+ * Listede olmayan satirlar silinir. Boylece editor tek "Kaydet" ile calisir.
+ */
+export async function saveProductRecipe(input: {
+  productId: string;
+  lines: Array<{ ingredientId: string; quantity: number; yieldFactor?: number }>;
+}) {
+  const supabase = getSupabaseServerClient() ?? (await getTenantDataClient());
+  if (!supabase) {
+    return { ok: false, error: "Demo modda reçete duzenleme pasif." };
+  }
+
+  const scope = await getDefaultBusinessScope();
+  if (!scope.useLegacySchema && scope.businessId) {
+    const { data: product } = await supabase
+      .from("products")
+      .select("id")
+      .eq("id", input.productId)
+      .eq("business_id", scope.businessId)
+      .maybeSingle();
+    if (!product) {
+      return { ok: false, error: "Ürün aktif işletmede bulunamadı." };
+    }
+
+    // Malzemelerin de ayni isletmeye ait oldugu dogrulanir; aksi halde baska
+    // bir tenant'in malzemesi receteye baglanabilirdi.
+    const ingredientIds = [...new Set(input.lines.map((line) => line.ingredientId))];
+    if (ingredientIds.length > 0) {
+      const { data: owned } = await supabase
+        .from("ingredients")
+        .select("id")
+        .eq("business_id", scope.businessId)
+        .in("id", ingredientIds);
+      const ownedIds = new Set((owned ?? []).map((row: { id: string }) => row.id));
+      const foreign = ingredientIds.filter((id) => !ownedIds.has(id));
+      if (foreign.length > 0) {
+        return { ok: false, error: "Reçetede bu işletmeye ait olmayan malzeme var." };
+      }
+    }
+  }
+
+  const validLines = input.lines.filter((line) => line.ingredientId && line.quantity > 0);
+
+  const { error: deleteError } = await supabase
+    .from("product_ingredients")
+    .delete()
+    .eq("product_id", input.productId);
+  if (deleteError) {
+    return { ok: false, error: deleteError.message };
+  }
+
+  if (validLines.length > 0) {
+    const { error: insertError } = await supabase.from("product_ingredients").insert(
+      validLines.map((line) => ({
+        product_id: input.productId,
+        ingredient_id: line.ingredientId,
+        quantity: line.quantity,
+        yield_factor: line.yieldFactor ?? 1,
+      })),
+    );
+    if (insertError) {
+      return { ok: false, error: insertError.message };
+    }
+  }
+
+  revalidateProductManagementCaches();
+  return { ok: true, lineCount: validLines.length };
+}
+
+const MODIFIER_EFFECT_MODES = ["add", "remove", "replace", "scale"] as const;
+
+function isValidModifierEffectLine(line: {
+  mode: string;
+  ingredientId?: string;
+  targetIngredientId?: string;
+  quantity?: number;
+  multiplier?: number;
+}) {
+  if (!MODIFIER_EFFECT_MODES.includes(line.mode as (typeof MODIFIER_EFFECT_MODES)[number])) return false;
+  if (line.mode === "add") return Boolean(line.ingredientId) && Number(line.quantity) > 0;
+  if (line.mode === "remove") return Boolean(line.targetIngredientId);
+  if (line.mode === "replace") return Boolean(line.targetIngredientId) && Boolean(line.ingredientId);
+  // scale
+  return Boolean(line.targetIngredientId) && Number(line.multiplier) > 0;
+}
+
+/**
+ * Bir modifier secenegin recete etkisinin tamamini tek cagrida kaydeder.
+ *
+ * saveProductRecipe ile ayni tam-degistirme deseni: mevcut etkiler silinir,
+ * gonderilenler yeniden yazilir. Secenek basina tek yazma yolu — satir
+ * basina ayri sunucu-aksiyonu yok.
+ */
+export async function saveModifierOptionEffects(input: {
+  optionId: string;
+  effects: Array<{
+    mode: "add" | "remove" | "replace" | "scale";
+    ingredientId?: string;
+    targetIngredientId?: string;
+    quantity?: number;
+    multiplier?: number;
+  }>;
+}) {
+  const supabase = getSupabaseServerClient() ?? (await getTenantDataClient());
+  if (!supabase) {
+    return { ok: false, error: "Demo modda modifier etkisi düzenleme pasif." };
+  }
+
+  const scope = await getDefaultBusinessScope();
+  if (!scope.useLegacySchema && scope.businessId) {
+    const { data: option } = await supabase
+      .from("product_modifier_options")
+      .select("id, group_id")
+      .eq("id", input.optionId)
+      .maybeSingle();
+    if (!option) {
+      return { ok: false, error: "Opsiyon bulunamadı." };
+    }
+
+    const { data: group } = await supabase
+      .from("product_modifier_groups")
+      .select("id, products(business_id)")
+      .eq("id", option.group_id)
+      .maybeSingle();
+    const groupProduct = group?.products as { business_id: string } | { business_id: string }[] | null | undefined;
+    const groupBusinessId = Array.isArray(groupProduct) ? groupProduct[0]?.business_id : groupProduct?.business_id;
+    if (!group || groupBusinessId !== scope.businessId) {
+      return { ok: false, error: "Opsiyon aktif işletmede bulunamadı." };
+    }
+
+    const ingredientIds = [
+      ...new Set(
+        input.effects.flatMap((line) => [line.ingredientId, line.targetIngredientId].filter(Boolean) as string[]),
+      ),
+    ];
+    if (ingredientIds.length > 0) {
+      const { data: owned } = await supabase
+        .from("ingredients")
+        .select("id")
+        .eq("business_id", scope.businessId)
+        .in("id", ingredientIds);
+      const ownedIds = new Set((owned ?? []).map((row: { id: string }) => row.id));
+      const foreign = ingredientIds.filter((id) => !ownedIds.has(id));
+      if (foreign.length > 0) {
+        return { ok: false, error: "Etkide bu işletmeye ait olmayan malzeme var." };
+      }
+    }
+  }
+
+  const validEffects = input.effects.filter(isValidModifierEffectLine);
+
+  const { error: deleteError } = await supabase
+    .from("modifier_option_ingredients")
+    .delete()
+    .eq("option_id", input.optionId);
+  if (deleteError) {
+    return { ok: false, error: deleteError.message };
+  }
+
+  if (validEffects.length > 0) {
+    const { error: insertError } = await supabase.from("modifier_option_ingredients").insert(
+      validEffects.map((line) => ({
+        option_id: input.optionId,
+        mode: line.mode,
+        ingredient_id: line.ingredientId ?? null,
+        target_ingredient_id: line.targetIngredientId ?? null,
+        quantity: line.quantity ?? null,
+        multiplier: line.multiplier ?? null,
+      })),
+    );
+    if (insertError) {
+      return { ok: false, error: insertError.message };
+    }
+  }
+
+  revalidateProductManagementCaches();
+  return { ok: true, effectCount: validEffects.length };
 }
 
 export async function attachIngredientToProduct(input: {

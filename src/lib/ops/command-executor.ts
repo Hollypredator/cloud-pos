@@ -184,6 +184,48 @@ function ensureCashMethod(payload: Record<string, unknown>, enforceCashOnly: boo
   return "cash";
 }
 
+/**
+ * Istemcide dondurulmus tuketimi ayristirir. Sunucu bunu OLDUGU GIBI yazar,
+ * yeniden hesaplamaz — bkz. `catalog-consumption.ts` ve
+ * PLAN-RECETE-MALIYET-STOK.md Faz 3.
+ */
+export function toFrozenConsumption(raw: unknown) {
+  if (!Array.isArray(raw)) return undefined;
+
+  const entries: Array<{
+    lineIndex: number;
+    lines: Array<{ ingredientId: string; quantity: number; unitCost: number; source: string }>;
+  }> = [];
+
+  for (const rawEntry of raw) {
+    const entry = asRecord(rawEntry);
+    if (!entry) continue;
+    const lineIndex = asNumber(entry.lineIndex);
+    if (lineIndex === null || !Array.isArray(entry.lines)) continue;
+
+    const lines: Array<{ ingredientId: string; quantity: number; unitCost: number; source: string }> = [];
+    for (const rawLine of entry.lines) {
+      const line = asRecord(rawLine);
+      if (!line) continue;
+      const ingredientId = asString(line.ingredientId);
+      const quantity = asNumber(line.quantity);
+      if (!ingredientId || quantity === null || quantity <= 0) continue;
+      lines.push({
+        ingredientId,
+        quantity,
+        unitCost: asNumber(line.unitCost) ?? 0,
+        source: asString(line.source) ?? "recipe",
+      });
+    }
+
+    if (lines.length > 0) {
+      entries.push({ lineIndex, lines });
+    }
+  }
+
+  return entries.length > 0 ? entries : undefined;
+}
+
 function ensureOrderCreateInput(command: OpsCommand, payload: Record<string, unknown>) {
   const items = toOrderItems(payload.items);
   const totalPrice = asNumber(payload.total_price ?? payload.totalPrice);
@@ -213,6 +255,7 @@ function ensureOrderCreateInput(command: OpsCommand, payload: Record<string, unk
       fulfillmentStatus: isValidFulfillmentStatus(payload.fulfillment_status)
         ? payload.fulfillment_status
         : undefined,
+      frozenConsumption: toFrozenConsumption(payload.frozen_consumption),
     },
   };
 }
@@ -295,8 +338,15 @@ export async function executeOpsCommand(command: OpsCommand, options?: ExecuteCo
         if (!orderId) {
           return commandResult(command, "REJECT", { message: "PAYMENT_SALE_CASH için order_id zorunlu." });
         }
-        if (!method || method !== "cash") {
-          return commandResult(command, "REJECT", { message: "Offline modda sadece cash ödeme kabul edilir." });
+        // ensureCashMethod cevrimdisi/cevrimici ayrimini zaten yapiyor: cashOnly
+        // true iken nakit disi yontemler null doner, false iken yontem oldugu gibi
+        // gecer. Buradaki ek `!== "cash"` kontrolu o karari eziyordu ve kart/karma
+        // odemeler cevrimiciyken de reddediliyordu — hem de "Offline modda..."
+        // diyen yaniltici bir mesajla. Odeme paneli kullaniciya Nakit/Kart/Karma
+        // sunuyor; ikisi hic kaydedilemiyordu.
+        // completeOrderPayment yontemden bagimsiz: p_method'u RPC'ye gecirir.
+        if (!method) {
+          return commandResult(command, "REJECT", { message: "Çevrimdışı modda yalnızca nakit ödeme kabul edilir." });
         }
         const result = await completeOrderPayment({
           orderId,
@@ -331,8 +381,9 @@ export async function executeOpsCommand(command: OpsCommand, options?: ExecuteCo
         if (!orderId) {
           return commandResult(command, "REJECT", { message: "ORDER_REFUND_CASH için order_id zorunlu." });
         }
-        if (!method || method !== "cash") {
-          return commandResult(command, "REJECT", { message: "Offline modda sadece cash iade kabul edilir." });
+        // PAYMENT_SALE_CASH ile ayni hata: ensureCashMethod'un karari eziliyordu.
+        if (!method) {
+          return commandResult(command, "REJECT", { message: "Çevrimdışı modda yalnızca nakit iade kabul edilir." });
         }
         const result = await refundOrder({
           orderId,

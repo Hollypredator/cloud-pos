@@ -45,6 +45,11 @@ type Body = {
     }>;
   }>;
   totalPrice?: number;
+  /** Istemcide dondurulmus tuketim. bkz. catalog-consumption.ts, Faz 3. */
+  frozenConsumption?: Array<{
+    lineIndex: number;
+    lines: Array<{ ingredientId: string; quantity: number; unitCost: number; source: string }>;
+  }>;
   qrConfirmation?: {
     confirmedAtClient?: string;
     uiVersion?: string;
@@ -387,6 +392,7 @@ export async function POST(request: Request) {
         courier_phone: body.courierPhone ?? null,
         fulfillment_status: body.fulfillmentStatus ?? null,
         payment_method_preference: body.paymentMethod ?? null,
+        frozen_consumption: body.frozenConsumption ?? undefined,
       },
       idempotencyKey: request.headers.get("x-idempotency-key")?.trim() || undefined,
       commandId: request.headers.get("x-command-id")?.trim() || undefined,

@@ -2,13 +2,14 @@ import Link from "next/link";
 import { headers } from "next/headers";
 import { AdminOrderEntry } from "@/components/admin-order-entry";
 import { BackofficePage, SidebarPanel, SummaryCard } from "@/components/backoffice-ui";
+import { SelfServiceCheckout } from "@/components/self-service-checkout";
 import { requireRole } from "@/lib/auth";
 import { getMenu } from "@/lib/domains/orders";
 import { getTableMap } from "@/lib/domains/tables";
 import { translateUiText } from "@/lib/i18n";
 import { getCurrentLocale } from "@/lib/i18n-server";
 import { resolveOperatingProfile, getOperatingProfileCapabilities } from "@/lib/operating-profile";
-import { getBusinessScopeContext } from "@/lib/server/app-context";
+import { getBusinessScopeContext, getRequestAppContext } from "@/lib/server/app-context";
 
 export default async function AdminOrdersPage({
   searchParams,
@@ -63,7 +64,35 @@ export default async function AdminOrdersPage({
   );
 
   if (isSelfServiceCoffee) {
-    return <main className="coffee-pos-mode flex h-screen w-full flex-col overflow-hidden bg-[#080d1a]">{orderEntry}</main>;
+    // Kafe profili `payment_mode: "pay_at_order"` diyor. Duz `AdminOrderEntry`
+    // yalnizca siparis aciyor, odemeyi `/cashier` aliyordu — yani profil ne
+    // derse desin akis fiilen `pay_at_checkout` idi. SelfServiceCheckout ayni
+    // giris ekranini sarmalayip odemeyi, fisi ve cekmeceyi tek akista bitirir.
+    // Isletme ve sube adi fis basligina gidiyor; bunlar yalnizca
+    // getRequestAppContext icinde var, getBusinessScopeContext tasimiyor.
+    const appContext = await getRequestAppContext();
+    const activeBranch = appContext.branches.find((branch) => branch.id === appContext.activeBranchId);
+
+    return (
+      <main className="coffee-pos-mode flex h-screen w-full flex-col overflow-hidden bg-[#080d1a] text-white">
+        <SelfServiceCheckout
+          businessSlug={businessSlug}
+          businessName={appContext.activeBusiness?.name ?? businessSlug}
+          branchName={activeBranch?.name ?? null}
+          categories={categories}
+          products={products}
+          modifierGroups={modifierGroups}
+          modifierOptions={modifierOptions}
+          tables={tables}
+          operatingProfile={operatingProfile}
+          operatingCapabilities={operatingCapabilities}
+          layoutMode={isMobileUA ? "mobile_stack" : "auto"}
+          mobilePresentation={isMobileUA ? "stack" : "default"}
+          printerIp={process.env.NEXT_PUBLIC_RECEIPT_PRINTER_IP || undefined}
+          drawerEnabled={process.env.NEXT_PUBLIC_CASH_DRAWER_ENABLED !== "0"}
+        />
+      </main>
+    );
   }
 
   if (isMobileUA) {

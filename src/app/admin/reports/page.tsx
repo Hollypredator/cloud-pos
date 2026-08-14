@@ -1,7 +1,7 @@
 import Link from "next/link";
 import { requireRole } from "@/lib/auth";
 import { getFinancialInsights, getOpsMetricsSnapshot, getSalesReportSummary } from "@/lib/domains/finance";
-import { listBranches, listProfileRoleCounts } from "@/lib/data";
+import { getIngredientVarianceHistory, getStockRiskOverview, listBranches, listProfileRoleCounts } from "@/lib/data";
 import { ALL_BRANCHES_VALUE } from "@/lib/business";
 import {
   BackofficePage,
@@ -19,7 +19,7 @@ import { getFeatureAccess } from "@/lib/plan-access";
 
 export const dynamic = "force-dynamic";
 
-type ReportTab = "general" | "cari" | "detail" | "staff";
+type ReportTab = "general" | "cari" | "detail" | "staff" | "stock";
 type FilterMode = "period" | "date";
 
 function toDateInputValue(value: Date) {
@@ -244,11 +244,14 @@ export default async function AdminReportsPage({
     const mode: FilterMode = modeParam === "date" ? "date" : "period";
     const { startDate, endDate, warning: dateGuardWarning } = resolveDateInputs(days, startParam, endParam);
     const activeTab: ReportTab =
-      tabParam === "cari" || tabParam === "detail" || tabParam === "staff" ? tabParam : "general";
+      tabParam === "cari" || tabParam === "detail" || tabParam === "staff" || tabParam === "stock"
+        ? tabParam
+        : "general";
     const shouldLoadFinancial = activeTab === "cari" || activeTab === "detail";
     const needsTopProducts = activeTab === "detail";
     const needsRecentPayments = activeTab === "cari" || activeTab === "detail";
     const shouldLoadStaff = activeTab === "staff";
+    const shouldLoadStock = activeTab === "stock";
 
     const safeOpsPromise = shouldLoadStaff
       ? measureAsync("ops_metrics", () => getOpsMetricsSnapshot()).catch((error) => {
@@ -294,7 +297,21 @@ export default async function AdminReportsPage({
           },
         });
 
-    const [salesResult, financialResult, opsResult, roleCountsResult, branchContextResult] = await Promise.all([
+    const safeStockRiskPromise = shouldLoadStock
+      ? measureAsync("stock_risk_overview", () => getStockRiskOverview()).catch((error) => {
+          console.error("[admin-reports-page] stock_risk_overview failed", error);
+          return { label: "stock_risk_overview", ms: 0, value: { rows: [], lowStockRows: [], schemaReady: false, usingDemoData: false } };
+        })
+      : Promise.resolve({ label: "stock_risk_overview", ms: 0, value: { rows: [], lowStockRows: [], schemaReady: false, usingDemoData: false } });
+
+    const safeVarianceHistoryPromise = shouldLoadStock
+      ? measureAsync("ingredient_variance_history", () => getIngredientVarianceHistory(100)).catch((error) => {
+          console.error("[admin-reports-page] ingredient_variance_history failed", error);
+          return { label: "ingredient_variance_history", ms: 0, value: { rows: [], schemaReady: false } };
+        })
+      : Promise.resolve({ label: "ingredient_variance_history", ms: 0, value: { rows: [], schemaReady: false } });
+
+    const [salesResult, financialResult, opsResult, roleCountsResult, branchContextResult, stockRiskResult, varianceHistoryResult] = await Promise.all([
       measureAsync("sales_report_summary", () =>
         getSalesReportSummary(mode === "date" ? { startDate, endDate } : { days }),
       ),
@@ -339,13 +356,26 @@ export default async function AdminReportsPage({
       safeOpsPromise,
       safeRoleCountsPromise,
       measureAsync("list_branches", () => listBranches()),
+      safeStockRiskPromise,
+      safeVarianceHistoryPromise,
     ]);
     const { rows, usingDemoData } = salesResult.value;
     const financial = financialResult.value;
     const ops = opsResult.value;
     const { counts: roleCounts } = roleCountsResult.value;
     const branchContext = branchContextResult.value;
-    logServerPerf("/admin/reports", [featureAccessResult, salesResult, financialResult, opsResult, roleCountsResult, branchContextResult]);
+    const stockRisk = stockRiskResult.value;
+    const varianceHistory = varianceHistoryResult.value;
+    logServerPerf("/admin/reports", [
+      featureAccessResult,
+      salesResult,
+      financialResult,
+      opsResult,
+      roleCountsResult,
+      branchContextResult,
+      stockRiskResult,
+      varianceHistoryResult,
+    ]);
   const branchLabel =
     branchContext.activeBranchId === ALL_BRANCHES_VALUE
       ? translateUiText("Tüm Şubeler", locale)
@@ -470,6 +500,7 @@ export default async function AdminReportsPage({
           { label: translateUiText("Cari", locale), active: activeTab === "cari", href: buildReportHref({ tab: "cari", days, mode, start: startDate, end: endDate }) },
           { label: translateUiText("Detay", locale), active: activeTab === "detail", href: buildReportHref({ tab: "detail", days, mode, start: startDate, end: endDate }) },
           { label: translateUiText("Personel", locale), active: activeTab === "staff", href: buildReportHref({ tab: "staff", days, mode, start: startDate, end: endDate }) },
+          { label: "Stok", active: activeTab === "stock", href: buildReportHref({ tab: "stock", days, mode, start: startDate, end: endDate }) },
         ]}
       />
 
@@ -797,6 +828,90 @@ export default async function AdminReportsPage({
                 <p className="mt-2 text-sm text-slate-500">{translateUiText("Garson ve hesap talepleri", locale)}</p>
               </div>
             </div>
+          </ContentCard>
+        </section>
+      ) : null}
+
+      {activeTab === "stock" ? (
+        <section className="grid gap-5 xl:grid-cols-[1.1fr_0.9fr]">
+          <ContentCard title="Düşük Stok ve Gün Kapsama">
+            {!stockRisk.schemaReady ? (
+              <EmptyPanel title="Malzeme Stoğu Kurulmadı" description="Reçete/stok migrationı henüz uygulanmamış görünüyor." />
+            ) : stockRisk.rows.length === 0 ? (
+              <EmptyPanel title="Malzeme Yok" description="Henüz malzeme veya stok kaydı bulunmuyor." />
+            ) : (
+              <div className="responsive-table-shell rounded-[22px] border border-slate-200">
+                <table className="responsive-table w-full text-left text-sm">
+                  <thead className="bg-slate-50 text-slate-500">
+                    <tr>
+                      <th className="px-4 py-4 font-semibold">Malzeme</th>
+                      <th className="px-4 py-4 font-semibold">Stok</th>
+                      <th className="px-4 py-4 font-semibold">Kritik Sınır</th>
+                      <th className="px-4 py-4 font-semibold">Gün Kapsama</th>
+                      <th className="px-4 py-4 font-semibold">Durum</th>
+                    </tr>
+                  </thead>
+                  <tbody>
+                    {[...stockRisk.rows]
+                      .sort((a, b) => {
+                        if (a.isLowStock !== b.isLowStock) return a.isLowStock ? -1 : 1;
+                        return (a.daysOfCover ?? Infinity) - (b.daysOfCover ?? Infinity);
+                      })
+                      .map((row) => (
+                        <tr key={row.ingredientId} className={`border-t border-slate-100 ${row.isLowStock ? "bg-rose-50" : ""}`}>
+                          <td className="px-4 py-4 font-semibold text-slate-900">{row.name}</td>
+                          <td className="font-numeric px-4 py-4 text-slate-700">{formatQty(row.quantity)} {row.unit}</td>
+                          <td className="font-numeric px-4 py-4 text-slate-500">{row.minQuantity > 0 ? `${formatQty(row.minQuantity)} ${row.unit}` : "—"}</td>
+                          <td className="font-numeric px-4 py-4 text-slate-700">
+                            {row.daysOfCover == null ? "Hesaplanamıyor" : `${row.daysOfCover.toFixed(1)} gün`}
+                          </td>
+                          <td className="px-4 py-4">
+                            {row.isLowStock ? (
+                              <span className="rounded-full bg-rose-100 px-3 py-1 text-xs font-bold text-rose-700">Kritik</span>
+                            ) : (
+                              <span className="rounded-full bg-emerald-100 px-3 py-1 text-xs font-bold text-emerald-700">Yeterli</span>
+                            )}
+                          </td>
+                        </tr>
+                      ))}
+                  </tbody>
+                </table>
+              </div>
+            )}
+          </ContentCard>
+
+          <ContentCard title="Sayım Fark Geçmişi">
+            {!varianceHistory.schemaReady ? (
+              <EmptyPanel title="Fark Geçmişi Yok" description="Malzeme stoğu kurulmadan sayım farkı görüntülenemez." />
+            ) : varianceHistory.rows.length === 0 ? (
+              <EmptyPanel title="Kayıt Yok" description="Henüz bir sayım hareketi bulunmuyor." />
+            ) : (
+              <div className="responsive-table-shell max-h-[560px] overflow-y-auto rounded-[22px] border border-slate-200">
+                <table className="responsive-table w-full text-left text-sm">
+                  <thead className="sticky top-0 bg-slate-50 text-slate-500">
+                    <tr>
+                      <th className="px-4 py-4 font-semibold">Tarih</th>
+                      <th className="px-4 py-4 font-semibold">Malzeme</th>
+                      <th className="px-4 py-4 font-semibold">Fark</th>
+                      <th className="px-4 py-4 font-semibold">Not</th>
+                    </tr>
+                  </thead>
+                  <tbody>
+                    {varianceHistory.rows.map((row) => (
+                      <tr key={row.id} className="border-t border-slate-100">
+                        <td className="font-numeric px-4 py-4 text-slate-700">{new Date(row.createdAt).toLocaleString("tr-TR")}</td>
+                        <td className="px-4 py-4 font-semibold text-slate-900">{row.ingredientName}</td>
+                        <td className={`font-numeric px-4 py-4 font-semibold ${row.changeQuantity < 0 ? "text-rose-700" : "text-emerald-700"}`}>
+                          {row.changeQuantity > 0 ? "+" : ""}
+                          {formatQty(row.changeQuantity)} {row.unit}
+                        </td>
+                        <td className="px-4 py-4 text-slate-500">{row.note ?? "—"}</td>
+                      </tr>
+                    ))}
+                  </tbody>
+                </table>
+              </div>
+            )}
           </ContentCard>
         </section>
       ) : null}

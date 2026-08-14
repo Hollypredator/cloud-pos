@@ -290,6 +290,19 @@ export type ProductIngredient = {
   product_id: string;
   ingredient_id: string;
   quantity: number;
+  yield_factor?: number;
+};
+
+export type ModifierEffectMode = "add" | "remove" | "replace" | "scale";
+
+export type ModifierOptionIngredient = {
+  id: string;
+  option_id: string;
+  mode: ModifierEffectMode;
+  ingredient_id: string | null;
+  target_ingredient_id: string | null;
+  quantity: number | null;
+  multiplier: number | null;
 };
 
 export type StockMovement = {

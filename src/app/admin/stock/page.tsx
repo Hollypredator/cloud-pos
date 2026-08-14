@@ -2,8 +2,16 @@ import Link from "next/link";
 import { revalidatePath } from "next/cache";
 import { BackofficePage, FeatureLockedState } from "@/components/backoffice-ui";
 import { AdminStockWorkbench } from "@/components/admin-stock-workbench";
+import { IngredientStockPanel } from "@/components/ingredient-stock-panel";
 import { requireRole } from "@/lib/auth";
-import { bulkAdjustStocks, getProductManagementData, listStockMovements } from "@/lib/data";
+import {
+  bulkAdjustStocks,
+  getIngredientStockOverview,
+  getProductManagementData,
+  listStockMovements,
+  saveIngredientCount,
+  saveIngredientPurchase,
+} from "@/lib/data";
 import { translateUiText } from "@/lib/i18n";
 import { getCurrentLocale } from "@/lib/i18n-server";
 import { getFeatureAccess } from "@/lib/plan-access";
@@ -42,11 +50,45 @@ export default async function AdminStockPage({
     return result;
   }
 
-  const [{ movements, usingDemoData }, { products, categories }, businessScope] = await Promise.all([
-    listStockMovements(200),
-    getProductManagementData(),
-    getBusinessScopeContext(),
-  ]);
+  async function saveIngredientCountAction(input: {
+    startedAt: string;
+    reason: string;
+    items: Array<{ ingredientId: string; countedQuantity: number }>;
+  }) {
+    "use server";
+    await requireRole(["admin"], "/admin/stock");
+    const result = await saveIngredientCount(input);
+    revalidatePath("/admin/stock");
+    return result;
+  }
+
+  async function saveIngredientPurchaseAction(input: {
+    note: string;
+    items: Array<{ ingredientId: string; quantity: number; unitCost: number }>;
+  }) {
+    "use server";
+    await requireRole(["admin"], "/admin/stock");
+    const result = await saveIngredientPurchase(input);
+    revalidatePath("/admin/stock");
+    return result;
+  }
+
+  const [{ movements, usingDemoData }, { products, categories, productIngredients }, businessScope, ingredientStock] =
+    await Promise.all([
+      listStockMovements(200),
+      getProductManagementData(),
+      getBusinessScopeContext(),
+      getIngredientStockOverview(),
+    ]);
+
+  // Ürün Stoğu bölümü yalnızca reçetesiz ürünleri gösterir (bkz. başlık:
+  // "Reçetesi olmayan, doğrudan satılan ürünler"). Filtre olmadan reçeteli
+  // her ürün (Latte vb.) İKİ panelde birden görünürdü: malzeme panelinde
+  // doğru şekilde (reçetesinden), ürün panelinde ise yanıltıcı şekilde
+  // (sanki elle sayılan bağımsız bir stoğu varmış gibi). Tam da tek liste
+  // kararının (D13) önlemeye çalıştığı çift sayım.
+  const productIdsWithRecipe = new Set(productIngredients.map((row) => row.product_id));
+  const stockableProducts = products.filter((product) => !productIdsWithRecipe.has(product.id));
 
   return (
     <div className="min-h-screen bg-[linear-gradient(180deg,#eef2f7_0%,#f8fafc_42%,#ffffff_100%)] px-4 py-6 md:px-10 md:py-8">
@@ -72,9 +114,33 @@ export default async function AdminStockPage({
           </p>
         ) : null}
 
+        {/* Malzeme sayimi ayni ekranda: personel tek yerde sayar. Iki ayri
+            ekran, iki ayri sayim ve iki kaynakli fark raporu demekti. */}
+        <section className="rounded-[2rem] border border-slate-200 bg-white px-5 py-5 shadow-sm sm:px-7">
+          <header className="mb-4">
+            <h2 className="text-xl font-bold tracking-tight text-slate-950">Malzeme Stoğu</h2>
+            <p className="mt-1 text-sm text-slate-600">
+              Reçeteye bağlı hammaddeler. Satış bunlardan düşer; sayım farkı zayiatı gösterir.
+            </p>
+          </header>
+          <IngredientStockPanel
+            rows={ingredientStock.rows}
+            schemaReady={ingredientStock.schemaReady}
+            onSaveCount={saveIngredientCountAction}
+            onSavePurchase={saveIngredientPurchaseAction}
+          />
+        </section>
+
+        <section className="rounded-[2rem] border border-slate-200 bg-white px-5 py-5 shadow-sm sm:px-7">
+          <header className="mb-4">
+            <h2 className="text-xl font-bold tracking-tight text-slate-950">Ürün Stoğu</h2>
+            <p className="mt-1 text-sm text-slate-600">
+              Reçetesi olmayan, doğrudan satılan ürünler: şişe su, hazır tatlı, paketli ürün.
+            </p>
+          </header>
         <AdminStockWorkbench
           locale={locale}
-          products={products}
+          products={stockableProducts}
           categories={categories}
           movements={movements}
           activeBusinessType={businessScope.activeBusinessType}
@@ -83,6 +149,7 @@ export default async function AdminStockPage({
           initialRemainingOnly={initialRemainingOnly}
           onBulkAdjust={bulkAdjustStocksAction}
         />
+        </section>
       </main>
     </div>
   );

@@ -22,12 +22,17 @@ function triggerHaptic(pattern: number | number[] = 40) {
     }
   }
 }
+import { TakeawayModifierFlow } from "@/components/takeaway-modifier-flow";
+import { loadCatalog, type CatalogSnapshot } from "@/lib/offline/catalog-store";
+import { freezeCartConsumption } from "@/lib/offline/catalog-consumption";
+
 import type {
   Category,
   CustomerDisplaySnapshot,
   DiningTable,
   OrderChannel,
   OrderItemModifierSelection,
+  PaymentMethod,
   Product,
   ProductModifierGroup,
   ProductModifierOption,
@@ -45,6 +50,26 @@ type CartEntry = {
 
 type CartMap = Record<string, CartEntry>;
 type EntryMode = "classic" | "table_first";
+
+/** `/api/orders` govdesi. `onSubmitOrder` devraldiginda ayni sekli alir. */
+export type OrderSubmitPayload = {
+  businessSlug: string;
+  channel: OrderChannel;
+  tableId?: string;
+  customerName?: string;
+  customerPhone?: string;
+  deliveryAddress?: string;
+  deliveryNote?: string;
+  items: Array<Record<string, unknown>>;
+  totalPrice: number;
+};
+
+export type OrderSubmitResult = {
+  ok: boolean;
+  message?: string;
+  orderId?: string;
+  checkNumber?: string | null;
+};
 type LayoutMode = "auto" | "tablet_3pane" | "mobile_stack" | "modal_3pane";
 type InitialView = "table_picker" | "composer";
 type ReceiptPrintLayout = "thermal" | "thermal58";
@@ -107,6 +132,8 @@ export function AdminOrderEntry({
   initialTableId,
   lockedTableId,
   onOrderCreated,
+  onSubmitOrder,
+  selfServiceModifierFlow = "auto_default",
   onTableChange,
   mobilePresentation = "default",
   entryMode = "classic",
@@ -123,7 +150,15 @@ export function AdminOrderEntry({
   tables: DiningTable[];
   initialTableId?: string;
   lockedTableId?: string;
-  onOrderCreated?: (orderId: string) => void;
+  onOrderCreated?: (orderId: string, paymentMethod?: PaymentMethod) => void;
+  /** Siparis gonderimini devralir. Verilmezse /api/orders kullanilir. */
+  onSubmitOrder?: (payload: OrderSubmitPayload) => Promise<OrderSubmitResult>;
+  /**
+   * Self-servis modifier akisi.
+   *   auto_default -> varsayilanlar secilip urun dogrudan sepete eklenir (eski davranis)
+   *   stepped      -> urun/boy/ekler akisi acilir
+   */
+  selfServiceModifierFlow?: "auto_default" | "stepped";
   onTableChange?: (tableId: string) => void;
   mobilePresentation?: "default" | "stack";
   entryMode?: EntryMode;
@@ -169,6 +204,23 @@ export function AdminOrderEntry({
   const searchInputRef = useRef<HTMLInputElement>(null);
   const displayFreezeUntilRef = useRef(0);
   const isSelfServiceCoffee = operatingProfile === "coffee_self_service";
+  const [catalogSnapshot, setCatalogSnapshot] = useState<CatalogSnapshot | null>(null);
+
+  // Tuketim SATIS ANINDA istemcide donduruluyor (bkz. catalog-consumption.ts).
+  // `onSubmitOrder` devralindiginda (or. self-servis kasa) cagiran kendi
+  // dondurmasini yapar; bu yalnizca varsayilan /api/orders yolunu besler —
+  // masa/kasa siparisleri de reçete stok dusumunu almadan kalmasin diye.
+  useEffect(() => {
+    if (onSubmitOrder) return;
+    const controller = new AbortController();
+    void loadCatalog({ signal: controller.signal })
+      .then((result) => {
+        if (result.status === "empty") return;
+        setCatalogSnapshot(result.snapshot);
+      })
+      .catch(() => {});
+    return () => controller.abort();
+  }, [onSubmitOrder]);
 
   useEffect(() => {
     const handleKeyDown = (e: KeyboardEvent) => {
@@ -425,6 +477,12 @@ export function AdminOrderEntry({
       return;
     }
 
+    if (isSelfServiceCoffee && selfServiceModifierFlow === "stepped") {
+      // Boy ve ekler sorulur. Varsayilanlar akisin icinde onceden secili gelir.
+      setActiveProductId(product.id);
+      return;
+    }
+
     if (isSelfServiceCoffee) {
       const modifiers: OrderItemModifierSelection[] = [];
       for (const group of groups) {
@@ -648,7 +706,14 @@ export function AdminOrderEntry({
     });
   }
 
-  async function submitOrder() {
+  /**
+   * Odeme yontemi cagirana bildirilir.
+   *
+   * Nakit ve Kart dugmeleri ayni `submitOrder`i cagiriyordu; secim hicbir yere
+   * gitmiyordu, ikisi de yalnizca siparis aciyordu. Yontem artik
+   * `onOrderCreated`e geciyor ki self-servis kasa odemeyi dogru kaydedebilsin.
+   */
+  async function submitOrder(paymentMethod?: PaymentMethod) {
     triggerHaptic([50, 30, 50]);
     const items = Object.values(cart).map((entry) => {
       const modifierTotal = entry.modifiers.reduce((sum, modifier) => sum + Number(modifier.price_delta), 0);
@@ -698,27 +763,50 @@ export function AdminOrderEntry({
     setMessageTone("info");
     setMessage("");
     try {
-      const response = await fetch("/api/orders", {
-        method: "POST",
-        headers: { "Content-Type": "application/json" },
-        body: JSON.stringify({
-          businessSlug,
-          channel,
-          tableId: channel === "dine_in" ? selectedTable?.id : undefined,
-          customerName: customerName.trim() || (isSelfServiceCoffee ? "Self Servis" : undefined),
-          customerPhone: customerPhone.trim() || undefined,
-          deliveryAddress: deliveryAddress.trim() || undefined,
-          deliveryNote: deliveryNote.trim() || undefined,
-          items,
-          totalPrice: total,
-        }),
-      });
-      const data = (await response.json()) as { ok: boolean; message?: string; orderId?: string; checkNumber?: string | null };
+      const requestPayload: OrderSubmitPayload = {
+        businessSlug,
+        channel,
+        tableId: channel === "dine_in" ? selectedTable?.id : undefined,
+        customerName: customerName.trim() || (isSelfServiceCoffee ? "Self Servis" : undefined),
+        customerPhone: customerPhone.trim() || undefined,
+        deliveryAddress: deliveryAddress.trim() || undefined,
+        deliveryNote: deliveryNote.trim() || undefined,
+        items,
+        totalPrice: total,
+      };
+
+      // Varsayilan yol degismedi: /api/orders'a POST. `onSubmitOrder` verildiginde
+      // gonderim cagirana devredilir — self-servis kasa cevrimdisiyken siparisi
+      // IndexedDB kuyruguna yazmak icin bunu kullaniyor.
+      const data = onSubmitOrder
+        ? await onSubmitOrder(requestPayload)
+        : await (async () => {
+            const frozenConsumption = catalogSnapshot
+              ? freezeCartConsumption(
+                  catalogSnapshot,
+                  items.map((item) => ({
+                    productId: item.product_id,
+                    quantity: item.quantity,
+                    modifierOptionIds: item.modifiers
+                      .map((modifier) => modifier.option_id)
+                      .filter((value): value is string => Boolean(value)),
+                  })),
+                )
+              : [];
+            const response = await fetch("/api/orders", {
+              method: "POST",
+              headers: { "Content-Type": "application/json" },
+              body: JSON.stringify({ ...requestPayload, frozenConsumption }),
+            });
+            const parsed = (await response.json()) as OrderSubmitResult;
+            return response.ok ? parsed : { ...parsed, ok: false };
+          })();
+
       const resolvedCheckNumber =
         typeof data.checkNumber === "string" && data.checkNumber.trim()
           ? data.checkNumber.trim()
           : null;
-      if (!response.ok || !data.ok) {
+      if (!data.ok) {
         setMessageTone("error");
         setMessage(data.message ?? "Sipariş açılamadı.");
         displayFreezeUntilRef.current = Date.now() + 10_000;
@@ -756,7 +844,7 @@ export function AdminOrderEntry({
       window.dispatchEvent(new Event("live-ops:update"));
       if (data.orderId) {
         if (onOrderCreated) {
-          onOrderCreated(data.orderId);
+          onOrderCreated(data.orderId, paymentMethod);
         } else if (isStackMobile || layoutMode === "mobile_stack") {
           router.push("/m/cashier");
         }
@@ -1060,10 +1148,10 @@ export function AdminOrderEntry({
                   <p className="text-4xl font-black tracking-tight text-rose-400">₺{total.toFixed(2)}</p>
                 </div>
                 <div className="mt-4 grid grid-cols-2 gap-3">
-                  <button type="button" onClick={submitOrder} disabled={submitting} className="rounded-2xl bg-rose-500 px-4 py-3 text-sm font-bold text-white disabled:opacity-60">
+                  <button type="button" onClick={() => submitOrder("cash")} disabled={submitting} className="rounded-2xl bg-rose-500 px-4 py-3 text-sm font-bold text-white disabled:opacity-60">
                     Nakit
                   </button>
-                  <button type="button" onClick={submitOrder} disabled={submitting} className="rounded-2xl bg-violet-600 px-4 py-3 text-sm font-bold text-white disabled:opacity-60">
+                  <button type="button" onClick={() => submitOrder("card")} disabled={submitting} className="rounded-2xl bg-violet-600 px-4 py-3 text-sm font-bold text-white disabled:opacity-60">
                     Kart
                   </button>
                 </div>
@@ -1278,10 +1366,10 @@ export function AdminOrderEntry({
                     <p className="text-2xl font-black tracking-tight text-rose-400">₺{total.toFixed(2)}</p>
                   </div>
                   <div className="mt-4 grid grid-cols-2 gap-3">
-                    <button type="button" onClick={submitOrder} disabled={submitting} className="rounded-2xl bg-rose-500 px-4 py-3.5 text-sm font-bold text-white shadow-[0_8px_16px_rgba(244,63,94,0.3)] disabled:opacity-60">
+                    <button type="button" onClick={() => submitOrder("cash")} disabled={submitting} className="rounded-2xl bg-rose-500 px-4 py-3.5 text-sm font-bold text-white shadow-[0_8px_16px_rgba(244,63,94,0.3)] disabled:opacity-60">
                       {submitting ? "İşleniyor..." : "Nakit"}
                     </button>
-                    <button type="button" onClick={submitOrder} disabled={submitting} className="rounded-2xl bg-violet-600 px-4 py-3.5 text-sm font-bold text-white shadow-[0_8px_16px_rgba(139,92,246,0.3)] disabled:opacity-60">
+                    <button type="button" onClick={() => submitOrder("card")} disabled={submitting} className="rounded-2xl bg-violet-600 px-4 py-3.5 text-sm font-bold text-white shadow-[0_8px_16px_rgba(139,92,246,0.3)] disabled:opacity-60">
                       {submitting ? "İşleniyor..." : "Kart"}
                     </button>
                   </div>
@@ -1687,7 +1775,7 @@ export function AdminOrderEntry({
                       <button
                          type="button"
                          disabled={submitting || cartEntries.length === 0}
-                         onClick={submitOrder}
+                         onClick={() => submitOrder()}
                          className="w-full h-14 rounded-2xl bg-emerald-600 text-white font-bold text-lg shadow-lg shadow-emerald-600/20 active:scale-95 disabled:opacity-50 disabled:active:scale-100 transition-all"
                       >
                          {submitting ? "ISLENIYOR..." : "SİPARİŞİ TAMAMLA"}
@@ -1728,7 +1816,7 @@ export function AdminOrderEntry({
                       <button
                          type="button"
                          disabled={submitting}
-                         onClick={submitOrder}
+                         onClick={() => submitOrder()}
                          className="mobile-terminal-cart-button mobile-terminal-cart-button-primary h-12 px-4 rounded-xl bg-emerald-600 text-white font-bold text-sm shadow-md active:scale-95 transition-transform disabled:opacity-50"
                       >
                          {submitting ? "..." : "Tamamla"}
@@ -1859,8 +1947,32 @@ export function AdminOrderEntry({
                 </div>
              )}
 
+             {/* Self-servis: urun -> boy -> ekler akisi. Restoran tarafi asagidaki
+                 acik temali modali kullanmaya devam eder. */}
+             {activeProduct &&
+             isSelfServiceCoffee &&
+             selfServiceModifierFlow === "stepped" &&
+             (groupsByProduct.get(activeProduct.id) ?? []).length > 0 ? (
+                <TakeawayModifierFlow
+                   product={activeProduct}
+                   groups={groupsByProduct.get(activeProduct.id) ?? []}
+                   optionsByGroup={optionsByGroup}
+                   initialQuantity={nextItemMultiplier}
+                   onCancel={() => {
+                      setActiveProductId(null);
+                      setSelectedOptions({});
+                   }}
+                   onConfirm={(selections, quantity) => {
+                      addConfiguredProductWithQuantity(activeProduct, selections, quantity);
+                      setNextItemMultiplier(1);
+                   }}
+                />
+             ) : null}
+
              {/* Modals for modifiers */}
-             {activeProduct && (groupsByProduct.get(activeProduct.id) ?? []).length > 0 && (
+             {activeProduct &&
+             !(isSelfServiceCoffee && selfServiceModifierFlow === "stepped") &&
+             (groupsByProduct.get(activeProduct.id) ?? []).length > 0 && (
                 <div className="fixed inset-0 z-[100] flex items-center justify-center bg-slate-900/80 backdrop-blur-sm p-4">
                    <article className="w-full max-w-2xl rounded-3xl bg-white overflow-hidden shadow-2xl animate-in zoom-in-95 duration-200">
                       <header className="bg-slate-50 px-6 py-4 border-b border-slate-200 flex items-center justify-between">
@@ -2123,7 +2235,7 @@ export function AdminOrderEntry({
                 <button
                   type="button"
                   disabled={submitting}
-                  onClick={submitOrder}
+                  onClick={() => submitOrder()}
                   className="min-h-[48px] w-full rounded-xl bg-emerald-600 px-4 py-3 text-sm font-semibold text-white disabled:opacity-60"
                 >
                   {submitting ? "Sipariş aciliyor..." : "Siparişi Ac"}
@@ -2701,7 +2813,7 @@ export function AdminOrderEntry({
         <button
           type="button"
           disabled={submitting}
-          onClick={submitOrder}
+          onClick={() => submitOrder()}
           className="mt-5 w-full rounded-xl bg-emerald-600 px-4 py-3 text-sm font-semibold text-white disabled:opacity-60"
         >
           {submitting ? "Sipariş aciliyor..." : "Siparişi Ac"}

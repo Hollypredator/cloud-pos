@@ -3,6 +3,7 @@ import { getSupabaseServerClient } from "@/lib/supabase/server";
 import type {
   Category,
   Ingredient,
+  ModifierOptionIngredient,
   PrepStation,
   Product,
   ProductDepartment,
@@ -24,6 +25,7 @@ type ProductIngredientRow = {
   product_id: string;
   ingredient_id: string;
   quantity: number;
+  yield_factor: number | null;
   ingredients: { id: string; name: string; unit: string } | { id: string; name: string; unit: string }[] | null;
 };
 
@@ -104,6 +106,7 @@ async function getCachedProductManagementRow(input: {
         { data: productIngredients, error: productIngredientsError },
         { data: modifierGroups, error: modifierGroupError },
         { data: modifierOptions, error: modifierOptionError },
+        { data: modifierOptionIngredients, error: modifierOptionIngredientsError },
       ] = await Promise.all([
         categoriesQuery,
         (input.useLegacySchema
@@ -132,10 +135,10 @@ async function getCachedProductManagementRow(input: {
         includes.includeIngredients
           ? (
               input.useLegacySchema
-                ? supabase.from("product_ingredients").select("product_id, ingredient_id, quantity, ingredients(id, name, unit, cost)")
+                ? supabase.from("product_ingredients").select("product_id, ingredient_id, quantity, yield_factor, ingredients(id, name, unit, cost)")
                 : supabase
                     .from("product_ingredients")
-                    .select("product_id, ingredient_id, quantity, ingredients(id, name, unit, cost), products!inner(business_id)")
+                    .select("product_id, ingredient_id, quantity, yield_factor, ingredients(id, name, unit, cost), products!inner(business_id)")
                     .eq("products.business_id", input.businessId!)
             )
           : Promise.resolve({ data: [], error: null }),
@@ -151,6 +154,11 @@ async function getCachedProductManagementRow(input: {
               .select("id, group_id, name, price_delta, is_default, sort_order")
               .order("sort_order", { ascending: true })
           : Promise.resolve({ data: [], error: null }),
+        includes.includeModifiers
+          ? supabase
+              .from("modifier_option_ingredients")
+              .select("id, option_id, ingredient_id, target_ingredient_id, quantity, multiplier, mode")
+          : Promise.resolve({ data: [], error: null }),
       ]);
 
       return {
@@ -159,13 +167,17 @@ async function getCachedProductManagementRow(input: {
         ingredients: (ingredients ?? []) as Ingredient[],
         modifierGroups: (modifierGroups ?? []) as ProductModifierGroup[],
         modifierOptions: (modifierOptions ?? []) as ProductModifierOption[],
+        modifierOptionIngredients: (modifierOptionIngredients ?? []) as ModifierOptionIngredient[],
         productIngredients: ((productIngredients ?? []) as ProductIngredientRow[]).map((row) => ({
           product_id: row.product_id,
           ingredient_id: row.ingredient_id,
           quantity: Number(row.quantity),
+          yieldFactor: row.yield_factor == null ? 1 : Number(row.yield_factor),
           ingredient: Array.isArray(row.ingredients) ? row.ingredients[0] ?? null : row.ingredients,
         })),
-        hasError: Boolean(productIngredientsError || modifierGroupError || modifierOptionError),
+        hasError: Boolean(
+          productIngredientsError || modifierGroupError || modifierOptionError || modifierOptionIngredientsError,
+        ),
       };
     },
     [cacheKey],
@@ -198,10 +210,12 @@ export async function getProductManagementDataImpl(
         ingredients: [] as Ingredient[],
         modifierGroups: [] as ProductModifierGroup[],
         modifierOptions: [] as ProductModifierOption[],
+        modifierOptionIngredients: [] as ModifierOptionIngredient[],
         productIngredients: [] as Array<{
           product_id: string;
           ingredient_id: string;
           quantity: number;
+          yieldFactor: number;
           ingredient: Ingredient | null;
         }>,
         activeProfileScope,
@@ -220,10 +234,12 @@ export async function getProductManagementDataImpl(
       ingredients: deps.demoIngredients,
       modifierGroups: deps.demoModifierGroups,
       modifierOptions: deps.demoModifierOptions,
+      modifierOptionIngredients: [] as ModifierOptionIngredient[],
       productIngredients: deps.demoProductIngredients.map((row) => ({
         product_id: row.product_id,
         ingredient_id: row.ingredient_id,
         quantity: row.quantity,
+        yieldFactor: row.yield_factor ?? 1,
         ingredient: deps.demoIngredients.find((item) => item.id === row.ingredient_id) ?? null,
       })),
       activeProfileScope,
@@ -238,10 +254,12 @@ export async function getProductManagementDataImpl(
       ingredients: [] as Ingredient[],
       modifierGroups: [] as ProductModifierGroup[],
       modifierOptions: [] as ProductModifierOption[],
+      modifierOptionIngredients: [] as ModifierOptionIngredient[],
       productIngredients: [] as Array<{
         product_id: string;
         ingredient_id: string;
         quantity: number;
+        yieldFactor: number;
         ingredient: Ingredient | null;
       }>,
       activeProfileScope,
@@ -265,10 +283,12 @@ export async function getProductManagementDataImpl(
         ingredients: [] as Ingredient[],
         modifierGroups: [] as ProductModifierGroup[],
         modifierOptions: [] as ProductModifierOption[],
+        modifierOptionIngredients: [] as ModifierOptionIngredient[],
         productIngredients: [] as Array<{
           product_id: string;
           ingredient_id: string;
           quantity: number;
+          yieldFactor: number;
           ingredient: Ingredient | null;
         }>,
         activeProfileScope,
@@ -281,10 +301,12 @@ export async function getProductManagementDataImpl(
       ingredients: deps.demoIngredients,
       modifierGroups: deps.demoModifierGroups,
       modifierOptions: deps.demoModifierOptions,
+      modifierOptionIngredients: [] as ModifierOptionIngredient[],
       productIngredients: deps.demoProductIngredients.map((row) => ({
         product_id: row.product_id,
         ingredient_id: row.ingredient_id,
         quantity: row.quantity,
+        yieldFactor: row.yield_factor ?? 1,
         ingredient: deps.demoIngredients.find((item) => item.id === row.ingredient_id) ?? null,
       })),
       activeProfileScope,
@@ -302,6 +324,10 @@ export async function getProductManagementDataImpl(
   const scopedModifierGroups = cached.modifierGroups.filter((group) => scopedProductIds.has(group.product_id));
   const scopedModifierGroupIds = new Set(scopedModifierGroups.map((group) => group.id));
   const scopedModifierOptions = cached.modifierOptions.filter((option) => scopedModifierGroupIds.has(option.group_id));
+  const scopedModifierOptionIds = new Set(scopedModifierOptions.map((option) => option.id));
+  const scopedModifierOptionIngredients = cached.modifierOptionIngredients.filter((row) =>
+    scopedModifierOptionIds.has(row.option_id),
+  );
   const scopedProductIngredients = cached.productIngredients.filter((row) => scopedProductIds.has(row.product_id));
   const shouldUseDemoForEmptyCatalog =
     demoCatalogFallbackEnabled &&
@@ -314,10 +340,12 @@ export async function getProductManagementDataImpl(
       ingredients: deps.demoIngredients,
       modifierGroups: deps.demoModifierGroups,
       modifierOptions: deps.demoModifierOptions,
+      modifierOptionIngredients: [] as ModifierOptionIngredient[],
       productIngredients: deps.demoProductIngredients.map((row) => ({
         product_id: row.product_id,
         ingredient_id: row.ingredient_id,
         quantity: row.quantity,
+        yieldFactor: row.yield_factor ?? 1,
         ingredient: deps.demoIngredients.find((item) => item.id === row.ingredient_id) ?? null,
       })),
       activeProfileScope,
@@ -331,6 +359,7 @@ export async function getProductManagementDataImpl(
     ingredients: cached.ingredients,
     modifierGroups: scopedModifierGroups,
     modifierOptions: scopedModifierOptions,
+    modifierOptionIngredients: scopedModifierOptionIngredients,
     productIngredients: scopedProductIngredients,
     activeProfileScope,
     usingDemoData: false,

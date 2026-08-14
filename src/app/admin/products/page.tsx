@@ -4,6 +4,7 @@ import { headers } from "next/headers";
 import { redirect } from "next/navigation";
 import {
   attachIngredientToProduct,
+  saveProductRecipe,
   bulkUpdateCategoryPrices,
   commitEnterpriseMarketImport,
   createCategory,
@@ -21,6 +22,7 @@ import {
   getApplicationSettings,
   getProductManagementData,
   reorderCategories,
+  saveModifierOptionEffects,
   uploadMediaFile,
   updateCategoryPrepStation,
   updateApplicationSettings,
@@ -31,6 +33,7 @@ import { requireRole } from "@/lib/auth";
 import { BackofficePage, ContentCard, EmptyPanel, NoticeBanner, SummaryCard, WorkspaceTabs } from "@/components/backoffice-ui";
 import { CategorySortManager } from "@/components/category-sort-manager";
 import { FileDropInput } from "@/components/file-drop-input";
+import { RecipeEditor } from "@/components/recipe-editor";
 import { translateUiText } from "@/lib/i18n";
 import { getCurrentLocale } from "@/lib/i18n-server";
 import { logServerPerf, measureAsync } from "@/lib/perf";
@@ -1343,6 +1346,58 @@ async function deleteIngredientAction(formData: FormData) {
   redirect(await resolveProductsReturnPath());
 }
 
+/**
+ * Bir urunun recetesinin tamamini tek cagrida kaydeder.
+ *
+ * Hizli editorun tek yazma yolu. Eski `attachIngredientAction` /
+ * `detachIngredientAction` her malzeme icin ayri gidis-donus istiyordu.
+ */
+async function saveRecipeAction(
+  productId: string,
+  lines: Array<{ ingredientId: string; quantity: number; yieldFactor: number }>,
+) {
+  "use server";
+  await requireRole(["admin"], "/admin/products");
+
+  if (typeof productId !== "string" || !productId) {
+    return { ok: false, error: "Ürün bulunamadı." };
+  }
+
+  const result = await saveProductRecipe({ productId, lines });
+  if (!result.ok) {
+    return { ok: false, error: actionErrorMessage(result, "Reçete kaydedilemedi.") };
+  }
+
+  revalidatePath("/admin/products");
+  return { ok: true };
+}
+
+async function saveModifierEffectsAction(
+  optionId: string,
+  effects: Array<{
+    mode: "add" | "remove" | "replace" | "scale";
+    ingredientId?: string;
+    targetIngredientId?: string;
+    quantity?: number;
+    multiplier?: number;
+  }>,
+) {
+  "use server";
+  await requireRole(["admin"], "/admin/products");
+
+  if (typeof optionId !== "string" || !optionId) {
+    return { ok: false, error: "Opsiyon bulunamadı." };
+  }
+
+  const result = await saveModifierOptionEffects({ optionId, effects });
+  if (!result.ok) {
+    return { ok: false, error: actionErrorMessage(result, "Etki kaydedilemedi.") };
+  }
+
+  revalidatePath("/admin/products");
+  return { ok: true };
+}
+
 async function attachIngredientAction(formData: FormData) {
   "use server";
   await requireRole(["admin"], "/admin/products");
@@ -1493,8 +1548,10 @@ export default async function AdminProductsPage({
   const businessScope = await getBusinessScopeContext();
   const isSelfServiceCoffee = businessScope.activeBusinessType === "self_service_coffee";
   const { tab: tabParam, categoryId: categoryIdParam, productId: productIdParam, q: qParam, feedback, tone } = await searchParams;
+  // Recipe/ingredients self-servis tipinde de acik: recete ve maliyet oradaki
+  // ihtiyac. Market import ve toplu islemler restoran tarafinda kaliyor.
   const allowedTabs: string[] = isSelfServiceCoffee
-    ? ["catalog", "menü", "categories"]
+    ? ["catalog", "menü", "categories", "features", "recipe", "ingredients"]
     : ["catalog", "menü", "categories", "bulk", "features", "import", "recipe", "ingredients"];
   const activeTab = (allowedTabs.includes(tabParam ?? "") ? (tabParam ?? "catalog") : "catalog") as
     | "catalog"
@@ -1514,6 +1571,7 @@ export default async function AdminProductsPage({
     ingredients,
     modifierGroups,
     modifierOptions,
+    modifierOptionIngredients,
     productIngredients,
     usingDemoData,
     activeProfileScope,
@@ -1530,7 +1588,7 @@ export default async function AdminProductsPage({
 
   const ingredientsByProduct = new Map<
     string,
-    Array<{ ingredient_id: string; quantity: number; ingredientName: string; unit: string }>
+    Array<{ ingredient_id: string; quantity: number; yieldFactor: number; ingredientName: string; unit: string }>
   >();
   for (const row of productIngredients) {
     if (!row.ingredient) continue;
@@ -1540,9 +1598,15 @@ export default async function AdminProductsPage({
     ingredientsByProduct.get(row.product_id)?.push({
       ingredient_id: row.ingredient_id,
       quantity: row.quantity,
+      yieldFactor: row.yieldFactor ?? 1,
       ingredientName: row.ingredient.name,
       unit: row.ingredient.unit,
     });
+  }
+  function recipeLineCost(item: { quantity: number; yieldFactor: number; ingredient_id: string }) {
+    const unitCost = ingredients.find((ingredient) => ingredient.id === item.ingredient_id)?.cost ?? 0;
+    const yieldFactor = item.yieldFactor > 0 ? item.yieldFactor : 1;
+    return (item.quantity / yieldFactor) * unitCost;
   }
 
   const groupsByProduct = new Map<string, typeof modifierGroups>();
@@ -1583,16 +1647,51 @@ export default async function AdminProductsPage({
   const selectedRecipeRows = selectedRecipeProduct
     ? (ingredientsByProduct.get(selectedRecipeProduct.id) ?? [])
     : [];
-  const selectedRecipeTotalCost = selectedRecipeRows.reduce(
-    (sum, item) => sum + item.quantity * (ingredients.find((ingredient) => ingredient.id === item.ingredient_id)?.cost ?? 0),
-    0,
-  );
+  const selectedRecipeTotalCost = selectedRecipeRows.reduce((sum, item) => sum + recipeLineCost(item), 0);
   const selectedRecipeOverheadCost = Number(selectedRecipeProduct?.cost ?? 0);
   const selectedRecipeTotalUnitCost = selectedRecipeTotalCost + selectedRecipeOverheadCost;
   const selectedRecipePrice = Number(selectedRecipeProduct?.price ?? 0);
   const selectedRecipeProfit = selectedRecipePrice - selectedRecipeTotalUnitCost;
   const selectedRecipeMargin = selectedRecipePrice > 0 ? (selectedRecipeProfit / selectedRecipePrice) * 100 : 0;
   const sourceRecipeCandidates = recipeProducts.filter((product) => product.id !== selectedRecipeProductId);
+
+  // Hizli editor tum urunlerin recetesini bir kerede alir: urun degistirmek
+  // sunucuya gitmesin diye. Katalog buyudugunde bu yuk artar; 40 urun x 3
+  // malzeme olcegin de sorun degil, binlerce urunde sayfalama gerekir.
+  const recipeDraftMap: Record<string, Array<{ ingredientId: string; quantity: number; yieldFactor?: number }>> = {};
+  for (const [productId, rows] of ingredientsByProduct.entries()) {
+    recipeDraftMap[productId] = rows.map((row) => ({
+      ingredientId: row.ingredient_id,
+      quantity: Number(row.quantity),
+      yieldFactor: row.yieldFactor,
+    }));
+  }
+
+  // Modifier secenegin recete etkisi: hangi opsiyon secilince hangi malzeme
+  // eklenir/cikar/degisir/olceklenir. Recete gibi tam-degistirme deseni,
+  // opsiyon basina tek kayit yolu.
+  const modifierEffectsByOption: Record<
+    string,
+    Array<{
+      mode: "add" | "remove" | "replace" | "scale";
+      ingredientId?: string;
+      targetIngredientId?: string;
+      quantity?: number;
+      multiplier?: number;
+    }>
+  > = {};
+  for (const row of modifierOptionIngredients) {
+    if (!modifierEffectsByOption[row.option_id]) {
+      modifierEffectsByOption[row.option_id] = [];
+    }
+    modifierEffectsByOption[row.option_id]?.push({
+      mode: row.mode,
+      ingredientId: row.ingredient_id ?? undefined,
+      targetIngredientId: row.target_ingredient_id ?? undefined,
+      quantity: row.quantity ?? undefined,
+      multiplier: row.multiplier ?? undefined,
+    });
+  }
 
   function buildRecipeHref(productId: string) {
     const params = new URLSearchParams();
@@ -1667,11 +1766,19 @@ export default async function AdminProductsPage({
       <div className="rounded-[28px] border border-slate-200 bg-white p-4 shadow-[0_10px_20px_rgba(15,23,42,0.04)]">
         <WorkspaceTabs
           tabs={
+            // Recipe Studio ve Malzeme Kutuphanesi eskiden self-servis tipinde
+            // gizliydi. Oysa recete ve maliyet en cok orada gerekiyor: 18 gr
+            // espresso, 300 ml sut. Gizli oldugu icin kafe tenant'inda hic
+            // modifier grubu ve recete olusturulamiyordu — boy/ekler secimi de
+            // bu yuzden bostu.
             isSelfServiceCoffee
               ? [
                   { label: "Self Servis Katalog", active: activeTab === "catalog", href: "/admin/products?tab=catalog" },
                   { label: "Self Servis Menu", active: activeTab === "menü", href: "/admin/products?tab=menü" },
                   { label: "Kategoriler", active: activeTab === "categories", href: "/admin/products?tab=categories" },
+                  { label: "Recipe Studio", active: activeTab === "recipe", href: "/admin/products?tab=recipe" },
+                  { label: "Malzeme Kutuphanesi", active: activeTab === "ingredients", href: "/admin/products?tab=ingredients" },
+                  { label: "Ürün Özellikleri", active: activeTab === "features", href: "/admin/products?tab=features" },
                 ]
               : [
                   { label: translateUiText("Ürün & Kategori Yönetimi", locale), active: activeTab === "catalog", href: "/admin/products?tab=catalog" },
@@ -1844,7 +1951,7 @@ export default async function AdminProductsPage({
                   {(() => {
                     const stats = visibleProducts.reduce((acc, p) => {
                       const recipeCost = (ingredientsByProduct.get(p.id) ?? []).reduce(
-                        (sum, item) => sum + (item.quantity * (ingredients.find(i => i.id === item.ingredient_id)?.cost ?? 0)),
+                        (sum, item) => sum + recipeLineCost(item),
                         0
                       );
                       const totalCost = Number(p.cost ?? 0) + recipeCost;
@@ -1942,7 +2049,7 @@ export default async function AdminProductsPage({
                               
                               {(() => {
                                 const recipeCost = (ingredientsByProduct.get(product.id) ?? []).reduce(
-                                  (sum, item) => sum + (item.quantity * (ingredients.find(i => i.id === item.ingredient_id)?.cost ?? 0)),
+                                  (sum, item) => sum + recipeLineCost(item),
                                   0
                                 );
                                 const totalCost = Number(product.cost ?? 0) + recipeCost;
@@ -2122,7 +2229,7 @@ export default async function AdminProductsPage({
                                   <span>Toplam Reçete Maliyeti</span>
                                   <span className="text-slate-900">
                                     {(ingredientsByProduct.get(product.id) ?? []).reduce(
-                                      (sum, item) => sum + (item.quantity * (ingredients.find(i => i.id === item.ingredient_id)?.cost ?? 0)),
+                                      (sum, item) => sum + recipeLineCost(item),
                                       0
                                     ).toFixed(2)} TL
                                   </span>
@@ -2433,7 +2540,36 @@ export default async function AdminProductsPage({
         ) : null}
 
         {activeTab === "recipe" ? (
-          <div className="mt-6 grid gap-5 xl:grid-cols-[280px_minmax(0,1fr)_320px]">
+          <>
+            {/* Hizli editor: urun degistirmek ve malzeme eklemek sayfa
+                yenilemez. Eski form tabanli akis her islemde tam gidis-donus
+                istiyordu; 40 urunluk katalogda recete doldurmak 1-2 saat
+                suruyordu ve kimse yapmiyordu. */}
+            <div className="mt-6">
+              <ContentCard title="Hızlı Reçete Editörü">
+                <RecipeEditor
+                  products={recipeProducts}
+                  ingredients={ingredients}
+                  initialRecipes={recipeDraftMap}
+                  readOnlyReason={
+                    usingDemoData
+                      ? "Demo katalog açık: ürünler geçici, reçete kaydedilemez. Kalıcı reçete için önce gerçek ürünleri ekleyin ya da 'Demo menüyü otomatik kullan' seçeneğini kapatın."
+                      : null
+                  }
+                  onSave={saveRecipeAction}
+                  modifierGroups={modifierGroups}
+                  modifierOptions={modifierOptions}
+                  initialModifierEffects={modifierEffectsByOption}
+                  onSaveModifierEffects={saveModifierEffectsAction}
+                />
+              </ContentCard>
+            </div>
+
+            <details className="mt-5 rounded-2xl border border-slate-200 bg-white p-4">
+              <summary className="cursor-pointer text-sm font-semibold text-slate-600">
+                Eski reçete araçları (tek tek düzenleme, kopyalama, maliyet)
+              </summary>
+              <div className="mt-4 grid gap-5 xl:grid-cols-[280px_minmax(0,1fr)_320px]">
             <ContentCard title="Ürün Seçimi">
               <form method="get" className="mb-4 grid gap-2">
                 <input type="hidden" name="tab" value="recipe" />
@@ -2450,7 +2586,7 @@ export default async function AdminProductsPage({
               <div className="max-h-[620px] space-y-2 overflow-y-auto pr-1">
                 {recipeProducts.map((product) => {
                   const recipeCost = (ingredientsByProduct.get(product.id) ?? []).reduce(
-                    (sum, item) => sum + item.quantity * (ingredients.find((ingredient) => ingredient.id === item.ingredient_id)?.cost ?? 0),
+                    (sum, item) => sum + recipeLineCost(item),
                     0,
                   );
                   const totalUnitCost = Number(product.cost ?? 0) + recipeCost;
@@ -2631,7 +2767,9 @@ export default async function AdminProductsPage({
                 </div>
               </div>
             </ContentCard>
-          </div>
+              </div>
+            </details>
+          </>
         ) : null}
 
         {activeTab === "import" ? (
@@ -2696,19 +2834,33 @@ export default async function AdminProductsPage({
         {activeTab === "ingredients" ? (
           <div className="mt-6 grid gap-5 xl:grid-cols-[1fr_340px]">
             <ContentCard title="Malzeme Kutuphanesi">
-              <form action={addIngredientAction} className="grid gap-3 rounded-2xl border border-slate-200 bg-slate-50 p-4 md:grid-cols-[minmax(0,1fr)_120px_120px_auto]">
-                <input name="name" required placeholder="Yeni malzeme (orn: Mozzarella)" className="rounded-2xl border border-slate-200 bg-white px-4 py-3 text-sm" />
-                <input name="unit" required placeholder="Birim" className="rounded-2xl border border-slate-200 bg-white px-4 py-3 text-sm" />
-                <input name="cost" type="number" step="0.01" required placeholder="Maliyet" className="rounded-2xl border border-slate-200 bg-white px-4 py-3 text-sm" />
+              <form action={addIngredientAction} className="grid gap-3 rounded-2xl border border-slate-200 bg-slate-50 p-4 md:grid-cols-[minmax(0,1fr)_100px_120px_auto]">
+                <input name="name" required placeholder="Yeni malzeme (orn: Espresso Çekirdeği)" className="rounded-2xl border border-slate-200 bg-white px-4 py-3 text-sm" />
+                {/* Serbest metin degil: "g"/"gr"/"gram" gibi yazim farkliliklari
+                    recete hesabini bozardı. Recete ve stok bu ucu kullanir. */}
+                <select name="unit" required defaultValue="g" className="rounded-2xl border border-slate-200 bg-white px-3 py-3 text-sm">
+                  <option value="g">gram (g)</option>
+                  <option value="ml">mililitre (ml)</option>
+                  <option value="adet">adet</option>
+                </select>
+                <input name="cost" type="number" step="0.01" min="0" required placeholder="Maliyet (₺/birim)" className="rounded-2xl border border-slate-200 bg-white px-4 py-3 text-sm" />
                 <button type="submit" className="rounded-2xl bg-[#ff5a34] px-4 py-3 text-sm font-semibold text-white">Ekle</button>
               </form>
               <div className="mt-4 space-y-3">
                 {ingredients.map((ingredient) => (
                   <div key={ingredient.id} className="rounded-2xl border border-slate-200 bg-white p-4">
-                    <form action={updateIngredientAction} className="grid gap-3 md:grid-cols-[minmax(0,1fr)_120px_140px_auto_auto] md:items-center">
+                    <form action={updateIngredientAction} className="grid gap-3 md:grid-cols-[minmax(0,1fr)_100px_140px_auto_auto] md:items-center">
                       <input type="hidden" name="ingredientId" value={ingredient.id} />
                       <input name="name" defaultValue={ingredient.name} className="rounded-xl border border-slate-200 bg-slate-50 px-3 py-2 text-sm font-medium text-slate-900" />
-                      <input name="unit" defaultValue={ingredient.unit} className="rounded-xl border border-slate-200 bg-slate-50 px-3 py-2 text-sm text-slate-700" />
+                      <select
+                        name="unit"
+                        defaultValue={["g", "ml", "adet"].includes(ingredient.unit) ? ingredient.unit : "adet"}
+                        className="rounded-xl border border-slate-200 bg-slate-50 px-3 py-2 text-sm text-slate-700"
+                      >
+                        <option value="g">g</option>
+                        <option value="ml">ml</option>
+                        <option value="adet">adet</option>
+                      </select>
                       <input name="cost" type="number" step="0.01" defaultValue={Number(ingredient.cost ?? 0).toFixed(2)} className="rounded-xl border border-slate-200 bg-slate-50 px-3 py-2 text-sm text-slate-700" />
                       <button type="submit" className="rounded-xl border border-slate-200 bg-slate-50 px-3 py-2 text-xs font-semibold text-slate-700">Güncelle</button>
                       <button formAction={deleteIngredientAction} type="submit" className="rounded-xl border border-rose-200 bg-rose-50 px-3 py-2 text-xs font-semibold text-rose-700">Sil</button>
