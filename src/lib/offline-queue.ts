@@ -23,6 +23,8 @@ const DB_NAME = "cloudpos-offline";
 const DB_VERSION = 1;
 const STORE = "commands";
 const CHANGED_EVENT = "offline-queue:changed";
+/** Yalnizca sunucuya gercekten komut gonderildiginde tetiklenir. */
+const SYNCED_EVENT = "offline-queue:synced";
 
 export type QueuedCommandStatus = "pending" | "failed";
 
@@ -93,6 +95,20 @@ export function onQueueChanged(handler: () => void): () => void {
   if (!isBrowser()) return () => {};
   window.addEventListener(CHANGED_EVENT, handler);
   return () => window.removeEventListener(CHANGED_EVENT, handler);
+}
+
+/**
+ * Bekleyen komutlar sunucuya iletildiginde tetiklenir.
+ *
+ * `onQueueChanged`'dan ayri: o, kuyruga YAZILDIGINDA da tetiklenir. Ekranda
+ * "buluta senkronlandi" bildirimi gostermek icin ikisi karistirilirsa,
+ * cevrimdisi kayit anında da yanlislikla "senkronlandi" denirdi.
+ */
+export function onQueueSynced(handler: (report: SyncReport) => void): () => void {
+  if (!isBrowser()) return () => {};
+  const listener = (event: Event) => handler((event as CustomEvent<SyncReport>).detail);
+  window.addEventListener(SYNCED_EVENT, listener);
+  return () => window.removeEventListener(SYNCED_EVENT, listener);
 }
 
 export async function enqueueCommand(input: {
@@ -298,7 +314,14 @@ export async function syncQueue(): Promise<SyncReport> {
     announce();
   }
 
-  return { sent, failed, stillPending: await safeCountPending() };
+  const report: SyncReport = { sent, failed, stillPending: await safeCountPending() };
+  // Yalnizca gercekten gonderim olduysa haber ver: her tur bos yere
+  // tetiklenirse arayuz cevrimici calisan kasada surekli "senkronlandi"
+  // bildirimi gosterirdi.
+  if (sent > 0 && isBrowser()) {
+    window.dispatchEvent(new CustomEvent<SyncReport>(SYNCED_EVENT, { detail: report }));
+  }
+  return report;
 }
 
 async function safeCountPending() {
