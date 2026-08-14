@@ -21,6 +21,7 @@ import {
   setTableSupervisorAction,
 } from "./actions";
 import { orderTone, tableStatusLabel, tableStatusTone } from "./helpers";
+import { isQrSigningConfigured } from "@/lib/qr-security";
 import { buildQrImage, buildQrTarget } from "./qr-helpers-server";
 import { TableManagementModal } from "./table-management-modal";
 
@@ -61,6 +62,7 @@ export default async function AdminTablesPage({
   let selectedTableHistory: Order[] = [];
   let selectedTableQrTarget = "#";
   let selectedTableQrImage = "#";
+  const qrSigningConfigured = isQrSigningConfigured();
 
   if (selectedTable) {
     const businessScopeResult = await measureAsync("business_scope", () => getBusinessScopeContext());
@@ -179,6 +181,17 @@ export default async function AdminTablesPage({
           tone={tone === "error" ? "error" : "success"}
           title={tone === "error" ? "Masa işlemi tamamlanamadi" : "Masa işlemi tamamlandı"}
           description={feedback}
+        />
+      ) : null}
+
+      {/* Anahtar yoksa QR'lar imzasiz uretilir, musteri sayfasi da imzasizi
+          reddeder: QR siparis tamamen calismaz. Sessiz kalirsa "QR neden
+          bozuk" diye saatlerce aranir. */}
+      {!qrSigningConfigured ? (
+        <NoticeBanner
+          tone="error"
+          title="QR imzalama anahtarı tanımlı değil"
+          description="QR_SECRET ortam değişkeni ayarlanmadan basılan QR kodları müşteri tarafında reddedilir. Anahtarı ekleyip QR kodlarını yeniden bastırın."
         />
       ) : null}
 
