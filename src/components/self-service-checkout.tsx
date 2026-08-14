@@ -468,7 +468,13 @@ export function SelfServiceCheckout({
         </div>
       ) : null}
 
-      <div className="min-h-0 flex-1">
+      {/* Flex konteyner olmak ZORUNDA: AdminOrderEntry'nin self-servis kolu
+          `flex flex-1 min-h-0` bir <section> donduruyor ve yuksekligini
+          ebeveyninden aliyor. Burasi `block` kalirsa o flex-1 hicbir ise
+          yaramaz, section icerik boyu kadar uzar, icindeki overflow-y-auto
+          sinirlanamaz ve en disdaki overflow-hidden ekranin altini keser —
+          sepete ve odeme butonlarina erisilemez. */}
+      <div className="flex min-h-0 flex-1 flex-col">
         <AdminOrderEntry
           businessSlug={businessSlug}
           categories={catalog?.menu.categories ?? categories}
@@ -476,6 +482,8 @@ export function SelfServiceCheckout({
           modifierGroups={catalog?.menu.modifierGroups ?? modifierGroups}
           modifierOptions={catalog?.menu.modifierOptions ?? modifierOptions}
           tables={tables}
+          businessName={businessName}
+          branchName={branchName}
           entryMode="classic"
           layoutMode={layoutMode}
           initialView="composer"

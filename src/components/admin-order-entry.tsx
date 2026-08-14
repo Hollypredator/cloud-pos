@@ -132,6 +132,8 @@ export function AdminOrderEntry({
   modifierOptions,
   tables,
   zones = [],
+  businessName,
+  branchName,
   initialTableId,
   lockedTableId,
   onOrderCreated,
@@ -153,6 +155,9 @@ export function AdminOrderEntry({
   tables: DiningTable[];
   /** Kroki gorunumundeki bolge sekmeleri. Verilmezse tek "Bölgesiz" sekme. */
   zones?: TableZone[];
+  /** Self-servis kasa basligi. Verilmezse notr metne duser. */
+  businessName?: string | null;
+  branchName?: string | null;
   initialTableId?: string;
   lockedTableId?: string;
   onOrderCreated?: (orderId: string, paymentMethod?: PaymentMethod) => void;
@@ -957,9 +962,11 @@ export function AdminOrderEntry({
       <>
         <section className="app-mobile-hide m-card flex flex-1 min-h-0 flex-col overflow-x-clip rounded-[26px] border border-slate-800 bg-[linear-gradient(180deg,#070d19_0%,#0f172a_100%)] text-slate-100 shadow-[0_30px_60px_rgba(2,6,23,0.45)]">
           <header className="flex items-center justify-between border-b border-slate-800 px-6 py-5">
-            <div>
-              <p className="text-3xl font-black tracking-tight">Self Servis Kahvecim</p>
-              <p className="mt-1 text-sm text-slate-400">Hızlı ve Lezzetli</p>
+            <div className="min-w-0">
+              {/* Isletme adi disaridan gelir. Sabit yazildiginda her kiracinin
+                  kasasinda ayni marka gorunuyordu. */}
+              <p className="truncate text-3xl font-black tracking-tight">{businessName ?? "Self Servis"}</p>
+              <p className="mt-1 truncate text-sm text-slate-400">{branchName ?? "Hızlı ve Lezzetli"}</p>
             </div>
             <div className="text-right">
               <p className="text-xs uppercase tracking-[0.22em] text-slate-500">Sipariş Sayisi</p>
