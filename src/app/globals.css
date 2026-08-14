@@ -442,6 +442,30 @@ body {
   display: none !important;
 }
 
+/*
+ * Self-servis kiosk gorunumu: SALT ekran genisligine bagli, `.mobile-app-mode`
+ * sinifina degil. `.app-mobile-hide/.app-mobile-only` kasitli olarak
+ * kullanilmiyor — o ciftin `.mobile-app-mode .app-mobile-hide { display:none }`
+ * kurali var, ve `.mobile-app-mode` self-servis siparis ekraninda sol menuyu
+ * gizlemek icin genislikten BAGIMSIZ tetikleniyor (bkz. app-shell.tsx,
+ * isSelfServiceOrders). Ayni sinifa baglansaydi, sol menu gizlenirken genis
+ * bir kiosk tablette de YANLIŞLIKLA telefon duzenine (2 kolon + yuzen sepet)
+ * duserdi — fiyat/sepet paneli kaybolurdu. Bu iki karar (sidebar gorunurlugu,
+ * self-servis izgara duzeni) kasitli olarak ayri tutuluyor.
+ */
+.ss-kiosk-only {
+  display: none !important;
+}
+
+@media (max-width: 767px) {
+  .ss-kiosk-only {
+    display: block !important;
+  }
+  .ss-kiosk-hide {
+    display: none !important;
+  }
+}
+
 .mobile-app-mode .mobile-task-tabs {
   position: sticky;
   top: calc(var(--safe-area-top) + 74px);

@@ -989,7 +989,14 @@ export function AdminOrderEntry({
   if (isSelfServiceCoffee) {
     return (
       <>
-        <section className="app-mobile-hide m-card flex flex-1 min-h-0 flex-col overflow-x-clip rounded-[26px] border border-slate-800 bg-[linear-gradient(180deg,#070d19_0%,#0f172a_100%)] text-slate-100 shadow-[0_30px_60px_rgba(2,6,23,0.45)]">
+        {/* Genis/kucuk gorunum secimi burada `ss-kiosk-*` ile SALT ekran
+            genisligine bagli — `app-mobile-*`'in aksine, kiosk modunun
+            (sol menuyu gizleyen `.mobile-app-mode`) yan etkisi olmasin diye.
+            Ikisi ayni CSS sinifina baglanirsa genis bir kiosk tabletinde
+            sol menu gizlenirken YANLIŞLIKLA telefon duzenine (2 kolon +
+            yuzen sepet) de duserdi; fiyat/sepet paneli kaybolur, kullanici
+            "yonetimden koptu" hisseder. */}
+        <section className="ss-kiosk-hide m-card flex flex-1 min-h-0 flex-col overflow-x-clip rounded-[26px] border border-slate-800 bg-[linear-gradient(180deg,#070d19_0%,#0f172a_100%)] text-slate-100 shadow-[0_30px_60px_rgba(2,6,23,0.45)]">
           <header className="flex items-center justify-between border-b border-slate-800 px-6 py-5">
             <div className="min-w-0">
               {/* Isletme adi disaridan gelir. Sabit yazildiginda her kiracinin
@@ -1234,7 +1241,7 @@ export function AdminOrderEntry({
           </div>
         </section>
 
-        <div className={`app-mobile-only space-y-3 ${isStackMobile ? "pb-[calc(190px+var(--safe-area-bottom))]" : "pb-[calc(164px+var(--safe-area-bottom))]"}`}>
+        <div className={`ss-kiosk-only space-y-3 ${isStackMobile ? "pb-[calc(190px+var(--safe-area-bottom))]" : "pb-[calc(164px+var(--safe-area-bottom))]"}`}>
           {/* Mobile Self-Service: Search */}
           <div className="m-card rounded-2xl border border-slate-700/80 p-1 space-y-1">
             <input
@@ -1386,7 +1393,7 @@ export function AdminOrderEntry({
 
         {/* Mobile Self-Service: Cart Panel (full screen) */}
         {mobileCartOpen ? (
-          <div className="app-mobile-only fixed inset-0 z-[70] bg-slate-950/60">
+          <div className="ss-kiosk-only fixed inset-0 z-[70] bg-slate-950/60">
             <div className="absolute inset-0 overflow-y-auto bg-slate-950 px-3 pb-[calc(96px+var(--safe-area-bottom))] pt-[calc(72px+var(--safe-area-top))]">
               <header className="sticky top-0 z-10 rounded-2xl border border-slate-700 bg-slate-900/98 px-4 py-3 shadow-[0_8px_20px_rgba(0,0,0,0.3)]">
                 <div className="flex items-center justify-between gap-3">
@@ -1488,7 +1495,7 @@ export function AdminOrderEntry({
 
         {/* Mobile Self-Service: Floating Cart Dock */}
         <div
-          className={`app-mobile-only fixed inset-x-0 z-40 px-3`}
+          className={`ss-kiosk-only fixed inset-x-0 z-40 px-3`}
           style={{ bottom: isStackMobile ? "calc(74px + var(--safe-area-bottom))" : "calc(72px + var(--safe-area-bottom))" }}
         >
           <div className="m-card rounded-2xl border border-slate-700 p-3 shadow-[0_12px_30px_rgba(0,0,0,0.4)] backdrop-blur">
