@@ -5,6 +5,16 @@ import Link from "next/link";
 import { useRouter } from "next/navigation";
 import { motion } from "framer-motion";
 import {
+  ArrowLeft,
+  Banknote,
+  Check,
+  ChevronRight,
+  CreditCard,
+  MonitorSmartphone,
+  Search,
+  ShoppingBasket,
+} from "lucide-react";
+import {
   clearActiveCustomerDisplaySession,
   createCustomerDisplaySession,
   CUSTOMER_DISPLAY_SESSIONS_STORAGE_KEY,
@@ -1017,209 +1027,249 @@ export function AdminOrderEntry({
             sol menu gizlenirken YANLIŞLIKLA telefon duzenine (2 kolon +
             yuzen sepet) de duserdi; fiyat/sepet paneli kaybolur, kullanici
             "yonetimden koptu" hisseder. */}
-        <section className="ss-kiosk-hide m-card flex flex-1 min-h-0 flex-col overflow-x-clip rounded-[26px] border border-slate-800 bg-[linear-gradient(180deg,#070d19_0%,#0f172a_100%)] text-slate-100 shadow-[0_30px_60px_rgba(2,6,23,0.45)]">
-          <header className="flex items-center justify-between border-b border-slate-800 px-6 py-5">
-            <div className="min-w-0">
-              {/* Isletme adi disaridan gelir. Sabit yazildiginda her kiracinin
-                  kasasinda ayni marka gorunuyordu. Canli/offline nokta burada:
-                  app-shell'in genel ust cubugu self-servis icin artik hic
-                  render edilmiyor (iki ust uste baslik olmasin diye), bu
-                  yuzden kimlik bilgisiyle birlikte baglanti durumu da burada. */}
-              <div className="flex items-center gap-2">
+        <section className="ss-kiosk-hide flex flex-1 min-h-0 flex-col overflow-x-clip rounded-[26px] border border-[#e7dcd7] bg-white text-[#241a17] shadow-[0_20px_50px_rgba(36,26,23,0.08)]">
+          {/* Acik tema: koyu M3 versiyonu ekranda test edildikten sonra
+              "aciksa tamam" denildi. Iki bilincli sapma hala geçerli: (1)
+              "Seç" CTA'si hover-only degil hep gorunur (dokunmatikte hover
+              yok). (2) Ust cubuktaki Ürün→Boy→Ekstra seridi dekoratif bir
+              lejant — gercek, urune-ozel adim durumu SelfServiceModifierInline
+              icindeki (artik grup-grup ilerleyen) buyuk numarali seritte. */}
+          <header className="relative grid h-[72px] shrink-0 grid-cols-[1fr_auto_1fr] items-center gap-4 border-b border-[#e7dcd7] bg-white px-6">
+            <div className="flex min-w-0 items-center gap-4">
+              <Link
+                href="/ops"
+                className="group flex shrink-0 items-center gap-2 text-xs font-semibold uppercase tracking-wider text-[#e8502f] transition hover:text-[#d1441f]"
+              >
+                <ArrowLeft className="h-4 w-4 transition-transform group-hover:-translate-x-1" />
+                Panele Dön
+              </Link>
+              <div className="h-6 w-px shrink-0 bg-[#e7dcd7]" aria-hidden="true" />
+              <div className="min-w-0">
+                <div className="flex items-center gap-2">
+                  <span
+                    className={`h-2 w-2 shrink-0 rounded-full ${isOnline ? "bg-emerald-500" : "bg-amber-500"}`}
+                    aria-hidden="true"
+                  />
+                  <p className="truncate text-lg font-black leading-tight text-[#241a17]">{businessName ?? "Self Servis"}</p>
+                </div>
+                <p className="truncate text-[11px] uppercase tracking-widest text-[#8a7a74]">{branchName ?? "Hızlı ve Lezzetli"}</p>
+              </div>
+            </div>
+
+            <div className="hidden items-center gap-2 text-[11px] font-semibold uppercase tracking-[0.2em] text-[#b8a9a3] lg:flex" aria-hidden="true">
+              <span>Ürün</span>
+              <ChevronRight className="h-3.5 w-3.5 text-[#d8c8c2]" />
+              <span>Boy</span>
+              <ChevronRight className="h-3.5 w-3.5 text-[#d8c8c2]" />
+              <span>Ekstra</span>
+            </div>
+
+            <div className="flex items-center justify-end gap-3">
+              <div className="text-right">
+                <p className="text-[10px] uppercase tracking-[0.22em] text-[#8a7a74]">Sipariş Sayısı</p>
+                <p className="text-lg font-bold text-[#e8502f]">{cartCount}</p>
+              </div>
+              <button
+                type="button"
+                onClick={() => setDisplayPairingOpen((prev) => !prev)}
+                aria-expanded={displayPairingOpen}
+                className={`inline-flex h-10 shrink-0 items-center gap-2 rounded-full border px-3.5 text-xs font-semibold transition ${
+                  displaySession
+                    ? "border-emerald-300 bg-emerald-50 text-emerald-700"
+                    : "border-[#e7dcd7] text-[#8a7a74] hover:border-[#8a7a74]/50"
+                }`}
+              >
                 <span
-                  className={`h-2 w-2 shrink-0 rounded-full ${isOnline ? "bg-emerald-400" : "bg-amber-400"}`}
+                  className={`h-2 w-2 shrink-0 rounded-full ${displaySession ? "bg-emerald-500" : "bg-[#d8c8c2]"}`}
                   aria-hidden="true"
                 />
-                <p className="truncate text-3xl font-black tracking-tight">{businessName ?? "Self Servis"}</p>
-              </div>
-              <p className="mt-1 truncate text-sm text-slate-400">{branchName ?? "Hızlı ve Lezzetli"}</p>
-            </div>
-            <div className="text-right">
-              <p className="text-xs uppercase tracking-[0.22em] text-slate-500">Sipariş Sayisi</p>
-              <p className="mt-2 text-2xl font-bold text-rose-400">{cartCount}</p>
+                <MonitorSmartphone className="h-4 w-4" />
+                Müşteri Ekranı
+              </button>
             </div>
           </header>
 
-          <div className="border-b border-slate-800 bg-slate-900/55 px-6">
-            <button
-              type="button"
-              onClick={() => setDisplayPairingOpen((prev) => !prev)}
-              className="flex w-full items-center justify-between gap-3 py-3 text-left"
-            >
-              <span className="flex items-center gap-2 text-xs uppercase tracking-[0.16em] text-slate-400">
-                <span className={`h-2 w-2 shrink-0 rounded-full ${displaySession ? "bg-emerald-400" : "bg-slate-600"}`} aria-hidden="true" />
-                Müşteri Ekranı{" "}
-                {displaySession ? (
-                  <span className="font-black tracking-[0.14em] text-emerald-300">{displaySession.pairCode}</span>
-                ) : (
-                  "Bağlı Değil"
-                )}
-              </span>
-              <span className="text-xs font-semibold text-slate-300">{displayPairingOpen ? "Gizle" : "Ayarla"}</span>
-            </button>
-
-            {displayPairingOpen ? (
-              <div className="pb-4">
-                <div className="flex flex-wrap items-end gap-3">
-                  <button
-                    type="button"
-                    onClick={createDisplayPairCode}
-                    className="rounded-xl bg-emerald-600 px-4 py-2 text-sm font-semibold text-white hover:bg-emerald-500"
-                  >
-                    Kod Uret
-                  </button>
-                  <button
-                    type="button"
-                    onClick={openCustomerDisplay}
-                    disabled={!displaySession}
-                    className="rounded-xl border border-slate-500 bg-slate-800 px-4 py-2 text-sm font-semibold text-slate-100 disabled:cursor-not-allowed disabled:opacity-40"
-                  >
-                    Müşteri Ekranini Ac
-                  </button>
-                  <button
-                    type="button"
-                    onClick={copyDisplayPairCode}
-                    disabled={!displaySession}
-                    className="rounded-xl border border-slate-500 bg-slate-800 px-4 py-2 text-sm font-semibold text-slate-100 disabled:cursor-not-allowed disabled:opacity-40"
-                  >
-                    {displayCodeCopied ? "Kopyalandi" : "Kodu Kopyala"}
-                  </button>
-                  <button
-                    type="button"
-                    onClick={clearDisplaySession}
-                    disabled={!displaySession}
-                    className="rounded-xl border border-rose-500/50 bg-rose-500/10 px-4 py-2 text-sm font-semibold text-rose-200 disabled:cursor-not-allowed disabled:opacity-40"
-                  >
-                    Eslestirmeyi Temizle
-                  </button>
-                </div>
-                <p className="mt-2 text-xs text-slate-400">
-                  10.1&quot; ekranda <span className="font-semibold text-slate-200">/customer-display</span> acip bu kod ile baglanin.
-                </p>
-              </div>
-            ) : null}
-          </div>
-
-          <div className="grid min-h-0 flex-1 grid-cols-[minmax(0,1fr)_min(340px,28vw)] grid-rows-[1fr]">
-            <div className="min-w-0 overflow-y-auto px-5 pb-6 pt-5">
-              <div className="mb-5 flex flex-wrap items-center gap-2">
+          {displayPairingOpen ? (
+            <div className="border-b border-[#e7dcd7] bg-[#faf6f4] px-6 py-4">
+              <div className="flex flex-wrap items-end gap-3">
                 <button
                   type="button"
-                  onClick={() => setSelectedCategoryId(allCategoryId)}
-                  data-active={selectedCategoryId === allCategoryId}
-                  className="m-segment-pill rounded-full px-5 py-2.5 text-sm font-semibold transition"
+                  onClick={createDisplayPairCode}
+                  className="rounded-xl bg-emerald-600 px-4 py-2 text-sm font-semibold text-white hover:bg-emerald-500"
                 >
-                  Tümu
+                  Kod Uret
                 </button>
-                {orderedCategories.map((category) => {
-                  const selected = selectedCategoryId === category.id;
-                  return (
-                    <button
-                      key={`self-service-category-${category.id}`}
-                      type="button"
-                      onClick={() => setSelectedCategoryId(category.id)}
-                      data-active={selected}
-                      className="m-segment-pill rounded-full px-5 py-2.5 text-sm font-semibold transition"
-                    >
-                      {category.name}
-                    </button>
-                  );
-                })}
+                <button
+                  type="button"
+                  onClick={openCustomerDisplay}
+                  disabled={!displaySession}
+                  className="rounded-xl border border-[#e7dcd7] bg-white px-4 py-2 text-sm font-semibold text-[#241a17] disabled:cursor-not-allowed disabled:opacity-40"
+                >
+                  Müşteri Ekranini Ac
+                </button>
+                <button
+                  type="button"
+                  onClick={copyDisplayPairCode}
+                  disabled={!displaySession}
+                  className="rounded-xl border border-[#e7dcd7] bg-white px-4 py-2 text-sm font-semibold text-[#241a17] disabled:cursor-not-allowed disabled:opacity-40"
+                >
+                  {displayCodeCopied ? "Kopyalandi" : "Kodu Kopyala"}
+                </button>
+                <button
+                  type="button"
+                  onClick={clearDisplaySession}
+                  disabled={!displaySession}
+                  className="rounded-xl border border-rose-300 bg-rose-50 px-4 py-2 text-sm font-semibold text-rose-700 disabled:cursor-not-allowed disabled:opacity-40"
+                >
+                  Eslestirmeyi Temizle
+                </button>
+                {displaySession ? (
+                  <span className="rounded-xl border border-emerald-300 bg-emerald-50 px-4 py-2 text-sm font-black tracking-[0.14em] text-emerald-700">
+                    {displaySession.pairCode}
+                  </span>
+                ) : null}
               </div>
+              <p className="mt-2 text-xs text-[#8a7a74]">
+                10.1&quot; ekranda <span className="font-semibold text-[#241a17]">/customer-display</span> acip bu kod ile baglanin.
+              </p>
+            </div>
+          ) : null}
 
-              <div className="mb-5">
-                <input
-                  ref={searchInputRef}
-                  value={productSearchQuery}
-                  onChange={(event) => setProductSearchQuery(event.target.value)}
-                  placeholder="Ürün ara... (Ctrl+K)"
-                  className="h-12 w-full rounded-2xl border border-slate-700 bg-slate-900/80 px-4 text-sm text-slate-100 placeholder:text-slate-500 focus:border-rose-400 focus:outline-none"
-                />
-              </div>
-
-              {selfServiceProducts.length === 0 ? (
-                <p className="m-card rounded-2xl border border-slate-700 px-4 py-5 text-sm text-slate-400">
-                  Bu filtrede aktif ürün yok.
-                </p>
-              ) : (
-                <div className="grid gap-4 sm:grid-cols-2 xl:grid-cols-4">
-                  {selfServiceProducts.map((product) => {
-                    const productGroups = groupsByProduct.get(product.id) ?? [];
-                    const isExpanded =
-                      isSelfServiceCoffee &&
-                      selfServiceModifierFlow === "stepped" &&
-                      activeProductId === product.id &&
-                      productGroups.length > 0;
-
-                    // Genisleyen kart tum satiri kaplar: ekranin geri kalani
-                    // gorunur kalsin diye — modal degil, izgaranin kendisi.
-                    if (isExpanded) {
-                      return (
-                        <div key={`self-service-product-${product.id}`} className="sm:col-span-2 xl:col-span-4">
-                          <SelfServiceModifierInline
-                            product={product}
-                            groups={productGroups}
-                            optionsByGroup={optionsByGroup}
-                            selected={selectedOptions}
-                            onToggle={toggleOption}
-                            quantity={getConfiguredQuantity(product.id)}
-                            onQuantityChange={(quantity) => setConfiguredQuantity(product.id, quantity)}
-                            onCancel={() => {
-                              setActiveProductId(null);
-                              setSelectedOptions({});
-                            }}
-                            onConfirm={() => confirmInlineModifiers(product)}
-                          />
-                        </div>
-                      );
-                    }
-
+          <div className="grid min-h-0 flex-1 grid-cols-[minmax(0,1fr)_min(360px,30vw)] grid-rows-[1fr]">
+            <div className="flex min-h-0 min-w-0 flex-col">
+              <div className="flex shrink-0 flex-col gap-3 border-b border-[#e7dcd7] px-5 pb-4 pt-5">
+                <div className="flex flex-wrap items-center gap-2 overflow-x-auto">
+                  <button
+                    type="button"
+                    onClick={() => setSelectedCategoryId(allCategoryId)}
+                    className={`shrink-0 rounded-full border px-5 py-2.5 text-sm font-semibold transition ${
+                      selectedCategoryId === allCategoryId
+                        ? "border-transparent bg-[#e8502f] text-white"
+                        : "border-[#e7dcd7] bg-transparent text-[#8a7a74] hover:border-[#8a7a74]/50"
+                    }`}
+                  >
+                    Tümu
+                  </button>
+                  {orderedCategories.map((category) => {
+                    const selected = selectedCategoryId === category.id;
                     return (
-                      <article
-                        key={`self-service-product-${product.id}`}
-                        role="button"
-                        tabIndex={0}
-                        onClick={() => openModifierPicker(product)}
-                        onKeyDown={(event) => {
-                          if (event.key === "Enter" || event.key === " ") {
-                            event.preventDefault();
-                            openModifierPicker(product);
-                          }
-                        }}
-                        className="m-card cursor-pointer rounded-2xl border border-slate-700/70 p-4 transition hover:border-rose-300/40 active:scale-[0.99] focus:outline-none focus-visible:ring-2 focus-visible:ring-rose-400"
+                      <button
+                        key={`self-service-category-${category.id}`}
+                        type="button"
+                        onClick={() => setSelectedCategoryId(category.id)}
+                        className={`shrink-0 rounded-full border px-5 py-2.5 text-sm font-semibold transition ${
+                          selected
+                            ? "border-transparent bg-[#e8502f] text-white"
+                            : "border-[#e7dcd7] bg-transparent text-[#8a7a74] hover:border-[#8a7a74]/50"
+                        }`}
                       >
-                        <div className="mb-4 inline-flex h-11 w-11 items-center justify-center rounded-full bg-slate-700/80 text-xs font-black text-slate-100">
-                          {product.name.slice(0, 2).toUpperCase()}
-                        </div>
-                        <p className="text-lg font-semibold text-white">{product.name}</p>
-                        <p className="mt-2 text-3xl font-black tracking-tight text-rose-400">₺{Number(product.price).toFixed(2)}</p>
-                        <button
-                          type="button"
-                          onClick={(event) => {
-                            event.stopPropagation();
-                            openModifierPicker(product);
-                          }}
-                          className="mt-4 rounded-full bg-slate-700 px-4 py-1.5 text-xs font-semibold text-white hover:bg-slate-600"
-                        >
-                          {productGroups.length > 0 ? "Seç" : "Ekle"}
-                        </button>
-                      </article>
+                        {category.name}
+                      </button>
                     );
                   })}
                 </div>
-              )}
+
+                <div className="relative">
+                  <Search className="pointer-events-none absolute left-4 top-1/2 h-4 w-4 -translate-y-1/2 text-[#8a7a74]/70" />
+                  <input
+                    ref={searchInputRef}
+                    value={productSearchQuery}
+                    onChange={(event) => setProductSearchQuery(event.target.value)}
+                    placeholder="Ürün ara... (Ctrl+K)"
+                    className="h-12 w-full rounded-2xl border border-[#e7dcd7] bg-white pl-11 pr-4 text-sm text-[#241a17] placeholder:text-[#8a7a74]/60 focus:border-[#e8502f] focus:outline-none"
+                  />
+                </div>
+              </div>
+
+              <div className="min-h-0 flex-1 overflow-y-auto px-5 pb-6 pt-4">
+                {selfServiceProducts.length === 0 ? (
+                  <p className="rounded-2xl border border-[#e7dcd7] bg-[#faf6f4] px-4 py-5 text-sm text-[#8a7a74]">
+                    Bu filtrede aktif ürün yok.
+                  </p>
+                ) : (
+                  <div className="grid gap-4 sm:grid-cols-2 xl:grid-cols-4">
+                    {selfServiceProducts.map((product) => {
+                      const productGroups = groupsByProduct.get(product.id) ?? [];
+                      const isExpanded =
+                        isSelfServiceCoffee &&
+                        selfServiceModifierFlow === "stepped" &&
+                        activeProductId === product.id &&
+                        productGroups.length > 0;
+
+                      // Genisleyen kart tum satiri kaplar: ekranin geri kalani
+                      // gorunur kalsin diye — modal degil, izgaranin kendisi.
+                      if (isExpanded) {
+                        return (
+                          <div key={`self-service-product-${product.id}`} className="sm:col-span-2 xl:col-span-4">
+                            <SelfServiceModifierInline
+                              product={product}
+                              groups={productGroups}
+                              optionsByGroup={optionsByGroup}
+                              selected={selectedOptions}
+                              onToggle={toggleOption}
+                              quantity={getConfiguredQuantity(product.id)}
+                              onQuantityChange={(quantity) => setConfiguredQuantity(product.id, quantity)}
+                              onCancel={() => {
+                                setActiveProductId(null);
+                                setSelectedOptions({});
+                              }}
+                              onConfirm={() => confirmInlineModifiers(product)}
+                            />
+                          </div>
+                        );
+                      }
+
+                      return (
+                        <article
+                          key={`self-service-product-${product.id}`}
+                          role="button"
+                          tabIndex={0}
+                          onClick={() => openModifierPicker(product)}
+                          onKeyDown={(event) => {
+                            if (event.key === "Enter" || event.key === " ") {
+                              event.preventDefault();
+                              openModifierPicker(product);
+                            }
+                          }}
+                          className="flex h-[168px] cursor-pointer flex-col justify-between overflow-hidden rounded-2xl border border-[#e7dcd7] bg-white p-4 text-left transition hover:border-[#e8502f]/40 hover:bg-[#fff8f6] active:scale-[0.98] focus:outline-none focus-visible:ring-2 focus-visible:ring-[#e8502f]"
+                        >
+                          <div className="flex items-start justify-between gap-2">
+                            <div className="flex h-11 w-11 shrink-0 items-center justify-center rounded-full bg-[#f5efec] text-xs font-black text-[#241a17]">
+                              {product.name.slice(0, 2).toUpperCase()}
+                            </div>
+                            <button
+                              type="button"
+                              onClick={(event) => {
+                                event.stopPropagation();
+                                openModifierPicker(product);
+                              }}
+                              className="shrink-0 rounded-full bg-[#e8502f] px-3 py-1.5 text-[11px] font-bold text-white transition hover:bg-[#d1441f]"
+                            >
+                              {productGroups.length > 0 ? "Seç" : "Ekle"}
+                            </button>
+                          </div>
+                          <div className="min-w-0">
+                            <p className="truncate text-base font-bold text-[#241a17]">{product.name}</p>
+                            <p className="mt-1 text-xl font-black tracking-tight text-[#e8502f]">₺{Number(product.price).toFixed(2)}</p>
+                          </div>
+                        </article>
+                      );
+                    })}
+                  </div>
+                )}
+              </div>
             </div>
 
-            <aside className="m-card flex min-w-0 flex-col border-l border-slate-700/80 bg-[linear-gradient(180deg,#202838_0%,#1a2234_55%,#171f31_100%)]">
-              <div className="flex items-center justify-between border-b border-slate-700 px-5 py-5">
+            <aside className="flex min-w-0 flex-col border-l border-[#e7dcd7] bg-[#faf6f4]">
+              <div className="flex items-center justify-between border-b border-[#e7dcd7] px-5 py-5">
                 <div>
-                  <p className="text-3xl font-black tracking-tight text-white">Siparişim</p>
-                  <p className="mt-1 text-sm text-slate-300">Toplam Ürün: {cartCount}</p>
+                  <p className="text-2xl font-black tracking-tight text-[#241a17]">Siparişim</p>
+                  <p className="mt-1 text-sm text-[#8a7a74]">Toplam Ürün: {cartCount}</p>
                 </div>
                 <button
                   type="button"
                   onClick={clearCart}
-                  className="rounded-xl bg-slate-700 px-3 py-2 text-xs font-semibold text-slate-100 hover:bg-slate-600"
+                  className="rounded-xl border border-[#e7dcd7] bg-white px-3 py-2 text-xs font-semibold text-[#241a17] hover:bg-[#f5efec]"
                 >
                   Temizle
                 </button>
@@ -1227,31 +1277,36 @@ export function AdminOrderEntry({
 
               <div className="flex-1 overflow-y-auto px-4 py-4">
                 {cartEntries.length === 0 ? (
-                  <p className="mt-20 text-center text-sm text-slate-400">Ürün eklemek icin soldan seç.</p>
+                  <div className="mt-16 flex flex-col items-center gap-3 text-center">
+                    <div className="flex h-16 w-16 items-center justify-center rounded-full border border-[#e7dcd7] bg-white">
+                      <ShoppingBasket className="h-7 w-7 text-[#8a7a74]" />
+                    </div>
+                    <p className="text-sm text-[#8a7a74]">Ürün eklemek icin soldan seç.</p>
+                  </div>
                 ) : (
                   <div className="space-y-3">
                     {cartEntries.map((entry) => {
                       const modifierTotal = entry.modifiers.reduce((sum, modifier) => sum + Number(modifier.price_delta), 0);
                       return (
-                        <article key={`self-service-cart-${entry.key}`} className="m-card rounded-xl border border-slate-600 p-3">
+                        <article key={`self-service-cart-${entry.key}`} className="rounded-xl border border-[#e7dcd7] bg-white p-3">
                           <div className="flex items-start justify-between gap-2">
                             <div>
-                              <p className="font-semibold text-white">{entry.product.name}</p>
-                              <p className="text-sm text-slate-300">₺{(Number(entry.product.price) + modifierTotal).toFixed(2)}</p>
+                              <p className="font-semibold text-[#241a17]">{entry.product.name}</p>
+                              <p className="text-sm text-[#8a7a74]">₺{(Number(entry.product.price) + modifierTotal).toFixed(2)}</p>
                             </div>
                             <div className="flex items-center gap-2">
                               <button
                                 type="button"
                                 onClick={() => removeProduct(entry.key)}
-                                className="h-8 w-8 rounded-lg bg-slate-700 text-sm font-bold text-white"
+                                className="h-8 w-8 rounded-lg bg-[#f5efec] text-sm font-bold text-[#241a17] hover:bg-[#e7dcd7]"
                               >
                                 -
                               </button>
-                              <span className="w-6 text-center text-sm font-semibold text-white">{entry.quantity}</span>
+                              <span className="w-6 text-center text-sm font-semibold text-[#241a17]">{entry.quantity}</span>
                               <button
                                 type="button"
                                 onClick={() => increaseProduct(entry.key)}
-                                className="h-8 w-8 rounded-lg bg-slate-700 text-sm font-bold text-white"
+                                className="h-8 w-8 rounded-lg bg-[#f5efec] text-sm font-bold text-[#241a17] hover:bg-[#e7dcd7]"
                               >
                                 +
                               </button>
@@ -1264,20 +1319,32 @@ export function AdminOrderEntry({
                 )}
               </div>
 
-              <div className="border-t border-slate-700 px-5 py-5">
-                <div className="flex items-center justify-between text-sm text-slate-300">
+              <div className="border-t border-[#e7dcd7] bg-white px-5 py-5">
+                <div className="flex items-center justify-between text-sm text-[#8a7a74]">
                   <span>Ara Toplam</span>
-                  <span>₺{total.toFixed(2)}</span>
+                  <span className="font-semibold text-[#241a17]">₺{total.toFixed(2)}</span>
                 </div>
                 <div className="mt-2 flex items-end justify-between">
-                  <p className="text-4xl font-black tracking-tight text-rose-400">Toplam</p>
-                  <p className="text-4xl font-black tracking-tight text-rose-400">₺{total.toFixed(2)}</p>
+                  <p className="text-lg font-bold text-[#241a17]">Toplam</p>
+                  <p className="text-3xl font-black tracking-tight text-[#e8502f]">₺{total.toFixed(2)}</p>
                 </div>
                 <div className="mt-4 grid grid-cols-2 gap-3">
-                  <button type="button" onClick={() => submitOrder("cash")} disabled={submitting} className="rounded-2xl bg-rose-500 px-4 py-3 text-sm font-bold text-white disabled:opacity-60">
+                  <button
+                    type="button"
+                    onClick={() => submitOrder("cash")}
+                    disabled={submitting}
+                    className="flex items-center justify-center gap-2 rounded-2xl bg-[#e8502f] px-4 py-3 text-sm font-bold text-white transition hover:bg-[#d1441f] disabled:opacity-50"
+                  >
+                    <Banknote className="h-4 w-4" />
                     Nakit
                   </button>
-                  <button type="button" onClick={() => submitOrder("card")} disabled={submitting} className="rounded-2xl bg-violet-600 px-4 py-3 text-sm font-bold text-white disabled:opacity-60">
+                  <button
+                    type="button"
+                    onClick={() => submitOrder("card")}
+                    disabled={submitting}
+                    className="flex items-center justify-center gap-2 rounded-2xl border border-[#e7dcd7] bg-white px-4 py-3 text-sm font-bold text-[#241a17] transition hover:bg-[#f5efec] disabled:opacity-50"
+                  >
+                    <CreditCard className="h-4 w-4" />
                     Kart
                   </button>
                 </div>
@@ -1286,7 +1353,11 @@ export function AdminOrderEntry({
           </div>
         </section>
 
-        <div className={`ss-kiosk-only space-y-3 ${isStackMobile ? "pb-[calc(190px+var(--safe-area-bottom))]" : "pb-[calc(164px+var(--safe-area-bottom))]"}`}>
+        {/* Alt bosluk asagidaki "Floating Cart Dock"u karsilamak icin var;
+            eskiden buna ek olarak app-shell'in self-servis icin artik hic
+            render edilmeyen alt Home/Actions cubugunu da (~64-88px) karsilamasi
+            gerekiyordu (190/164), o pay artik dusuldu (128/104). */}
+        <div className={`ss-kiosk-only space-y-3 ${isStackMobile ? "pb-[calc(128px+var(--safe-area-bottom))]" : "pb-[calc(104px+var(--safe-area-bottom))]"}`}>
           {/* Mobile Self-Service: Baslik. Masaustu bolumun aksine bunun hic
               basligi yoktu — app-shell'in genel ust cubugu buraya kimlik
               saglardi. O cubuk artik self-servis icin hic render edilmiyor
@@ -1551,10 +1622,13 @@ export function AdminOrderEntry({
           </div>
         ) : null}
 
-        {/* Mobile Self-Service: Floating Cart Dock */}
+        {/* Mobile Self-Service: Floating Cart Dock. Onceki 72-74px, altta
+            artik render edilmeyen app-shell Home/Actions cubugunu (ve onun
+            kendi guvenli-alan payini) karsilamak icindi; simdi sadece kucuk
+            bir nefes payi + guvenli alan yeterli. */}
         <div
           className={`ss-kiosk-only fixed inset-x-0 z-40 px-3`}
-          style={{ bottom: isStackMobile ? "calc(74px + var(--safe-area-bottom))" : "calc(72px + var(--safe-area-bottom))" }}
+          style={{ bottom: "calc(12px + var(--safe-area-bottom))" }}
         >
           <div className="m-card rounded-2xl border border-slate-700 p-3 shadow-[0_12px_30px_rgba(0,0,0,0.4)] backdrop-blur">
             <div className="flex items-center justify-between gap-3">

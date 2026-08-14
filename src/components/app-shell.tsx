@@ -469,15 +469,19 @@ export function AppShell({
 
         <div
           className={`min-w-0 flex-1 overflow-x-clip ${
-            isSelfServiceOrders ? "bg-[#080d1a]" : ""
+            isSelfServiceOrders ? "bg-[#faf6f4]" : ""
           } ${
             mobileAppMode
               ? // Self-servis kendi ust basligini taniyor (isletme adi +
                 // canli/offline nokta, admin-order-entry.tsx icinde) — genel
                 // "CLOUD POS" cubugu onun ustune ikinci bir baslik olarak
-                // binmesin diye o cubuk self-servis icin hic render edilmiyor,
-                // dolayisiyla onun icin ayrilan ust bosluk da gerekmiyor.
-                `pb-[calc(88px+var(--safe-area-bottom))] ${isSelfServiceOrders ? "pt-0" : "pt-[calc(68px+var(--safe-area-top))]"}`
+                // binmesin diye o cubuk self-servis icin hic render edilmiyor.
+                // Alt Home/Actions cubugu da self-servis icin artik hic
+                // render edilmiyor (TopAppBar'daki "Panele Dön" onun yerine
+                // geciyor) — o yuzden alt bosluk da yalnizca safe-area kadar.
+                isSelfServiceOrders
+                  ? "pb-[var(--safe-area-bottom)] pt-0"
+                  : "pb-[calc(88px+var(--safe-area-bottom))] pt-[calc(68px+var(--safe-area-top))]"
               : "pb-28 md:pb-0"
           }`}
         >
@@ -528,31 +532,36 @@ export function AppShell({
               </div>
             ) : null}
 
-            {/* Kiosk ekranindaki TEK yonetim-alani erisim yolu bu iki dugme:
-                Home (/ops'a doner, orada isSelfServiceOrders artik false
-                oldugu icin sol menu geri gelir) ve Actions (sipariş/servis/
-                yonetim gruplu kisayollar). `md:hidden` buradan da kasitli
-                cikarildi — ayni gerekce. */}
-            <div className="no-print fixed inset-x-0 bottom-0 z-40 border-t border-slate-200 bg-white">
-              <div className="mx-auto grid w-full max-w-[980px] grid-cols-[1fr_auto] gap-2 px-3 pb-[calc(var(--safe-area-bottom)+8px)] pt-2">
-                <Link
-                  href="/ops"
-                  scroll={false}
-                  onClick={() => setActionsOpen(false)}
-                  className="inline-flex min-h-[48px] items-center justify-center gap-2 rounded-2xl bg-slate-950 px-4 py-3 text-sm font-semibold text-white"
-                >
-                  <Home className="h-4 w-4" aria-hidden="true" />
-                  {translateUiText("Home", locale)}
-                </Link>
-                <button
-                  type="button"
-                  onClick={() => setActionsOpen((prev) => !prev)}
-                  className="inline-flex min-h-[48px] items-center justify-center rounded-2xl border border-slate-200 bg-slate-50 px-5 py-3 text-sm font-semibold text-slate-800"
-                >
-                  {translateUiText("Actions", locale)}
-                </button>
+            {/* Restoran tarafinda (masa/mutfak/kasa gibi cok sayfali gezinme)
+                yonetim-alani erisimi bu iki dugmeye ihtiyac duyuyor: Home ve
+                Actions (sipariş/servis/yonetim gruplu kisayollar). Self-servis
+                icin artik gerekli degil — AdminOrderEntry'nin kendi
+                TopAppBar'inda zaten bir "Panele Dön" linki var (/ops'a doner,
+                orada isSelfServiceOrders false oldugu icin sol menu geri
+                gelir); bu alt cubuk aynen ayni hedefe giden ikinci, ekran
+                alani yiyen bir yol olarak kalinca kaldirildi. */}
+            {!isSelfServiceOrders ? (
+              <div className="no-print fixed inset-x-0 bottom-0 z-40 border-t border-slate-200 bg-white">
+                <div className="mx-auto grid w-full max-w-[980px] grid-cols-[1fr_auto] gap-2 px-3 pb-[calc(var(--safe-area-bottom)+8px)] pt-2">
+                  <Link
+                    href="/ops"
+                    scroll={false}
+                    onClick={() => setActionsOpen(false)}
+                    className="inline-flex min-h-[48px] items-center justify-center gap-2 rounded-2xl bg-slate-950 px-4 py-3 text-sm font-semibold text-white"
+                  >
+                    <Home className="h-4 w-4" aria-hidden="true" />
+                    {translateUiText("Home", locale)}
+                  </Link>
+                  <button
+                    type="button"
+                    onClick={() => setActionsOpen((prev) => !prev)}
+                    className="inline-flex min-h-[48px] items-center justify-center rounded-2xl border border-slate-200 bg-slate-50 px-5 py-3 text-sm font-semibold text-slate-800"
+                  >
+                    {translateUiText("Actions", locale)}
+                  </button>
+                </div>
               </div>
-            </div>
+            ) : null}
 
             {actionsOpen ? (
               <div className="no-print fixed inset-0 z-50 bg-slate-950/40" onClick={() => setActionsOpen(false)}>

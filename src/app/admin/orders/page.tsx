@@ -83,7 +83,7 @@ export default async function AdminOrdersPage({
       // cubuklar hep render ediliyor — h-screen ile catisip sepet panelinin
       // altini (Nakit/Kart butonlari) kirpip goturuyordu. `h-full` ebeveynin
       // PADDING SONRASI kalan alanina sigar, cubuklarla catismaz.
-      <main className="coffee-pos-mode flex h-full w-full flex-col overflow-hidden bg-[#080d1a] text-white">
+      <main className="coffee-pos-mode flex h-full w-full flex-col overflow-hidden bg-[#faf6f4] text-[#241a17]">
         <SelfServiceCheckout
           businessSlug={businessSlug}
           businessName={appContext.activeBusiness?.name ?? businessSlug}
