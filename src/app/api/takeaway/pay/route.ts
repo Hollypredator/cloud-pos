@@ -1,6 +1,7 @@
 import { NextResponse } from "next/server";
 import { requireRole } from "@/lib/auth";
 import { getOrderReceipt } from "@/lib/domains/orders";
+import { getCorrelationId, logApiEvent, withCorrelationId } from "@/lib/observability";
 import { executeWebOpsCommand } from "@/lib/ops/server-action";
 import type { PaymentMethod } from "@/lib/types";
 
@@ -31,11 +32,20 @@ function isPaymentMethod(value: unknown): value is PaymentMethod {
 export async function POST(request: Request) {
   await requireRole(["owner", "admin", "cashier"], "/admin/orders");
 
+  // Para hareketi: her sonuc korelasyon kimligiyle loglanir. Kalici denetim
+  // kaydini `completeOrderPayment` audit_logs'a yaziyor; buradaki iz, bir
+  // tahsilatin hangi istekte reddedildigini/koptugunu geriye donuk
+  // izleyebilmek icin.
+  const correlationId = getCorrelationId(request);
+  const json = (body: unknown, init?: ResponseInit) =>
+    withCorrelationId(NextResponse.json(body, init), correlationId);
+
   let body: { orderId?: unknown; method?: unknown; idempotencyKey?: unknown };
   try {
     body = (await request.json()) as typeof body;
   } catch {
-    return NextResponse.json({ ok: false, message: "Geçersiz istek gövdesi." }, { status: 400 });
+    logApiEvent("warn", "takeaway.pay.invalid_body", { correlationId });
+    return json({ ok: false, message: "Geçersiz istek gövdesi." }, { status: 400 });
   }
 
   const orderId = typeof body.orderId === "string" ? body.orderId.trim() : "";
@@ -43,7 +53,8 @@ export async function POST(request: Request) {
   const idempotencyKey = typeof body.idempotencyKey === "string" ? body.idempotencyKey : undefined;
 
   if (!orderId) {
-    return NextResponse.json({ ok: false, message: "Sipariş bulunamadı, ödeme kaydedilemedi." }, { status: 400 });
+    logApiEvent("warn", "takeaway.pay.missing_order", { correlationId });
+    return json({ ok: false, message: "Sipariş bulunamadı, ödeme kaydedilemedi." }, { status: 400 });
   }
 
   let remaining = 0;
@@ -55,12 +66,24 @@ export async function POST(request: Request) {
     });
 
     if (result.status !== "ACK") {
-      return NextResponse.json({ ok: false, message: result.message ?? "Ödeme alınamadı." }, { status: 409 });
+      logApiEvent("warn", "takeaway.pay.rejected", {
+        correlationId,
+        orderId,
+        method,
+        status: result.status,
+      });
+      return json({ ok: false, message: result.message ?? "Ödeme alınamadı." }, { status: 409 });
     }
 
     remaining = typeof result.data?.remaining === "number" ? result.data.remaining : 0;
-  } catch {
-    return NextResponse.json({ ok: false, message: "Ödeme sırasında beklenmeyen hata oluştu." }, { status: 500 });
+    logApiEvent("info", "takeaway.pay.accepted", { correlationId, orderId, method, remaining });
+  } catch (error) {
+    logApiEvent("error", "takeaway.pay.unhandled", {
+      correlationId,
+      orderId,
+      error: error instanceof Error ? error.message : "unknown",
+    });
+    return json({ ok: false, message: "Ödeme sırasında beklenmeyen hata oluştu." }, { status: 500 });
   }
 
   // Odeme kaydedildi. Fis verisi alinamasa bile satis gecerli — fis hatasi
@@ -92,7 +115,7 @@ export async function POST(request: Request) {
     receipt = null;
   }
 
-  return NextResponse.json({
+  return json({
     ok: true,
     message: remaining > 0 ? `Ödeme alındı. Kalan: ${remaining.toFixed(2)} TL` : "Ödeme alındı, sipariş kapandı.",
     remaining,
