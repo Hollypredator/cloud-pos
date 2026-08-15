@@ -162,10 +162,12 @@ export function MobileKitchenUi({
       if (response.ok) {
         router.refresh();
       } else {
-        alert("Mutfak durumu güncellenemedi.");
+        setToastMsg("Mutfak durumu güncellenemedi.");
+        setTimeout(() => setToastMsg(null), 4000);
       }
     } catch {
-      alert("Ağ hatası nedeniyle durum güncellenemedi.");
+      setToastMsg("Ağ hatası nedeniyle durum güncellenemedi.");
+      setTimeout(() => setToastMsg(null), 4000);
     }
   }
 

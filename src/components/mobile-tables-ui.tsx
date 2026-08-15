@@ -14,7 +14,7 @@ import {
   Compass,
   ListFilter
 } from "lucide-react";
-import type { TableStatus } from "@/lib/types";
+import type { TableRequest, TableStatus } from "@/lib/types";
 import { onQueueSynced, startAutoSync } from "@/lib/offline-queue";
 import { gsap } from "gsap";
 
@@ -38,12 +38,18 @@ interface Order {
   total_price?: any;
 }
 
+interface TableSupervisorAssignment {
+  table_id: string;
+  profile_id: string;
+  full_name: string | null;
+}
+
 interface MobileTablesUiProps {
-  tables: any[];
+  tables: Table[];
   ordersByTableId: Map<string, Order>;
-  openRequests: any[];
+  openRequests: TableRequest[];
   zones: { id: string; name: string }[];
-  tableSupervisors: any[];
+  tableSupervisors: TableSupervisorAssignment[];
   canOpenOrders: boolean;
   canUseCashier: boolean;
   canOpenKitchen: boolean;
@@ -189,10 +195,12 @@ export function MobileTablesUi({
         setSelectedTable(null);
         router.refresh();
       } else {
-        alert("Masa durumu güncellenemedi.");
+        setToastMsg("Masa durumu güncellenemedi.");
+        setTimeout(() => setToastMsg(null), 4000);
       }
     } catch {
-      alert("Ağ hatası nedeniyle işlem yapılamadı.");
+      setToastMsg("Ağ hatası nedeniyle işlem yapılamadı.");
+      setTimeout(() => setToastMsg(null), 4000);
     }
   }
 
