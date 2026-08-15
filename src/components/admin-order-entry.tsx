@@ -1362,28 +1362,31 @@ export function AdminOrderEntry({
               basligi yoktu — app-shell'in genel ust cubugu buraya kimlik
               saglardi. O cubuk artik self-servis icin hic render edilmiyor
               (iki ust uste baslikti), o yuzden bu satir olmadan telefon
-              genisliginde isletme adi/canli durumu hicbir yerde gorunmezdi. */}
+              genisliginde isletme adi/canli durumu hicbir yerde gorunmezdi.
+              Masaustu bolumle ayni acik tema tokenlari: m-card/m-segment-pill
+              kasitli kullanilmiyor, cunku .coffee-pos-mode CSS'i onlari koyu
+              temaya geri cekiyor. */}
           <div className="flex items-center gap-2 px-1">
             <span
-              className={`h-2 w-2 shrink-0 rounded-full ${isOnline ? "bg-emerald-400" : "bg-amber-400"}`}
+              className={`h-2 w-2 shrink-0 rounded-full ${isOnline ? "bg-emerald-500" : "bg-amber-500"}`}
               aria-hidden="true"
             />
-            <p className="truncate text-sm font-bold text-white">{businessName ?? "Self Servis"}</p>
+            <p className="truncate text-sm font-bold text-[#241a17]">{businessName ?? "Self Servis"}</p>
           </div>
 
           {/* Mobile Self-Service: Search */}
-          <div className="m-card rounded-2xl border border-slate-700/80 p-1 space-y-1">
+          <div className="rounded-2xl border border-[#e7dcd7] bg-white p-1 space-y-1">
             <input
               ref={searchInputRef}
               value={productSearchQuery}
               onChange={(event) => setProductSearchQuery(event.target.value)}
               placeholder="Ürün ara..."
-              className="h-11 w-full rounded-xl border-0 bg-slate-800 px-4 text-sm text-slate-100 placeholder:text-slate-500 focus:outline-none focus:ring-1 focus:ring-rose-400/60"
+              className="h-11 w-full rounded-xl border-0 bg-[#f5efec] px-4 text-sm text-[#241a17] placeholder:text-[#8a7a74] focus:outline-none focus:ring-1 focus:ring-[#e8502f]/50"
             />
-            <div className="flex items-center justify-between px-2 py-1.5 border-t border-slate-800 pt-2">
+            <div className="flex items-center justify-between px-2 py-1.5 border-t border-[#e7dcd7] pt-2">
               <div className="flex items-center gap-1.5">
-                <span className="text-[10px] font-bold uppercase tracking-wider text-slate-400">Çarpan:</span>
-                <div className="flex rounded-lg bg-slate-800 p-0.5">
+                <span className="text-[10px] font-bold uppercase tracking-wider text-[#8a7a74]">Çarpan:</span>
+                <div className="flex rounded-lg bg-[#f5efec] p-0.5">
                   {[1, 2, 3, 4, 5, 10].map((num) => {
                     const isActive = nextItemMultiplier === num;
                     return (
@@ -1393,8 +1396,8 @@ export function AdminOrderEntry({
                         onClick={() => setNextItemMultiplier(num)}
                         className={`h-7 px-2.5 rounded-md text-[10px] font-black transition-all ${
                           isActive
-                            ? "bg-rose-500 text-white shadow-sm"
-                            : "text-slate-400 hover:text-slate-200"
+                            ? "bg-[#e8502f] text-white shadow-sm"
+                            : "text-[#8a7a74] hover:text-[#241a17]"
                         }`}
                       >
                         {num}x
@@ -1407,7 +1410,7 @@ export function AdminOrderEntry({
                 <button
                   type="button"
                   onClick={() => setNextItemMultiplier(1)}
-                  className="text-[10px] font-semibold text-rose-400"
+                  className="text-[10px] font-semibold text-[#e8502f]"
                 >
                   Sıfırla
                 </button>
@@ -1421,8 +1424,11 @@ export function AdminOrderEntry({
               <button
                 type="button"
                 onClick={() => setSelectedCategoryId(allCategoryId)}
-                data-active={selectedCategoryId === allCategoryId}
-                className="m-segment-pill whitespace-nowrap rounded-full px-4 py-2.5 text-sm font-bold transition"
+                className={`whitespace-nowrap rounded-full border px-4 py-2.5 text-sm font-bold transition ${
+                  selectedCategoryId === allCategoryId
+                    ? "border-transparent bg-[#e8502f] text-white"
+                    : "border-[#e7dcd7] bg-white text-[#8a7a74]"
+                }`}
               >
                 Tümü
               </button>
@@ -1433,8 +1439,11 @@ export function AdminOrderEntry({
                     key={`ss-mobile-cat-${category.id}`}
                     type="button"
                     onClick={() => setSelectedCategoryId(category.id)}
-                    data-active={selected}
-                    className="m-segment-pill whitespace-nowrap rounded-full px-4 py-2.5 text-sm font-bold transition"
+                    className={`whitespace-nowrap rounded-full border px-4 py-2.5 text-sm font-bold transition ${
+                      selected
+                        ? "border-transparent bg-[#e8502f] text-white"
+                        : "border-[#e7dcd7] bg-white text-[#8a7a74]"
+                    }`}
                   >
                     {category.name}
                   </button>
@@ -1445,7 +1454,7 @@ export function AdminOrderEntry({
 
           {/* Mobile Self-Service: Product Grid */}
           {selfServiceProducts.length === 0 ? (
-            <div className="m-card rounded-2xl border border-slate-700 px-4 py-8 text-center text-sm text-slate-400">
+            <div className="rounded-2xl border border-[#e7dcd7] bg-[#faf6f4] px-4 py-8 text-center text-sm text-[#8a7a74]">
               Bu filtrede aktif ürün yok.
             </div>
           ) : (
@@ -1491,13 +1500,13 @@ export function AdminOrderEntry({
                         openModifierPicker(product);
                       }
                     }}
-                    className="m-card cursor-pointer rounded-2xl border border-slate-700/60 p-3.5 transition active:scale-[0.98] hover:border-rose-400/40 focus:outline-none focus-visible:ring-2 focus-visible:ring-rose-400"
+                    className="cursor-pointer rounded-2xl border border-[#e7dcd7] bg-white p-3.5 transition active:scale-[0.98] hover:border-[#e8502f]/40 focus:outline-none focus-visible:ring-2 focus-visible:ring-[#e8502f]"
                   >
-                    <div className="mb-3 inline-flex h-10 w-10 items-center justify-center rounded-full bg-slate-700/70 text-[11px] font-black text-slate-200">
+                    <div className="mb-3 inline-flex h-10 w-10 items-center justify-center rounded-full bg-[#f5efec] text-[11px] font-black text-[#241a17]">
                       {product.name.slice(0, 2).toUpperCase()}
                     </div>
-                    <p className="line-clamp-2 text-[0.92rem] font-semibold leading-tight text-white">{product.name}</p>
-                    <p className="mt-2 text-xl font-black tracking-tight text-rose-400">₺{Number(product.price).toFixed(2)}</p>
+                    <p className="line-clamp-2 text-[0.92rem] font-semibold leading-tight text-[#241a17]">{product.name}</p>
+                    <p className="mt-2 text-xl font-black tracking-tight text-[#e8502f]">₺{Number(product.price).toFixed(2)}</p>
                   </article>
                 );
               })}
@@ -1509,10 +1518,10 @@ export function AdminOrderEntry({
             <div
               className={`rounded-2xl border px-4 py-3 text-sm font-medium ${
                 messageTone === "success"
-                  ? "border-emerald-600/50 bg-emerald-900/40 text-emerald-300"
+                  ? "border-emerald-300 bg-emerald-50 text-emerald-700"
                   : messageTone === "error"
-                    ? "border-rose-600/50 bg-rose-900/40 text-rose-300"
-                    : "border-slate-600 bg-slate-800 text-slate-300"
+                    ? "border-red-300 bg-red-50 text-red-700"
+                    : "border-[#e7dcd7] bg-[#faf6f4] text-[#8a7a74]"
               }`}
             >
               {message}
@@ -1522,18 +1531,18 @@ export function AdminOrderEntry({
 
         {/* Mobile Self-Service: Cart Panel (full screen) */}
         {mobileCartOpen ? (
-          <div className="ss-kiosk-only fixed inset-0 z-[70] bg-slate-950/60">
-            <div className="absolute inset-0 overflow-y-auto bg-slate-950 px-3 pb-[calc(96px+var(--safe-area-bottom))] pt-[calc(72px+var(--safe-area-top))]">
-              <header className="sticky top-0 z-10 rounded-2xl border border-slate-700 bg-slate-900/98 px-4 py-3 shadow-[0_8px_20px_rgba(0,0,0,0.3)]">
+          <div className="ss-kiosk-only fixed inset-0 z-[70] bg-black/30">
+            <div className="absolute inset-0 overflow-y-auto bg-[#faf6f4] px-3 pb-[calc(96px+var(--safe-area-bottom))] pt-[calc(72px+var(--safe-area-top))]">
+              <header className="sticky top-0 z-10 rounded-2xl border border-[#e7dcd7] bg-white/98 px-4 py-3 shadow-[0_8px_20px_rgba(36,26,23,0.1)]">
                 <div className="flex items-center justify-between gap-3">
                   <div>
-                    <p className="text-[10px] font-bold uppercase tracking-[0.16em] text-slate-400">Siparişim</p>
-                    <h2 className="mt-1 text-lg font-bold text-white">{cartCount} ürün</h2>
+                    <p className="text-[10px] font-bold uppercase tracking-[0.16em] text-[#8a7a74]">Siparişim</p>
+                    <h2 className="mt-1 text-lg font-bold text-[#241a17]">{cartCount} ürün</h2>
                   </div>
                   <button
                     type="button"
                     onClick={() => setMobileCartOpen(false)}
-                    className="inline-flex min-h-[44px] items-center justify-center rounded-xl border border-slate-600 bg-slate-800 px-4 text-sm font-semibold text-slate-200"
+                    className="inline-flex min-h-[44px] items-center justify-center rounded-xl border border-[#e7dcd7] bg-white px-4 text-sm font-semibold text-[#241a17]"
                   >
                     Kapat
                   </button>
@@ -1542,12 +1551,12 @@ export function AdminOrderEntry({
 
               <div className="mt-3 space-y-2">
                 {cartEntries.length === 0 ? (
-                  <p className="rounded-xl border border-slate-700 bg-slate-900 px-4 py-6 text-center text-sm text-slate-400">Sepet boş.</p>
+                  <p className="rounded-xl border border-[#e7dcd7] bg-white px-4 py-6 text-center text-sm text-[#8a7a74]">Sepet boş.</p>
                 ) : (
                   cartEntries.map((entry) => {
                     const modifierTotal = entry.modifiers.reduce((sum, modifier) => sum + Number(modifier.price_delta), 0);
                     return (
-                      <div key={`ss-mobile-cart-${entry.key}`} className="relative overflow-hidden rounded-xl bg-rose-600">
+                      <div key={`ss-mobile-cart-${entry.key}`} className="relative overflow-hidden rounded-xl bg-red-500">
                         <div className="absolute inset-y-0 right-4 flex items-center text-white font-bold text-xs pointer-events-none">
                           <span>Sil</span>
                         </div>
@@ -1560,29 +1569,29 @@ export function AdminOrderEntry({
                               removeProduct(entry.key);
                             }
                           }}
-                          className="rounded-xl border border-slate-700 bg-slate-800 px-4 py-3 relative z-10 w-full"
+                          className="rounded-xl border border-[#e7dcd7] bg-white px-4 py-3 relative z-10 w-full"
                         >
                           <div className="flex items-start justify-between gap-3">
                             <div className="min-w-0">
-                              <p className="font-semibold text-white">{entry.product.name}</p>
-                              <p className="mt-1 text-sm text-slate-400">₺{(Number(entry.product.price) + modifierTotal).toFixed(2)}</p>
+                              <p className="font-semibold text-[#241a17]">{entry.product.name}</p>
+                              <p className="mt-1 text-sm text-[#8a7a74]">₺{(Number(entry.product.price) + modifierTotal).toFixed(2)}</p>
                               {entry.modifiers.length > 0 ? (
-                                <p className="mt-1 text-xs text-slate-500">{entry.modifiers.map((m) => m.option_name).join(", ")}</p>
+                                <p className="mt-1 text-xs text-[#b8a9a3]">{entry.modifiers.map((m) => m.option_name).join(", ")}</p>
                               ) : null}
                             </div>
                             <div className="flex items-center gap-2">
                               <button
                                 type="button"
                                 onClick={() => removeProduct(entry.key)}
-                                className="inline-flex h-9 w-9 items-center justify-center rounded-lg bg-slate-700 text-sm font-bold text-white"
+                                className="inline-flex h-9 w-9 items-center justify-center rounded-lg bg-[#f5efec] text-sm font-bold text-[#241a17]"
                               >
                                 -
                               </button>
-                              <span className="w-7 text-center text-sm font-bold text-white">{entry.quantity}</span>
+                              <span className="w-7 text-center text-sm font-bold text-[#241a17]">{entry.quantity}</span>
                               <button
                                 type="button"
                                 onClick={() => increaseProduct(entry.key)}
-                                className="inline-flex h-9 w-9 items-center justify-center rounded-lg bg-slate-700 text-sm font-bold text-white"
+                                className="inline-flex h-9 w-9 items-center justify-center rounded-lg bg-[#f5efec] text-sm font-bold text-[#241a17]"
                               >
                                 +
                               </button>
@@ -1596,24 +1605,24 @@ export function AdminOrderEntry({
               </div>
 
               {cartEntries.length > 0 ? (
-                <div className="mt-4 rounded-2xl border border-slate-700 bg-slate-900 px-4 py-4">
-                  <div className="flex items-center justify-between text-sm text-slate-400">
+                <div className="mt-4 rounded-2xl border border-[#e7dcd7] bg-white px-4 py-4">
+                  <div className="flex items-center justify-between text-sm text-[#8a7a74]">
                     <span>Ara Toplam</span>
                     <span>₺{total.toFixed(2)}</span>
                   </div>
                   <div className="mt-2 flex items-end justify-between">
-                    <p className="text-2xl font-black tracking-tight text-rose-400">Toplam</p>
-                    <p className="text-2xl font-black tracking-tight text-rose-400">₺{total.toFixed(2)}</p>
+                    <p className="text-2xl font-black tracking-tight text-[#e8502f]">Toplam</p>
+                    <p className="text-2xl font-black tracking-tight text-[#e8502f]">₺{total.toFixed(2)}</p>
                   </div>
                   <div className="mt-4 grid grid-cols-2 gap-3">
-                    <button type="button" onClick={() => submitOrder("cash")} disabled={submitting} className="rounded-2xl bg-rose-500 px-4 py-3.5 text-sm font-bold text-white shadow-[0_8px_16px_rgba(244,63,94,0.3)] disabled:opacity-60">
+                    <button type="button" onClick={() => submitOrder("cash")} disabled={submitting} className="rounded-2xl bg-[#e8502f] px-4 py-3.5 text-sm font-bold text-white disabled:opacity-60">
                       {submitting ? "İşleniyor..." : "Nakit"}
                     </button>
-                    <button type="button" onClick={() => submitOrder("card")} disabled={submitting} className="rounded-2xl bg-violet-600 px-4 py-3.5 text-sm font-bold text-white shadow-[0_8px_16px_rgba(139,92,246,0.3)] disabled:opacity-60">
+                    <button type="button" onClick={() => submitOrder("card")} disabled={submitting} className="rounded-2xl border border-[#e7dcd7] bg-white px-4 py-3.5 text-sm font-bold text-[#241a17] disabled:opacity-60">
                       {submitting ? "İşleniyor..." : "Kart"}
                     </button>
                   </div>
-                  <button type="button" onClick={clearCart} className="mt-3 w-full rounded-xl border border-slate-600 bg-slate-800 px-4 py-2.5 text-xs font-semibold text-slate-300">
+                  <button type="button" onClick={clearCart} className="mt-3 w-full rounded-xl border border-[#e7dcd7] bg-white px-4 py-2.5 text-xs font-semibold text-[#8a7a74]">
                     Sepeti Temizle
                   </button>
                 </div>
@@ -1630,16 +1639,16 @@ export function AdminOrderEntry({
           className={`ss-kiosk-only fixed inset-x-0 z-40 px-3`}
           style={{ bottom: "calc(12px + var(--safe-area-bottom))" }}
         >
-          <div className="m-card rounded-2xl border border-slate-700 p-3 shadow-[0_12px_30px_rgba(0,0,0,0.4)] backdrop-blur">
+          <div className="rounded-2xl border border-[#e7dcd7] bg-white p-3 shadow-[0_12px_30px_rgba(36,26,23,0.14)] backdrop-blur">
             <div className="flex items-center justify-between gap-3">
               <div>
-                <p className="text-[10px] font-semibold uppercase tracking-[0.14em] text-slate-400">Sipariş</p>
-                <p className="mt-1 text-sm font-bold text-white">{cartCount} kalem • ₺{total.toFixed(2)}</p>
+                <p className="text-[10px] font-semibold uppercase tracking-[0.14em] text-[#8a7a74]">Sipariş</p>
+                <p className="mt-1 text-sm font-bold text-[#241a17]">{cartCount} kalem • ₺{total.toFixed(2)}</p>
               </div>
               <button
                 type="button"
                 onClick={() => setMobileCartOpen(true)}
-                className="rounded-xl bg-rose-500 px-4 py-2.5 text-sm font-bold text-white shadow-[0_6px_14px_rgba(244,63,94,0.3)]"
+                className="rounded-xl bg-[#e8502f] px-4 py-2.5 text-sm font-bold text-white"
               >
                 Sepeti Aç
               </button>
