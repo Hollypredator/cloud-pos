@@ -1,6 +1,6 @@
 "use client";
 
-import { useMemo, useRef, useState } from "react";
+import { Fragment, useMemo, useRef, useState } from "react";
 import { AlertTriangle, Check, Loader2, Search, Truck } from "lucide-react";
 import type { IngredientStockRow } from "@/lib/data";
 
@@ -78,6 +78,22 @@ export function IngredientStockPanel({ rows, schemaReady, onSaveCount, onSavePur
       return row.name.toLocaleLowerCase("tr-TR").includes(term);
     });
   }, [rows, query, criticalOnly]);
+
+  /**
+   * Malzeme kartinda kategori alani yok (semada boyle bir veri yok) — 70+
+   * malzemeyi tek duz liste yapmak taramayi zorlastiriyordu. Uydurma bir
+   * kategori icat etmek yerine harf basligiyla bolumluyoruz: ayni tarama
+   * hizi kazanci, gercek veriye dayanir.
+   */
+  const visibleWithHeaders = useMemo(() => {
+    let lastLetter = "";
+    return visible.map((row) => {
+      const letter = row.name.charAt(0).toLocaleUpperCase("tr-TR");
+      const showHeader = letter !== lastLetter;
+      lastLetter = letter;
+      return { row, letter: showHeader ? letter : null };
+    });
+  }, [visible]);
 
   const switchMode = (next: Mode) => {
     setMode(next);
@@ -319,13 +335,22 @@ export function IngredientStockPanel({ rows, schemaReady, onSaveCount, onSavePur
             )}
           </thead>
           <tbody>
-            {visible.map((row, index) => {
+            {visibleWithHeaders.map(({ row, letter }, index) => {
               const critical = row.minQuantity > 0 && row.quantity <= row.minQuantity;
+              const header = letter ? (
+                <tr key={`letter-${letter}`} className="border-t border-slate-200 bg-slate-50/80">
+                  <td colSpan={mode === "purchase" ? 5 : 4} className="px-4 py-1.5 text-xs font-bold uppercase tracking-wide text-slate-400">
+                    {letter}
+                  </td>
+                </tr>
+              ) : null;
 
               if (mode === "purchase") {
                 const preview = previewFor(row);
                 return (
-                  <tr key={row.ingredientId} className="border-t border-slate-100">
+                  <Fragment key={row.ingredientId}>
+                  {header}
+                  <tr className="border-t border-slate-100">
                     <td className="px-4 py-2">
                       <span className="font-semibold text-slate-900">{row.name}</span>
                       {critical ? (
@@ -386,12 +411,15 @@ export function IngredientStockPanel({ rows, schemaReady, onSaveCount, onSavePur
                       {preview === null ? "—" : `₺${preview.toFixed(4)}`}
                     </td>
                   </tr>
+                  </Fragment>
                 );
               }
 
               const diff = diffFor(row);
               return (
-                <tr key={row.ingredientId} className="border-t border-slate-100">
+                <Fragment key={row.ingredientId}>
+                {header}
+                <tr className="border-t border-slate-100">
                   <td className="px-4 py-2">
                     <span className="font-semibold text-slate-900">{row.name}</span>
                     {critical ? (
@@ -430,6 +458,7 @@ export function IngredientStockPanel({ rows, schemaReady, onSaveCount, onSavePur
                     {diff === null ? "—" : `${diff > 0 ? "+" : ""}${formatQty(diff)}`}
                   </td>
                 </tr>
+                </Fragment>
               );
             })}
             {visible.length === 0 ? (
