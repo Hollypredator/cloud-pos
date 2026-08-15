@@ -17,7 +17,6 @@ import {
   addProductAction,
   attachIngredientAction,
   bulkPriceAction,
-  copyRecipeAction,
   deleteCategoryAction,
   deleteIngredientAction,
   deleteModifierGroupAction,
@@ -48,8 +47,6 @@ export default async function AdminProductsPage({
   searchParams: Promise<{
     tab?: string;
     categoryId?: string;
-    productId?: string;
-    q?: string;
     feedback?: string;
     tone?: "success" | "error";
   }>;
@@ -58,7 +55,7 @@ export default async function AdminProductsPage({
   await requireRole(["admin"], "/admin/products");
   const businessScope = await getBusinessScopeContext();
   const isSelfServiceCoffee = businessScope.activeBusinessType === "self_service_coffee";
-  const { tab: tabParam, categoryId: categoryIdParam, productId: productIdParam, q: qParam, feedback, tone } = await searchParams;
+  const { tab: tabParam, categoryId: categoryIdParam, feedback, tone } = await searchParams;
   // Recipe/ingredients self-servis tipinde de acik: recete ve maliyet oradaki
   // ihtiyac. Market import ve toplu islemler restoran tarafinda kaliyor.
   const allowedTabs: string[] = isSelfServiceCoffee
@@ -142,29 +139,7 @@ export default async function AdminProductsPage({
   const visibleProducts = products.filter((product) => product.category_id === selectedCategoryId);
   const availableProducts = products.filter((product) => product.is_available).length;
   const lowStockProducts = products.filter((product) => product.stock_count <= 10).length;
-  const recipeQuery = (qParam ?? "").trim();
-  const normalizedRecipeQuery = recipeQuery.toLocaleLowerCase("tr-TR");
-  const recipeProducts = [...products]
-    .sort((a, b) => a.name.localeCompare(b.name, "tr-TR"))
-    .filter((product) =>
-      normalizedRecipeQuery
-        ? product.name.toLocaleLowerCase("tr-TR").includes(normalizedRecipeQuery)
-        : true,
-    );
-  const selectedRecipeProductId = recipeProducts.some((product) => product.id === productIdParam)
-    ? productIdParam ?? recipeProducts[0]?.id ?? ""
-    : recipeProducts[0]?.id ?? "";
-  const selectedRecipeProduct = products.find((product) => product.id === selectedRecipeProductId) ?? null;
-  const selectedRecipeRows = selectedRecipeProduct
-    ? (ingredientsByProduct.get(selectedRecipeProduct.id) ?? [])
-    : [];
-  const selectedRecipeTotalCost = selectedRecipeRows.reduce((sum, item) => sum + recipeLineCost(item), 0);
-  const selectedRecipeOverheadCost = Number(selectedRecipeProduct?.cost ?? 0);
-  const selectedRecipeTotalUnitCost = selectedRecipeTotalCost + selectedRecipeOverheadCost;
-  const selectedRecipePrice = Number(selectedRecipeProduct?.price ?? 0);
-  const selectedRecipeProfit = selectedRecipePrice - selectedRecipeTotalUnitCost;
-  const selectedRecipeMargin = selectedRecipePrice > 0 ? (selectedRecipeProfit / selectedRecipePrice) * 100 : 0;
-  const sourceRecipeCandidates = recipeProducts.filter((product) => product.id !== selectedRecipeProductId);
+  const recipeProducts = [...products].sort((a, b) => a.name.localeCompare(b.name, "tr-TR"));
 
   // Hizli editor tum urunlerin recetesini bir kerede alir: urun degistirmek
   // sunucuya gitmesin diye. Katalog buyudugunde bu yuk artar; 40 urun x 3
@@ -202,16 +177,6 @@ export default async function AdminProductsPage({
       quantity: row.quantity ?? undefined,
       multiplier: row.multiplier ?? undefined,
     });
-  }
-
-  function buildRecipeHref(productId: string) {
-    const params = new URLSearchParams();
-    params.set("tab", "recipe");
-    params.set("productId", productId);
-    if (recipeQuery) {
-      params.set("q", recipeQuery);
-    }
-    return `/admin/products?${params.toString()}`;
   }
 
   return (
@@ -1075,211 +1040,6 @@ export default async function AdminProductsPage({
                 />
               </ContentCard>
             </div>
-
-            <details className="mt-5 rounded-2xl border border-slate-200 bg-white p-4">
-              <summary className="cursor-pointer text-sm font-semibold text-slate-600">
-                Eski reçete araçları (tek tek düzenleme, kopyalama, maliyet)
-              </summary>
-              <div className="mt-4 grid gap-5 xl:grid-cols-[280px_minmax(0,1fr)_320px]">
-            <ContentCard title="Ürün Seçimi">
-              <form method="get" className="mb-4 grid gap-2">
-                <input type="hidden" name="tab" value="recipe" />
-                <input
-                  name="q"
-                  defaultValue={recipeQuery}
-                  placeholder="Ürün ara..."
-                  className="rounded-2xl border border-slate-200 bg-slate-50 px-4 py-3 text-sm"
-                />
-                <button type="submit" className="rounded-2xl border border-slate-200 bg-white px-4 py-3 text-sm font-semibold text-slate-700">
-                  Filtrele
-                </button>
-              </form>
-              <div className="max-h-[620px] space-y-2 overflow-y-auto pr-1">
-                {recipeProducts.map((product) => {
-                  const recipeCost = (ingredientsByProduct.get(product.id) ?? []).reduce(
-                    (sum, item) => sum + recipeLineCost(item),
-                    0,
-                  );
-                  const totalUnitCost = Number(product.cost ?? 0) + recipeCost;
-                  const margin = Number(product.price) > 0 ? ((Number(product.price) - totalUnitCost) / Number(product.price)) * 100 : 0;
-                  const isActive = product.id === selectedRecipeProductId;
-                  return (
-                    <Link
-                      key={product.id}
-                      href={buildRecipeHref(product.id)}
-                      className={`block rounded-2xl border px-3 py-3 transition ${
-                        isActive
-                          ? "border-[#ff5a34] bg-[#fff2ee]"
-                          : "border-slate-200 bg-slate-50 hover:border-slate-300 hover:bg-white"
-                      }`}
-                    >
-                      <p className="truncate text-sm font-semibold text-slate-900">{product.name}</p>
-                      <div className="mt-2 flex items-center justify-between text-xs text-slate-500">
-                        <span>Fiyat: {Number(product.price).toFixed(2)} TL</span>
-                        <span className={margin < 15 ? "font-semibold text-amber-700" : "font-semibold text-emerald-700"}>
-                          %{margin.toFixed(0)}
-                        </span>
-                      </div>
-                    </Link>
-                  );
-                })}
-              </div>
-            </ContentCard>
-
-            <ContentCard title="Reçete Editoru">
-              {!selectedRecipeProduct ? (
-                <EmptyPanel title="Ürün seçilmedi" description="Soldaki listeden bir Ürün seçerek reçete duzenlemeye baslayin." />
-              ) : (
-                <div className="space-y-4">
-                  <div className="rounded-2xl border border-slate-200 bg-slate-50 p-4">
-                    <p className="text-lg font-semibold text-slate-900">{selectedRecipeProduct.name}</p>
-                    <p className="mt-1 text-sm text-slate-500">
-                      {orderedCategories.find((category) => category.id === selectedRecipeProduct.category_id)?.name ?? "Kategori"}
-                    </p>
-                    <div className="mt-3 grid gap-2 sm:grid-cols-4">
-                      <div className="rounded-xl border border-slate-200 bg-white px-3 py-2">
-                        <p className="text-[10px] font-bold uppercase tracking-wider text-slate-400">Fiyat</p>
-                        <p className="mt-1 text-sm font-semibold text-slate-900">{selectedRecipePrice.toFixed(2)} TL</p>
-                      </div>
-                      <div className="rounded-xl border border-slate-200 bg-white px-3 py-2">
-                        <p className="text-[10px] font-bold uppercase tracking-wider text-slate-400">Reçete</p>
-                        <p className="mt-1 text-sm font-semibold text-slate-900">{selectedRecipeTotalCost.toFixed(2)} TL</p>
-                      </div>
-                      <div className="rounded-xl border border-slate-200 bg-white px-3 py-2">
-                        <p className="text-[10px] font-bold uppercase tracking-wider text-slate-400">Toplam Maliyet</p>
-                        <p className="mt-1 text-sm font-semibold text-slate-900">{selectedRecipeTotalUnitCost.toFixed(2)} TL</p>
-                      </div>
-                      <div className="rounded-xl border border-slate-200 bg-white px-3 py-2">
-                        <p className="text-[10px] font-bold uppercase tracking-wider text-slate-400">Marj</p>
-                        <p className={`mt-1 text-sm font-semibold ${selectedRecipeMargin < 15 ? "text-amber-700" : "text-emerald-700"}`}>
-                          %{selectedRecipeMargin.toFixed(1)}
-                        </p>
-                      </div>
-                    </div>
-                  </div>
-
-                  <div className="rounded-2xl border border-slate-200 bg-white">
-                    <div className="border-b border-slate-200 px-4 py-3">
-                      <p className="text-sm font-semibold text-slate-900">Reçete Kalemleri</p>
-                    </div>
-                    <div className="divide-y divide-slate-100">
-                      {selectedRecipeRows.length === 0 ? (
-                        <p className="px-4 py-6 text-center text-sm text-slate-500">Bu ürünün henuz reçetesi yok.</p>
-                      ) : (
-                        selectedRecipeRows.map((item) => {
-                          const ingredientDetail = ingredients.find((ingredient) => ingredient.id === item.ingredient_id);
-                          const ingredientUnitCost = Number(ingredientDetail?.cost ?? 0);
-                          return (
-                            <form key={`${selectedRecipeProduct.id}-${item.ingredient_id}`} action={attachIngredientAction} className="grid gap-2 px-4 py-3 sm:grid-cols-[1fr_120px_110px_auto_auto] sm:items-center">
-                              <input type="hidden" name="productId" value={selectedRecipeProduct.id} />
-                              <input type="hidden" name="ingredientId" value={item.ingredient_id} />
-                              <div>
-                                <p className="text-sm font-semibold text-slate-900">{item.ingredientName}</p>
-                                <p className="text-xs text-slate-500">{ingredientUnitCost.toFixed(2)} TL / {item.unit}</p>
-                              </div>
-                              <input
-                                name="quantity"
-                                type="number"
-                                min="0.01"
-                                step="0.01"
-                                defaultValue={item.quantity}
-                                className="rounded-xl border border-slate-200 bg-slate-50 px-3 py-2 text-sm"
-                              />
-                              <p className="text-right text-sm font-semibold text-slate-900">
-                                {(ingredientUnitCost * item.quantity).toFixed(2)} TL
-                              </p>
-                              <button type="submit" className="rounded-xl border border-slate-200 bg-slate-50 px-3 py-2 text-xs font-semibold text-slate-700">
-                                Güncelle
-                              </button>
-                              <button formAction={detachIngredientAction} type="submit" className="rounded-xl border border-rose-200 bg-rose-50 px-3 py-2 text-xs font-semibold text-rose-700">
-                                Çıkar
-                              </button>
-                            </form>
-                          );
-                        })
-                      )}
-                    </div>
-                  </div>
-
-                  <form action={attachIngredientAction} className="grid gap-2 rounded-2xl border border-slate-200 bg-slate-50 p-4 sm:grid-cols-[1fr_120px_auto] sm:items-center">
-                    <input type="hidden" name="productId" value={selectedRecipeProduct.id} />
-                    <select name="ingredientId" required className="rounded-xl border border-slate-200 bg-white px-3 py-2 text-sm">
-                      <option value="">Malzeme seç</option>
-                      {ingredients.map((ingredient) => (
-                        <option key={ingredient.id} value={ingredient.id}>
-                          {ingredient.name} ({ingredient.unit})
-                        </option>
-                      ))}
-                    </select>
-                    <input
-                      name="quantity"
-                      type="number"
-                      min="0.01"
-                      step="0.01"
-                      required
-                      placeholder="Miktar"
-                      className="rounded-xl border border-slate-200 bg-white px-3 py-2 text-sm"
-                    />
-                    <button type="submit" className="rounded-xl bg-[#ff5a34] px-4 py-2 text-sm font-semibold text-white">
-                      Kalem Ekle
-                    </button>
-                  </form>
-
-                  <form action={copyRecipeAction} className="grid gap-2 rounded-2xl border border-slate-200 bg-white p-4 sm:grid-cols-[1fr_auto] sm:items-center">
-                    <input type="hidden" name="targetProductId" value={selectedRecipeProduct.id} />
-                    <select name="sourceProductId" required className="rounded-xl border border-slate-200 bg-slate-50 px-3 py-2 text-sm">
-                      <option value="">Reçete kopyalanacak ürünü seç</option>
-                      {sourceRecipeCandidates.map((product) => (
-                        <option key={product.id} value={product.id}>
-                          {product.name}
-                        </option>
-                      ))}
-                    </select>
-                    <button type="submit" className="rounded-xl border border-slate-200 bg-slate-50 px-4 py-2 text-sm font-semibold text-slate-700">
-                      Reçeteyi Kopyala
-                    </button>
-                  </form>
-                </div>
-              )}
-            </ContentCard>
-
-            <ContentCard title="Hızlı Maliyet Yönetimi">
-              <div className="space-y-3">
-                <div className="rounded-2xl border border-slate-200 bg-slate-50 px-4 py-3 text-sm text-slate-600">
-                  Malzeme birim maliyetini hizli güncelleyin. Reçete maliyeti aninda yansir.
-                </div>
-                <div className="max-h-[620px] space-y-2 overflow-y-auto pr-1">
-                  {ingredients.map((ingredient) => (
-                    <form key={ingredient.id} action={updateIngredientAction} className="rounded-2xl border border-slate-200 bg-slate-50 p-3">
-                      <input type="hidden" name="ingredientId" value={ingredient.id} />
-                      <input type="hidden" name="name" value={ingredient.name} />
-                      <input type="hidden" name="unit" value={ingredient.unit} />
-                      <div className="flex items-center justify-between gap-3">
-                        <div className="min-w-0">
-                          <p className="truncate text-sm font-semibold text-slate-900">{ingredient.name}</p>
-                          <p className="text-xs text-slate-500">{ingredient.unit}</p>
-                        </div>
-                        <div className="flex items-center gap-2">
-                          <input
-                            name="cost"
-                            type="number"
-                            min="0"
-                            step="0.01"
-                            defaultValue={Number(ingredient.cost ?? 0).toFixed(2)}
-                            className="w-24 rounded-xl border border-slate-200 bg-white px-3 py-2 text-sm"
-                          />
-                          <button type="submit" className="rounded-xl border border-slate-200 bg-white px-3 py-2 text-xs font-semibold text-slate-700">
-                            Kaydet
-                          </button>
-                        </div>
-                      </div>
-                    </form>
-                  ))}
-                </div>
-              </div>
-            </ContentCard>
-              </div>
-            </details>
           </>
         ) : null}
 

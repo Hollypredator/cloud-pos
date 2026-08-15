@@ -347,16 +347,48 @@ export function RecipeEditor({
                   ) : null}
                 </p>
               </div>
-              <button
-                type="button"
-                onClick={save}
-                disabled={saving || Boolean(readOnlyReason)}
-                title={readOnlyReason ?? undefined}
-                className="inline-flex min-h-[40px] items-center gap-2 rounded-xl bg-slate-900 px-4 text-sm font-bold text-white disabled:opacity-60"
-              >
-                {saving ? <Loader2 className="h-4 w-4 animate-spin" /> : <Check className="h-4 w-4" />}
-                Kaydet
-              </button>
+              <div className="flex items-center gap-2">
+                {/* Benzer urun icin sifirdan yazmak yerine mevcut bir receteyi
+                    baslangic noktasi yap. Sunucuya gitmez: sadece bu urunun
+                    taslagini kopyalanan urunun satirlariyla degistirir,
+                    Kaydet'e basana kadar hicbir sey kalici degil. */}
+                <select
+                  value=""
+                  onChange={(event) => {
+                    const sourceId = event.target.value;
+                    if (!sourceId || !selected) return;
+                    const sourceLines = linesFor(sourceId).filter((line) => line.ingredientId);
+                    setLines(
+                      selected.id,
+                      sourceLines.length > 0
+                        ? sourceLines.map((line) => ({ ...line, key: newKey() }))
+                        : [emptyLine()],
+                    );
+                    event.target.value = "";
+                  }}
+                  disabled={Boolean(readOnlyReason)}
+                  className="min-h-[40px] rounded-xl border border-slate-200 bg-white px-3 text-sm text-slate-600 disabled:opacity-60"
+                >
+                  <option value="">Başka üründen kopyala...</option>
+                  {products
+                    .filter((product) => product.id !== selected.id)
+                    .map((product) => (
+                      <option key={product.id} value={product.id}>
+                        {product.name}
+                      </option>
+                    ))}
+                </select>
+                <button
+                  type="button"
+                  onClick={save}
+                  disabled={saving || Boolean(readOnlyReason)}
+                  title={readOnlyReason ?? undefined}
+                  className="inline-flex min-h-[40px] items-center gap-2 rounded-xl bg-slate-900 px-4 text-sm font-bold text-white disabled:opacity-60"
+                >
+                  {saving ? <Loader2 className="h-4 w-4 animate-spin" /> : <Check className="h-4 w-4" />}
+                  Kaydet
+                </button>
+              </div>
             </div>
 
             {status ? (
