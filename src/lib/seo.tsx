@@ -4,16 +4,16 @@ import type { SeoSettings } from "@/lib/app-settings";
 const DEFAULT_SITE_URL = "http://localhost:3000";
 
 export const publicSeo = {
-  siteName: "Cloud POS",
-  homeTitle: "Cloud POS | Self servis ve kafe restoran POS platformu",
+  siteName: "QUAPOS",
+  homeTitle: "QUAPOS | Self servis ve kafe restoran POS platformu",
   homeDescription:
-    "Cloud POS; self servis, QR sipariş, kafe restoran POS, mutfak ekranı, kasa, stok, müşteri ve çok şubeli operasyonları tek bulut panelinde toplar.",
-  demoTitle: "Cloud POS Demo | POS modüllerini gerçek ekranlarla inceleyin",
+    "QUAPOS; self servis, QR sipariş, kafe restoran POS, mutfak ekranı, kasa, stok, müşteri ve çok şubeli operasyonları tek bulut panelinde toplar.",
+  demoTitle: "QUAPOS Demo | POS modüllerini modül modül inceleyin",
   demoDescription:
-    "Cloud POS demo sayfasında operasyon paneli, POS arayüzü, mobil PWA, mutfak, stok, rapor ve çok şube modüllerini gerçek ürün ekranlarıyla inceleyin.",
-  blogTitle: "Cloud POS Blog | POS, self servis ve restoran operasyon notları",
+    "QUAPOS demo sayfasında operasyon paneli, POS arayüzü, mobil PWA, mutfak, stok, rapor ve çok şube modüllerini adım adım inceleyin.",
+  blogTitle: "QUAPOS Blog | POS, self servis ve restoran operasyon notları",
   blogDescription:
-    "Self servis, QR sipariş, kafe restoran POS, mutfak operasyonu, kasa, stok ve raporlama üzerine Cloud POS ürün notları.",
+    "Self servis, QR sipariş, kafe restoran POS, mutfak operasyonu, kasa, stok ve raporlama üzerine QUAPOS ürün notları.",
   ogImage: "/landing-assets/operasyon-paneli-desktop.png",
 };
 

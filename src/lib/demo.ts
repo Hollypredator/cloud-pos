@@ -82,28 +82,28 @@ export const defaultDemoSectionStyles: DemoSectionStyles = {
 export const defaultDemoStaffAccounts: DemoStaffAccount[] = [
   {
     fullName: "Aylin Demir",
-    email: "demo-admin@cloudpos.local",
+    email: "demo-admin@quapos.local",
     password: "Demo123!",
     role: "owner",
     summary: "Tüm yönetim ekranlari, ürünler, masalar ve raporlar için ana hesap.",
   },
   {
     fullName: "Mert Kaya",
-    email: "demo-kasa@cloudpos.local",
+    email: "demo-kasa@quapos.local",
     password: "Demo123!",
     role: "cashier",
     summary: "Kasa, ödeme tamamlama, vardiya acilis ve gün sonu kontrolleri için.",
   },
   {
     fullName: "Selin Acar",
-    email: "demo-mutfak@cloudpos.local",
+    email: "demo-mutfak@quapos.local",
     password: "Demo123!",
     role: "kitchen",
     summary: "Mutfak kuyrugu, hazırlama ve sipariş ilerletme akışı için.",
   },
   {
     fullName: "Can Yildiz",
-    email: "demo-servis@cloudpos.local",
+    email: "demo-servis@quapos.local",
     password: "Demo123!",
     role: "waiter",
     summary: "Masa talepleri, servis operasyonu ve masa durumu için.",
@@ -152,7 +152,7 @@ export const demoPresentationFlow = defaultDemoPresentationFlow;
 export const demoPackages = defaultDemoPackages;
 
 export const defaultDemoPageContent: DemoPageContent = {
-  heroEyebrow: "Cloud POS",
+  heroEyebrow: "QUAPOS",
   heroTitle: "Demo Operasyon Paneli",
   heroBody:
     "Bu ekran tanitim gorusmeleri için hazırlandi. Veriler canli sistem hissi vermek için kurgulanmis Örnek senaryo uzerinden akar.",

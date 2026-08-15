@@ -40,7 +40,7 @@ export function getPublicCopy(locale: AppLocale) {
         contactEyebrow: "Demande de Demo",
         contactTitle: "Planifions ensemble la configuration adaptee a votre entreprise",
         contactBody: "Laissez vos coordonnees. Vous pouvez aussi nous contacter directement via WhatsApp ou par telephone.",
-        footerFallback: "Cloud POS",
+        footerFallback: "QUAPOS",
       },
       contact: {
         companyName: "Nom de l'entreprise",
@@ -122,7 +122,7 @@ export function getPublicCopy(locale: AppLocale) {
         contactEyebrow: "Demo Request",
         contactTitle: "Let us plan the right setup for your business",
         contactBody: "Leave your details. You can also contact us directly via WhatsApp or phone.",
-        footerFallback: "Cloud POS",
+        footerFallback: "QUAPOS",
       },
       contact: {
         companyName: "Business name",
@@ -203,7 +203,7 @@ export function getPublicCopy(locale: AppLocale) {
       contactEyebrow: "Demo Talebi",
       contactTitle: "İşletmeniz için uygun kurulumu birlikte planlayalim",
       contactBody: "Bilgilerinizi birakin. Isterseniz WhatsApp veya telefon uzerinden de doğrudan bize ulaşabilirsiniz.",
-      footerFallback: "Cloud POS",
+      footerFallback: "QUAPOS",
     },
     contact: {
       companyName: "İşletme adi",
@@ -1120,11 +1120,11 @@ export function translateUiText(value: string, locale: AppLocale) {
 }
 
 const landingTranslationMapEn = new Map<string, string>([
-  ["Cloud POS", "Cloud POS"],
+  ["QUAPOS", "QUAPOS"],
   ["Cafe ve restoran operasyonunu tek panelden yönetin.", "Manage cafe and restaurant operations from one panel."],
   [
-    "Cloud POS; masa, adisyon, mutfak, kasa ve yönetsel raporlari aynı sistemde toplar. Müşteri menüyü kendi telefonunda görür, sipariş ve operasyon akışı personel tarafindan yönetilir.",
-    "Cloud POS brings tables, checks, kitchen, cashier and management reporting into one system. Guests view the menü on their phones while orders and operations stay under staff control.",
+    "QUAPOS; masa, adisyon, mutfak, kasa ve yönetsel raporlari aynı sistemde toplar. Müşteri menüyü kendi telefonunda görür, sipariş ve operasyon akışı personel tarafindan yönetilir.",
+    "QUAPOS brings tables, checks, kitchen, cashier and management reporting into one system. Guests view the menü on their phones while orders and operations stay under staff control.",
   ],
   ["Panele Giriş", "Staff Login"],
   ["Demo Incele", "View Demo"],
@@ -1146,7 +1146,7 @@ const landingTranslationMapEn = new Map<string, string>([
   ["Tek şube, QR menü ve temel operasyon modulleriyle hızlı başlangıç.", "A fast start with a single branch, QR menü and core operational modules."],
   ["Kasa, vardiya, rapor, stok ve rol bazli ekip yönetimi dahil.", "Cashier, shift, reporting, stock and role-based team management included."],
   ["Marka uyarlama, özel entegrasyonlar ve kuruma özel operasyon kurgusu.", "Brand customization, custom integrations and organization-specific operational setup."],
-  ["Neden Cloud POS", "Why Cloud POS"],
+  ["Neden QUAPOS", "Why QUAPOS"],
   ["Operasyonun diline uygun, sahada kullanıma hazır", "Built for the reality of operations, ready for the field"],
   ["Mutfak, kasa, servis ve yönetim ekranlari rol bazli ayrilir. Boylesiyle ekipler kendi is akışını görür, yönetim ise tüm resmi tek panelden takip eder.", "Kitchen, cashier, service and management screens are separated by role. Teams see their own workflow while management follows the full picture from one panel."],
   ["İletişim", "Contact"],
@@ -1162,11 +1162,11 @@ const landingTranslationMapEn = new Map<string, string>([
 ]);
 
 const landingTranslationMapFr = new Map<string, string>([
-  ["Cloud POS", "Cloud POS"],
+  ["QUAPOS", "QUAPOS"],
   ["Cafe ve restoran operasyonunu tek panelden yönetin.", "Gerez les operations de votre cafe ou restaurant depuis un seul panneau."],
   [
-    "Cloud POS; masa, adisyon, mutfak, kasa ve yönetsel raporlari aynı sistemde toplar. Müşteri menüyü kendi telefonunda görür, sipariş ve operasyon akışı personel tarafindan yönetilir.",
-    "Cloud POS rassemble les tables, additions, cuisine, caisse et rapports de gestion dans un seul systeme. Le client consulte le menü sur son telephone tandis que la commande et l'operation sont gerees par l'equipe.",
+    "QUAPOS; masa, adisyon, mutfak, kasa ve yönetsel raporlari aynı sistemde toplar. Müşteri menüyü kendi telefonunda görür, sipariş ve operasyon akışı personel tarafindan yönetilir.",
+    "QUAPOS rassemble les tables, additions, cuisine, caisse et rapports de gestion dans un seul systeme. Le client consulte le menü sur son telephone tandis que la commande et l'operation sont gerees par l'equipe.",
   ],
   ["Panele Giriş", "Connexion Equipe"],
   ["Demo Incele", "Voir la Demo"],
@@ -1188,7 +1188,7 @@ const landingTranslationMapFr = new Map<string, string>([
   ["Tek şube, QR menü ve temel operasyon modulleriyle hızlı başlangıç.", "Un demarrage rapide avec une seule succursale, le menü QR et les modules operationnels de base."],
   ["Kasa, vardiya, rapor, stok ve rol bazli ekip yönetimi dahil.", "Caisse, shifts, rapports, stock et gestion d'equipe par role inclus."],
   ["Marka uyarlama, özel entegrasyonlar ve kuruma özel operasyon kurgusu.", "Adaptation a votre marque, integrations specifiques et organisation operationnelle sur mesüre."],
-  ["Neden Cloud POS", "Pourquoi Cloud POS"],
+  ["Neden QUAPOS", "Pourquoi QUAPOS"],
   ["Operasyonun diline uygun, sahada kullanıma hazır", "Concu pour la realite du terrain, pret a l'usage"],
   ["Mutfak, kasa, servis ve yönetim ekranlari rol bazli ayrilir. Boylesiyle ekipler kendi is akışını görür, yönetim ise tüm resmi tek panelden takip eder.", "Les ecrans cuisine, caisse, service et gestion sont separes selon les roles. Les equipes voient leur propre flux, la direction suit l'ensemble depuis un seul panneau."],
   ["İletişim", "Contact"],

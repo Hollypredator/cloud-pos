@@ -11031,7 +11031,7 @@ const demoLeadNotes: SalesLeadNote[] = [
 const demoMediaAssets: MediaAsset[] = [
   {
     id: "demo-media-1",
-    title: "Cloud POS Hero",
+    title: "QUAPOS Hero",
     file_url: "https://images.unsplash.com/photo-1517248135467-4c7edcad34c4?auto=format&fit=crop&w=1200&q=80",
     alt_text: "Cafe operasyon ekrani",
     kind: "image",
@@ -11046,7 +11046,7 @@ const demoBlogPosts: BlogPost[] = [
     title: "Cafe operasyonunda ilk dijital kurulum nasıl yapilir?",
     slug: "cafe-operasyonunda-ilk-dijital-kurulum",
     excerpt: "Masa, ürün, ekip ve raporlama akışlarini tek gunde nasıl toparlayabilecegini anlatiyor.",
-    body: "Cloud POS ile ilk kurulumda önce işletme yapisini, sonra masa planini, ardindan ürün ve personel rollerini tanimlayin. Bu akışı takip ettiginizde landing, demo ve operasyon paneli aynı veri modelini kullanir.",
+    body: "QUAPOS ile ilk kurulumda önce işletme yapisini, sonra masa planini, ardindan ürün ve personel rollerini tanimlayin. Bu akışı takip ettiginizde landing, demo ve operasyon paneli aynı veri modelini kullanir.",
     cover_image_url: "https://images.unsplash.com/photo-1556740749-887f6717d7e4?auto=format&fit=crop&w=1200&q=80",
     status: "published",
     published_at: minutesAgo(1440),

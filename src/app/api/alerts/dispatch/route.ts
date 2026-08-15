@@ -107,7 +107,7 @@ export async function POST(request: Request) {
     }
 
     const payload = {
-      text: "Cloud POS Operasyon Alarmi",
+      text: "QUAPOS Operasyon Alarmi",
       timestamp: new Date().toISOString(),
       state,
     };

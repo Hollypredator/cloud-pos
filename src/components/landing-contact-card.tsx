@@ -36,20 +36,20 @@ export function LandingContactCard({
     const message =
       locale === "fr"
         ? [
-            "Bonjour, je souhaite obtenir des informations et une demo pour Cloud POS.",
+            "Bonjour, je souhaite obtenir des informations et une demo pour QUAPOS.",
             `Entreprise: ${companyName || "-"}`,
             `Contact: ${contactName || "-"}`,
             `Nombre de succursales: ${branchCount || "-"}`,
           ].join("\n")
         : locale === "en"
           ? [
-              "Hello, I would like information and a demo for Cloud POS.",
+              "Hello, I would like information and a demo for QUAPOS.",
               `Business: ${companyName || "-"}`,
               `Contact: ${contactName || "-"}`,
               `Branch count: ${branchCount || "-"}`,
             ].join("\n")
           : [
-              "Merhaba, Cloud POS için bilgi ve demo talep etmek istiyorum.",
+              "Merhaba, QUAPOS için bilgi ve demo talep etmek istiyorum.",
               `İşletme: ${companyName || "-"}`,
               `Yetkili: ${contactName || "-"}`,
               `Şube sayısı: ${branchCount || "-"}`,

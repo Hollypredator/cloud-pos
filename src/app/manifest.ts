@@ -3,8 +3,8 @@ import type { MetadataRoute } from "next";
 export default function manifest(): MetadataRoute.Manifest {
   return {
     id: "/",
-    name: "Cloud POS",
-    short_name: "CloudPOS",
+    name: "QUAPOS",
+    short_name: "QUAPOS",
     description: "Web tabanlı POS, QR menü ve restoran operasyon sistemi",
     lang: "tr",
     dir: "ltr",

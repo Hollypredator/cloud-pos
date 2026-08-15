@@ -107,7 +107,7 @@ export default async function SupportHomePage() {
               Müşteri Riskleri & Operasyon Kontrolü
             </h1>
             <p className="mt-6 max-w-2xl text-base sm:text-lg leading-relaxed text-slate-300">
-              Cloud POS support paneli, müşteri sağlığı, aktif ticket yükleri, SLA riskleri ve faturalama operasyonlarını gerçek zamanlı optimize eder.
+              QUAPOS support paneli, müşteri sağlığı, aktif ticket yükleri, SLA riskleri ve faturalama operasyonlarını gerçek zamanlı optimize eder.
             </p>
           </div>
           

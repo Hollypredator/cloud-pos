@@ -163,7 +163,7 @@ export function ReceiptPreviewLauncher({
 
             <main className={`receipt-inline-sheet mx-auto rounded-2xl border border-slate-200 bg-white p-4 ${sheetClass}`}>
               <header className="border-b border-slate-200 pb-3">
-                <p className="text-2xl font-semibold tracking-tight text-slate-900">Cloud POS Cafe</p>
+                <p className="text-2xl font-semibold tracking-tight text-slate-900">QUAPOS Cafe</p>
                 <p className="text-sm text-slate-600">Adisyon</p>
                 <p className="mt-1 text-sm text-slate-600">Sipariş #{orderRef(order)} - {sourceLabel(order)}</p>
                 <p className="text-xs text-slate-500">{new Date(order.created_at).toLocaleString("tr-TR")}</p>

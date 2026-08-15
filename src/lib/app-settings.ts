@@ -63,14 +63,14 @@ export const sidebarOrderOptions = [
 ] as const;
 
 export const defaultGeneralSettings: GeneralSettings = {
-  siteName: "Cloud POS",
+  siteName: "QUAPOS",
   siteTagline: "Yeni nesil cafe ve restoran operasyonu",
   contactPhone: "+90 555 000 00 00",
   whatsappPhone: "+90 555 000 00 00",
-  supportEmail: "info@cloudpos.local",
+  supportEmail: "info@quapos.local",
   address: "Istanbul",
   logoUrl: "",
-  footerNote: "Cloud POS ile masa, sipariş, mutfak ve kasa akışlarini tek panelde yönetin.",
+  footerNote: "QUAPOS ile masa, sipariş, mutfak ve kasa akışlarini tek panelde yönetin.",
 };
 
 export const defaultSmtpSettings: SmtpSettings = {
@@ -80,15 +80,15 @@ export const defaultSmtpSettings: SmtpSettings = {
   username: "",
   password: "",
   fromEmail: "",
-  fromName: "Cloud POS",
+  fromName: "QUAPOS",
   replyToEmail: "",
   notificationEmail: "",
 };
 
 export const defaultSeoSettings: SeoSettings = {
-  metaTitle: "Cloud POS | Cafe ve restoran operasyonu",
-  metaDescription: "Cloud POS ile masa, sipariş, mutfak, kasa ve raporlama akışlarini tek panelde yönetin.",
-  ogTitle: "Cloud POS",
+  metaTitle: "QUAPOS | Cafe ve restoran operasyonu",
+  metaDescription: "QUAPOS ile masa, sipariş, mutfak, kasa ve raporlama akışlarini tek panelde yönetin.",
+  ogTitle: "QUAPOS",
   ogDescription: "Cafe ve restoranlar için yeni nesil operasyon, QR menü ve raporlama platformu.",
   ogImageUrl: "",
   twitterHandle: "",

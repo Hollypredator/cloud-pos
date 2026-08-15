@@ -117,17 +117,17 @@ export const defaultLandingContent: LandingContent = {
       id: "hero-main",
       style: { paddingTop: 40, paddingBottom: 56, paddingX: 0, radius: 32, containerWidth: "wide", surface: "transparent", border: "none", shadow: "none", textAlign: "left" },
       type: "hero",
-      badge: "Cloud POS",
+      badge: "QUAPOS",
       title: "Cafe ve restoran operasyonunu tek panelden yönetin.",
       body:
-        "Cloud POS; masa, adisyon, mutfak, kasa ve yönetsel raporlari aynı sistemde toplar. Müşteri menüyü kendi telefonunda görür, sipariş ve operasyon akışı personel tarafindan yönetilir.",
+        "QUAPOS; masa, adisyon, mutfak, kasa ve yönetsel raporlari aynı sistemde toplar. Müşteri menüyü kendi telefonunda görür, sipariş ve operasyon akışı personel tarafindan yönetilir.",
       primaryCtaLabel: "Panele Giriş",
       primaryCtaHref: "/login",
       secondaryCtaLabel: "Demo Incele",
       secondaryCtaHref: "/demo",
       heroVisualMode: "mockup",
       heroImageUrl: "",
-      heroImageAlt: "Cloud POS ürün gorseli",
+      heroImageAlt: "QUAPOS ürün gorseli",
       heroImageFit: "contain",
     },
     {
@@ -188,7 +188,7 @@ export const defaultLandingContent: LandingContent = {
       id: "credibility-main",
       style: { paddingTop: 28, paddingBottom: 28, paddingX: 0, radius: 32, containerWidth: "default", surface: "transparent", border: "none", shadow: "none", textAlign: "left" },
       type: "credibility",
-      eyebrow: "Neden Cloud POS",
+      eyebrow: "Neden QUAPOS",
       title: "Operasyonun diline uygun, sahada kullanıma hazır",
       body:
         "Mutfak, kasa, servis ve yönetim ekranlari rol bazli ayrilir. Boylesiyle ekipler kendi is akışını görür, yönetim ise tüm resmi tek panelden takip eder.",
@@ -352,8 +352,8 @@ function sanitizeProcessItems(values: unknown, fallback: LandingProcessItem[]) {
 
 function modernizeLandingText(value: string) {
   return value
-    .replace(/Hospitality OS/gi, "Cloud POS")
-    .replace(/Hospitality Control System/gi, "Cloud POS")
+    .replace(/Hospitality OS/gi, "QUAPOS")
+    .replace(/Hospitality Control System/gi, "QUAPOS")
     .replace(/QR Sipariş/gi, "QR Menü")
     .replace(/QR sipariş/gi, "QR menü")
     .replace(/Demo ve Teklif/gi, "Demo Talebi")

@@ -13,6 +13,7 @@ import {
   Store,
 } from "lucide-react";
 import { LanguageSwitcher } from "@/components/language-switcher";
+import { DashboardMock, PhoneMock } from "@/components/marketing-mocks";
 import type { DemoPageContent } from "@/lib/demo";
 import { getPublicCopy, type AppLocale } from "@/lib/i18n";
 
@@ -56,23 +57,32 @@ const demoModules = [
 const demoScreens = [
   {
     title: "Operasyon paneli",
-    body: "Cloud POS’un ana yönetim ekranı.",
-    image: "/landing-assets/operasyon-paneli-desktop.png",
-    alt: "Cloud POS operasyon paneli gerçek ekran görüntüsü",
+    body: "QUAPOS’un ana yönetim ekranı.",
+    kind: "dashboard" as const,
     className: "lg:col-span-2",
   },
   {
     title: "Mobil operasyon",
     body: "Telefon ekranında canlı operasyon takibi.",
-    image: "/landing-assets/operasyon-paneli-mobil.png",
-    alt: "Cloud POS mobil operasyon gerçek ekran görüntüsü",
+    kind: "phone" as const,
+    phoneRows: [
+      ["Masa 2", "Boş"],
+      ["Masa 4", "Dolu"],
+      ["Masa 7", "Hesap İstendi"],
+    ] as Array<[string, string]>,
+    accentLabel: "Masa Operasyonunu Aç",
     className: "",
   },
   {
     title: "Mobil sipariş",
     body: "Kategori, ürün arama ve hızlı ekleme akışı.",
-    image: "/landing-assets/mobil-pos-siparis.png",
-    alt: "Cloud POS mobil POS sipariş gerçek ekran görüntüsü",
+    kind: "phone" as const,
+    phoneRows: [
+      ["Latte", "₺120"],
+      ["Filtre Kahve", "₺95"],
+      ["Cheesecake", "₺140"],
+    ] as Array<[string, string]>,
+    accentLabel: "Sepeti Onayla · ₺355",
     className: "",
   },
 ];
@@ -94,11 +104,11 @@ export function DemoPageRenderer({
         <div className="mx-auto flex max-w-7xl items-center gap-4 px-4 py-4 sm:px-6 lg:px-8">
           <Link href="/" className="flex items-center gap-3">
             <span className="flex h-10 w-10 items-center justify-center rounded-2xl bg-gradient-to-br from-orange-500 via-rose-500 to-indigo-600 text-sm font-bold text-white shadow-lg shadow-orange-500/20">
-              CP
+              Q
             </span>
             <div>
-              <p className="text-sm font-bold tracking-tight text-slate-950">Cloud POS Demo</p>
-              <p className="hidden text-xs font-semibold text-slate-500 sm:block">Gerçek ürün ekranlarıyla ürün turu</p>
+              <p className="text-sm font-bold tracking-tight text-slate-950">QUAPOS Demo</p>
+              <p className="hidden text-xs font-semibold text-slate-500 sm:block">Modül modül ürün turu</p>
             </div>
           </Link>
           <nav className="ml-8 hidden items-center gap-6 text-sm font-bold text-slate-600 lg:flex">
@@ -126,7 +136,7 @@ export function DemoPageRenderer({
               {content.previewBadge || "Canlı ürün demosu"}
             </p>
             <h1 className="mt-6 max-w-3xl text-5xl font-bold tracking-tight text-slate-950 sm:text-6xl">
-              Cloud POS’u gerçek ekranlarıyla deneyimleyin.
+              QUAPOS’u modül modül deneyimleyin.
             </h1>
             <p className="mt-6 max-w-2xl text-lg leading-9 text-slate-600">
               Self servis / QR akışı, kafe-restoran POS modülü, mutfak, kasa, stok, raporlama ve mobil PWA deneyimini tek ürün türünda görün.
@@ -142,11 +152,7 @@ export function DemoPageRenderer({
             </div>
           </div>
           <div className="rounded-[2rem] border border-white bg-white p-3 shadow-2xl shadow-slate-950/15">
-            <img
-              src="/landing-assets/operasyon-paneli-desktop.png"
-              alt="Cloud POS operasyon paneli gerçek ekran görüntüsü"
-              className="aspect-[16/10] w-full rounded-[1.35rem] object-cover object-left-top"
-            />
+            <DashboardMock />
           </div>
         </div>
       </section>
@@ -178,9 +184,9 @@ export function DemoPageRenderer({
       <section id="ekranlar" className="py-16 sm:py-20">
         <div className="mx-auto max-w-7xl px-4 sm:px-6 lg:px-8">
           <div className="max-w-3xl">
-            <p className="text-xs font-bold uppercase tracking-[0.22em] text-orange-600">Gerçek ekranlar</p>
-            <h2 className="mt-4 text-3xl font-bold tracking-tight text-slate-950 sm:text-5xl">Demo, gerçek ürün arayüzlerini gösterir.</h2>
-            <p className="mt-4 text-base leading-8 text-slate-600">Sahte dashboard yok. Görseller mevcut ürün ekranlarından alınmış QA görselleridir.</p>
+            <p className="text-xs font-bold uppercase tracking-[0.22em] text-orange-600">Ekranlar</p>
+            <h2 className="mt-4 text-3xl font-bold tracking-tight text-slate-950 sm:text-5xl">Demo, ürünün gerçek akışını gösterir.</h2>
+            <p className="mt-4 text-base leading-8 text-slate-600">Aşağıdaki paneller temsili örnek verilerle ürünün akışını gösterir. Gerçek ekranları görmek için operasyon paneline giriş yapabilirsiniz.</p>
           </div>
           <div className="mt-10 grid gap-5 lg:grid-cols-2">
             {demoScreens.map((screen) => (
@@ -190,7 +196,13 @@ export function DemoPageRenderer({
                     <h3 className="text-xl font-bold tracking-tight text-slate-950">{screen.title}</h3>
                     <p className="mt-1 text-sm font-semibold text-slate-500">{screen.body}</p>
                   </div>
-                  <img src={screen.image} alt={screen.alt} className="aspect-[16/10] w-full rounded-[1.35rem] border border-slate-100 object-cover object-left-top" />
+                  {screen.kind === "dashboard" ? (
+                    <DashboardMock />
+                  ) : (
+                    <div className="mx-auto max-w-[280px]">
+                      <PhoneMock title={screen.title} rows={screen.phoneRows} accentLabel={screen.accentLabel} />
+                    </div>
+                  )}
                 </div>
               </article>
             ))}

@@ -155,11 +155,11 @@ export function PwaInstallCard({ enabled }: { enabled: boolean }) {
   return (
     <aside
       role="dialog"
-      aria-label="Cloud POS cihaza kur"
+      aria-label="QUAPOS cihaza kur"
       aria-live="polite"
       className="no-print fixed inset-x-3 bottom-[calc(84px+var(--safe-area-bottom))] z-40 rounded-2xl border border-slate-200 bg-white/95 p-4 shadow-[0_16px_34px_rgba(15,23,42,0.18)] backdrop-blur md:inset-x-auto md:bottom-4 md:right-4 md:max-w-[340px]"
     >
-      <p className="text-sm font-semibold text-slate-900">Cloud POS&apos;u cihaza kurun</p>
+      <p className="text-sm font-semibold text-slate-900">QUAPOS&apos;u cihaza kurun</p>
       <p className="mt-1 text-xs leading-5 text-slate-600">
         Ana ekrandan app gibi açılır, internet kesilse bile çalışır.
       </p>

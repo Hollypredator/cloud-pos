@@ -35,7 +35,7 @@ export default async function LandingPage({
           {
             "@context": "https://schema.org",
             "@type": "SoftwareApplication",
-            name: "Cloud POS",
+            name: "QUAPOS",
             applicationCategory: "BusinessApplication",
             operatingSystem: "Web, iOS, Android, Windows",
             url: absoluteUrl("/", seoSettings),

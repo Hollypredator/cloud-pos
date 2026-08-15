@@ -37,7 +37,7 @@ export default async function BlogIndexPage() {
       <main className="mx-auto max-w-6xl space-y-6 sm:space-y-8">
         <header className="flex flex-col items-start justify-between gap-4 lg:flex-row lg:items-end">
           <div className="min-w-0">
-            <p className="text-xs uppercase tracking-[0.28em] text-slate-500">Cloud POS Blog</p>
+            <p className="text-xs uppercase tracking-[0.28em] text-slate-500">QUAPOS Blog</p>
             <h1 className="mt-3 text-3xl font-semibold tracking-tight text-slate-900 sm:text-4xl">Duyurular, operasyon notlari ve saha icgoruleri</h1>
             <p className="mt-4 max-w-3xl text-sm leading-7 text-slate-600 sm:text-base sm:leading-8">
               Restoran operasyonu, QR sipariş, kasa akışlar ve sahada ogrendigimiz karar kaliplariyla ilgili yayinlar.

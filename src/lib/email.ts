@@ -122,7 +122,7 @@ export async function sendSmtpTestEmail(recipient: string) {
 
   return sendMailWithStoredSettings({
     to,
-    subject: "Cloud POS mail test",
+    subject: "QUAPOS mail test",
     text: "Bu bir test e-postasidir. Mail ayarlari calisiyor.",
     html: "<p>Bu bir test e-postasidir. Mail ayarlari calisiyor.</p>",
   });

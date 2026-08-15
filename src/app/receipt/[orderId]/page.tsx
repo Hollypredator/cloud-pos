@@ -41,7 +41,7 @@ export default async function ReceiptPage({
   const final = Number(order.final_price ?? order.total_price);
   const paid = Number(order.amount_paid ?? 0);
   const remaining = Number(order.remaining_balance ?? Math.max(0, final - paid));
-  const businessName = process.env.NEXT_PUBLIC_BUSINESS_NAME || "Cloud POS";
+  const businessName = process.env.NEXT_PUBLIC_BUSINESS_NAME || "QUAPOS";
   const businessPhone = process.env.NEXT_PUBLIC_BUSINESS_PHONE || "";
   const businessAddress = process.env.NEXT_PUBLIC_BUSINESS_ADDRESS || "";
   const receiptFooter = process.env.NEXT_PUBLIC_RECEIPT_FOOTER || "Bizi tercih ettiginiz için tesekkur ederiz.";

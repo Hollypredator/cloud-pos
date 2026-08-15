@@ -300,7 +300,7 @@ export function MobileOpsShell({
           <div className="mx-auto flex w-full max-w-[980px] items-center justify-between gap-3 px-4 pb-3 pt-[calc(var(--safe-area-top)+10px)]">
             <div className="min-w-0">
               <p className="truncate text-[10px] font-extrabold uppercase tracking-[0.2em] text-slate-500">
-                {shellData?.brandName ?? "Cloud POS"}
+                {shellData?.brandName ?? "QUAPOS"}
               </p>
               <p className="truncate text-[1.2rem] font-bold tracking-tight text-slate-900 mt-0.5">{mobileTitle}</p>
             </div>

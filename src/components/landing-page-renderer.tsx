@@ -76,7 +76,7 @@ function getLandingHeaderCopy(locale: AppLocale): LandingHeaderCopy {
         pricing: "Tarifs",
       },
       tabs: {
-        allInOnePos: "Cloud POS Core",
+        allInOnePos: "QUAPOS Core",
         boşsApp: "Panel de Gestion",
         staffManagement: "Gestion Equipe",
         qrOrdering: "QR & Commande",
@@ -106,7 +106,7 @@ function getLandingHeaderCopy(locale: AppLocale): LandingHeaderCopy {
         pricing: "Pricing",
       },
       tabs: {
-        allInOnePos: "Cloud POS Core",
+        allInOnePos: "QUAPOS Core",
         boşsApp: "Management Panel",
         staffManagement: "Staff Management",
         qrOrdering: "QR & Ordering",
@@ -135,7 +135,7 @@ function getLandingHeaderCopy(locale: AppLocale): LandingHeaderCopy {
       pricing: "Fiyatlama",
     },
     tabs: {
-      allInOnePos: "Cloud POS Core",
+      allInOnePos: "QUAPOS Core",
       boşsApp: "Yönetim Paneli",
       staffManagement: "Personel Yönetimi",
       qrOrdering: "QR ve Sipariş",
@@ -866,10 +866,10 @@ export function LandingPageRenderer({
       localizeLandingSection(section, locale),
     ),
   };
-  const siteName = settings?.siteName || "Cloud POS";
+  const siteName = settings?.siteName || "QUAPOS";
   const siteTagline = locale === "tr" ? settings?.siteTagline || "Yeni nesil cafe ve restoran operasyonu" : copy.landing.siteTagline;
   const logoUrl = settings?.logoUrl;
-  const footerNote = locale === "tr" ? settings?.footerNote || "Cloud POS" : copy.landing.footerFallback;
+  const footerNote = locale === "tr" ? settings?.footerNote || "QUAPOS" : copy.landing.footerFallback;
   const contactPhone = settings?.contactPhone || "";
   const supportEmail = settings?.supportEmail || "";
   const headerCopy = getLandingHeaderCopy(locale);

@@ -80,13 +80,13 @@ export default async function StudioIndexPage() {
           <div>
             <div className="inline-flex items-center gap-2 rounded-full bg-white/5 border border-white/10 px-4 py-1.5 text-xs font-bold uppercase tracking-[0.2em] text-orange-300">
               <Sparkle size={12} className="animate-spin text-orange-400" />
-              Cloud POS Studio
+              QUAPOS Studio
             </div>
             <h1 className="mt-6 max-w-3xl text-4xl font-extrabold tracking-tight sm:text-5xl lg:text-6xl leading-[1.1] text-transparent bg-clip-text bg-gradient-to-r from-white via-slate-100 to-slate-300">
               Marka ve Dijital Vitrin Yönetimi
             </h1>
             <p className="mt-6 max-w-2xl text-base sm:text-lg leading-relaxed text-slate-300">
-              Landing page içerikleri, interaktif demo adımları, marka varlıkları, SEO ve lead operasyonlarını modern Cloud POS standartlarıyla tek merkezden yönetin.
+              Landing page içerikleri, interaktif demo adımları, marka varlıkları, SEO ve lead operasyonlarını modern QUAPOS standartlarıyla tek merkezden yönetin.
             </p>
             <div className="mt-8 flex flex-wrap gap-4">
               <Link 

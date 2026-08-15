@@ -53,7 +53,7 @@ export const seoLandingPages: SeoLandingPage[] = [
     title: "Restoran POS Sistemi",
     metaTitle: "Restoran POS Sistemi | Kasa, Adisyon, Mutfak ve Stok",
     description:
-      "Cloud POS restoran POS sistemi; masa, adisyon, mutfak ekranı, kasa, stok, QR menü ve raporlamayı tek bulut panelinde toplar.",
+      "QUAPOS restoran POS sistemi; masa, adisyon, mutfak ekranı, kasa, stok, QR menü ve raporlamayı tek bulut panelinde toplar.",
     eyebrow: "Restoran operasyonu",
     heroTitle: "Restoran POS sistemiyle masa, mutfak ve kasayı aynı akışta yönetin.",
     heroLead:
@@ -80,7 +80,7 @@ export const seoLandingPages: SeoLandingPage[] = [
     faq: [
       {
         question: "Restoran POS sistemi sadece kasa için mi kullanılır?",
-        answer: "Hayır. Cloud POS masa, adisyon, mutfak, kasa, stok, QR menü ve rapor ekranlarını birlikte çalıştırır.",
+        answer: "Hayır. QUAPOS masa, adisyon, mutfak, kasa, stok, QR menü ve rapor ekranlarını birlikte çalıştırır.",
       },
       {
         question: "Mutfak ekranı restoran POS içinde var mı?",
@@ -103,7 +103,7 @@ export const seoLandingPages: SeoLandingPage[] = [
     title: "Kafe POS Sistemi",
     metaTitle: "Kafe POS Sistemi | Hızlı Sipariş, Kasa ve Stok",
     description:
-      "Kafe POS sistemi arayan işletmeler için Cloud POS; hızlı sipariş, paket, gel-al, QR menü, kasa ve stok süreçlerini bulutta yönetir.",
+      "Kafe POS sistemi arayan işletmeler için QUAPOS; hızlı sipariş, paket, gel-al, QR menü, kasa ve stok süreçlerini bulutta yönetir.",
     eyebrow: "Kafe ve pastane",
     heroTitle: "Kafe POS sistemiyle hızlı sipariş ve kasa akışını sadeleştirin.",
     heroLead:
@@ -129,7 +129,7 @@ export const seoLandingPages: SeoLandingPage[] = [
     ],
     faq: [
       {
-        question: "Cloud POS kafe ve kahve işletmeleri için uygun mu?",
+        question: "QUAPOS kafe ve kahve işletmeleri için uygun mu?",
         answer: "Evet. Hızlı ürün seçimi, self servis, gel-al, kasa ve stok modülleri kafe operasyonlarına uygundur.",
       },
       {
@@ -153,7 +153,7 @@ export const seoLandingPages: SeoLandingPage[] = [
     title: "QR Menü",
     metaTitle: "QR Menü | Dijital Menü ve Masadan Sipariş",
     description:
-      "Cloud POS QR menü ile müşteriler ürünleri telefondan görür; işletme isterse masadan sipariş alma özelliğini aktif eder.",
+      "QUAPOS QR menü ile müşteriler ürünleri telefondan görür; işletme isterse masadan sipariş alma özelliğini aktif eder.",
     eyebrow: "Dijital menü",
     heroTitle: "QR menüyle müşteriye hızlı, temiz ve güncel bir menü sunun.",
     heroLead:
@@ -203,7 +203,7 @@ export const seoLandingPages: SeoLandingPage[] = [
     title: "Self Servis Sipariş Sistemi",
     metaTitle: "Self Servis Sipariş Sistemi | Kafe ve Restoran POS",
     description:
-      "Self servis sipariş sistemiyle müşteri, kasa ve mutfak akışını Cloud POS üzerinde yönetin; gel-al, QR ve mobil operasyonları tekleştirin.",
+      "Self servis sipariş sistemiyle müşteri, kasa ve mutfak akışını QUAPOS üzerinde yönetin; gel-al, QR ve mobil operasyonları tekleştirin.",
     eyebrow: "Self servis",
     heroTitle: "Self servis sipariş sistemiyle yoğun saatlerde sırayı ve mutfağı rahatlatın.",
     heroLead:
@@ -230,7 +230,7 @@ export const seoLandingPages: SeoLandingPage[] = [
     faq: [
       {
         question: "Self servis sipariş için ayrı cihaz gerekir mi?",
-        answer: "Her modelde gerekmez. Cloud POS, QR ve mobil operasyon akışlarıyla self servis senaryolarını destekler.",
+        answer: "Her modelde gerekmez. QUAPOS, QR ve mobil operasyon akışlarıyla self servis senaryolarını destekler.",
       },
       {
         question: "Gel-al siparişler takip edilebilir mi?",
@@ -253,7 +253,7 @@ export const seoLandingPages: SeoLandingPage[] = [
     title: "Kafe Restoran Yönetim Sistemi",
     metaTitle: "Kafe Restoran Yönetim Sistemi | Bulut POS Alternatifi",
     description:
-      "Kafe-restoran yönetim sistemi arayan işletmeler için Cloud POS; masa, adisyon, QR menü, mutfak, kasa, stok ve raporu bulutta birleştirir.",
+      "Kafe-restoran yönetim sistemi arayan işletmeler için QUAPOS; masa, adisyon, QR menü, mutfak, kasa, stok ve raporu bulutta birleştirir.",
     eyebrow: "Kafe-restoran yönetimi",
     heroTitle: "Kafe-restoran yönetim sistemi arayanlar için bulut tabanlı operasyon paneli.",
     heroLead:
@@ -279,8 +279,8 @@ export const seoLandingPages: SeoLandingPage[] = [
     ],
     faq: [
       {
-        question: "Cloud POS kafe-restoran yönetim sistemi yerine kullanılabilir mi?",
-        answer: "Cloud POS; masa, adisyon, mutfak, kasa, stok, QR menü ve raporlama modülleriyle kafe-restoran yönetimi için kapsamlı bir bulut POS çözümüdür.",
+        question: "QUAPOS kafe-restoran yönetim sistemi yerine kullanılabilir mi?",
+        answer: "QUAPOS; masa, adisyon, mutfak, kasa, stok, QR menü ve raporlama modülleriyle kafe-restoran yönetimi için kapsamlı bir bulut POS çözümüdür.",
       },
       {
         question: "Çok şubeli kafe ve restoranlar için uygun mu?",
@@ -303,7 +303,7 @@ export const seoLandingPages: SeoLandingPage[] = [
     title: "Stok Takipli POS Sistemi",
     metaTitle: "Stok Takipli POS Sistemi | Satış, Sayım ve Kritik Stok",
     description:
-      "Stok takipli POS sistemiyle ürün stoklarını, düşük stok uyarılarını, satışları ve operasyon raporlarını Cloud POS üzerinde yönetin.",
+      "Stok takipli POS sistemiyle ürün stoklarını, düşük stok uyarılarını, satışları ve operasyon raporlarını QUAPOS üzerinde yönetin.",
     eyebrow: "Stok ve satış",
     heroTitle: "Stok takipli POS sistemiyle satıştan sonra stok kontrolünü kaçırmayın.",
     heroLead:
@@ -330,7 +330,7 @@ export const seoLandingPages: SeoLandingPage[] = [
     faq: [
       {
         question: "POS sistemi stok uyarısı verebilir mi?",
-        answer: "Evet. Cloud POS düşük ve kritik stoklu ürünleri operasyon ekranında görünür hale getirir.",
+        answer: "Evet. QUAPOS düşük ve kritik stoklu ürünleri operasyon ekranında görünür hale getirir.",
       },
       {
         question: "Stok takibi satış raporlarıyla birlikte çalışır mı?",
@@ -353,7 +353,7 @@ export const seoLandingPages: SeoLandingPage[] = [
     title: "Adisyon Programı",
     metaTitle: "Adisyon Programı | Masa, Sipariş ve Kasa Takibi",
     description:
-      "Cloud POS adisyon programı; masa siparişi, açık hesap, parçalı ödeme, kasa ve mutfak akışını restoran operasyonu için birleştirir.",
+      "QUAPOS adisyon programı; masa siparişi, açık hesap, parçalı ödeme, kasa ve mutfak akışını restoran operasyonu için birleştirir.",
     eyebrow: "Adisyon ve kasa",
     heroTitle: "Adisyon programıyla masa hesabını, siparişi ve tahsilatı netleştirin.",
     heroLead:
@@ -380,7 +380,7 @@ export const seoLandingPages: SeoLandingPage[] = [
     faq: [
       {
         question: "Adisyon programı masa hesabını takip eder mi?",
-        answer: "Evet. Cloud POS masa bazlı sipariş ve açık adisyon takibini destekler.",
+        answer: "Evet. QUAPOS masa bazlı sipariş ve açık adisyon takibini destekler.",
       },
       {
         question: "Parçalı ödeme yapılabilir mi?",
@@ -403,7 +403,7 @@ export const seoLandingPages: SeoLandingPage[] = [
     title: "Garson El Terminali",
     metaTitle: "Garson El Terminali | Mobil Sipariş ve Masa Yönetimi",
     description:
-      "Garson el terminali alternatifi Cloud POS mobil PWA ile masa seçimi, sipariş girişi, servis talepleri ve operasyon akışı telefondan yönetilir.",
+      "Garson el terminali alternatifi QUAPOS mobil PWA ile masa seçimi, sipariş girişi, servis talepleri ve operasyon akışı telefondan yönetilir.",
     eyebrow: "Mobil servis",
     heroTitle: "Garson el terminali yerine mobil PWA ile siparişi masada alın.",
     heroLead:
@@ -430,7 +430,7 @@ export const seoLandingPages: SeoLandingPage[] = [
     faq: [
       {
         question: "Garson el terminali için ayrı cihaz şart mı?",
-        answer: "Hayır. Cloud POS mobil PWA olarak telefon veya tablet üzerinden kullanılacak şekilde tasarlanır.",
+        answer: "Hayır. QUAPOS mobil PWA olarak telefon veya tablet üzerinden kullanılacak şekilde tasarlanır.",
       },
       {
         question: "Garson siparişi doğrudan mutfağa düşer mi?",
@@ -453,7 +453,7 @@ export const seoLandingPages: SeoLandingPage[] = [
     title: "Bulut POS Sistemi",
     metaTitle: "Bulut POS Sistemi | Çok Şubeli Restoran ve Kafe Yönetimi",
     description:
-      "Bulut POS sistemi Cloud POS ile restoran, kafe, self servis, QR menü, kasa, stok ve rapor operasyonlarını internet üzerinden yönetin.",
+      "Bulut POS sistemi QUAPOS ile restoran, kafe, self servis, QR menü, kasa, stok ve rapor operasyonlarını internet üzerinden yönetin.",
     eyebrow: "Bulut mimari",
     heroTitle: "Bulut POS sistemiyle şube, ekip ve operasyon ekranlarını merkezi yönetin.",
     heroLead:
@@ -480,7 +480,7 @@ export const seoLandingPages: SeoLandingPage[] = [
     faq: [
       {
         question: "Bulut POS sistemi yerel kurulum ister mi?",
-        answer: "Cloud POS web tabanlı çalışır; ekipler yetkilerine göre ilgili panel veya mobil PWA ekranına girer.",
+        answer: "QUAPOS web tabanlı çalışır; ekipler yetkilerine göre ilgili panel veya mobil PWA ekranına girer.",
       },
       {
         question: "Çok şubeli işletmeler desteklenir mi?",
@@ -499,11 +499,11 @@ export const seoLandingPages: SeoLandingPage[] = [
     title: "Restaurant POS System",
     metaTitle: "Restaurant POS System | Tables, Kitchen, Payments and Stock",
     description:
-      "Cloud POS brings table service, kitchen display, payments, QR menüs, stock and reporting into one cloud restaurant POS system.",
+      "QUAPOS brings table service, kitchen display, payments, QR menüs, stock and reporting into one cloud restaurant POS system.",
     eyebrow: "Restaurant operations",
     heroTitle: "Run tables, kitchen and checkout from one restaurant POS system.",
     heroLead:
-      "Cloud POS connects waiter ordering, open checks, kitchen preparation, payment status and inventory visibility in one operating workflow.",
+      "QUAPOS connects waiter ordering, open checks, kitchen preparation, payment status and inventory visibility in one operating workflow.",
     primaryKeyword: "restaurant POS system",
     relatedKeywords: ["cloud restaurant POS", "restaurant management system", "kitchen display system", "waiter ordering app"],
     sections: [
@@ -525,7 +525,7 @@ export const seoLandingPages: SeoLandingPage[] = [
     ],
     faq: [
       {
-        question: "Is Cloud POS only a checkout system?",
+        question: "Is QUAPOS only a checkout system?",
         answer: "No. It combines table service, kitchen, checkout, inventory, QR menü and reporting workflows.",
       },
       {
@@ -549,7 +549,7 @@ export const seoLandingPages: SeoLandingPage[] = [
     title: "Cafe POS System",
     metaTitle: "Cafe POS System | Fast Ordering, Pickup and Inventory",
     description:
-      "Cloud POS helps cafes manage fast ordering, pickup, QR menü, checkout, inventory and reporting from one cloud platform.",
+      "QUAPOS helps cafes manage fast ordering, pickup, QR menü, checkout, inventory and reporting from one cloud platform.",
     eyebrow: "Cafe operations",
     heroTitle: "A cafe POS system built for fast service and clear daily control.",
     heroLead:
@@ -575,7 +575,7 @@ export const seoLandingPages: SeoLandingPage[] = [
     ],
     faq: [
       {
-        question: "Can Cloud POS work for cafes and coffee shops?",
+        question: "Can QUAPOS work for cafes and coffee shops?",
         answer: "Yes. It supports fast ordering, pickup, QR menü, checkout, stock and reporting workflows.",
       },
       {
@@ -599,7 +599,7 @@ export const seoLandingPages: SeoLandingPage[] = [
     title: "QR Menu System",
     metaTitle: "QR Menu System | Digital Menu and Table Ordering",
     description:
-      "Cloud POS QR menü lets customers browse products on their phones while the business controls whether table ordering is enabled.",
+      "QUAPOS QR menü lets customers browse products on their phones while the business controls whether table ordering is enabled.",
     eyebrow: "Digital menü",
     heroTitle: "A QR menü system connected to your POS catalog.",
     heroLead:
@@ -649,7 +649,7 @@ export const seoLandingPages: SeoLandingPage[] = [
     title: "Self-Service Ordering System",
     metaTitle: "Self-Service Ordering System | Cafe and Restaurant POS",
     description:
-      "Cloud POS supports self-service and pickup ordering workflows for cafes and restaurants with shared kitchen, cashier and operations screens.",
+      "QUAPOS supports self-service and pickup ordering workflows for cafes and restaurants with shared kitchen, cashier and operations screens.",
     eyebrow: "Self-service",
     heroTitle: "A self-service ordering system for busy pickup and cafe workflows.",
     heroLead:
@@ -676,7 +676,7 @@ export const seoLandingPages: SeoLandingPage[] = [
     faq: [
       {
         question: "Does self-service require a kiosk?",
-        answer: "Not always. Cloud POS supports QR and mobile-led self-service scenarios.",
+        answer: "Not always. QUAPOS supports QR and mobile-led self-service scenarios.",
       },
       {
         question: "Can pickup orders be tracked?",
@@ -696,10 +696,10 @@ export const seoLandingPages: SeoLandingPage[] = [
       "x-default": "en/cloud-pos-system",
     },
     schemaType: "SoftwareApplication",
-    title: "Cloud POS System",
-    metaTitle: "Cloud POS System | Multi-Branch Restaurant and Cafe Platform",
+    title: "QUAPOS System",
+    metaTitle: "QUAPOS System | Multi-Branch Restaurant and Cafe Platform",
     description:
-      "Cloud POS helps restaurants and cafes manage ordering, QR menü, checkout, inventory, reporting and multi-branch operations from the web.",
+      "QUAPOS helps restaurants and cafes manage ordering, QR menü, checkout, inventory, reporting and multi-branch operations from the web.",
     eyebrow: "Cloud platform",
     heroTitle: "A cloud POS system for multi-branch restaurant and cafe operations.",
     heroLead:
@@ -726,7 +726,7 @@ export const seoLandingPages: SeoLandingPage[] = [
     faq: [
       {
         question: "Does a cloud POS require local installation?",
-        answer: "Cloud POS is web-based; teams sign in to the relevant panel or mobile PWA screen.",
+        answer: "QUAPOS is web-based; teams sign in to the relevant panel or mobile PWA screen.",
       },
       {
         question: "Can it support multiple branches?",
@@ -748,7 +748,7 @@ export const seoLandingPages: SeoLandingPage[] = [
     title: "İstanbul Restoran POS Sistemi",
     metaTitle: "İstanbul Restoran POS Sistemi | Masa, Mutfak, Kasa ve Stok",
     description:
-      "İstanbul restoranları için Cloud POS; yoğun servis, masa yönetimi, mutfak, adisyon, QR menü ve stok süreçlerini tek panelde toplar.",
+      "İstanbul restoranları için QUAPOS; yoğun servis, masa yönetimi, mutfak, adisyon, QR menü ve stok süreçlerini tek panelde toplar.",
     eyebrow: "İstanbul restoranları",
     heroTitle: "İstanbul'da yoğun servis yapan restoranlar için bulut POS akışı.",
     heroLead:
@@ -780,7 +780,7 @@ export const seoLandingPages: SeoLandingPage[] = [
     faq: [
       {
         question: "İstanbul restoranları için şehir bazlı ayrı kurulum gerekir mi?",
-        answer: "Hayır. Cloud POS bulut tabanlıdır; şehir sayfası kullanım senaryosunu açıklar, ürün aynı platformdur.",
+        answer: "Hayır. QUAPOS bulut tabanlıdır; şehir sayfası kullanım senaryosunu açıklar, ürün aynı platformdur.",
       },
       {
         question: "Yoğun servis saatlerinde stok riski görülebilir mi?",
@@ -802,7 +802,7 @@ export const seoLandingPages: SeoLandingPage[] = [
     title: "Ankara Kafe POS Sistemi",
     metaTitle: "Ankara Kafe POS Sistemi | Hızlı Sipariş, Gel-Al ve Kasa",
     description:
-      "Ankara kafe ve kahve işletmeleri için Cloud POS; hızlı sipariş, gel-al, QR menü, kasa, stok ve rapor akışlarını bulutta yönetir.",
+      "Ankara kafe ve kahve işletmeleri için QUAPOS; hızlı sipariş, gel-al, QR menü, kasa, stok ve rapor akışlarını bulutta yönetir.",
     eyebrow: "Ankara kafe operasyonu",
     heroTitle: "Ankara'daki kafe ve kahve işletmeleri için hızlı POS yönetimi.",
     heroLead:
@@ -834,7 +834,7 @@ export const seoLandingPages: SeoLandingPage[] = [
     faq: [
       {
         question: "Ankara kafe POS sistemi için yerel sunucu gerekir mi?",
-        answer: "Hayır. Cloud POS web tabanlıdır ve ekipler rolüne göre ilgili ekrana giriş yapar.",
+        answer: "Hayır. QUAPOS web tabanlıdır ve ekipler rolüne göre ilgili ekrana giriş yapar.",
       },
       {
         question: "Gel-al sipariş takip edilebilir mi?",
@@ -856,7 +856,7 @@ export const seoLandingPages: SeoLandingPage[] = [
     title: "İzmir QR Menü",
     metaTitle: "İzmir QR Menü | Dijital Menü ve Masadan Sipariş",
     description:
-      "İzmir restoran ve kafeleri için Cloud POS QR menü; dijital menü, masadan sipariş ve POS bağlantılı ürün yönetimi sunar.",
+      "İzmir restoran ve kafeleri için QUAPOS QR menü; dijital menü, masadan sipariş ve POS bağlantılı ürün yönetimi sunar.",
     eyebrow: "İzmir dijital menü",
     heroTitle: "İzmir'deki restoran ve kafeler için POS bağlantılı QR menü.",
     heroLead:
@@ -888,7 +888,7 @@ export const seoLandingPages: SeoLandingPage[] = [
     faq: [
       {
         question: "İzmir QR menü sayfası ayrı ürün mü?",
-        answer: "Hayır. Bu sayfa İzmir arama niyetini hedefler; ürün Cloud POS QR menü modülüdür.",
+        answer: "Hayır. Bu sayfa İzmir arama niyetini hedefler; ürün QUAPOS QR menü modülüdür.",
       },
       {
         question: "Sadece menü gösterip siparişi kapatabilir miyim?",

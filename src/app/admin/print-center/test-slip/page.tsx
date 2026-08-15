@@ -19,7 +19,7 @@ export default async function TestSlipPage({
       >
         <header className="border-b border-slate-200 pb-4 text-center">
           <p className="text-xs font-bold uppercase tracking-[0.22em] text-slate-500">Print Test</p>
-          <h1 className={`mt-2 font-semibold text-slate-900 ${thermal ? "text-2xl" : "text-3xl"}`}>Cloud POS Test Fisi</h1>
+          <h1 className={`mt-2 font-semibold text-slate-900 ${thermal ? "text-2xl" : "text-3xl"}`}>QUAPOS Test Fisi</h1>
           <p className="mt-2 text-xs text-slate-500">01.03.2026 15:40 - Masa 4</p>
         </header>
 

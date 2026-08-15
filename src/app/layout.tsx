@@ -61,7 +61,7 @@ export async function generateMetadata(): Promise<Metadata> {
     description: seoSettings.metaDescription || publicSeo.homeDescription,
     applicationName: generalSettings.siteName,
     keywords: [
-      "Cloud POS",
+      "QUAPOS",
       "self servis POS",
       "kafe restoran POS",
       "QR sipariş",

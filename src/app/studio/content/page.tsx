@@ -151,7 +151,7 @@ export default async function AdminContentPage({
           <section className="grid gap-5 lg:grid-cols-[0.9fr_1.1fr]">
             <article className="rounded-[2rem] border border-slate-200 bg-white p-6 shadow-sm">
               <p className="text-xs font-bold uppercase tracking-[0.22em] text-orange-600">Aktif ana sayfa</p>
-              <h2 className="mt-3 text-3xl font-bold tracking-tight text-slate-950">Cloud POS ürün vitrini</h2>
+              <h2 className="mt-3 text-3xl font-bold tracking-tight text-slate-950">QUAPOS ürün vitrini</h2>
               <p className="mt-4 text-sm leading-7 text-slate-600">
                 Bu sayfa; self servis / QR akışı, kafe-restoran POS modülü, mobil PWA ekranları ve gerçek ürün görselleriyle hazırlanmış özel bir React yüzeyidir.
               </p>

@@ -1386,7 +1386,7 @@ export function QrOrderingClient({
               ☕
             </div>
             <div>
-              <p className="text-sm font-black tracking-tight text-white">Cloud POS Menü</p>
+              <p className="text-sm font-black tracking-tight text-white">QUAPOS Menü</p>
               {qrCodeIdentifier ? (
                 <p className="text-xs font-semibold text-rose-300">
                   Masa #{qrCodeIdentifier.split("-").pop()?.toUpperCase() ?? qrCodeIdentifier.slice(0, 6).toUpperCase()}

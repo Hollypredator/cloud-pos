@@ -3,6 +3,7 @@ import { redirect } from "next/navigation";
 import { headers } from "next/headers";
 import { ArrowRight, LockKeyhole, MonitorSmartphone, ShieldCheck, Store } from "lucide-react";
 import { LanguageSwitcher } from "@/components/language-switcher";
+import { DashboardMock } from "@/components/marketing-mocks";
 import { StaffLoginForm } from "@/components/staff-login-form";
 import { getCurrentUserWithRole } from "@/lib/auth";
 import { isLikelyMobileUserAgent } from "@/lib/device";
@@ -72,10 +73,10 @@ export default async function LoginPage({
         <div className="mx-auto flex max-w-7xl items-center gap-4 px-4 py-4 sm:px-6 lg:px-8">
           <Link href="/" className="flex items-center gap-3">
             <span className="flex h-10 w-10 items-center justify-center rounded-2xl bg-gradient-to-br from-orange-500 via-rose-500 to-indigo-600 text-sm font-bold text-white shadow-lg shadow-orange-500/20">
-              CP
+              Q
             </span>
             <div>
-              <p className="text-sm font-bold tracking-tight text-slate-950">Cloud POS</p>
+              <p className="text-sm font-bold tracking-tight text-slate-950">QUAPOS</p>
               <p className="hidden text-xs font-semibold text-slate-500 sm:block">Operasyon paneli girişi</p>
             </div>
           </Link>
@@ -105,7 +106,7 @@ export default async function LoginPage({
             Operasyon paneline hızlı ve güvenli giriş.
           </h1>
           <p className="mt-6 max-w-2xl text-lg leading-9 text-slate-600">
-            Cloud POS; self servis, kafe-restoran operasyonu, mutfak, kasa, stok, rapor ve mobil PWA ekranlarını rol bazlı girişten sonra açar.
+            QUAPOS; self servis, kafe-restoran operasyonu, mutfak, kasa, stok, rapor ve mobil PWA ekranlarını rol bazlı girişten sonra açar.
           </p>
 
           <div className="mt-8 grid gap-3 sm:grid-cols-3">
@@ -125,12 +126,8 @@ export default async function LoginPage({
             })}
           </div>
 
-          <div className="mt-8 hidden rounded-[2rem] border border-white bg-white p-3 shadow-2xl shadow-slate-950/10 lg:block">
-            <img
-              src="/landing-assets/operasyon-paneli-desktop.png"
-              alt="Cloud POS operasyon paneli gerçek ekran görüntüsü"
-              className="aspect-[16/8] w-full rounded-[1.35rem] object-cover object-left-top"
-            />
+          <div className="mt-8 hidden lg:block">
+            <DashboardMock />
           </div>
         </div>
 
@@ -160,7 +157,7 @@ export default async function LoginPage({
                 error={error}
                 labels={{
                   email: "E-posta",
-                  emailPlaceholder: "Örnek@cloudpos.com",
+                  emailPlaceholder: "Örnek@quapos.com",
                   password: "Şifre",
                   loginCta: "Operasyon Paneli Giriş",
                   pendingCta: "Giriş yapılıyor...",

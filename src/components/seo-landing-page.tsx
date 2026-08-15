@@ -21,7 +21,7 @@ export function SeoLandingPageView({
         faqEyebrow: "FAQ",
         faqTitle: "Questions to answer before choosing a POS system",
         relatedEyebrow: "Related solution pages",
-        relatedTitle: "Other Cloud POS pages for similar search intent",
+        relatedTitle: "Other QUAPOS pages for similar search intent",
         relatedCta: "Explore the product flow",
         navItems: [
           { href: "/", label: "Home" },
@@ -39,7 +39,7 @@ export function SeoLandingPageView({
         faqEyebrow: "Sık sorulanlar",
         faqTitle: "Karar vermeden önce netleşmesi gerekenler",
         relatedEyebrow: "İlgili çözüm sayfaları",
-        relatedTitle: "Benzer arama niyetleri için diğer Cloud POS sayfaları",
+        relatedTitle: "Benzer arama niyetleri için diğer QUAPOS sayfaları",
         relatedCta: "Ürünü canlı akışla incele",
         navItems: undefined,
       };
@@ -49,7 +49,7 @@ export function SeoLandingPageView({
       <header className="mx-auto flex max-w-7xl flex-col gap-4 px-4 py-5 sm:px-6 lg:flex-row lg:items-center lg:justify-between lg:px-8">
         <Link href="/" className="inline-flex items-center gap-3 text-sm font-bold text-slate-950">
           <span className="grid h-10 w-10 place-items-center rounded-2xl bg-slate-950 text-white">CP</span>
-          Cloud POS
+          QUAPOS
         </Link>
         <PublicTopNav items={copy.navItems} />
       </header>

@@ -512,7 +512,7 @@ export function AppShell({
                 <div className="mx-auto flex w-full max-w-[980px] items-center justify-between gap-3 px-3 pb-2 pt-[calc(var(--safe-area-top)+8px)]">
                   <div className="min-w-0">
                     <p className="truncate text-[11px] font-semibold uppercase tracking-[0.18em] text-slate-500">
-                      {shellData?.brandName ?? "Cloud POS"}
+                      {shellData?.brandName ?? "QUAPOS"}
                     </p>
                     <p className="truncate text-[1.06rem] font-semibold text-slate-900">{mobileTitle}</p>
                   </div>
