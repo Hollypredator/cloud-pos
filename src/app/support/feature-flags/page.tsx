@@ -1,6 +1,7 @@
 import { FEATURE_META, getPlanLabel } from "@/lib/features";
 import { requireSupportAccess } from "@/lib/auth";
 import { listSupportFeatureFlagOverrides } from "@/lib/domains/support";
+import { SupportEmptyState } from "@/components/support-ui";
 
 export default async function SupportFeatureFlagsPage() {
   await requireSupportAccess("/support/feature-flags", ["support_admin"]);
@@ -31,9 +32,7 @@ export default async function SupportFeatureFlagsPage() {
           </article>
         ))}
         {overrides.length === 0 ? (
-          <div className="rounded-2xl border border-dashed border-slate-300 bg-white px-6 py-10 text-sm text-slate-500">
-            Henüz feature override tanimlanmamis. Plan varsayilanlari kullanılıyor.
-          </div>
+          <SupportEmptyState>Henüz feature override tanimlanmamis. Plan varsayilanlari kullanılıyor.</SupportEmptyState>
         ) : null}
       </section>
 

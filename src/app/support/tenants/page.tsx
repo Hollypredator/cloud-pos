@@ -3,6 +3,7 @@ import { requireSupportAccess } from "@/lib/auth";
 import { listSupportTenantSummaries } from "@/lib/domains/support";
 import { getCurrentLocale } from "@/lib/i18n-server";
 import { translateUiText } from "@/lib/i18n";
+import { SupportEmptyState, SupportFilterBar } from "@/components/support-ui";
 
 export default async function SupportTenantsPage({
   searchParams,
@@ -41,22 +42,22 @@ export default async function SupportTenantsPage({
         </Link>
       </header>
 
-      <form className="grid gap-3 rounded-2xl bg-white p-4 shadow-sm md:grid-cols-[1fr_180px_120px]">
-        <input
-          name="q"
-          defaultValue={filters.q ?? ""}
-          placeholder={translateUiText("İşletme, slug veya paket ara", locale)}
-          className="rounded-xl border border-slate-300 px-4 py-3 text-sm"
-        />
-        <select name="state" defaultValue={state || "all"} className="rounded-xl border border-slate-300 px-4 py-3 text-sm">
-          <option value="all">{translateUiText("Tüm durumlar", locale)}</option>
-          <option value="active">{translateUiText("Aktif", locale)}</option>
-          <option value="inactive">{translateUiText("Pasif", locale)}</option>
-        </select>
-        <button type="submit" className="rounded-xl bg-slate-900 px-4 py-3 text-sm font-semibold text-white">
-          {translateUiText("Filtrele", locale)}
-        </button>
-      </form>
+      <SupportFilterBar
+        queryDefaultValue={filters.q ?? ""}
+        queryPlaceholder={translateUiText("İşletme, slug veya paket ara", locale)}
+        selects={[
+          {
+            name: "state",
+            defaultValue: state || "all",
+            options: [
+              { value: "all", label: translateUiText("Tüm durumlar", locale) },
+              { value: "active", label: translateUiText("Aktif", locale) },
+              { value: "inactive", label: translateUiText("Pasif", locale) },
+            ],
+          },
+        ]}
+        submitLabel={translateUiText("Filtrele", locale)}
+      />
 
       <section className="grid gap-4 md:grid-cols-2 xl:grid-cols-3">
         {filteredTenants.map((tenant) => (
@@ -86,9 +87,9 @@ export default async function SupportTenantsPage({
           </article>
         ))}
         {filteredTenants.length === 0 ? (
-          <div className="rounded-2xl border border-dashed border-slate-300 bg-white px-6 py-10 text-sm text-slate-500 md:col-span-2 xl:col-span-3">
+          <SupportEmptyState className="md:col-span-2 xl:col-span-3">
             {translateUiText("Filtreye uygun tenant bulunamadı.", locale)}
-          </div>
+          </SupportEmptyState>
         ) : null}
       </section>
     </main>

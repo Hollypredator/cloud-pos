@@ -2,6 +2,7 @@ import { requireSupportAccess } from "@/lib/auth";
 import { listSupportHealthSummaries } from "@/lib/domains/support";
 import { translateUiText } from "@/lib/i18n";
 import { getCurrentLocale } from "@/lib/i18n-server";
+import { SupportEmptyState, SupportFilterBar } from "@/components/support-ui";
 
 export default async function SupportHealthPage({
   searchParams,
@@ -24,24 +25,26 @@ export default async function SupportHealthPage({
     <main className="mx-auto w-full max-w-7xl space-y-6 px-4 py-8 md:px-8">
       <header>
         <p className="text-sm text-slate-500">{translateUiText("Tenant Health", locale)}</p>
-        <h1 className="text-3xl font-semibold text-slate-900">{translateUiText("Saglik görünumu", locale)}</h1>
+        <h1 className="text-3xl font-semibold text-slate-900">{translateUiText("Sağlık görünümü", locale)}</h1>
       </header>
 
-      <form className="grid gap-3 rounded-2xl bg-white p-4 shadow-sm md:grid-cols-[1fr_180px_120px]">
-        <input
-          name="q"
-          defaultValue={filters.q ?? ""}
-          placeholder={translateUiText("Tenant veya paket ara", locale)}
-          className="rounded-xl border border-slate-300 px-4 py-3 text-sm"
-        />
-        <select name="status" defaultValue={statusFilter || "all"} className="rounded-xl border border-slate-300 px-4 py-3 text-sm">
-          <option value="all">{translateUiText("Tüm durumlar", locale)}</option>
-          <option value="healthy">{translateUiText("Healthy", locale)}</option>
-          <option value="warning">{translateUiText("Warning", locale)}</option>
-          <option value="critical">{translateUiText("Critical", locale)}</option>
-        </select>
-        <button type="submit" className="rounded-xl bg-slate-900 px-4 py-3 text-sm font-semibold text-white">{translateUiText("Filtrele", locale)}</button>
-      </form>
+      <SupportFilterBar
+        queryDefaultValue={filters.q ?? ""}
+        queryPlaceholder={translateUiText("Tenant veya paket ara", locale)}
+        selects={[
+          {
+            name: "status",
+            defaultValue: statusFilter || "all",
+            options: [
+              { value: "all", label: translateUiText("Tüm durumlar", locale) },
+              { value: "healthy", label: translateUiText("Healthy", locale) },
+              { value: "warning", label: translateUiText("Warning", locale) },
+              { value: "critical", label: translateUiText("Critical", locale) },
+            ],
+          },
+        ]}
+        submitLabel={translateUiText("Filtrele", locale)}
+      />
 
       <section className="grid gap-4 md:grid-cols-2 xl:grid-cols-3">
         {filteredHealth.map((item) => (
@@ -67,9 +70,9 @@ export default async function SupportHealthPage({
           </article>
         ))}
         {filteredHealth.length === 0 ? (
-          <div className="rounded-2xl border border-dashed border-slate-300 bg-white px-6 py-10 text-sm text-slate-500 md:col-span-2 xl:col-span-3">
+          <SupportEmptyState className="md:col-span-2 xl:col-span-3">
             {translateUiText("Filtreye uygun tenant health kaydı bulunamadı.", locale)}
-          </div>
+          </SupportEmptyState>
         ) : null}
       </section>
     </main>

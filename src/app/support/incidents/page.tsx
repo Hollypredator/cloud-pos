@@ -5,6 +5,7 @@ import { createSupportIncident, listSupportIncidents, listSupportTenantSummaries
 import { translateUiText } from "@/lib/i18n";
 import { getCurrentLocale } from "@/lib/i18n-server";
 import type { SupportIncidentSeverity, SupportIncidentStatus } from "@/lib/types";
+import { SupportEmptyState, SupportFilterBar } from "@/components/support-ui";
 
 async function createIncidentAction(formData: FormData) {
   "use server";
@@ -29,10 +30,26 @@ async function updateIncidentStatusAction(formData: FormData) {
   revalidatePath("/support/audit");
 }
 
-export default async function SupportIncidentsPage() {
+export default async function SupportIncidentsPage({
+  searchParams,
+}: {
+  searchParams?: Promise<{ q?: string; status?: string }>;
+}) {
   const locale = await getCurrentLocale();
   await requireSupportAccess("/support/incidents");
   const [{ incidents }, { tenants }] = await Promise.all([listSupportIncidents(), listSupportTenantSummaries()]);
+  const filters = (await searchParams) ?? {};
+  const q = (filters.q ?? "").trim().toLowerCase();
+  const statusFilter = (filters.status ?? "all").trim().toLowerCase();
+  const filteredIncidents = incidents.filter((incident) => {
+    const matchesQuery =
+      !q ||
+      incident.title.toLowerCase().includes(q) ||
+      incident.summary.toLowerCase().includes(q) ||
+      (incident.business_name ?? "").toLowerCase().includes(q);
+    const matchesStatus = statusFilter === "all" || incident.status === statusFilter;
+    return matchesQuery && matchesStatus;
+  });
 
   return (
     <main className="mx-auto w-full max-w-7xl space-y-6 px-4 py-8 md:px-8">
@@ -62,8 +79,27 @@ export default async function SupportIncidentsPage() {
         </div>
       </form>
 
+      <SupportFilterBar
+        queryDefaultValue={filters.q ?? ""}
+        queryPlaceholder={translateUiText("Başlık, özet veya tenant ara", locale)}
+        selects={[
+          {
+            name: "status",
+            defaultValue: statusFilter || "all",
+            options: [
+              { value: "all", label: translateUiText("Tüm durumlar", locale) },
+              { value: "open", label: translateUiText("Open", locale) },
+              { value: "monitoring", label: translateUiText("Monitoring", locale) },
+              { value: "resolved", label: translateUiText("Resolved", locale) },
+              { value: "closed", label: translateUiText("Closed", locale) },
+            ],
+          },
+        ]}
+        submitLabel={translateUiText("Filtrele", locale)}
+      />
+
       <section className="space-y-4">
-        {incidents.map((incident) => (
+        {filteredIncidents.map((incident) => (
           <article key={incident.id} className="rounded-2xl bg-white p-6 shadow-sm">
             <div className="flex flex-wrap items-start justify-between gap-4">
               <div>
@@ -89,6 +125,9 @@ export default async function SupportIncidentsPage() {
             </div>
           </article>
         ))}
+        {filteredIncidents.length === 0 ? (
+          <SupportEmptyState>{translateUiText("Filtreye uygun incident bulunamadı.", locale)}</SupportEmptyState>
+        ) : null}
       </section>
     </main>
   );

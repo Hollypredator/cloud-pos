@@ -1,5 +1,6 @@
 import { requireSupportAccess } from "@/lib/auth";
 import { listSupportOnboardingSummaries } from "@/lib/domains/support";
+import { SupportEmptyState } from "@/components/support-ui";
 
 export default async function SupportOnboardingPage() {
   await requireSupportAccess("/support/onboarding");
@@ -35,6 +36,9 @@ export default async function SupportOnboardingPage() {
             </div>
           </article>
         ))}
+        {tenants.length === 0 ? (
+          <SupportEmptyState>Henüz onboarding kaydı yok.</SupportEmptyState>
+        ) : null}
       </section>
     </main>
   );

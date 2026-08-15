@@ -4,6 +4,7 @@ import { listSupportPlanRequests, setSupportPlanRequestStatus } from "@/lib/doma
 import { translateUiText } from "@/lib/i18n";
 import { getCurrentLocale } from "@/lib/i18n-server";
 import type { SupportPlanRequestStatus } from "@/lib/types";
+import { SupportEmptyState, SupportFilterBar } from "@/components/support-ui";
 
 async function updatePlanRequestStatusAction(formData: FormData) {
   "use server";
@@ -43,22 +44,24 @@ export default async function SupportPlanRequestsPage({
         <h1 className="text-3xl font-semibold text-slate-900">{translateUiText("Paket degisikligi talepleri", locale)}</h1>
       </header>
 
-      <form className="grid gap-3 rounded-2xl bg-white p-4 shadow-sm md:grid-cols-[1fr_180px_120px]">
-        <input
-          name="q"
-          defaultValue={filters.q ?? ""}
-          placeholder={translateUiText("Tenant, paket veya gerekce ara", locale)}
-          className="rounded-xl border border-slate-300 px-4 py-3 text-sm"
-        />
-        <select name="status" defaultValue={statusFilter || "all"} className="rounded-xl border border-slate-300 px-4 py-3 text-sm">
-          <option value="all">{translateUiText("Tüm durumlar", locale)}</option>
-          <option value="open">{translateUiText("Open", locale)}</option>
-          <option value="approved">{translateUiText("Approved", locale)}</option>
-          <option value="rejected">{translateUiText("Rejected", locale)}</option>
-          <option value="cancelled">{translateUiText("Cancelled", locale)}</option>
-        </select>
-        <button type="submit" className="rounded-xl bg-slate-900 px-4 py-3 text-sm font-semibold text-white">{translateUiText("Filtrele", locale)}</button>
-      </form>
+      <SupportFilterBar
+        queryDefaultValue={filters.q ?? ""}
+        queryPlaceholder={translateUiText("Tenant, paket veya gerekce ara", locale)}
+        selects={[
+          {
+            name: "status",
+            defaultValue: statusFilter || "all",
+            options: [
+              { value: "all", label: translateUiText("Tüm durumlar", locale) },
+              { value: "open", label: translateUiText("Open", locale) },
+              { value: "approved", label: translateUiText("Approved", locale) },
+              { value: "rejected", label: translateUiText("Rejected", locale) },
+              { value: "cancelled", label: translateUiText("Cancelled", locale) },
+            ],
+          },
+        ]}
+        submitLabel={translateUiText("Filtrele", locale)}
+      />
 
       <section className="space-y-4">
         {filteredRequests.map((request) => (
@@ -84,9 +87,7 @@ export default async function SupportPlanRequestsPage({
           </article>
         ))}
         {filteredRequests.length === 0 ? (
-          <div className="rounded-2xl border border-dashed border-slate-300 bg-white px-6 py-10 text-sm text-slate-500">
-            {translateUiText("Filtreye uygun paket talebi bulunamadı.", locale)}
-          </div>
+          <SupportEmptyState>{translateUiText("Filtreye uygun paket talebi bulunamadı.", locale)}</SupportEmptyState>
         ) : null}
       </section>
     </main>

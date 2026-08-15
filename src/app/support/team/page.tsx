@@ -1,5 +1,6 @@
 import { requireSupportAccess } from "@/lib/auth";
 import { listSupportTeamSummaries } from "@/lib/domains/support";
+import { SupportEmptyState } from "@/components/support-ui";
 
 export default async function SupportTeamPage() {
   await requireSupportAccess("/support/team", ["support_admin"]);
@@ -62,6 +63,9 @@ export default async function SupportTeamPage() {
             </div>
           </article>
         ))}
+        {members.length === 0 ? (
+          <SupportEmptyState className="md:col-span-2 xl:col-span-3">Henüz destek ekibi üyesi yok.</SupportEmptyState>
+        ) : null}
       </section>
     </main>
   );

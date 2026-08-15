@@ -5,6 +5,7 @@ import { assignSupportTicket, getPlatformAccessByEmail, listSupportAccessUsers, 
 import { getCurrentLocale } from "@/lib/i18n-server";
 import { translateUiText } from "@/lib/i18n";
 import type { SupportTicketStatus } from "@/lib/types";
+import { SupportEmptyState, SupportFilterBar } from "@/components/support-ui";
 
 async function updateTicketStatusAction(formData: FormData) {
   "use server";
@@ -68,37 +69,47 @@ export default async function SupportTicketsPage({
         <h1 className="text-3xl font-semibold text-slate-900">{translateUiText("Destek ve paket talepleri", locale)}</h1>
       </header>
 
-      <form className="grid gap-3 rounded-2xl bg-white p-4 shadow-sm md:grid-cols-[1fr_160px_160px_160px_120px]">
-        <input
-          name="q"
-          defaultValue={filters.q ?? ""}
-          placeholder={translateUiText("Konu, açıklama veya tenant ara", locale)}
-          className="rounded-xl border border-slate-300 px-4 py-3 text-sm"
-        />
-        <select name="status" defaultValue={statusFilter || "all"} className="rounded-xl border border-slate-300 px-4 py-3 text-sm">
-          <option value="all">{translateUiText("Tüm durumlar", locale)}</option>
-          <option value="open">Open</option>
-          <option value="in_progress">In Progress</option>
-          <option value="resolved">Resolved</option>
-          <option value="closed">Closed</option>
-        </select>
-        <select name="type" defaultValue={typeFilter || "all"} className="rounded-xl border border-slate-300 px-4 py-3 text-sm">
-          <option value="all">{translateUiText("Tüm tipler", locale)}</option>
-          <option value="support">Support</option>
-          <option value="plan_change">Plan Change</option>
-          <option value="billing">Billing</option>
-          <option value="onboarding">Onboarding</option>
-          <option value="incident">Incident</option>
-        </select>
-        <select name="queue" defaultValue={queueFilter || "all"} className="rounded-xl border border-slate-300 px-4 py-3 text-sm">
-          <option value="all">{translateUiText("Tüm kuyruklar", locale)}</option>
-          <option value="mine">{translateUiText("Benim ticketlarim", locale)}</option>
-          <option value="breached">{translateUiText("SLA ihlali", locale)}</option>
-          <option value="urgent">{translateUiText("Acil kuyruk", locale)}</option>
-          <option value="unassigned">{translateUiText("Atanmamis", locale)}</option>
-        </select>
-        <button type="submit" className="rounded-xl bg-slate-900 px-4 py-3 text-sm font-semibold text-white">{translateUiText("Filtrele", locale)}</button>
-      </form>
+      <SupportFilterBar
+        queryDefaultValue={filters.q ?? ""}
+        queryPlaceholder={translateUiText("Konu, açıklama veya tenant ara", locale)}
+        selects={[
+          {
+            name: "status",
+            defaultValue: statusFilter || "all",
+            options: [
+              { value: "all", label: translateUiText("Tüm durumlar", locale) },
+              { value: "open", label: "Open" },
+              { value: "in_progress", label: "In Progress" },
+              { value: "resolved", label: "Resolved" },
+              { value: "closed", label: "Closed" },
+            ],
+          },
+          {
+            name: "type",
+            defaultValue: typeFilter || "all",
+            options: [
+              { value: "all", label: translateUiText("Tüm tipler", locale) },
+              { value: "support", label: "Support" },
+              { value: "plan_change", label: "Plan Change" },
+              { value: "billing", label: "Billing" },
+              { value: "onboarding", label: "Onboarding" },
+              { value: "incident", label: "Incident" },
+            ],
+          },
+          {
+            name: "queue",
+            defaultValue: queueFilter || "all",
+            options: [
+              { value: "all", label: translateUiText("Tüm kuyruklar", locale) },
+              { value: "mine", label: translateUiText("Benim ticketlarim", locale) },
+              { value: "breached", label: translateUiText("SLA ihlali", locale) },
+              { value: "urgent", label: translateUiText("Acil kuyruk", locale) },
+              { value: "unassigned", label: translateUiText("Atanmamis", locale) },
+            ],
+          },
+        ]}
+        submitLabel={translateUiText("Filtrele", locale)}
+      />
 
       <section className="space-y-4">
         {filteredTickets.map((ticket) => (
@@ -153,9 +164,7 @@ export default async function SupportTicketsPage({
           </article>
         ))}
         {filteredTickets.length === 0 ? (
-          <div className="rounded-2xl border border-dashed border-slate-300 bg-white px-6 py-10 text-sm text-slate-500">
-            {translateUiText("Filtreye uygun ticket bulunamadı.", locale)}
-          </div>
+          <SupportEmptyState>{translateUiText("Filtreye uygun ticket bulunamadı.", locale)}</SupportEmptyState>
         ) : null}
       </section>
     </main>
