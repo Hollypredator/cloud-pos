@@ -105,7 +105,13 @@ export default async function AdminOrdersPage({
   }
 
   if (isMobileUA) {
-    return <main className="h-screen w-screen overflow-hidden bg-slate-50">{orderEntry}</main>;
+    // Ayni sinif hata: bu <main> de app-shell'in mobileAppMode icin ayirdigi
+    // ust/alt sabit cubuk payini (restoran tarafinda hala render ediliyor)
+    // `h-screen`/`w-screen` ile yok sayiyordu. `h-full`/`w-full` ebeveynin
+    // padding sonrasi kalan alanina sigar. Gercek telefonda dogrulanmadi
+    // (bu oturumda mobil UA/login erisimi yok) — self-servis tarafinda aynen
+    // gozlemlenen kirpilma deseniyle eslestigi icin uygulandi.
+    return <main className="h-full w-full overflow-hidden bg-slate-50">{orderEntry}</main>;
   }
 
   return (
