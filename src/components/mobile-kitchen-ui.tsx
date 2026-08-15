@@ -13,10 +13,8 @@ import {
   Check
 } from "lucide-react";
 import { onQueueSynced, startAutoSync } from "@/lib/offline-queue";
+import { getDelayLevel, resolveStationStatus, type KitchenStation, type StationProgress } from "@/lib/kitchen-station";
 import { gsap } from "gsap";
-
-type KitchenStation = "kitchen" | "bar" | "dessert";
-type StationProgress = "pending" | "preparing" | "served";
 
 interface OrderItem {
   product_id: string;
@@ -44,8 +42,6 @@ interface MobileKitchenUiProps {
   activeStation: KitchenStation;
   stationBoards: any[];
   stationGroupsByOrder: Map<string, Map<KitchenStation, any[]>>;
-  resolveStationStatus: (order: any, station: KitchenStation) => StationProgress;
-  getDelayLevel: (status: string, createdAt: string) => { delayed: boolean; critical: boolean; elapsedMin: number };
   moveMobileOrder: (formData: FormData) => void;
 }
 
@@ -82,8 +78,6 @@ export function MobileKitchenUi({
   activeStation,
   stationBoards,
   stationGroupsByOrder,
-  resolveStationStatus,
-  getDelayLevel,
   moveMobileOrder,
 }: MobileKitchenUiProps) {
   const router = useRouter();

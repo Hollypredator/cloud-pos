@@ -8,13 +8,13 @@ import { MobileAuthRedirect } from "@/components/mobile-auth-redirect";
 import { MobileKitchenUi } from "@/components/mobile-kitchen-ui";
 import { requireRole } from "@/lib/auth";
 import { getKitchenPageSnapshot } from "@/lib/data";
+import { getDelayLevel, resolveStationStatus, type KitchenStation } from "@/lib/kitchen-station";
 import { executeWebOpsCommand } from "@/lib/ops/server-action";
 import { logServerPerf, measureAsync } from "@/lib/perf";
 import { getFeatureAccess } from "@/lib/plan-access";
 import { shouldUseMobileClientAuthRedirect } from "@/lib/server/mobile-auth-guard";
 import type { Order, OrderItem } from "@/lib/types";
 
-type KitchenStation = "kitchen" | "bar" | "dessert";
 type StationProgress = "pending" | "preparing" | "served";
 
 async function moveMobileOrder(formData: FormData) {
@@ -44,13 +44,6 @@ async function moveMobileOrder(formData: FormData) {
   revalidatePath("/kitchen");
   revalidatePath("/m/ops");
   revalidatePath("/ops");
-}
-
-function getDelayLevel(status: string, createdAt: string) {
-  const elapsedMin = Math.floor((Date.now() - new Date(createdAt).getTime()) / 60000);
-  if (status === "pending" && elapsedMin >= 15) return { delayed: true, critical: elapsedMin >= 25, elapsedMin };
-  if (status === "preparing" && elapsedMin >= 20) return { delayed: true, critical: elapsedMin >= 35, elapsedMin };
-  return { delayed: false, critical: false, elapsedMin };
 }
 
 function normalizeLabel(value: string) {
@@ -124,20 +117,6 @@ function resolveStationFromCategory(category?: { name: string; prep_station?: st
     return category.prep_station;
   }
   return inferStationByName(category?.name);
-}
-
-function resolveStationStatus(order: Order, station: KitchenStation): StationProgress {
-  const stationStatus = order.station_statuses?.[station];
-  if (stationStatus === "pending" || stationStatus === "preparing" || stationStatus === "served") {
-    return stationStatus;
-  }
-  if (order.status === "pending" || order.status === "preparing") {
-    return order.status as StationProgress;
-  }
-  if (order.status === "ready" || order.status === "served" || order.status === "partially_paid") {
-    return "served";
-  }
-  return "pending";
 }
 
 function buildStationGroups(
@@ -226,13 +205,11 @@ export default async function MobileKitchenPage({
         </div>
       )}
 
-      <MobileKitchenUi 
+      <MobileKitchenUi
         orders={orders}
         activeStation={activeStation}
         stationBoards={stationBoards}
         stationGroupsByOrder={stationGroupsByOrder}
-        resolveStationStatus={resolveStationStatus}
-        getDelayLevel={getDelayLevel}
         moveMobileOrder={moveMobileOrder}
       />
     </>
