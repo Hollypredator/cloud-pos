@@ -269,7 +269,15 @@ export function MobileTablesUi({
           {filteredTablesByZone.length === 0 ? (
             <div className="py-20 text-center text-slate-400 text-xs font-bold">Masa bulunamadı.</div>
           ) : hasFloorPlanLayout ? (
-            <div className="relative min-h-[420px] w-full">
+            /* position_x/position_y yuzde olarak kaydedilir ve masaustu
+               kroki editorunun genis tuvaline gore ayarlanir. Telefon
+               genisliginde (%375px) ayni yuzdeler sabit-piksel masa
+               kartlarini (w-16 ila w-36) birbirine cok yaklastirip ust
+               uste bindiriyordu. Sabit genislikte bir tuval + yatay
+               kaydirma: yuzdeler artik gercek bir alana yayiliyor,
+               masalar sikismiyor. */
+            <div className="overflow-x-auto">
+              <div className="relative min-h-[420px] w-[640px]">
               {filteredTablesByZone.map((table) => {
                 const order = ordersByTableId.get(table.id);
                 const reqs = requestCountByTableId.get(table.id) ?? 0;
@@ -317,6 +325,7 @@ export function MobileTablesUi({
                   </div>
                 );
               })}
+              </div>
             </div>
           ) : (
             <div className="grid grid-cols-3 sm:grid-cols-4 gap-4 justify-items-center">
